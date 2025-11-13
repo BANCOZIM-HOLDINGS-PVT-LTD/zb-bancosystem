@@ -1,0 +1,168 @@
+includes:
+    - ./vendor/nunomaduro/larastan/extension.neon
+
+parameters:
+    level: 8
+    paths:
+        - app/
+        - config/
+        - database/factories/
+        - database/seeders/
+        - routes/
+    
+    # Exclude problematic files
+    excludePaths:
+        - app/Console/Kernel.php
+        - app/Exceptions/Handler.php
+        - app/Http/Kernel.php
+        - bootstrap/
+        - storage/
+        - vendor/
+    
+    # Ignore specific errors
+    ignoreErrors:
+        # Laravel specific ignores
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder::.*#'
+        - '#Call to an undefined method Illuminate\\Database\\Query\\Builder::.*#'
+        - '#Access to an undefined property App\\Models\\.*::\$.*#'
+        
+        # PDF generation specific ignores
+        - '#Cannot call method .* on Barryvdh\\DomPDF\\PDF\|null#'
+        - '#Parameter .* of method .* expects .*, mixed given#'
+        
+        # JSON field access
+        - '#Cannot access offset .* on mixed#'
+        - '#Offset .* does not exist on array.*#'
+    
+    # Custom rules
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false
+    
+    # Laravel specific configurations
+    universalObjectCratesClasses:
+        - Illuminate\Http\Request
+        - Illuminate\Support\Collection
+    
+    # Type coverage
+    typeAliases:
+        FormData: 'array<string, mixed>'
+        ApplicationMetadata: 'array<string, mixed>'
+        ValidationErrors: 'array<string, string>'
+    
+    # Custom extensions
+    scanDirectories:
+        - app/Services/
+        - app/Repositories/
+        - app/Contracts/
+    
+    # Doctrine extensions
+    doctrine:
+        objectManagerLoader: tests/object-manager.php
+    
+    # Parallel processing
+    parallel:
+        jobSize: 20
+        maximumNumberOfProcesses: 32
+        minimumNumberOfJobsPerProcess: 2
+    
+    # Memory limit
+    memoryLimitFile: .phpstan-memory-limit
+    
+    # Baseline
+    baseline: phpstan-baseline.neon
+    
+    # Custom rules for our application
+    services:
+        -
+            class: App\PHPStan\Rules\NoDirectDatabaseAccessRule
+            tags:
+                - phpstan.rules.rule
+        -
+            class: App\PHPStan\Rules\RequireServiceContractRule
+            tags:
+                - phpstan.rules.rule
+    
+    # Stub files for better analysis
+    stubFiles:
+        - stubs/dompdf.stub
+        - stubs/laravel-custom.stub
+    
+    # Bootstrap file
+    bootstrapFiles:
+        - phpstan-bootstrap.php
+    
+    # Report unmatched ignored errors
+    reportUnmatchedIgnoredErrors: true
+    
+    # Treat PHP doc types as native
+    treatPhpDocTypesAsCertain: false
+    
+    # Check function name case
+    checkFunctionNameCase: true
+    
+    # Check internal class case
+    checkInternalClassCaseSensitivity: true
+    
+    # Additional checks
+    checkTooWideReturnTypesInProtectedAndPublicMethods: true
+    checkUninitializedProperties: true
+    checkDynamicProperties: true
+    
+    # Bleeding edge features
+    featureToggles:
+        bleedingEdge: false
+        disableRuntimeReflectionProvider: false
+    
+    # Custom error formatters
+    errorFormat: table
+    
+    # Cache
+    tmpDir: storage/phpstan
+    
+    # Paths for autoloading
+    scanFiles:
+        - app/helpers.php
+    
+    # Type inference
+    inferPrivatePropertyTypeFromConstructor: true
+    
+    # Pollute scope with loop for variables
+    polluteScopeWithLoopInitialAssignments: true
+    polluteScopeWithAlwaysIterableForeach: true
+    
+    # Property reflection
+    propertyAlwaysWrittenTags:
+        - 'phpstan-property-write'
+    
+    propertyAlwaysReadTags:
+        - 'phpstan-property-read'
+    
+    # Method reflection
+    methodAlwaysUsedTags:
+        - 'phpstan-method-used'
+    
+    # Early terminating method calls
+    earlyTerminatingMethodCalls:
+        Illuminate\Http\Response:
+            - abort
+        Illuminate\Http\RedirectResponse:
+            - redirect
+        App\Exceptions\PDFException:
+            - throw
+    
+    # Dynamic return type extensions
+    dynamicReturnTypeExtensions:
+        - App\PHPStan\Extensions\CollectionDynamicReturnTypeExtension
+        - App\PHPStan\Extensions\ModelDynamicReturnTypeExtension
+    
+    # Type specifying extensions
+    typeSpecifyingExtensions:
+        - App\PHPStan\Extensions\ApplicationStateTypeSpecifyingExtension
+    
+    # Method reflection extensions
+    methodReflectionExtensions:
+        - App\PHPStan\Extensions\ModelMethodReflectionExtension
+    
+    # Properties class reflection extensions
+    propertiesClassReflectionExtensions:
+        - App\PHPStan\Extensions\ModelPropertiesClassReflectionExtension

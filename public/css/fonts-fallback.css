@@ -1,0 +1,35 @@
+/* Fallback font definitions */
+@font-face {
+    font-family: 'Instrument Sans Fallback';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: local('Inter Regular'), local('Inter-Regular'),
+         local('Helvetica Neue'), local('Helvetica'),
+         local('Arial'), local('sans-serif');
+}
+
+@font-face {
+    font-family: 'Instrument Sans Fallback';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: local('Inter Medium'), local('Inter-Medium'),
+         local('Helvetica Neue Medium'), local('HelveticaNeue-Medium'),
+         local('Arial'), local('sans-serif');
+}
+
+@font-face {
+    font-family: 'Instrument Sans Fallback';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: local('Inter SemiBold'), local('Inter-SemiBold'),
+         local('Helvetica Neue Bold'), local('HelveticaNeue-Bold'),
+         local('Arial Bold'), local('sans-serif');
+}
+
+/* Use the fallback if primary font fails */
+body {
+    font-family: 'Instrument Sans', 'Instrument Sans Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+}

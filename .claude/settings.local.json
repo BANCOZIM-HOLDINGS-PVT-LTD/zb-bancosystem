@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(npm run build:*)",
+      "Bash(php artisan:*)",
+      "Bash(php artisan config:clear:*)",
+      "Bash(php artisan view:clear:*)",
+      "Bash(rg:*)",
+      "Bash(mkdir:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:bancozim-categories.web.app)",
+      "Bash(ls:*)",
+      "Bash(composer:*)",
+      "Bash(npm install:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(rm:*)",
+      "Bash(cp:*)",
+      "Bash(npm run:*)",
+      "Bash(chmod:*)",
+      "Bash(node:*)",
+      "Bash(mysql:*)",
+      "Bash(php:*)",
+      "Bash(grep:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.didit.me)"
+    ],
+    "deny": []
+  }
+}

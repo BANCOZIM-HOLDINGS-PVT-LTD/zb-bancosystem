@@ -1,0 +1,66 @@
+/* Custom styles for Filament admin panel */
+
+/* Ensure sidebar starts collapsed by default */
+.fi-sidebar {
+    --sidebar-width: 18rem;
+    --collapsed-sidebar-width: 0rem;
+}
+
+/* Hamburger menu button styling */
+.fi-topbar-open-sidebar-btn {
+    transition: all 0.2s;
+}
+
+.fi-topbar-open-sidebar-btn:hover {
+    background-color: rgb(243 244 246); /* gray-100 equivalent */
+}
+
+.dark .fi-topbar-open-sidebar-btn:hover {
+    background-color: rgb(31 41 55); /* gray-800 equivalent */
+}
+
+/* Sidebar overlay styling for better UX */
+.fi-sidebar-open {
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+
+/* Ensure tables get full width when sidebar is collapsed */
+.fi-main {
+    transition: margin-left 0.3s ease-in-out;
+}
+
+/* Custom styling for the hamburger icon */
+.fi-topbar-open-sidebar-btn svg {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* Ensure sidebar closes smoothly */
+.fi-sidebar {
+    transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+}
+
+/* Make sure the main content area takes full width when sidebar is hidden */
+@media (min-width: 1024px) {
+    .fi-body {
+        margin-left: 0 !important;
+    }
+    
+    .fi-main {
+        margin-left: 0 !important;
+    }
+}
+
+/* Improve table responsiveness */
+.fi-ta-table {
+    width: 100%;
+}
+
+/* Ensure proper spacing for the hamburger menu */
+.fi-topbar nav {
+    column-gap: 0.75rem;
+}
+
+.fi-topbar-open-sidebar-btn {
+    margin-right: 0.5rem;
+}

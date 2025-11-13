@@ -1,0 +1,14 @@
+/* Custom styles for Filament admin panel */
+
+/* Hamburger menu button styling */
+.fi-topbar-open-sidebar-btn {
+    transition: all 0.2s;
+}
+
+.fi-topbar-open-sidebar-btn:hover {
+    background-color: rgb(243 244 246); /* gray-100 equivalent */
+}
+
+.dark .fi-topbar-open-sidebar-btn:hover {
+    background-color: rgb(31 41 55); /* gray-800 equivalent */
+}

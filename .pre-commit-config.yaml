@@ -1,0 +1,218 @@
+repos:
+  # PHP Code Quality
+  - repo: local
+    hooks:
+      - id: php-cs-fixer
+        name: PHP CS Fixer
+        entry: ./vendor/bin/php-cs-fixer
+        language: system
+        args: ['fix', '--dry-run', '--diff', '--config=.php-cs-fixer.php']
+        files: \.php$
+        pass_filenames: false
+        
+      - id: phpstan
+        name: PHPStan Static Analysis
+        entry: ./vendor/bin/phpstan
+        language: system
+        args: ['analyse', '--memory-limit=1G', '--no-progress']
+        files: \.php$
+        pass_filenames: false
+        
+      - id: php-unit-tests
+        name: PHP Unit Tests
+        entry: ./vendor/bin/phpunit
+        language: system
+        args: ['--testsuite=Unit', '--stop-on-failure']
+        files: \.php$
+        pass_filenames: false
+        stages: [commit]
+        
+      - id: php-security-check
+        name: PHP Security Check
+        entry: ./vendor/bin/security-checker
+        language: system
+        args: ['security:check', 'composer.lock']
+        files: composer\.lock$
+        pass_filenames: false
+
+  # JavaScript/TypeScript Code Quality
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint
+        entry: npm run lint
+        language: system
+        files: \.(js|jsx|ts|tsx)$
+        pass_filenames: false
+        
+      - id: typescript-check
+        name: TypeScript Check
+        entry: npm run type-check
+        language: system
+        files: \.(ts|tsx)$
+        pass_filenames: false
+        
+      - id: prettier
+        name: Prettier
+        entry: npm run format:check
+        language: system
+        files: \.(js|jsx|ts|tsx|json|css|scss|md)$
+        pass_filenames: false
+        
+      - id: frontend-tests
+        name: Frontend Tests
+        entry: npm run test:unit
+        language: system
+        files: \.(js|jsx|ts|tsx)$
+        pass_filenames: false
+        stages: [commit]
+
+  # General Code Quality
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.min\.(js|css)$
+      - id: end-of-file-fixer
+        exclude: \.min\.(js|css)$
+      - id: check-yaml
+      - id: check-json
+      - id: check-xml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+      - id: no-commit-to-branch
+        args: ['--branch', 'main', '--branch', 'master', '--branch', 'production']
+
+  # Security Checks
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: \.lock$|package-lock\.json$
+
+  # Database Migration Checks
+  - repo: local
+    hooks:
+      - id: migration-check
+        name: Database Migration Check
+        entry: php
+        language: system
+        args: ['artisan', 'migrate:status', '--pending']
+        files: database/migrations/.*\.php$
+        pass_filenames: false
+        stages: [commit]
+
+  # Documentation
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.37.0
+    hooks:
+      - id: markdownlint
+        args: ['--fix']
+        exclude: CHANGELOG\.md$
+
+  # Environment Files
+  - repo: local
+    hooks:
+      - id: env-check
+        name: Environment File Check
+        entry: bash
+        language: system
+        args: ['-c', 'if [ -f .env.example ] && [ -f .env ]; then diff -u .env.example .env | grep "^+" | grep -v "^+++" | grep -v "^+APP_KEY" | grep -v "^+DB_" | grep -v "^+MAIL_" | grep -v "^+AWS_" && exit 1 || exit 0; fi']
+        files: \.env\.example$
+        pass_filenames: false
+
+  # Composer Dependencies
+  - repo: local
+    hooks:
+      - id: composer-validate
+        name: Composer Validate
+        entry: composer
+        language: system
+        args: ['validate', '--strict']
+        files: composer\.json$
+        pass_filenames: false
+        
+      - id: composer-normalize
+        name: Composer Normalize
+        entry: composer
+        language: system
+        args: ['normalize', '--dry-run']
+        files: composer\.json$
+        pass_filenames: false
+
+  # Package.json Dependencies
+  - repo: local
+    hooks:
+      - id: npm-audit
+        name: NPM Security Audit
+        entry: npm
+        language: system
+        args: ['audit', '--audit-level=moderate']
+        files: package\.json$
+        pass_filenames: false
+        
+      - id: npm-outdated
+        name: NPM Outdated Check
+        entry: bash
+        language: system
+        args: ['-c', 'npm outdated --depth=0 || true']
+        files: package\.json$
+        pass_filenames: false
+
+  # Laravel Specific
+  - repo: local
+    hooks:
+      - id: laravel-config-cache
+        name: Laravel Config Cache Check
+        entry: php
+        language: system
+        args: ['artisan', 'config:cache']
+        files: config/.*\.php$
+        pass_filenames: false
+        stages: [push]
+        
+      - id: laravel-route-cache
+        name: Laravel Route Cache Check
+        entry: php
+        language: system
+        args: ['artisan', 'route:cache']
+        files: routes/.*\.php$
+        pass_filenames: false
+        stages: [push]
+
+  # Performance Checks
+  - repo: local
+    hooks:
+      - id: performance-test
+        name: Performance Tests
+        entry: ./vendor/bin/phpunit
+        language: system
+        args: ['--testsuite=Performance', '--stop-on-failure']
+        files: tests/Performance/.*\.php$
+        pass_filenames: false
+        stages: [push]
+
+# Global Configuration
+default_stages: [commit]
+fail_fast: false
+minimum_pre_commit_version: 2.20.0
+
+# CI Configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+    
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false
