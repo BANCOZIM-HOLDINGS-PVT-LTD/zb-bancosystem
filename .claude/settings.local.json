@@ -26,7 +26,12 @@
       "WebFetch(domain:docs.didit.me)",
       "Bash(flyctl postgres create:*)",
       "Bash(flyctl postgres attach:*)",
-      "Bash(flyctl deploy:*)"
+      "Bash(flyctl deploy:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(flyctl logs:*)",
+      "Bash(flyctl ssh console:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }
