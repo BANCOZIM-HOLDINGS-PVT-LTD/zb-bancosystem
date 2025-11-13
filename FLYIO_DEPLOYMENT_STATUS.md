@@ -27,6 +27,11 @@
 - **FINAL FIX**: Disabled transactions for entire migration using `$withinTransaction = false`
   - This prevents PostgreSQL from aborting all subsequent commands when index creation fails
 
+#### Migration: 2025_08_28_100000_update_agent_types ✅
+- Fixed enum column modification to use separate CHECK constraints for PostgreSQL
+- PostgreSQL doesn't support inline CHECK constraints with ALTER COLUMN
+- Solution: Drop old constraint → Update data → Add new constraint separately
+
 ## Current Status
 
 ### Deployment
@@ -36,9 +41,10 @@
 - ✅ Database connection established
 
 ### Remaining Issues
-- ✅ All migrations should now run successfully
-- ⚠️  Need to manually verify by accessing https://bancosystem.fly.dev
-- ⚠️  SSH commands timing out - may need to verify deployment through web interface
+- ✅ All core migrations PostgreSQL-compatible
+- ✅ Fixed agent types migration (2025_08_28_100000) - CHECK constraints handled separately for PostgreSQL
+- ⚠️  Remaining pending migrations may need similar PostgreSQL fixes
+- ⚠️  Need to verify deployment by accessing https://bancosystem.fly.dev
 
 ## Next Steps
 
@@ -101,4 +107,4 @@ flyctl secrets list --app bancosystem
 3. `config/database.php` - Added DATABASE_URL support
 4. `database/migrations/2025_07_20_000002_add_database_constraints.php` - PostgreSQL compatibility
 5. `database/migrations/2025_07_20_000003_add_performance_indexes.php` - JSON index and transaction handling
-
+6. `database/migrations/2025_08_28_100000_update_agent_types.php` - PostgreSQL CHECK constraints
