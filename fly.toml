@@ -1,6 +1,6 @@
 # fly.toml app configuration file generated for bancosystem
 
-app = "bancosystem"
+app = "bancosystem-5e46637"
 primary_region = "jnb" # Johannesburg, closest to Zimbabwe
 
 [build]
