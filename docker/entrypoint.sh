@@ -4,14 +4,15 @@ set -e
 # Switch to app directory
 cd /var/www/html
 
-# Ensure storage directories exist and permissions are correct
-mkdir -p storage/framework/{cache,sessions,views}
-mkdir -p storage/logs
+# Ensure storage directories exist
+mkdir -p storage/framework/{cache,sessions,views} 2>/dev/null || true
+mkdir -p storage/logs 2>/dev/null || true
+mkdir -p bootstrap/cache 2>/dev/null || true
 
 # Set proper permissions (only if running as root)
 if [ "$(id -u)" = "0" ]; then
-    chown -R www:www storage bootstrap/cache
-    chmod -R 775 storage bootstrap/cache
+    chown -R www:www storage bootstrap/cache 2>/dev/null || true
+    chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 fi
 
 # Generate APP_KEY if missing
