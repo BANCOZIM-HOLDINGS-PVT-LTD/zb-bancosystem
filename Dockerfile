@@ -43,6 +43,7 @@ RUN apk add --no-cache \
     redis \
     git \
     unzip \
+    $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         gd \
@@ -56,7 +57,8 @@ RUN apk add --no-cache \
         pcntl \
         bcmath \
     && pecl install redis \
-    && docker-php-ext-enable redis
+    && docker-php-ext-enable redis \
+    && apk del $PHPIZE_DEPS
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -80,8 +82,11 @@ COPY . .
 # Copy built frontend assets from frontend-builder stage
 COPY --from=frontend-builder /app/public/build ./public/build
 
-# Set permissions
-RUN chown -R www:www /var/www/html \
+# Create directories and set permissions
+RUN mkdir -p storage/framework/{cache,sessions,views} \
+    && mkdir -p storage/logs \
+    && mkdir -p bootstrap/cache \
+    && chown -R www:www /var/www/html \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache
 
@@ -104,53 +109,12 @@ RUN mkdir -p /var/log/nginx \
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost/health || exit 1
 
-# Expose port
-EXPOSE 80
-
 # Copy entrypoint script
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Switch to non-root user
-USER www
+# Expose port
+EXPOSE 80
 
 # Start via entrypoint (handles caches then supervisord)
 CMD ["/entrypoint.sh"]
-
-# Development Image
-FROM production AS development
-
-# Switch back to root for development setup
-USER root
-
-# Install development dependencies
-RUN apk add --no-cache \
-    nodejs \
-    npm \
-    bash \
-    vim
-
-# Install Xdebug for development
-RUN pecl install xdebug \
-    && docker-php-ext-enable xdebug
-
-# Copy development PHP configuration
-COPY docker/php-dev.ini /usr/local/etc/php/conf.d/dev.ini
-
-# Install development Composer dependencies
-RUN composer install --optimize-autoloader
-
-# Install Node.js dependencies for development
-COPY package*.json ./
-RUN npm install
-
-# Don't cache Laravel configurations in development
-RUN php artisan config:clear \
-    && php artisan route:clear \
-    && php artisan view:clear
-
-# Switch back to www user
-USER www
-
-# Development command
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

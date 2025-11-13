@@ -7,8 +7,12 @@ cd /var/www/html
 # Ensure storage directories exist and permissions are correct
 mkdir -p storage/framework/{cache,sessions,views}
 mkdir -p storage/logs
-chown -R www:www storage bootstrap/cache || true
-chmod -R 755 storage bootstrap/cache || true
+
+# Set proper permissions (only if running as root)
+if [ "$(id -u)" = "0" ]; then
+    chown -R www:www storage bootstrap/cache
+    chmod -R 775 storage bootstrap/cache
+fi
 
 # Generate APP_KEY if missing
 if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
@@ -26,11 +30,11 @@ php artisan route:cache || true
 php artisan view:cache || true
 
 # Run database migrations if DB is configured (optional, non-fatal)
-if [ -n "$DB_HOST" ] && [ -n "$DB_DATABASE" ]; then
+if [ -n "$DATABASE_URL" ] || [ -n "$DB_HOST" ]; then
   echo "[entrypoint] Running database migrations (if DB available)"
   php artisan migrate --force || echo "[entrypoint] Migrations skipped/failed"
 else
-  echo "[entrypoint] Skipping migrations (DB_HOST/DB_DATABASE not set)"
+  echo "[entrypoint] Skipping migrations (DATABASE_URL or DB_HOST not set)"
 fi
 
 # Start supervisor (nginx + php-fpm)

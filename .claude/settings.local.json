@@ -23,7 +23,10 @@
       "Bash(php:*)",
       "Bash(grep:*)",
       "WebSearch",
-      "WebFetch(domain:docs.didit.me)"
+      "WebFetch(domain:docs.didit.me)",
+      "Bash(flyctl postgres create:*)",
+      "Bash(flyctl postgres attach:*)",
+      "Bash(flyctl deploy:*)"
     ],
     "deny": []
   }

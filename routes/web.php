@@ -7,6 +7,11 @@ use App\Http\Controllers\ApplicationWizardController;
 use App\Http\Controllers\ApplicationPDFController;
 use App\Http\Controllers\WelcomeController;
 
+// Health check endpoint for Fly.io
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok'], 200);
+});
+
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 
 Route::get('/terms-and-conditions', function () {
