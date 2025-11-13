@@ -22,11 +22,18 @@ return new class extends Migration
         if ($driver === 'sqlite') {
             // SQLite does not support ADD CONSTRAINT for check constraints directly.
             // This will be handled in the table creation itself or requires a more complex workaround.
+        } elseif ($driver === 'pgsql') {
+            // PostgreSQL syntax - uses single quotes for strings and ~ for regex
+            DB::statement("ALTER TABLE application_states ADD CONSTRAINT chk_application_states_channel CHECK (channel IN ('web', 'whatsapp', 'ussd', 'mobile_app'))");
+            DB::statement('ALTER TABLE application_states ADD CONSTRAINT chk_application_states_current_step_length CHECK (LENGTH(current_step) <= 50)');
+            DB::statement('ALTER TABLE application_states ADD CONSTRAINT chk_application_states_session_id_not_empty CHECK (LENGTH(session_id) > 0)');
+            // PostgreSQL uses ~ for regex matching
+            DB::statement("ALTER TABLE application_states ADD CONSTRAINT chk_application_states_reference_code_format CHECK (reference_code IS NULL OR (LENGTH(reference_code) >= 5 AND LENGTH(reference_code) <= 50 AND reference_code ~ '^[A-Z0-9]+$'))");
         } else {
+            // MySQL syntax
             DB::statement('ALTER TABLE application_states ADD CONSTRAINT chk_application_states_channel CHECK (channel IN ("web", "whatsapp", "ussd", "mobile_app"))');
             DB::statement('ALTER TABLE application_states ADD CONSTRAINT chk_application_states_current_step_length CHECK (LENGTH(current_step) <= 50)');
             DB::statement('ALTER TABLE application_states ADD CONSTRAINT chk_application_states_session_id_not_empty CHECK (LENGTH(session_id) > 0)');
-            // Updated to allow National IDs up to 50 characters (alphanumeric only)
             DB::statement('ALTER TABLE application_states ADD CONSTRAINT chk_application_states_reference_code_format CHECK (reference_code IS NULL OR (LENGTH(reference_code) >= 5 AND LENGTH(reference_code) <= 50 AND reference_code REGEXP "^[A-Z0-9]+$"))');
         }
         });
