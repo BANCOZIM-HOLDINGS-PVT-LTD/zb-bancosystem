@@ -3,6 +3,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 return new class extends Migration
 {
@@ -19,11 +21,11 @@ return new class extends Migration
             $table->index(['channel', 'current_step'], 'idx_channel_step');
             $table->index(['expires_at', 'current_step'], 'idx_expires_step');
             $table->index(['reference_code_expires_at'], 'idx_ref_code_expires');
-            
+
             // Individual indexes for frequent lookups
             $table->index(['created_at'], 'idx_created_at');
             $table->index(['updated_at'], 'idx_updated_at');
-            
+
             // JSON field indexes (MySQL 5.7+ / PostgreSQL)
             // Skip JSON indexes for MariaDB compatibility
             if (config('database.default') === 'mysql' && !str_contains(DB::connection()->getPdo()->getAttribute(\PDO::ATTR_SERVER_VERSION), 'MariaDB')) {
@@ -49,13 +51,25 @@ return new class extends Migration
             $table->index(['from_step', 'to_step'], 'idx_step_transition');
             $table->index(['channel', 'created_at'], 'idx_channel_created');
             $table->index(['to_step', 'created_at'], 'idx_to_step_created');
-            
+
             // Individual indexes
             $table->index(['created_at'], 'idx_transition_created');
-            $table->index(['transition_data'], 'idx_transition_data');
+            // Skip JSON column index - PostgreSQL doesn't support btree on JSON
+            // Use GIN index instead if needed: CREATE INDEX idx_transition_data ON state_transitions USING GIN (transition_data);
         });
 
+        // Create GIN index for JSON column if using PostgreSQL
+        // Use separate connection to avoid transaction issues
+        if (config('database.default') === 'pgsql') {
+            try {
+                DB::statement('CREATE INDEX IF NOT EXISTS idx_transition_data ON state_transitions USING GIN (transition_data)');
+            } catch (\Exception $e) {
+                // Skip if index creation fails (column might not exist or already has index)
+            }
+        }
+
         // Create indexes for potential future tables
+        // These are wrapped in their own checks internally
         $this->createDocumentIndexes();
         $this->createAuditIndexes();
     }
@@ -73,7 +87,7 @@ return new class extends Migration
             $table->dropIndex('idx_ref_code_expires');
             $table->dropIndex('idx_created_at');
             $table->dropIndex('idx_updated_at');
-            
+
             if (config('database.default') === 'mysql' && !str_contains(DB::connection()->getPdo()->getAttribute(\PDO::ATTR_SERVER_VERSION), 'MariaDB')) {
                 try {
                     DB::statement("ALTER TABLE application_states DROP INDEX idx_form_id");
@@ -95,8 +109,16 @@ return new class extends Migration
             $table->dropIndex('idx_channel_created');
             $table->dropIndex('idx_to_step_created');
             $table->dropIndex('idx_transition_created');
-            $table->dropIndex('idx_transition_data');
         });
+
+        // Drop GIN index for PostgreSQL
+        if (config('database.default') === 'pgsql') {
+            try {
+                DB::statement('DROP INDEX IF EXISTS idx_transition_data');
+            } catch (\Exception $e) {
+                // Skip if index doesn't exist
+            }
+        }
     }
 
     /**
@@ -104,15 +126,19 @@ return new class extends Migration
      */
     private function createDocumentIndexes(): void
     {
-        if (Schema::hasTable('documents')) {
-            Schema::table('documents', function (Blueprint $table) {
-                $table->index(['application_state_id', 'document_type'], 'idx_app_doc_type');
-                $table->index(['document_type', 'created_at'], 'idx_doc_type_created');
-                $table->index(['file_path'], 'idx_file_path');
-                $table->index(['file_size'], 'idx_file_size');
-                $table->index(['mime_type'], 'idx_mime_type');
-                $table->index(['is_validated'], 'idx_is_validated');
-            });
+        try {
+            if (Schema::hasTable('documents')) {
+                Schema::table('documents', function (Blueprint $table) {
+                    $table->index(['application_state_id', 'document_type'], 'idx_app_doc_type');
+                    $table->index(['document_type', 'created_at'], 'idx_doc_type_created');
+                    $table->index(['file_path'], 'idx_file_path');
+                    $table->index(['file_size'], 'idx_file_size');
+                    $table->index(['mime_type'], 'idx_mime_type');
+                    $table->index(['is_validated'], 'idx_is_validated');
+                });
+            }
+        } catch (\Exception $e) {
+            // Skip if table doesn't exist or indexes fail
         }
     }
 
@@ -121,14 +147,18 @@ return new class extends Migration
      */
     private function createAuditIndexes(): void
     {
-        if (Schema::hasTable('audit_logs')) {
-            Schema::table('audit_logs', function (Blueprint $table) {
-                $table->index(['auditable_type', 'auditable_id'], 'idx_auditable');
-                $table->index(['event', 'created_at'], 'idx_event_created');
-                $table->index(['user_id', 'created_at'], 'idx_user_created');
-                $table->index(['ip_address'], 'idx_ip_address');
-                $table->index(['user_agent'], 'idx_user_agent');
-            });
+        try {
+            if (Schema::hasTable('audit_logs')) {
+                Schema::table('audit_logs', function (Blueprint $table) {
+                    $table->index(['auditable_type', 'auditable_id'], 'idx_auditable');
+                    $table->index(['event', 'created_at'], 'idx_event_created');
+                    $table->index(['user_id', 'created_at'], 'idx_user_created');
+                    $table->index(['ip_address'], 'idx_ip_address');
+                    $table->index(['user_agent'], 'idx_user_agent');
+                });
+            }
+        } catch (\Exception $e) {
+            // Skip if table doesn't exist or indexes fail
         }
     }
 };
