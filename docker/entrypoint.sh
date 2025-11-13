@@ -26,11 +26,12 @@ php artisan route:cache || true
 php artisan view:cache || true
 
 # Run database migrations if DB is configured (optional, non-fatal)
-if [ -n "$DB_CONNECTION" ]; then
+if [ -n "$DB_HOST" ] && [ -n "$DB_DATABASE" ]; then
   echo "[entrypoint] Running database migrations (if DB available)"
   php artisan migrate --force || echo "[entrypoint] Migrations skipped/failed"
+else
+  echo "[entrypoint] Skipping migrations (DB_HOST/DB_DATABASE not set)"
 fi
 
 # Start supervisor (nginx + php-fpm)
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
-
