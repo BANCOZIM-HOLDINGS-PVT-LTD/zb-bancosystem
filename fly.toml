@@ -1,0 +1,36 @@
+# fly.toml app configuration file generated for bancosystem
+
+app = "bancosystem"
+primary_region = "jnb" # Johannesburg, closest to Zimbabwe
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  APP_ENV = "production"
+  LOG_CHANNEL = "stack"
+  LOG_LEVEL = "info"
+  DB_CONNECTION = "mysql"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "15s"
+    method = "GET"
+    timeout = "10s"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[[statics]]
+  guest_path = "/app/public"
+  url_prefix = "/"
