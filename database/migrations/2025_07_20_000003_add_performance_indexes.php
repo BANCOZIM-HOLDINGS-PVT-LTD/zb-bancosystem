@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Log;
 return new class extends Migration
 {
     /**
+     * Disable transactions for this migration to prevent PostgreSQL cascade failures
+     */
+    public $withinTransaction = false;
+
+    /**
      * Run the migrations.
      */
     public function up(): void
