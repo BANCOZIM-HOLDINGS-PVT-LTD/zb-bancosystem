@@ -9,6 +9,15 @@ mkdir -p storage/framework/{cache,sessions,views} 2>/dev/null || true
 mkdir -p storage/logs 2>/dev/null || true
 mkdir -p bootstrap/cache 2>/dev/null || true
 
+# Create log files if they don't exist and set proper permissions
+touch storage/logs/nginx-error.log 2>/dev/null || true
+touch storage/logs/nginx-access.log 2>/dev/null || true
+touch storage/logs/php-fpm.log 2>/dev/null || true
+touch storage/logs/php-error.log 2>/dev/null || true
+touch storage/logs/supervisord.log 2>/dev/null || true
+chown -R www:www storage/logs 2>/dev/null || true
+chmod -R 664 storage/logs/* 2>/dev/null || true
+
 # Generate APP_KEY if missing
 if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
   echo "[entrypoint] APP_KEY is not set; generating a new key"
