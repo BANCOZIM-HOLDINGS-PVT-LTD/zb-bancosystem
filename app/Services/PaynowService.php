@@ -2,16 +2,20 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 class PaynowService
 {
     private ?string $integrationId;
+
     private ?string $integrationKey;
+
     private string $returnUrl;
+
     private string $resultUrl;
+
     private string $apiUrl;
 
     public function __construct()
@@ -26,10 +30,10 @@ class PaynowService
     /**
      * Generate a payment URL for a cash purchase
      *
-     * @param string $reference Unique reference (purchase number)
-     * @param float $amount Amount to pay
-     * @param string $email Customer email
-     * @param string $description Payment description
+     * @param  string  $reference  Unique reference (purchase number)
+     * @param  float  $amount  Amount to pay
+     * @param  string  $email  Customer email
+     * @param  string  $description  Payment description
      * @return array ['success' => bool, 'pollUrl' => string|null, 'redirectUrl' => string|null, 'error' => string|null]
      */
     public function createPayment(string $reference, float $amount, string $email, string $description = 'Cash Purchase'): array
@@ -53,7 +57,7 @@ class PaynowService
             // Send request to Paynow
             $response = Http::asForm()->post("{$this->apiUrl}/initiatetransaction", $data);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Paynow API request failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
@@ -114,8 +118,8 @@ class PaynowService
     /**
      * Verify payment status using transaction ID or poll URL
      *
-     * @param string $transactionIdOrReference Transaction ID or purchase reference
-     * @param float|null $expectedAmount Expected payment amount for verification
+     * @param  string  $transactionIdOrReference  Transaction ID or purchase reference
+     * @param  float|null  $expectedAmount  Expected payment amount for verification
      * @return bool True if payment is verified and completed
      */
     public function verifyPayment(string $transactionIdOrReference, ?float $expectedAmount = null): bool
@@ -124,7 +128,7 @@ class PaynowService
             // Try to get poll URL from cache
             $pollUrl = Cache::get("paynow_poll_{$transactionIdOrReference}");
 
-            if (!$pollUrl) {
+            if (! $pollUrl) {
                 // If no poll URL, we can't verify automatically
                 // In production, you might have a database table storing poll URLs
                 Log::warning('No poll URL found for payment verification', [
@@ -138,11 +142,12 @@ class PaynowService
 
             $response = Http::get($pollUrl);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Payment verification request failed', [
                     'poll_url' => $pollUrl,
                     'status' => $response->status(),
                 ]);
+
                 return false;
             }
 
@@ -160,6 +165,7 @@ class PaynowService
                         'paid' => $paidAmount,
                         'reference' => $transactionIdOrReference,
                     ]);
+
                     return false;
                 }
             }
@@ -179,6 +185,7 @@ class PaynowService
                 'reference' => $transactionIdOrReference,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -186,7 +193,7 @@ class PaynowService
     /**
      * Handle webhook callback from Paynow
      *
-     * @param array $data Webhook data from Paynow
+     * @param  array  $data  Webhook data from Paynow
      * @return array ['verified' => bool, 'reference' => string|null, 'status' => string|null, 'amount' => float|null]
      */
     public function handleWebhook(array $data): array
@@ -251,7 +258,7 @@ class PaynowService
     /**
      * Generate hash for Paynow request
      *
-     * @param array $data Data to hash
+     * @param  array  $data  Data to hash
      * @return string Generated hash
      */
     private function generateHash(array $data): string
@@ -280,7 +287,7 @@ class PaynowService
     /**
      * Parse Paynow response string to array
      *
-     * @param string $response Response string from Paynow
+     * @param  string  $response  Response string from Paynow
      * @return array Parsed response data
      */
     private function parseResponse(string $response): array
@@ -301,7 +308,7 @@ class PaynowService
     /**
      * Get payment status from poll URL
      *
-     * @param string $pollUrl Poll URL from Paynow
+     * @param  string  $pollUrl  Poll URL from Paynow
      * @return array Payment status information
      */
     public function pollPaymentStatus(string $pollUrl): array
@@ -309,7 +316,7 @@ class PaynowService
         try {
             $response = Http::get($pollUrl);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return [
                     'success' => false,
                     'status' => 'error',
@@ -349,6 +356,6 @@ class PaynowService
      */
     public function isConfigured(): bool
     {
-        return !empty($this->integrationId) && !empty($this->integrationKey);
+        return ! empty($this->integrationId) && ! empty($this->integrationKey);
     }
 }

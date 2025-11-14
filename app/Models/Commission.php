@@ -40,7 +40,7 @@ class Commission extends Model
 
         static::creating(function ($commission) {
             if (empty($commission->reference_number)) {
-                $commission->reference_number = 'COM' . date('Ymd') . strtoupper(Str::random(6));
+                $commission->reference_number = 'COM'.date('Ymd').strtoupper(Str::random(6));
             }
         });
     }
@@ -74,7 +74,7 @@ class Commission extends Model
      */
     public function getFormattedAmountAttribute(): string
     {
-        return '$' . number_format($this->amount, 2);
+        return '$'.number_format($this->amount, 2);
     }
 
     /**

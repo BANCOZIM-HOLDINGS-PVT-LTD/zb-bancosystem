@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Tests\TestCase;
 
 class PdfImageTest extends TestCase
 {
@@ -15,10 +15,10 @@ class PdfImageTest extends TestCase
         // Generate the PDF content
         $pdf = Pdf::loadView('forms.account_holders_pdf');
         $html = $pdf->output();
-        
+
         // Check that the PDF was generated successfully
         $this->assertNotEmpty($html);
-        
+
         // Check that the PDF starts with the PDF header
         $this->assertStringStartsWith('%PDF-', $html);
     }
@@ -35,14 +35,14 @@ class PdfImageTest extends TestCase
             'province' => 'Harare',
             'team' => 'Team A',
         ];
-        
+
         // Generate the PDF content
         $pdf = Pdf::loadView('forms.ssb_form_pdf', $data);
         $html = $pdf->output();
-        
+
         // Check that the PDF was generated successfully
         $this->assertNotEmpty($html);
-        
+
         // Check that the PDF starts with the PDF header
         $this->assertStringStartsWith('%PDF-', $html);
     }
@@ -55,10 +55,10 @@ class PdfImageTest extends TestCase
         // Generate the PDF content
         $pdf = Pdf::loadView('forms.zb_account_opening_pdf');
         $html = $pdf->output();
-        
+
         // Check that the PDF was generated successfully
         $this->assertNotEmpty($html);
-        
+
         // Check that the PDF starts with the PDF header
         $this->assertStringStartsWith('%PDF-', $html);
     }
@@ -71,16 +71,16 @@ class PdfImageTest extends TestCase
         $qupa_path = public_path('assets/images/qupa.png');
         $bancozim_path = public_path('assets/images/bancozim.png');
         $zb_logo_path = public_path('assets/images/zb_logo.png');
-        
+
         $this->assertFileExists($qupa_path);
         $this->assertFileExists($bancozim_path);
         $this->assertFileExists($zb_logo_path);
-        
+
         // Check that files are readable
         $this->assertTrue(is_readable($qupa_path));
         $this->assertTrue(is_readable($bancozim_path));
         $this->assertTrue(is_readable($zb_logo_path));
-        
+
         // Check that files are not empty
         $this->assertGreaterThan(0, filesize($qupa_path));
         $this->assertGreaterThan(0, filesize($bancozim_path));

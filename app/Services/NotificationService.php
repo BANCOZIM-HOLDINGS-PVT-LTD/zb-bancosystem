@@ -9,11 +9,6 @@ class NotificationService
 {
     /**
      * Send a status update notification
-     *
-     * @param ApplicationState $applicationState
-     * @param string $oldStatus
-     * @param string $newStatus
-     * @return bool
      */
     public function sendStatusUpdateNotification(ApplicationState $applicationState, string $oldStatus, string $newStatus): bool
     {
@@ -23,7 +18,7 @@ class NotificationService
 
             // Get applicant name
             $applicantName = trim(
-                ($formResponses['firstName'] ?? '') . ' ' .
+                ($formResponses['firstName'] ?? '').' '.
                 ($formResponses['lastName'] ?? ($formResponses['surname'] ?? ''))
             ) ?: 'Applicant';
 
@@ -44,7 +39,8 @@ class NotificationService
 
             return true;
         } catch (\Exception $e) {
-            Log::error("Failed to send status update notification: " . $e->getMessage());
+            Log::error('Failed to send status update notification: '.$e->getMessage());
+
             return false;
         }
     }
@@ -58,12 +54,12 @@ class NotificationService
 
         switch ($status) {
             case 'approved':
-                $message = "Great news {$applicantName}! Your loan application ({$nationalId}) has been approved. Check your status at: " . url("/application/status?ref={$nationalId}");
+                $message = "Great news {$applicantName}! Your loan application ({$nationalId}) has been approved. Check your status at: ".url("/application/status?ref={$nationalId}");
                 Log::info("APPROVAL notification: Would send to {$applicantName} ({$email}, {$phone}): {$message}");
                 break;
 
             case 'rejected':
-                $message = "Dear {$applicantName}, your loan application ({$nationalId}) requires additional review. Please check your status for details: " . url("/application/status?ref={$nationalId}");
+                $message = "Dear {$applicantName}, your loan application ({$nationalId}) requires additional review. Please check your status for details: ".url("/application/status?ref={$nationalId}");
                 Log::info("REJECTION notification: Would send to {$applicantName} ({$email}, {$phone}): {$message}");
                 break;
 
@@ -73,7 +69,7 @@ class NotificationService
                 break;
 
             case 'completed':
-                $message = "Congratulations {$applicantName}! Your loan has been processed and disbursed. Track delivery at: " . url("/delivery/tracking?ref={$nationalId}");
+                $message = "Congratulations {$applicantName}! Your loan has been processed and disbursed. Track delivery at: ".url("/delivery/tracking?ref={$nationalId}");
                 Log::info("COMPLETION notification: Would send to {$applicantName} ({$email}, {$phone}): {$message}");
                 break;
         }
@@ -98,9 +94,9 @@ class NotificationService
             'priority' => $this->getNotificationPriority($newStatus),
             'status_change' => [
                 'from' => $oldStatus,
-                'to' => $newStatus
+                'to' => $newStatus,
             ],
-            'actions' => $this->getNotificationActions($newStatus, $applicationState)
+            'actions' => $this->getNotificationActions($newStatus, $applicationState),
         ];
 
         // Keep only last 15 notifications (increased from 10)
@@ -140,7 +136,7 @@ class NotificationService
                 $actions[] = [
                     'type' => 'link',
                     'label' => 'View Details',
-                    'url' => "/application/status?ref={$referenceCode}"
+                    'url' => "/application/status?ref={$referenceCode}",
                 ];
                 break;
 
@@ -148,12 +144,12 @@ class NotificationService
                 $actions[] = [
                     'type' => 'link',
                     'label' => 'View Feedback',
-                    'url' => "/application/status?ref={$referenceCode}"
+                    'url' => "/application/status?ref={$referenceCode}",
                 ];
                 $actions[] = [
                     'type' => 'link',
                     'label' => 'Start New Application',
-                    'url' => '/application'
+                    'url' => '/application',
                 ];
                 break;
 
@@ -161,7 +157,7 @@ class NotificationService
                 $actions[] = [
                     'type' => 'link',
                     'label' => 'Track Delivery',
-                    'url' => "/delivery/tracking?ref={$referenceCode}"
+                    'url' => "/delivery/tracking?ref={$referenceCode}",
                 ];
                 break;
         }
@@ -227,10 +223,6 @@ class NotificationService
 
     /**
      * Send a reference code notification
-     *
-     * @param ApplicationState $applicationState
-     * @param string $referenceCode
-     * @return bool
      */
     public function sendReferenceCodeNotification(ApplicationState $applicationState, string $referenceCode): bool
     {
@@ -240,7 +232,7 @@ class NotificationService
 
             // Get applicant name
             $applicantName = trim(
-                ($formResponses['firstName'] ?? '') . ' ' .
+                ($formResponses['firstName'] ?? '').' '.
                 ($formResponses['lastName'] ?? ($formResponses['surname'] ?? ''))
             ) ?: 'Applicant';
 
@@ -259,7 +251,8 @@ class NotificationService
 
             return true;
         } catch (\Exception $e) {
-            Log::error("Failed to send reference code notification: " . $e->getMessage());
+            Log::error('Failed to send reference code notification: '.$e->getMessage());
+
             return false;
         }
     }
@@ -271,7 +264,7 @@ class NotificationService
     {
         try {
             // Log the notification
-            Log::info("Real-time notification for {$applicationState->session_id}: " . json_encode($notification));
+            Log::info("Real-time notification for {$applicationState->session_id}: ".json_encode($notification));
 
             // Store notification in application metadata for persistence
             $this->storeRealTimeNotification($applicationState, $notification);
@@ -285,7 +278,8 @@ class NotificationService
 
             return true;
         } catch (\Exception $e) {
-            Log::error("Failed to send real-time notification: " . $e->getMessage());
+            Log::error('Failed to send real-time notification: '.$e->getMessage());
+
             return false;
         }
     }
@@ -299,12 +293,12 @@ class NotificationService
         $metadata['real_time_notifications'] = $metadata['real_time_notifications'] ?? [];
 
         // Add timestamp if not present
-        if (!isset($notification['timestamp'])) {
+        if (! isset($notification['timestamp'])) {
             $notification['timestamp'] = now()->toIso8601String();
         }
 
         // Add unique ID if not present
-        if (!isset($notification['id'])) {
+        if (! isset($notification['id'])) {
             $notification['id'] = uniqid('rt_notif_');
         }
 
@@ -327,12 +321,13 @@ class NotificationService
                 'type' => 'progress_update',
                 'progress' => $progressPercentage,
                 'timestamp' => now()->toIso8601String(),
-                'session_id' => $applicationState->session_id
+                'session_id' => $applicationState->session_id,
             ];
 
             return $this->sendRealTimeNotification($applicationState, $notification);
         } catch (\Exception $e) {
-            Log::error("Failed to send progress update notification: " . $e->getMessage());
+            Log::error('Failed to send progress update notification: '.$e->getMessage());
+
             return false;
         }
     }
@@ -358,7 +353,8 @@ class NotificationService
 
             return true;
         } catch (\Exception $e) {
-            Log::error("Failed to mark notifications as read: " . $e->getMessage());
+            Log::error('Failed to mark notifications as read: '.$e->getMessage());
+
             return false;
         }
     }
@@ -382,12 +378,12 @@ class NotificationService
                 'read' => false,
                 'priority' => 'medium',
                 'milestone' => $milestone,
-                'details' => $details
+                'details' => $details,
             ];
 
             // Mark milestone as completed in metadata
             $metadata[$milestone] = true;
-            $metadata[$milestone . '_at'] = now()->toIso8601String();
+            $metadata[$milestone.'_at'] = now()->toIso8601String();
 
             // Keep only last 15 notifications
             $metadata['notifications'] = array_slice($metadata['notifications'], -15);
@@ -399,7 +395,8 @@ class NotificationService
 
             return true;
         } catch (\Exception $e) {
-            Log::error("Failed to send milestone notification: " . $e->getMessage());
+            Log::error('Failed to send milestone notification: '.$e->getMessage());
+
             return false;
         }
     }
@@ -440,8 +437,8 @@ class NotificationService
         $baseMessage = $messages[$milestone] ?? 'A milestone has been reached in your application process.';
 
         // Add details if provided
-        if (!empty($details['message'])) {
-            $baseMessage .= ' ' . $details['message'];
+        if (! empty($details['message'])) {
+            $baseMessage .= ' '.$details['message'];
         }
 
         return $baseMessage;
@@ -464,11 +461,10 @@ class NotificationService
             $results[] = [
                 'session_id' => $applicationState->session_id,
                 'success' => $success,
-                'status_change' => "{$oldStatus} -> {$newStatus}"
+                'status_change' => "{$oldStatus} -> {$newStatus}",
             ];
         }
 
         return $results;
     }
 }
-

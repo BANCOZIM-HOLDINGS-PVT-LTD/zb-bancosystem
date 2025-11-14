@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApplicationState;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Inertia\Inertia;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AdminController extends Controller
 {
@@ -65,10 +65,10 @@ class AdminController extends Controller
                 $formData = $app->form_data ?? [];
                 $formResponses = $formData['formResponses'] ?? [];
                 $metadata = $app->metadata ?? [];
-                
+
                 // Get applicant name
                 $applicantName = trim(
-                    ($formResponses['firstName'] ?? '') . ' ' . 
+                    ($formResponses['firstName'] ?? '').' '.
                     ($formResponses['lastName'] ?? ($formResponses['surname'] ?? ''))
                 ) ?: 'N/A';
 
@@ -118,8 +118,8 @@ class AdminController extends Controller
         ]);
 
         $application = ApplicationState::where('session_id', $sessionId)->first();
-        
-        if (!$application) {
+
+        if (! $application) {
             return response()->json(['error' => 'Application not found'], 404);
         }
 
@@ -165,7 +165,7 @@ class AdminController extends Controller
     private function determineApplicationStatus(ApplicationState $application): string
     {
         $metadata = $application->metadata ?? [];
-        
+
         // Check for explicit status in metadata
         if (isset($metadata['status'])) {
             return $metadata['status'];
@@ -177,6 +177,7 @@ class AdminController extends Controller
             if (isset($metadata['reviewed_at'])) {
                 return isset($metadata['approved']) && $metadata['approved'] ? 'approved' : 'rejected';
             }
+
             return 'under_review';
         }
 
@@ -198,7 +199,7 @@ class AdminController extends Controller
                 return [
                     'id' => $app->id,
                     'session_id' => $app->session_id,
-                    'applicant_name' => trim(($formResponses['firstName'] ?? '') . ' ' . ($formResponses['lastName'] ?? '')),
+                    'applicant_name' => trim(($formResponses['firstName'] ?? '').' '.($formResponses['lastName'] ?? '')),
                     'channel' => $app->channel,
                     'current_step' => $app->current_step,
                     'status' => $this->determineApplicationStatus($app),
@@ -284,6 +285,7 @@ class AdminController extends Controller
     {
         try {
             \DB::connection()->getPdo();
+
             return ['status' => 'healthy', 'message' => 'Database connection successful'];
         } catch (\Exception $e) {
             return ['status' => 'unhealthy', 'message' => 'Database connection failed'];
@@ -298,6 +300,7 @@ class AdminController extends Controller
         try {
             \Cache::put('health_check', 'test', 60);
             $value = \Cache::get('health_check');
+
             return ['status' => $value === 'test' ? 'healthy' : 'degraded', 'message' => 'Cache operational'];
         } catch (\Exception $e) {
             return ['status' => 'unhealthy', 'message' => 'Cache not working'];
@@ -313,6 +316,7 @@ class AdminController extends Controller
             \Storage::disk('public')->put('health_check.txt', 'test');
             $exists = \Storage::disk('public')->exists('health_check.txt');
             \Storage::disk('public')->delete('health_check.txt');
+
             return ['status' => $exists ? 'healthy' : 'degraded', 'message' => 'Storage operational'];
         } catch (\Exception $e) {
             return ['status' => 'unhealthy', 'message' => 'Storage not working'];

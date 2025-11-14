@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 
 class PurchaseOrder extends Model
 {
@@ -24,9 +23,9 @@ class PurchaseOrder extends Model
         'created_by',
         'approved_by',
         'approved_at',
-        'metadata'
+        'metadata',
     ];
-    
+
     protected $casts = [
         'order_date' => 'date',
         'expected_delivery_date' => 'date',
@@ -38,30 +37,30 @@ class PurchaseOrder extends Model
         'shipping_cost' => 'decimal:2',
         'total_amount' => 'decimal:2',
     ];
-    
+
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($purchaseOrder) {
             if (empty($purchaseOrder->po_number)) {
                 $purchaseOrder->po_number = self::generatePoNumber();
             }
-            
+
             // Auto-calculate total amount
-            $purchaseOrder->total_amount = $purchaseOrder->subtotal + 
-                                          $purchaseOrder->tax_amount + 
+            $purchaseOrder->total_amount = $purchaseOrder->subtotal +
+                                          $purchaseOrder->tax_amount +
                                           $purchaseOrder->shipping_cost;
         });
-        
+
         static::updating(function ($purchaseOrder) {
             // Recalculate total amount on update
-            $purchaseOrder->total_amount = $purchaseOrder->subtotal + 
-                                          $purchaseOrder->tax_amount + 
+            $purchaseOrder->total_amount = $purchaseOrder->subtotal +
+                                          $purchaseOrder->tax_amount +
                                           $purchaseOrder->shipping_cost;
         });
     }
-    
+
     /**
      * Generate unique PO number
      */
@@ -69,22 +68,22 @@ class PurchaseOrder extends Model
     {
         $year = now()->format('Y');
         $month = now()->format('m');
-        
+
         // Get the last PO number for this month
         $lastPo = self::where('po_number', 'like', "PO-{$year}{$month}-%")
             ->orderBy('po_number', 'desc')
             ->first();
-        
+
         if ($lastPo) {
             $lastNumber = intval(substr($lastPo->po_number, -4));
             $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
         } else {
             $newNumber = '0001';
         }
-        
+
         return "PO-{$year}{$month}-{$newNumber}";
     }
-    
+
     /**
      * Get the supplier
      */
@@ -92,7 +91,7 @@ class PurchaseOrder extends Model
     {
         return $this->belongsTo(Supplier::class);
     }
-    
+
     /**
      * Get the purchase order items
      */
@@ -100,7 +99,7 @@ class PurchaseOrder extends Model
     {
         return $this->hasMany(PurchaseOrderItem::class);
     }
-    
+
     /**
      * Get items with product details
      */
@@ -108,7 +107,7 @@ class PurchaseOrder extends Model
     {
         return $this->items()->with('product');
     }
-    
+
     /**
      * Check if all items are received
      */
@@ -118,7 +117,7 @@ class PurchaseOrder extends Model
             ->where('status', '!=', 'received')
             ->count() === 0;
     }
-    
+
     /**
      * Check if partially received
      */
@@ -127,12 +126,12 @@ class PurchaseOrder extends Model
         $receivedCount = $this->items()
             ->where('status', 'received')
             ->count();
-        
+
         $totalCount = $this->items()->count();
-        
+
         return $receivedCount > 0 && $receivedCount < $totalCount;
     }
-    
+
     /**
      * Calculate received percentage
      */
@@ -140,14 +139,14 @@ class PurchaseOrder extends Model
     {
         $totalQuantity = $this->items()->sum('quantity_ordered');
         $receivedQuantity = $this->items()->sum('quantity_received');
-        
+
         if ($totalQuantity === 0) {
             return 0;
         }
-        
+
         return round(($receivedQuantity / $totalQuantity) * 100, 2);
     }
-    
+
     /**
      * Approve the purchase order
      */
@@ -159,7 +158,7 @@ class PurchaseOrder extends Model
             'approved_at' => now(),
         ]);
     }
-    
+
     /**
      * Mark as ordered
      */
@@ -170,7 +169,7 @@ class PurchaseOrder extends Model
             'order_date' => now(),
         ]);
     }
-    
+
     /**
      * Mark as received
      */
@@ -181,43 +180,43 @@ class PurchaseOrder extends Model
             'actual_delivery_date' => now(),
         ]);
     }
-    
+
     /**
      * Cancel the purchase order
      */
     public function cancel(): void
     {
         $this->update(['status' => 'cancelled']);
-        
+
         // Cancel all items
         $this->items()->update(['status' => 'cancelled']);
     }
-    
+
     /**
      * Add item to purchase order
      */
     public function addItem(array $itemData): PurchaseOrderItem
     {
         $item = $this->items()->create($itemData);
-        
+
         // Recalculate subtotal
         $this->recalculateTotals();
-        
+
         return $item;
     }
-    
+
     /**
      * Recalculate totals
      */
     public function recalculateTotals(): void
     {
         $subtotal = $this->items()->sum('total_price');
-        
+
         $this->update([
             'subtotal' => $subtotal,
         ]);
     }
-    
+
     /**
      * Create from application products
      */
@@ -226,18 +225,18 @@ class PurchaseOrder extends Model
         $applications = ApplicationState::whereIn('id', $applicationIds)
             ->with('products')
             ->get();
-        
+
         $productQuantities = [];
-        
+
         foreach ($applications as $application) {
             $products = $application->formData['products'] ?? [];
             foreach ($products as $product) {
                 $productId = $product['id'] ?? null;
                 if ($productId) {
-                    if (!isset($productQuantities[$productId])) {
+                    if (! isset($productQuantities[$productId])) {
                         $productQuantities[$productId] = [
                             'quantity' => 0,
-                            'applications' => []
+                            'applications' => [],
                         ];
                     }
                     $productQuantities[$productId]['quantity'] += $product['quantity'] ?? 1;
@@ -245,13 +244,13 @@ class PurchaseOrder extends Model
                 }
             }
         }
-        
+
         // Create purchase order
         $po = self::create([
             'status' => 'draft',
-            'notes' => 'Auto-generated from applications: ' . implode(', ', $applicationIds),
+            'notes' => 'Auto-generated from applications: '.implode(', ', $applicationIds),
         ]);
-        
+
         // Add items
         foreach ($productQuantities as $productId => $data) {
             $product = Product::find($productId);
@@ -265,12 +264,12 @@ class PurchaseOrder extends Model
                 ]);
             }
         }
-        
+
         $po->recalculateTotals();
-        
+
         return $po;
     }
-    
+
     /**
      * Scope for pending orders
      */
@@ -278,7 +277,7 @@ class PurchaseOrder extends Model
     {
         return $query->where('status', 'pending');
     }
-    
+
     /**
      * Scope for approved orders
      */
@@ -286,7 +285,7 @@ class PurchaseOrder extends Model
     {
         return $query->where('status', 'approved');
     }
-    
+
     /**
      * Scope for orders awaiting delivery
      */

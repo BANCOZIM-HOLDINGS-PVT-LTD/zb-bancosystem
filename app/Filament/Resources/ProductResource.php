@@ -4,14 +4,13 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProductResource\Pages;
 use App\Models\Product;
-use App\Models\ProductCategory;
 use App\Models\ProductSubCategory;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 class ProductResource extends Resource
@@ -39,7 +38,7 @@ class ProductResource extends Resource
                                     ->get()
                                     ->mapWithKeys(function ($subCategory) {
                                         return [
-                                            $subCategory->id => $subCategory->category->name . ' > ' . $subCategory->name
+                                            $subCategory->id => $subCategory->category->name.' > '.$subCategory->name,
                                         ];
                                     });
                             })
@@ -117,7 +116,7 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('category_path')
                     ->label('Category')
                     ->getStateUsing(function (Product $record) {
-                        return $record->category->name . ' > ' . $record->subCategory->name;
+                        return $record->category->name.' > '.$record->subCategory->name;
                     })
                     ->searchable(['subCategory.name', 'category.name'])
                     ->sortable(false),

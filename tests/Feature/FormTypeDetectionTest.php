@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\ApplicationState;
 use App\Services\PDF\PDFTemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class FormTypeDetectionTest extends TestCase
 {
@@ -16,7 +16,7 @@ class FormTypeDetectionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->templateService = new PDFTemplateService();
+        $this->templateService = new PDFTemplateService;
     }
 
     /**
@@ -34,8 +34,8 @@ class FormTypeDetectionTest extends TestCase
                 'surname' => 'Doe',
                 'responsibleMinistry' => 'Education',
                 'employerName' => 'Ministry of Education',
-                'creditFacilityType' => 'Hire Purchase Credit'
-            ]
+                'creditFacilityType' => 'Hire Purchase Credit',
+            ],
         ]);
 
         $detectedTemplate = $this->templateService->detectFormType($applicationState);
@@ -49,7 +49,7 @@ class FormTypeDetectionTest extends TestCase
     public function test_sme_business_form_type_detection_by_business_name()
     {
         $applicationState = new ApplicationState([
-            'session_id' => 'test_' . uniqid(),
+            'session_id' => 'test_'.uniqid(),
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
@@ -57,8 +57,8 @@ class FormTypeDetectionTest extends TestCase
                 'businessName' => 'Tech Solutions Ltd',
                 'businessRegistration' => 'BRC/2024/001234',
                 'registeredName' => 'Tech Solutions (Private) Limited',
-                'typeOfBusiness' => 'Software Development'
-            ]
+                'typeOfBusiness' => 'Software Development',
+            ],
         ]);
 
         $detectedTemplate = $this->templateService->detectFormType($applicationState);
@@ -72,7 +72,7 @@ class FormTypeDetectionTest extends TestCase
     public function test_sme_business_form_type_detection_by_registration()
     {
         $applicationState = new ApplicationState([
-            'session_id' => 'test_' . uniqid(),
+            'session_id' => 'test_'.uniqid(),
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
@@ -80,8 +80,8 @@ class FormTypeDetectionTest extends TestCase
                 'firstName' => 'Jane',
                 'surname' => 'Smith',
                 'businessRegistration' => 'BRC/2024/005678',
-                'incorporationNumber' => 'INC/2024/005678'
-            ]
+                'incorporationNumber' => 'INC/2024/005678',
+            ],
         ]);
 
         $detectedTemplate = $this->templateService->detectFormType($applicationState);
@@ -95,7 +95,7 @@ class FormTypeDetectionTest extends TestCase
     public function test_zb_account_opening_form_type_detection()
     {
         $applicationState = new ApplicationState([
-            'session_id' => 'test_' . uniqid(),
+            'session_id' => 'test_'.uniqid(),
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
@@ -104,8 +104,8 @@ class FormTypeDetectionTest extends TestCase
                 'surname' => 'Johnson',
                 'accountType' => 'savings',
                 'initialDeposit' => '100.00',
-                'accountCurrency' => 'USD'
-            ]
+                'accountCurrency' => 'USD',
+            ],
         ]);
 
         $detectedTemplate = $this->templateService->detectFormType($applicationState);
@@ -119,7 +119,7 @@ class FormTypeDetectionTest extends TestCase
     public function test_account_holders_form_type_detection_default()
     {
         $applicationState = new ApplicationState([
-            'session_id' => 'test_' . uniqid(),
+            'session_id' => 'test_'.uniqid(),
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
@@ -128,8 +128,8 @@ class FormTypeDetectionTest extends TestCase
                 'surname' => 'Williams',
                 'employerName' => 'ABC Corporation',
                 'monthlyPayment' => '150.00',
-                'loanTenure' => '12'
-            ]
+                'loanTenure' => '12',
+            ],
         ]);
 
         $detectedTemplate = $this->templateService->detectFormType($applicationState);
@@ -143,7 +143,7 @@ class FormTypeDetectionTest extends TestCase
     public function test_explicit_form_type_from_metadata()
     {
         $applicationState = new ApplicationState([
-            'session_id' => 'test_' . uniqid(),
+            'session_id' => 'test_'.uniqid(),
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
@@ -151,8 +151,8 @@ class FormTypeDetectionTest extends TestCase
                 'firstName' => 'David',
                 'surname' => 'Brown',
                 'formType' => 'sme_business',
-                'businessName' => 'Brown Enterprises'
-            ]
+                'businessName' => 'Brown Enterprises',
+            ],
         ]);
 
         $detectedTemplate = $this->templateService->detectFormType($applicationState);
@@ -170,7 +170,7 @@ class FormTypeDetectionTest extends TestCase
             'smes_business_account_opening.json' => 'forms.sme_business_pdf',
             'individual_account_opening.json' => 'forms.zb_account_opening_pdf',
             'account_holder_loan_application.json' => 'forms.account_holders_pdf',
-            'unknown_form.json' => 'forms.account_holders_pdf' // Default
+            'unknown_form.json' => 'forms.account_holders_pdf', // Default
         ];
 
         foreach ($testCases as $formId => $expectedTemplate) {
@@ -186,15 +186,15 @@ class FormTypeDetectionTest extends TestCase
     {
         // Even though this has businessName, explicit formType should take precedence
         $applicationState = new ApplicationState([
-            'session_id' => 'test_' . uniqid(),
+            'session_id' => 'test_'.uniqid(),
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
             'form_data' => [
                 'formType' => 'ssb',
                 'businessName' => 'Some Business', // This would normally trigger SME detection
-                'responsibleMinistry' => 'Health'
-            ]
+                'responsibleMinistry' => 'Health',
+            ],
         ]);
 
         $detectedTemplate = $this->templateService->detectFormType($applicationState);
@@ -209,7 +209,7 @@ class FormTypeDetectionTest extends TestCase
     {
         // Form data with both SSB and SME indicators
         $applicationState = new ApplicationState([
-            'session_id' => 'test_' . uniqid(),
+            'session_id' => 'test_'.uniqid(),
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
@@ -218,8 +218,8 @@ class FormTypeDetectionTest extends TestCase
                 'surname' => 'User',
                 'responsibleMinistry' => 'Education', // SSB indicator
                 'businessName' => 'Test Business', // SME indicator
-                'accountType' => 'savings' // ZB indicator
-            ]
+                'accountType' => 'savings', // ZB indicator
+            ],
         ]);
 
         // Should pick the first match in priority order (SSB should win)
@@ -234,11 +234,11 @@ class FormTypeDetectionTest extends TestCase
     public function test_empty_form_data_handling()
     {
         $applicationState = new ApplicationState([
-            'session_id' => 'test_' . uniqid(),
+            'session_id' => 'test_'.uniqid(),
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
-            'form_data' => []
+            'form_data' => [],
         ]);
 
         $detectedTemplate = $this->templateService->detectFormType($applicationState);
@@ -252,11 +252,11 @@ class FormTypeDetectionTest extends TestCase
     public function test_null_form_data_handling()
     {
         $applicationState = new ApplicationState([
-            'session_id' => 'test_' . uniqid(),
+            'session_id' => 'test_'.uniqid(),
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
-            'form_data' => null
+            'form_data' => null,
         ]);
 
         $detectedTemplate = $this->templateService->detectFormType($applicationState);

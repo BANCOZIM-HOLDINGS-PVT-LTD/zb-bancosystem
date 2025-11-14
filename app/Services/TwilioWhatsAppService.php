@@ -2,12 +2,13 @@
 
 namespace App\Services;
 
-use Twilio\Rest\Client;
 use Illuminate\Support\Facades\Log;
+use Twilio\Rest\Client;
 
 class TwilioWhatsAppService
 {
     private $client;
+
     private $from;
 
     public function __construct()
@@ -29,14 +30,16 @@ class TwilioWhatsAppService
                 $to, // To WhatsApp number (format: whatsapp:+1234567890)
                 [
                     'from' => $this->from,
-                    'body' => $message
+                    'body' => $message,
                 ]
             );
 
             Log::info("WhatsApp message sent to {$to}");
+
             return true;
         } catch (\Exception $e) {
-            Log::error("Failed to send WhatsApp message to {$to}: " . $e->getMessage());
+            Log::error("Failed to send WhatsApp message to {$to}: ".$e->getMessage());
+
             return false;
         }
     }
@@ -49,20 +52,22 @@ class TwilioWhatsAppService
         try {
             $messageData = [
                 'from' => $this->from,
-                'body' => $message
+                'body' => $message,
             ];
 
             // Add media URLs if provided
-            if (!empty($mediaUrls)) {
+            if (! empty($mediaUrls)) {
                 $messageData['mediaUrl'] = $mediaUrls;
             }
 
             $this->client->messages->create($to, $messageData);
 
             Log::info("WhatsApp message with media sent to {$to}");
+
             return true;
         } catch (\Exception $e) {
-            Log::error("Failed to send WhatsApp message with media to {$to}: " . $e->getMessage());
+            Log::error("Failed to send WhatsApp message with media to {$to}: ".$e->getMessage());
+
             return false;
         }
     }
@@ -77,14 +82,15 @@ class TwilioWhatsAppService
             // Twilio's WhatsApp API has limitations on interactive messages
             $buttonText = "\n\n";
             foreach ($buttons as $index => $button) {
-                $buttonText .= ($index + 1) . ". " . $button . "\n";
+                $buttonText .= ($index + 1).'. '.$button."\n";
             }
-            
-            $fullMessage = $message . $buttonText . "\nReply with the number of your choice.";
-            
+
+            $fullMessage = $message.$buttonText."\nReply with the number of your choice.";
+
             return $this->sendMessage($to, $fullMessage);
         } catch (\Exception $e) {
-            Log::error("Failed to send button message to {$to}: " . $e->getMessage());
+            Log::error("Failed to send button message to {$to}: ".$e->getMessage());
+
             return false;
         }
     }
@@ -96,13 +102,13 @@ class TwilioWhatsAppService
     {
         // Remove any existing whatsapp: prefix
         $phoneNumber = str_replace('whatsapp:', '', $phoneNumber);
-        
+
         // Ensure it starts with +
-        if (!str_starts_with($phoneNumber, '+')) {
-            $phoneNumber = '+' . $phoneNumber;
+        if (! str_starts_with($phoneNumber, '+')) {
+            $phoneNumber = '+'.$phoneNumber;
         }
-        
-        return 'whatsapp:' . $phoneNumber;
+
+        return 'whatsapp:'.$phoneNumber;
     }
 
     /**

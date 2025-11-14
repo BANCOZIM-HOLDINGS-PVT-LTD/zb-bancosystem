@@ -4,15 +4,14 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\InventoryManagementResource\Pages;
 use App\Models\ProductInventory;
-use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
-use Filament\Notifications\Notification;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 class InventoryManagementResource extends Resource
@@ -260,7 +259,7 @@ class InventoryManagementResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                
+
                 Tables\Actions\Action::make('adjust_stock')
                     ->label('Adjust Stock')
                     ->icon('heroicon-o-adjustments-horizontal')
@@ -291,7 +290,7 @@ class InventoryManagementResource extends Resource
                     ->action(function ($record, array $data): void {
                         $inventory = $record;
                         $success = false;
-                        
+
                         switch ($data['adjustment_type']) {
                             case 'add':
                                 $inventory->addStock($data['quantity'], $data['reason']);
@@ -311,7 +310,7 @@ class InventoryManagementResource extends Resource
                                 $success = true;
                                 break;
                         }
-                        
+
                         if ($success) {
                             Notification::make()
                                 ->title('Stock Adjusted Successfully')
@@ -333,31 +332,31 @@ class InventoryManagementResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                    
+
                     Tables\Actions\BulkAction::make('activate')
                         ->label('Activate Selected')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->action(function ($records): void {
                             $records->each->update(['is_active' => true]);
-                            
+
                             Notification::make()
                                 ->title('Products Activated')
-                                ->body(count($records) . ' products have been activated')
+                                ->body(count($records).' products have been activated')
                                 ->success()
                                 ->send();
                         }),
-                    
+
                     Tables\Actions\BulkAction::make('deactivate')
                         ->label('Deactivate Selected')
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
                         ->action(function ($records): void {
                             $records->each->update(['is_active' => false]);
-                            
+
                             Notification::make()
                                 ->title('Products Deactivated')
-                                ->body(count($records) . ' products have been deactivated')
+                                ->body(count($records).' products have been deactivated')
                                 ->success()
                                 ->send();
                         }),
@@ -393,6 +392,7 @@ class InventoryManagementResource extends Resource
     public static function getNavigationBadgeColor(): ?string
     {
         $lowStockCount = static::getModel()::lowStock()->count();
+
         return $lowStockCount > 0 ? 'warning' : null;
     }
 }

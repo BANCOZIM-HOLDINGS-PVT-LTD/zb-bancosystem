@@ -3,12 +3,13 @@
 namespace App\Services;
 
 use App\Models\User;
-use Twilio\Rest\Client;
 use Illuminate\Support\Facades\Log;
+use Twilio\Rest\Client;
 
 class OtpService
 {
     protected $twilio;
+
     protected $fromNumber;
 
     public function __construct()
@@ -23,9 +24,6 @@ class OtpService
 
     /**
      * Send OTP to a phone number
-     *
-     * @param User $user
-     * @return bool
      */
     public function sendOtp(User $user): bool
     {
@@ -38,7 +36,7 @@ class OtpService
                 $user->phone, // to
                 [
                     'from' => $this->fromNumber,
-                    'body' => $message
+                    'body' => $message,
                 ]
             );
 
@@ -61,10 +59,6 @@ class OtpService
 
     /**
      * Verify OTP code
-     *
-     * @param User $user
-     * @param string $otp
-     * @return bool
      */
     public function verifyOtp(User $user, string $otp): bool
     {
@@ -73,9 +67,6 @@ class OtpService
 
     /**
      * Resend OTP to user
-     *
-     * @param User $user
-     * @return bool
      */
     public function resendOtp(User $user): bool
     {

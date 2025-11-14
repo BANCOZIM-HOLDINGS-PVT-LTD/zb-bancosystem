@@ -37,7 +37,7 @@ return new class extends Migration
                 'phone_verified',
                 'phone_verified_at',
                 'otp_code',
-                'otp_expires_at'
+                'otp_expires_at',
             ]);
 
             $table->string('email')->nullable(false)->change();

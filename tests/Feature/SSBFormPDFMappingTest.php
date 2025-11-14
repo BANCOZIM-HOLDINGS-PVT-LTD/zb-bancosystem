@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\View;
+use Tests\TestCase;
 
 class SSBFormPDFMappingTest extends TestCase
 {
@@ -59,14 +59,14 @@ class SSBFormPDFMappingTest extends TestCase
                         'fullName' => 'Jane Doe',
                         'relationship' => 'Spouse',
                         'phoneNumber' => '+263773456789',
-                        'residentialAddress' => '123 Main Street, Harare'
+                        'residentialAddress' => '123 Main Street, Harare',
                     ],
                     [
                         'fullName' => 'Mike Doe',
                         'relationship' => 'Brother',
                         'phoneNumber' => '+263774567890',
-                        'residentialAddress' => '456 Second Ave, Bulawayo'
-                    ]
+                        'residentialAddress' => '456 Second Ave, Bulawayo',
+                    ],
                 ],
 
                 // Banking Details
@@ -93,10 +93,10 @@ class SSBFormPDFMappingTest extends TestCase
                 'paypoint' => '1234',
                 'payrollNumber' => '5678',
                 'checkLetter' => 'A',
-                'loanStartDate' => '2025-11-01'
+                'loanStartDate' => '2025-11-01',
             ],
             'monthlyPayment' => '110.00',
-            'interestRate' => '10.0'
+            'interestRate' => '10.0',
         ];
 
         // Test that the view can be rendered
@@ -131,7 +131,7 @@ class SSBFormPDFMappingTest extends TestCase
             $this->assertGreaterThan(10000, strlen($pdfContent), 'PDF should be at least 10KB in size');
 
         } catch (\Exception $e) {
-            $this->fail("SSB PDF generation failed: " . $e->getMessage());
+            $this->fail('SSB PDF generation failed: '.$e->getMessage());
         }
     }
 
@@ -145,9 +145,9 @@ class SSBFormPDFMappingTest extends TestCase
             'formResponses' => [
                 'firstName' => 'Jane',
                 'surname' => 'Smith',
-                'idNumber' => '63-987654-B-02'
+                'idNumber' => '63-987654-B-02',
             ],
-            'monthlyPayment' => '100.00'
+            'monthlyPayment' => '100.00',
         ];
 
         try {
@@ -168,7 +168,7 @@ class SSBFormPDFMappingTest extends TestCase
             $this->assertNotEmpty($pdfContent);
 
         } catch (\Exception $e) {
-            $this->fail("SSB PDF with minimal data failed: " . $e->getMessage());
+            $this->fail('SSB PDF with minimal data failed: '.$e->getMessage());
         }
     }
 
@@ -192,8 +192,8 @@ class SSBFormPDFMappingTest extends TestCase
         $formData = [
             'formResponses' => [
                 'firstName' => 'Test',
-                'surname' => 'User'
-            ]
+                'surname' => 'User',
+            ],
         ];
 
         $view = View::make('forms.ssb_form_pdf', $formData);
@@ -216,8 +216,8 @@ class SSBFormPDFMappingTest extends TestCase
                 'surname' => 'Helper',
                 'mobile' => '+263771111111',
                 'loanTenure' => '6',
-                'arrayField' => ['should', 'be', 'ignored']
-            ]
+                'arrayField' => ['should', 'be', 'ignored'],
+            ],
         ];
 
         $view = View::make('forms.ssb_form_pdf', $formData);
@@ -241,8 +241,8 @@ class SSBFormPDFMappingTest extends TestCase
             'formResponses' => [
                 'firstName' => 'Multi',
                 'surname' => 'Page',
-                'idNumber' => '63-111111-C-03'
-            ]
+                'idNumber' => '63-111111-C-03',
+            ],
         ];
 
         $view = View::make('forms.ssb_form_pdf', $formData);
@@ -269,8 +269,8 @@ class SSBFormPDFMappingTest extends TestCase
         $formData = [
             'formResponses' => [
                 'firstName' => 'Section',
-                'surname' => 'Test'
-            ]
+                'surname' => 'Test',
+            ],
         ];
 
         $view = View::make('forms.ssb_form_pdf', $formData);
@@ -296,8 +296,8 @@ class SSBFormPDFMappingTest extends TestCase
                 'firstName' => 'Date',
                 'surname' => 'Test',
                 'loanStartDate' => '2025-11-15',
-                'loanTenure' => '12'
-            ]
+                'loanTenure' => '12',
+            ],
         ];
 
         $view = View::make('forms.ssb_form_pdf', $formData);
@@ -308,4 +308,3 @@ class SSBFormPDFMappingTest extends TestCase
         $this->assertStringContainsString($currentYear, $html, 'Current year should be in the PDF');
     }
 }
-

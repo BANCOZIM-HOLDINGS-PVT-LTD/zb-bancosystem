@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -19,7 +18,7 @@ return new class extends Migration
         } elseif ($driver === 'pgsql') {
             // PostgreSQL: Drop constraint, update values, add new constraint
             try {
-                DB::statement("ALTER TABLE agents DROP CONSTRAINT IF EXISTS agents_type_check");
+                DB::statement('ALTER TABLE agents DROP CONSTRAINT IF EXISTS agents_type_check');
             } catch (\Exception $e) {
                 // Constraint might not exist
             }
@@ -48,7 +47,7 @@ return new class extends Migration
         } elseif ($driver === 'pgsql') {
             // PostgreSQL: Drop constraint, update values, add old constraint
             try {
-                DB::statement("ALTER TABLE agents DROP CONSTRAINT IF EXISTS agents_type_check");
+                DB::statement('ALTER TABLE agents DROP CONSTRAINT IF EXISTS agents_type_check');
             } catch (\Exception $e) {
                 // Constraint might not exist
             }

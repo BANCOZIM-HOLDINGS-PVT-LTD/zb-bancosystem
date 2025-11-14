@@ -6,12 +6,11 @@ use App\Filament\Resources\LoanTermsResource\Pages;
 use App\Models\LoanTerm;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Table;
 
 class LoanTermsResource extends Resource
 {
@@ -291,7 +290,7 @@ class LoanTermsResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                
+
                 Tables\Actions\Action::make('calculate_payment')
                     ->label('Calculate Payment')
                     ->icon('heroicon-o-calculator')
@@ -307,13 +306,13 @@ class LoanTermsResource extends Resource
                     ->action(function ($record, array $data): void {
                         $loanAmount = $data['loan_amount'];
                         $calculation = $record->calculateTotalCost($loanAmount);
-                        
-                        $details = "Loan Amount: $" . number_format($calculation['loan_amount'], 2) . "\n";
-                        $details .= "Monthly Payment: $" . number_format($calculation['monthly_payment'], 2) . "\n";
-                        $details .= "Total Interest: $" . number_format($calculation['total_interest'], 2) . "\n";
-                        $details .= "Processing Fee: $" . number_format($calculation['processing_fee'], 2) . "\n";
-                        $details .= "Total Cost: $" . number_format($calculation['total_cost'], 2);
-                        
+
+                        $details = 'Loan Amount: $'.number_format($calculation['loan_amount'], 2)."\n";
+                        $details .= 'Monthly Payment: $'.number_format($calculation['monthly_payment'], 2)."\n";
+                        $details .= 'Total Interest: $'.number_format($calculation['total_interest'], 2)."\n";
+                        $details .= 'Processing Fee: $'.number_format($calculation['processing_fee'], 2)."\n";
+                        $details .= 'Total Cost: $'.number_format($calculation['total_cost'], 2);
+
                         Notification::make()
                             ->title('Payment Calculation')
                             ->body($details)
@@ -327,27 +326,27 @@ class LoanTermsResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                    
+
                     Tables\Actions\BulkAction::make('activate')
                         ->label('Activate Selected')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->action(function ($records): void {
                             $records->each->update(['is_active' => true]);
-                            
+
                             Notification::make()
                                 ->title('Loan Terms Activated')
                                 ->success()
                                 ->send();
                         }),
-                    
+
                     Tables\Actions\BulkAction::make('deactivate')
                         ->label('Deactivate Selected')
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
                         ->action(function ($records): void {
                             $records->each->update(['is_active' => false]);
-                            
+
                             Notification::make()
                                 ->title('Loan Terms Deactivated')
                                 ->success()

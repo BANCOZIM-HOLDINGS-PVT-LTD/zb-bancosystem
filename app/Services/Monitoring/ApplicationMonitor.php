@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 class ApplicationMonitor
 {
     private array $metrics = [];
+
     private array $alerts = [];
 
     /**
@@ -41,11 +42,11 @@ class ApplicationMonitor
     private function checkDatabaseHealth(): array
     {
         $startTime = microtime(true);
-        
+
         try {
             // Test basic connectivity
             DB::connection()->getPdo();
-            
+
             // Test query performance
             $queryStart = microtime(true);
             $result = DB::select('SELECT 1 as test');
@@ -99,10 +100,10 @@ class ApplicationMonitor
     private function checkCacheHealth(): array
     {
         $startTime = microtime(true);
-        
+
         try {
-            $testKey = 'health_check_' . time();
-            $testValue = 'test_value_' . random_int(1000, 9999);
+            $testKey = 'health_check_'.time();
+            $testValue = 'test_value_'.random_int(1000, 9999);
 
             // Test cache write
             Cache::put($testKey, $testValue, 60);
@@ -129,7 +130,7 @@ class ApplicationMonitor
                 try {
                     $redis = Redis::connection();
                     $info = $redis->info();
-                    
+
                     $result['redis_info'] = [
                         'connected_clients' => $info['connected_clients'] ?? 0,
                         'used_memory_human' => $info['used_memory_human'] ?? 'unknown',
@@ -167,9 +168,9 @@ class ApplicationMonitor
 
         foreach ($disks as $disk) {
             $startTime = microtime(true);
-            
+
             try {
-                $testFile = 'health_check_' . time() . '.txt';
+                $testFile = 'health_check_'.time().'.txt';
                 $testContent = 'Health check test content';
 
                 // Test write
@@ -256,7 +257,7 @@ class ApplicationMonitor
         try {
             // This would depend on your queue driver
             $queueDriver = config('queue.default');
-            
+
             $result = [
                 'driver' => $queueDriver,
                 'status' => 'healthy',
@@ -322,7 +323,7 @@ class ApplicationMonitor
             if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
                 return ['status' => 'available'];
             }
-            
+
             return ['status' => 'unavailable', 'error' => 'DomPDF not found'];
         } catch (\Exception $e) {
             return ['status' => 'error', 'error' => $e->getMessage()];
@@ -336,7 +337,7 @@ class ApplicationMonitor
     {
         $maxFileSize = ini_get('upload_max_filesize');
         $maxPostSize = ini_get('post_max_size');
-        
+
         return [
             'status' => 'available',
             'max_file_size' => $maxFileSize,
@@ -350,7 +351,7 @@ class ApplicationMonitor
     private function checkEmailService(): array
     {
         $driver = config('mail.default');
-        
+
         return [
             'status' => 'configured',
             'driver' => $driver,
@@ -399,7 +400,7 @@ class ApplicationMonitor
             $this->alerts[] = [
                 'type' => 'critical',
                 'service' => 'memory',
-                'message' => 'High memory usage: ' . $metrics['memory']['usage_percentage'] . '%',
+                'message' => 'High memory usage: '.$metrics['memory']['usage_percentage'].'%',
                 'details' => $metrics['memory'],
             ];
         }
@@ -409,7 +410,7 @@ class ApplicationMonitor
             $this->alerts[] = [
                 'type' => 'critical',
                 'service' => 'disk',
-                'message' => 'Critical disk usage: ' . $metrics['disk']['usage_percentage'] . '%',
+                'message' => 'Critical disk usage: '.$metrics['disk']['usage_percentage'].'%',
                 'details' => $metrics['disk'],
             ];
         }
@@ -464,15 +465,15 @@ class ApplicationMonitor
             return 'unknown';
         }
 
-        $criticalAlerts = array_filter($this->alerts, fn($alert) => $alert['type'] === 'critical');
-        
-        if (!empty($criticalAlerts)) {
+        $criticalAlerts = array_filter($this->alerts, fn ($alert) => $alert['type'] === 'critical');
+
+        if (! empty($criticalAlerts)) {
             return 'critical';
         }
 
-        $warningAlerts = array_filter($this->alerts, fn($alert) => $alert['type'] === 'warning');
-        
-        if (!empty($warningAlerts)) {
+        $warningAlerts = array_filter($this->alerts, fn ($alert) => $alert['type'] === 'warning');
+
+        if (! empty($warningAlerts)) {
             return 'warning';
         }
 

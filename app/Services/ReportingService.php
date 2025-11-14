@@ -2,13 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\ApplicationState;
 use App\Models\Agent;
+use App\Models\AgentReferralLink;
+use App\Models\ApplicationState;
 use App\Models\Commission;
 use App\Models\Product;
-use App\Models\AgentReferralLink;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 
 class ReportingService
@@ -19,7 +18,7 @@ class ReportingService
     public function generateApplicationReport(Carbon $startDate, Carbon $endDate): array
     {
         $applications = ApplicationState::whereBetween('created_at', [$startDate, $endDate])->get();
-        
+
         return [
             'period' => [
                 'start' => $startDate->toDateString(),
@@ -53,7 +52,7 @@ class ReportingService
             $applications = $agent->applications()
                 ->whereBetween('created_at', [$startDate, $endDate])
                 ->get();
-            
+
             $commissions = $agent->commissions()
                 ->whereBetween('earned_date', [$startDate, $endDate])
                 ->get();
@@ -100,7 +99,7 @@ class ReportingService
         $products = Product::all();
         foreach ($products as $product) {
             $productApplications = $applications->filter(function ($app) use ($product) {
-                return isset($app->form_data['selectedProduct']) && 
+                return isset($app->form_data['selectedProduct']) &&
                        $app->form_data['selectedProduct'] == $product->id;
             });
 
@@ -217,15 +216,15 @@ class ReportingService
      */
     public function exportToCSV(array $reportData, string $reportType): string
     {
-        $filename = storage_path("app/reports/{$reportType}_" . now()->format('Y-m-d_H-i-s') . '.csv');
-        
+        $filename = storage_path("app/reports/{$reportType}_".now()->format('Y-m-d_H-i-s').'.csv');
+
         // Ensure reports directory exists
-        if (!file_exists(dirname($filename))) {
+        if (! file_exists(dirname($filename))) {
             mkdir(dirname($filename), 0755, true);
         }
 
         $file = fopen($filename, 'w');
-        
+
         // Write headers and data based on report type
         switch ($reportType) {
             case 'applications':
@@ -244,8 +243,9 @@ class ReportingService
                 $this->writeReferralLinkCSV($file, $reportData);
                 break;
         }
-        
+
         fclose($file);
+
         return $filename;
     }
 
@@ -253,7 +253,7 @@ class ReportingService
     private function getApplicationsByStatus(Collection $applications): array
     {
         return $applications->groupBy('current_step')
-            ->map(fn($group) => $group->count())
+            ->map(fn ($group) => $group->count())
             ->toArray();
     }
 
@@ -261,13 +261,13 @@ class ReportingService
     {
         return $applications->groupBy(function ($app) {
             return $app->form_data['selectedProduct'] ?? 'Unknown';
-        })->map(fn($group) => $group->count())->toArray();
+        })->map(fn ($group) => $group->count())->toArray();
     }
 
     private function getApplicationsByChannel(Collection $applications): array
     {
         return $applications->groupBy('channel')
-            ->map(fn($group) => $group->count())
+            ->map(fn ($group) => $group->count())
             ->toArray();
     }
 
@@ -275,20 +275,20 @@ class ReportingService
     {
         return $applications->groupBy(function ($app) {
             return $app->form_data['agentId'] ?? 'Direct';
-        })->map(fn($group) => $group->count())->toArray();
+        })->map(fn ($group) => $group->count())->toArray();
     }
 
     private function getDailyApplicationBreakdown(Carbon $startDate, Carbon $endDate): array
     {
         $breakdown = [];
         $current = $startDate->copy();
-        
+
         while ($current <= $endDate) {
             $count = ApplicationState::whereDate('created_at', $current)->count();
             $breakdown[$current->toDateString()] = $count;
             $current->addDay();
         }
-        
+
         return $breakdown;
     }
 
@@ -297,7 +297,7 @@ class ReportingService
         $total = $applications->count();
         $completed = $applications->where('current_step', 'completed')->count();
         $approved = $applications->where('current_step', 'approved')->count();
-        
+
         return [
             'started' => $total,
             'completed' => $completed,
@@ -316,7 +316,7 @@ class ReportingService
             ->whereBetween('created_at', [$startDate, $endDate])
             ->where('current_step', 'approved')
             ->count();
-        
+
         return $referred > 0 ? round(($approved / $referred) * 100, 2) : 0;
     }
 
@@ -326,15 +326,15 @@ class ReportingService
             ->whereBetween('created_at', [$startDate, $endDate])
             ->where('current_step', 'approved')
             ->get();
-        
+
         if ($applications->isEmpty()) {
             return 0;
         }
-        
+
         $totalValue = $applications->sum(function ($app) {
             return $app->form_data['finalPrice'] ?? 0;
         });
-        
+
         return round($totalValue / $applications->count(), 2);
     }
 

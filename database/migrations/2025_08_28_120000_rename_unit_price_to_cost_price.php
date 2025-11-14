@@ -18,9 +18,9 @@ return new class extends Migration
                 $table->renameColumn('unit_price', 'cost_price');
             });
         }
-        
+
         // Also add a selling_price column if it doesn't exist
-        if (Schema::hasTable('products') && !Schema::hasColumn('products', 'selling_price')) {
+        if (Schema::hasTable('products') && ! Schema::hasColumn('products', 'selling_price')) {
             Schema::table('products', function (Blueprint $table) {
                 // Place after cost_price if it exists, otherwise after base_price
                 if (Schema::hasColumn('products', 'cost_price')) {
@@ -42,7 +42,7 @@ return new class extends Migration
                 $table->renameColumn('cost_price', 'unit_price');
             });
         }
-        
+
         if (Schema::hasTable('products') && Schema::hasColumn('products', 'selling_price')) {
             Schema::table('products', function (Blueprint $table) {
                 $table->dropColumn('selling_price');

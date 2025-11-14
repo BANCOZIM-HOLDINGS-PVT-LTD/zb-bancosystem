@@ -2,18 +2,18 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\ApplicationState;
 use App\Services\NotificationService;
 use App\Services\ReferenceCodeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Carbon\Carbon;
+use Tests\TestCase;
 
 class ApplicationStatusTrackingTest extends TestCase
 {
     use RefreshDatabase;
 
     protected $notificationService;
+
     protected $referenceCodeService;
 
     protected function setUp(): void
@@ -69,7 +69,7 @@ class ApplicationStatusTrackingTest extends TestCase
             ]);
 
         $data = $response->json();
-        
+
         // Verify enhanced tracking data
         $this->assertEquals('under_review', $data['status']);
         $this->assertEquals('John Doe', $data['applicantName']);
@@ -126,7 +126,7 @@ class ApplicationStatusTrackingTest extends TestCase
             ]);
 
         $data = $response->json();
-        
+
         // Verify progress details
         $this->assertEquals('Approved', $data['currentStage']['name']);
         $this->assertNotEmpty($data['completedMilestones']);
@@ -162,7 +162,7 @@ class ApplicationStatusTrackingTest extends TestCase
         // Verify notification was stored
         $application->refresh();
         $metadata = $application->metadata;
-        
+
         $this->assertTrue($metadata['documents_verified']);
         $this->assertNotEmpty($metadata['notifications']);
         $this->assertEquals('Documents Verified', $metadata['notifications'][0]['title']);
@@ -201,7 +201,7 @@ class ApplicationStatusTrackingTest extends TestCase
         // Verify status was updated
         $application->refresh();
         $metadata = $application->metadata;
-        
+
         $this->assertEquals('approved', $metadata['status']);
         $this->assertNotEmpty($metadata['status_history']);
         $this->assertEquals(60000, $metadata['approval_details']['amount']);
@@ -240,7 +240,7 @@ class ApplicationStatusTrackingTest extends TestCase
         // Verify notification was marked as read
         $application->refresh();
         $notifications = $application->metadata['notifications'];
-        
+
         $this->assertTrue($notifications[0]['read']);
     }
 
@@ -267,14 +267,14 @@ class ApplicationStatusTrackingTest extends TestCase
 
         // Get status to build timeline
         $response = $this->getJson("/api/application/status/{$application->reference_code}");
-        
+
         $response->assertStatus(200);
         $data = $response->json();
-        
+
         // Verify timeline includes detailed steps
         $timeline = $data['timeline'];
         $this->assertGreaterThan(5, count($timeline)); // Should have multiple detailed steps
-        
+
         // Check for specific timeline events
         $timelineTitles = array_column($timeline, 'title');
         $this->assertContains('Application Started', $timelineTitles);

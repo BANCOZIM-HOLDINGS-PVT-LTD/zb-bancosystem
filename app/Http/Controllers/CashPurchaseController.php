@@ -7,8 +7,8 @@ use App\Models\Product;
 use App\Services\PaynowService;
 use App\Services\ZimbabweanIDValidator;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -86,7 +86,7 @@ class CashPurchaseController extends Controller
 
             // Validate Zimbabwean ID
             $idValidation = ZimbabweanIDValidator::validate($data['customer']['nationalId']);
-            if (!$idValidation['valid']) {
+            if (! $idValidation['valid']) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid Zimbabwean National ID format',
@@ -99,7 +99,7 @@ class CashPurchaseController extends Controller
 
             // Verify the product exists and get details
             $product = Product::find($data['product']['id']);
-            if (!$product) {
+            if (! $product) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Product not found',
@@ -143,7 +143,7 @@ class CashPurchaseController extends Controller
             ]);
 
             // If transaction ID is provided, verify payment with Paynow
-            if (!empty($data['payment']['transactionId'])) {
+            if (! empty($data['payment']['transactionId'])) {
                 $paymentVerified = $this->paynowService->verifyPayment(
                     $data['payment']['transactionId'],
                     $data['payment']['amount']
@@ -273,7 +273,7 @@ class CashPurchaseController extends Controller
 
         // Validate ID format
         $idValidation = ZimbabweanIDValidator::validate($nationalId);
-        if (!$idValidation['valid']) {
+        if (! $idValidation['valid']) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid National ID format',
@@ -319,7 +319,7 @@ class CashPurchaseController extends Controller
     {
         $purchase = CashPurchase::where('purchase_number', $purchaseNumber)->first();
 
-        if (!$purchase) {
+        if (! $purchase) {
             return response()->json([
                 'success' => false,
                 'message' => 'Purchase not found',

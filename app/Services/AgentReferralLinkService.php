@@ -4,9 +4,9 @@ namespace App\Services;
 
 use App\Models\Agent;
 use App\Models\AgentReferralLink;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class AgentReferralLinkService
 {
@@ -16,7 +16,7 @@ class AgentReferralLinkService
     public function generateReferralLink(Agent $agent, array $options = []): AgentReferralLink
     {
         $code = $this->generateUniqueCode($agent);
-        
+
         $referralLink = AgentReferralLink::create([
             'agent_id' => $agent->id,
             'code' => $code,
@@ -44,7 +44,7 @@ class AgentReferralLinkService
     public function generateMultipleLinks(Agent $agent, array $campaigns): array
     {
         $links = [];
-        
+
         foreach ($campaigns as $campaign) {
             $links[] = $this->generateReferralLink($agent, [
                 'campaign_name' => $campaign['name'],
@@ -61,7 +61,7 @@ class AgentReferralLinkService
     /**
      * Deactivate a referral link
      */
-    public function deactivateLink(AgentReferralLink $link, string $reason = null): bool
+    public function deactivateLink(AgentReferralLink $link, ?string $reason = null): bool
     {
         $link->update([
             'is_active' => false,
@@ -113,7 +113,7 @@ class AgentReferralLinkService
         $uniqueClicks = $link->clicks()->distinct('ip_address')->count();
         $conversions = $link->applications()->count();
         $approvedConversions = $link->applications()->where('current_step', 'approved')->count();
-        
+
         $conversionRate = $clicks > 0 ? ($conversions / $clicks) * 100 : 0;
         $approvalRate = $conversions > 0 ? ($approvedConversions / $conversions) * 100 : 0;
 
@@ -133,7 +133,7 @@ class AgentReferralLinkService
     /**
      * Get agent performance summary across all links
      */
-    public function getAgentPerformance(Agent $agent, Carbon $startDate = null, Carbon $endDate = null): array
+    public function getAgentPerformance(Agent $agent, ?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         $startDate = $startDate ?? now()->subMonths(3);
         $endDate = $endDate ?? now();
@@ -176,7 +176,7 @@ class AgentReferralLinkService
             'conversion_rate' => round($conversionRate, 2),
             'approval_rate' => round($approvalRate, 2),
             'commission_earned' => $totalCommissionEarned,
-            'average_commission_per_conversion' => $totalApprovedConversions > 0 ? 
+            'average_commission_per_conversion' => $totalApprovedConversions > 0 ?
                 round($totalCommissionEarned / $totalApprovedConversions, 2) : 0,
             'best_performing_link' => $this->getBestPerformingLink($links),
         ];
@@ -196,7 +196,7 @@ class AgentReferralLinkService
             try {
                 $agent = Agent::findOrFail($agentId);
                 $link = $this->generateReferralLink($agent, $campaignOptions);
-                
+
                 $results['success'][] = [
                     'agent_id' => $agentId,
                     'agent_name' => $agent->full_name,
@@ -209,7 +209,7 @@ class AgentReferralLinkService
                     'agent_id' => $agentId,
                     'error' => $e->getMessage(),
                 ];
-                
+
                 Log::error('Bulk referral link generation failed', [
                     'agent_id' => $agentId,
                     'error' => $e->getMessage(),
@@ -245,15 +245,15 @@ class AgentReferralLinkService
      */
     private function generateUniqueCode(Agent $agent): string
     {
-        $baseCode = 'ref_' . strtoupper(substr($agent->first_name, 0, 3)) . 
-                   strtoupper(substr($agent->last_name, 0, 3)) . 
+        $baseCode = 'ref_'.strtoupper(substr($agent->first_name, 0, 3)).
+                   strtoupper(substr($agent->last_name, 0, 3)).
                    strtoupper(Str::random(2));
 
-        $code = $baseCode . '_' . Str::random(10);
+        $code = $baseCode.'_'.Str::random(10);
 
         // Ensure uniqueness
         while (AgentReferralLink::where('code', $code)->exists()) {
-            $code = $baseCode . '_' . Str::random(10);
+            $code = $baseCode.'_'.Str::random(10);
         }
 
         return $code;
@@ -271,7 +271,7 @@ class AgentReferralLinkService
             $analytics = $this->getLinkAnalytics($link);
             // Score based on conversions and approval rate
             $score = $analytics['approved_conversions'] * $analytics['approval_rate'];
-            
+
             if ($score > $bestScore) {
                 $bestScore = $score;
                 $bestLink = [

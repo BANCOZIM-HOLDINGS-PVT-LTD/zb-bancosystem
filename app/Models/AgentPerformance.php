@@ -56,17 +56,20 @@ class AgentPerformance extends Model
 
         $approved = $applications->filter(function ($app) {
             $metadata = $app->metadata ?? [];
+
             return ($metadata['admin_status'] ?? 'pending') === 'approved';
         });
 
         $rejected = $applications->filter(function ($app) {
             $metadata = $app->metadata ?? [];
+
             return ($metadata['admin_status'] ?? 'pending') === 'rejected';
         });
 
         $totalLoanAmount = $applications->sum(function ($app) {
             $formData = $app->form_data ?? [];
             $formResponses = $formData['formResponses'] ?? [];
+
             return floatval($formResponses['loanAmount'] ?? 0);
         });
 
@@ -74,8 +77,8 @@ class AgentPerformance extends Model
             ->whereBetween('earned_date', [$this->period_start, $this->period_end])
             ->sum('amount');
 
-        $conversionRate = $applications->count() > 0 
-            ? round(($approved->count() / $applications->count()) * 100, 2) 
+        $conversionRate = $applications->count() > 0
+            ? round(($approved->count() / $applications->count()) * 100, 2)
             : 0;
 
         $this->update([

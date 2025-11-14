@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\ReferenceCodeService;
 use App\Http\Requests\ReferenceCodeRequest;
-use Illuminate\Http\Request;
+use App\Services\ReferenceCodeService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class ReferenceCodeController extends Controller
@@ -16,7 +16,6 @@ class ReferenceCodeController extends Controller
     /**
      * Create a new controller instance.
      *
-     * @param ReferenceCodeService $referenceCodeService
      * @return void
      */
     public function __construct(ReferenceCodeService $referenceCodeService)
@@ -26,9 +25,6 @@ class ReferenceCodeController extends Controller
 
     /**
      * Validate a reference code or National ID
-     *
-     * @param ReferenceCodeRequest $request
-     * @return JsonResponse
      */
     public function validate(ReferenceCodeRequest $request): JsonResponse
     {
@@ -44,9 +40,6 @@ class ReferenceCodeController extends Controller
 
     /**
      * Get application state by reference code
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getState(Request $request): JsonResponse
     {
@@ -65,7 +58,7 @@ class ReferenceCodeController extends Controller
         $code = strtoupper($request->input('code'));
         $state = $this->referenceCodeService->getStateByReferenceCode($code);
 
-        if (!$state) {
+        if (! $state) {
             return response()->json([
                 'success' => false,
                 'message' => 'Reference code is invalid or expired',
@@ -75,7 +68,7 @@ class ReferenceCodeController extends Controller
         // Get metadata for status information
         $metadata = $state->metadata ?? [];
         $status = $metadata['status'] ?? 'pending';
-        
+
         // If the reference code is about to expire, extend it
         if ($state->reference_code_expires_at && $state->reference_code_expires_at->diffInDays(now()) < 5) {
             $this->referenceCodeService->extendReferenceCode($code);
@@ -95,12 +88,9 @@ class ReferenceCodeController extends Controller
             ],
         ]);
     }
-    
+
     /**
      * Generate and store a reference code for an application
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function generate(Request $request): JsonResponse
     {
@@ -119,11 +109,11 @@ class ReferenceCodeController extends Controller
 
         try {
             $sessionId = $request->input('sessionId');
-            
+
             // If a reference code is provided, use it; otherwise generate a new one
             if ($request->has('referenceCode')) {
                 $referenceCode = strtoupper($request->input('referenceCode'));
-                
+
                 // Check if the provided code already exists
                 if ($this->referenceCodeService->referenceCodeExists($referenceCode)) {
                     return response()->json([
@@ -131,7 +121,7 @@ class ReferenceCodeController extends Controller
                         'message' => 'Reference code already exists',
                     ], 409);
                 }
-                
+
                 // Store the provided reference code
                 $this->referenceCodeService->storeReferenceCode($sessionId, $referenceCode);
             } else {

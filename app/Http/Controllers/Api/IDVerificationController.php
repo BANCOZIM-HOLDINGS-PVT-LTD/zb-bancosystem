@@ -4,9 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use App\Services\ZimbabweanIDValidator;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class IDVerificationController extends Controller
 {
@@ -19,7 +18,6 @@ class IDVerificationController extends Controller
      * - AI validation to verify authenticity
      * - Biometric analysis (optional)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function verifyIDCard(Request $request)
@@ -29,7 +27,7 @@ class IDVerificationController extends Controller
             $request->validate([
                 'id_card_image' => 'required|image|mimes:jpeg,jpg,png|max:10240', // Max 10MB
                 'country' => 'required|string|in:ZW',
-                'document_type' => 'required|string|in:NATIONAL_ID'
+                'document_type' => 'required|string|in:NATIONAL_ID',
             ]);
 
             $image = $request->file('id_card_image');
@@ -41,13 +39,13 @@ class IDVerificationController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'ID card verified successfully',
-                    'data' => $verificationResult
+                    'data' => $verificationResult,
                 ], 200);
             } else {
                 return response()->json([
                     'success' => false,
                     'message' => $verificationResult['error'] ?? 'ID verification failed',
-                    'data' => null
+                    'data' => null,
                 ], 422);
             }
 
@@ -55,16 +53,16 @@ class IDVerificationController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
 
         } catch (\Exception $e) {
-            Log::error('ID Verification Error: ' . $e->getMessage());
+            Log::error('ID Verification Error: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred during verification. Please try again.',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -72,8 +70,9 @@ class IDVerificationController extends Controller
     /**
      * Call didit.me ID Verification API
      *
-     * @param \Illuminate\Http\UploadedFile $image
+     * @param  \Illuminate\Http\UploadedFile  $image
      * @return array
+     *
      * @throws \Exception
      */
     private function callDiditVerification($image)
@@ -89,7 +88,7 @@ class IDVerificationController extends Controller
             Log::info('Calling didit.me ID verification API', [
                 'api_url' => $apiUrl,
                 'image_size' => $image->getSize(),
-                'image_type' => $image->getMimeType()
+                'image_type' => $image->getMimeType(),
             ]);
 
             // Call didit.me API using Laravel HTTP client
@@ -97,36 +96,36 @@ class IDVerificationController extends Controller
                 'X-Api-Key' => $apiKey,
                 'Accept' => 'application/json',
             ])
-            ->attach(
-                'front_image',
-                file_get_contents($image->getRealPath()),
-                $image->getClientOriginalName()
-            )
-            ->post("{$apiUrl}/v2/id-verification/");
+                ->attach(
+                    'front_image',
+                    file_get_contents($image->getRealPath()),
+                    $image->getClientOriginalName()
+                )
+                ->post("{$apiUrl}/v2/id-verification/");
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Didit API error', [
                     'status' => $response->status(),
-                    'body' => $response->body()
+                    'body' => $response->body(),
                 ]);
 
-                throw new \Exception('ID verification service returned error: ' . $response->status());
+                throw new \Exception('ID verification service returned error: '.$response->status());
             }
 
             $result = $response->json();
 
             Log::info('Didit API response received', [
                 'has_data' => isset($result['data']),
-                'status' => $result['status'] ?? 'unknown'
+                'status' => $result['status'] ?? 'unknown',
             ]);
 
             // Parse didit.me response and map to our format
             return $this->parseDiditResponse($result);
 
         } catch (\Exception $e) {
-            Log::error('Didit verification failed: ' . $e->getMessage(), [
+            Log::error('Didit verification failed: '.$e->getMessage(), [
                 'exception' => get_class($e),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             throw $e;
@@ -136,7 +135,6 @@ class IDVerificationController extends Controller
     /**
      * Parse didit.me API response and map to our standard format
      *
-     * @param array $diditResponse
      * @return array
      */
     private function parseDiditResponse(array $diditResponse)
@@ -145,10 +143,10 @@ class IDVerificationController extends Controller
         $verified = isset($diditResponse['status']) &&
                    ($diditResponse['status'] === 'approved' || $diditResponse['status'] === 'success');
 
-        if (!$verified) {
+        if (! $verified) {
             return [
                 'verified' => false,
-                'error' => $diditResponse['message'] ?? 'Verification failed'
+                'error' => $diditResponse['message'] ?? 'Verification failed',
             ];
         }
 
@@ -194,7 +192,7 @@ class IDVerificationController extends Controller
             'ocr_raw' => $diditResponse,
             'extracted_fields' => $extracted,
             'biometric_match' => isset($data['face_match']) ? $data['face_match'] : null,
-            'face_image_url' => $data['face_image'] ?? null
+            'face_image_url' => $data['face_image'] ?? null,
         ];
     }
 

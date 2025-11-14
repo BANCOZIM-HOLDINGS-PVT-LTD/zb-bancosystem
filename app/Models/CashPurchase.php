@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CashPurchase extends Model
 {
@@ -93,7 +93,7 @@ class CashPurchase extends Model
             $newNumber = 1;
         }
 
-        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        return $prefix.str_pad($newNumber, 4, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -125,9 +125,9 @@ class CashPurchase extends Model
         ];
 
         // Auto-set timestamps based on status
-        if ($status === 'dispatched' && !$this->dispatched_at) {
+        if ($status === 'dispatched' && ! $this->dispatched_at) {
             $updates['dispatched_at'] = now();
-        } elseif ($status === 'delivered' && !$this->delivered_at) {
+        } elseif ($status === 'delivered' && ! $this->delivered_at) {
             $updates['delivered_at'] = now();
         }
 
@@ -165,7 +165,7 @@ class CashPurchase extends Model
      */
     public function getStatusColorAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'gray',
             'processing' => 'blue',
             'dispatched' => 'indigo',
@@ -182,7 +182,7 @@ class CashPurchase extends Model
      */
     public function getStatusLabelAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'Pending',
             'processing' => 'Processing',
             'dispatched' => 'Dispatched',
@@ -199,7 +199,7 @@ class CashPurchase extends Model
      */
     public function getPaymentStatusColorAttribute(): string
     {
-        return match($this->payment_status) {
+        return match ($this->payment_status) {
             'pending' => 'yellow',
             'completed' => 'green',
             'failed' => 'red',
@@ -213,7 +213,7 @@ class CashPurchase extends Model
      */
     public function getPaymentStatusLabelAttribute(): string
     {
-        return match($this->payment_status) {
+        return match ($this->payment_status) {
             'pending' => 'Pending',
             'completed' => 'Completed',
             'failed' => 'Failed',
@@ -227,7 +227,7 @@ class CashPurchase extends Model
      */
     public function getDeliveryTypeLabelAttribute(): string
     {
-        return match($this->delivery_type) {
+        return match ($this->delivery_type) {
             'swift' => 'Swift Home Delivery',
             'gain_outlet' => 'Gain Outlet Depot Collection',
             default => ucfirst($this->delivery_type),
@@ -239,7 +239,7 @@ class CashPurchase extends Model
      */
     public function getPurchaseTypeLabelAttribute(): string
     {
-        return match($this->purchase_type) {
+        return match ($this->purchase_type) {
             'personal' => 'Personal Products',
             'microbiz' => 'MicroBiz Starter Pack',
             default => ucfirst($this->purchase_type),
@@ -251,7 +251,7 @@ class CashPurchase extends Model
      */
     public function getSavingsAttribute(): float
     {
-        if (!$this->loan_price) {
+        if (! $this->loan_price) {
             return 0;
         }
 
@@ -263,17 +263,17 @@ class CashPurchase extends Model
      */
     public function getFormattedCashPriceAttribute(): string
     {
-        return '$' . number_format($this->cash_price, 2);
+        return '$'.number_format($this->cash_price, 2);
     }
 
     public function getFormattedAmountPaidAttribute(): string
     {
-        return '$' . number_format($this->amount_paid, 2);
+        return '$'.number_format($this->amount_paid, 2);
     }
 
     public function getFormattedSavingsAttribute(): string
     {
-        return '$' . number_format($this->savings, 2);
+        return '$'.number_format($this->savings, 2);
     }
 
     /**
@@ -320,12 +320,12 @@ class CashPurchase extends Model
      */
     public function scopeSearchCustomer($query, string $search)
     {
-        return $query->where(function($q) use ($search) {
+        return $query->where(function ($q) use ($search) {
             $q->where('national_id', 'like', "%{$search}%")
-              ->orWhere('full_name', 'like', "%{$search}%")
-              ->orWhere('phone', 'like', "%{$search}%")
-              ->orWhere('email', 'like', "%{$search}%")
-              ->orWhere('purchase_number', 'like', "%{$search}%");
+                ->orWhere('full_name', 'like', "%{$search}%")
+                ->orWhere('phone', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")
+                ->orWhere('purchase_number', 'like', "%{$search}%");
         });
     }
 }

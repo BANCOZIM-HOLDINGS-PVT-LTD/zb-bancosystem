@@ -2,14 +2,16 @@
 
 namespace App\Services\Performance;
 
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PerformanceMonitor
 {
     private array $timers = [];
+
     private array $metrics = [];
+
     private bool $enabled;
 
     public function __construct()
@@ -22,7 +24,9 @@ class PerformanceMonitor
      */
     public function startTimer(string $name): void
     {
-        if (!$this->enabled) return;
+        if (! $this->enabled) {
+            return;
+        }
 
         $this->timers[$name] = [
             'start' => microtime(true),
@@ -35,7 +39,7 @@ class PerformanceMonitor
      */
     public function endTimer(string $name, array $context = []): float
     {
-        if (!$this->enabled || !isset($this->timers[$name])) {
+        if (! $this->enabled || ! isset($this->timers[$name])) {
             return 0.0;
         }
 
@@ -60,6 +64,7 @@ class PerformanceMonitor
         }
 
         unset($this->timers[$name]);
+
         return $duration;
     }
 
@@ -68,7 +73,9 @@ class PerformanceMonitor
      */
     public function recordMetric(string $name, $value, array $context = []): void
     {
-        if (!$this->enabled) return;
+        if (! $this->enabled) {
+            return;
+        }
 
         $this->metrics[$name] = [
             'value' => $value,
@@ -82,7 +89,7 @@ class PerformanceMonitor
      */
     public function monitorDatabaseQueries(callable $callback, string $operation = 'database_operation')
     {
-        if (!$this->enabled) {
+        if (! $this->enabled) {
             return $callback();
         }
 
@@ -118,7 +125,7 @@ class PerformanceMonitor
      */
     public function monitorMemoryUsage(callable $callback, string $operation = 'memory_operation')
     {
-        if (!$this->enabled) {
+        if (! $this->enabled) {
             return $callback();
         }
 
@@ -130,7 +137,7 @@ class PerformanceMonitor
         $memoryAfter = memory_get_usage(true);
         $peakAfter = memory_get_peak_usage(true);
 
-        $this->recordMetric($operation . '_memory', [
+        $this->recordMetric($operation.'_memory', [
             'memory_used' => $memoryAfter - $memoryBefore,
             'peak_memory' => $peakAfter - $peakBefore,
             'final_memory' => $memoryAfter,
@@ -154,15 +161,15 @@ class PerformanceMonitor
      */
     public function monitorCacheOperation(string $key, callable $callback, string $operation = 'cache_operation')
     {
-        if (!$this->enabled) {
+        if (! $this->enabled) {
             return $callback();
         }
 
         $this->startTimer($operation);
-        
+
         $hit = Cache::has($key);
         $result = $callback();
-        
+
         $duration = $this->endTimer($operation, [
             'cache_key' => $key,
             'cache_hit' => $hit,
@@ -208,7 +215,7 @@ class PerformanceMonitor
      */
     public function getSummary(): array
     {
-        if (!$this->enabled) {
+        if (! $this->enabled) {
             return ['enabled' => false];
         }
 
@@ -243,10 +250,12 @@ class PerformanceMonitor
      */
     public function logSummary(string $context = 'request'): void
     {
-        if (!$this->enabled) return;
+        if (! $this->enabled) {
+            return;
+        }
 
         $summary = $this->getSummary();
-        
+
         Log::info("Performance summary for {$context}", $summary);
 
         // Log individual slow operations
@@ -266,16 +275,16 @@ class PerformanceMonitor
      */
     public function monitorRequest(callable $callback, string $route = 'unknown')
     {
-        if (!$this->enabled) {
+        if (! $this->enabled) {
             return $callback();
         }
 
         $this->startTimer('http_request');
-        
+
         $result = $this->monitorDatabaseQueries(function () use ($callback) {
             return $this->monitorMemoryUsage($callback, 'request_memory');
         }, 'request_queries');
-        
+
         $this->endTimer('http_request', [
             'route' => $route,
             'method' => request()->method(),
@@ -290,7 +299,7 @@ class PerformanceMonitor
      */
     public function getDatabaseStats(): array
     {
-        if (!$this->enabled) {
+        if (! $this->enabled) {
             return ['enabled' => false];
         }
 
@@ -306,11 +315,11 @@ class PerformanceMonitor
             if (isset($metric['context']['query_count'])) {
                 $stats['total_queries'] += $metric['context']['query_count'];
                 $stats['total_time'] += $metric['context']['query_time'] ?? 0;
-                
+
                 if (($metric['context']['query_time'] ?? 0) > 100) { // More than 100ms
                     $stats['slow_queries']++;
                 }
-                
+
                 $stats['operations'][$name] = [
                     'queries' => $metric['context']['query_count'],
                     'time' => $metric['context']['query_time'] ?? 0,

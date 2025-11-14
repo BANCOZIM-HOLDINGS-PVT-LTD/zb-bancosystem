@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Agent;
-use App\Models\Team;
 use App\Models\Commission;
+use App\Models\Team;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -134,7 +134,7 @@ class AgentSeeder extends Seeder
 
             foreach ($agents as $agentData) {
                 $agent = Agent::create($agentData);
-                
+
                 // Generate referral links for each agent
                 $agent->generateReferralLink('Default Campaign');
                 if (rand(0, 1)) {
@@ -216,7 +216,7 @@ class AgentSeeder extends Seeder
                 for ($i = 0; $i < $commissionCount; $i++) {
                     $baseAmount = rand(500, 2000);
                     $commissionAmount = ($baseAmount * $agent->commission_rate) / 100;
-                    
+
                     Commission::create([
                         'agent_id' => $agent->id,
                         'type' => 'application',
@@ -235,9 +235,9 @@ class AgentSeeder extends Seeder
                 }
             }
 
-            $this->command->info('Created ' . Agent::count() . ' agents');
-            $this->command->info('Created ' . Team::count() . ' teams');
-            $this->command->info('Created ' . Commission::count() . ' commissions');
+            $this->command->info('Created '.Agent::count().' agents');
+            $this->command->info('Created '.Team::count().' teams');
+            $this->command->info('Created '.Commission::count().' commissions');
         });
     }
 }

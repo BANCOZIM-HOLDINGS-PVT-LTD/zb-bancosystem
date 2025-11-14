@@ -9,10 +9,10 @@ use Illuminate\Support\Facades\DB;
 class SystemHealthWidget extends Widget
 {
     protected static string $view = 'filament.widgets.system-health';
-    
+
     protected static ?int $sort = 3;
-    
-    protected int | string | array $columnSpan = 'full';
+
+    protected int|string|array $columnSpan = 'full';
 
     public function getViewData(): array
     {
@@ -40,6 +40,7 @@ class SystemHealthWidget extends Widget
     {
         try {
             DB::connection()->getPdo();
+
             return ['status' => 'healthy', 'message' => 'Database connection successful'];
         } catch (\Exception $e) {
             return ['status' => 'unhealthy', 'message' => 'Database connection failed'];
@@ -51,6 +52,7 @@ class SystemHealthWidget extends Widget
         try {
             Cache::put('health_check', 'test', 60);
             $value = Cache::get('health_check');
+
             return ['status' => $value === 'test' ? 'healthy' : 'degraded', 'message' => 'Cache operational'];
         } catch (\Exception $e) {
             return ['status' => 'unhealthy', 'message' => 'Cache not working'];
@@ -63,6 +65,7 @@ class SystemHealthWidget extends Widget
             \Storage::disk('public')->put('health_check.txt', 'test');
             $exists = \Storage::disk('public')->exists('health_check.txt');
             \Storage::disk('public')->delete('health_check.txt');
+
             return ['status' => $exists ? 'healthy' : 'degraded', 'message' => 'Storage operational'];
         } catch (\Exception $e) {
             return ['status' => 'unhealthy', 'message' => 'Storage not working'];
@@ -81,7 +84,7 @@ class SystemHealthWidget extends Widget
     private function calculateOverallStatus(array $metrics): string
     {
         $statuses = [];
-        
+
         foreach ($metrics as $service => $data) {
             if (is_array($data) && isset($data['status'])) {
                 $statuses[] = $data['status'];

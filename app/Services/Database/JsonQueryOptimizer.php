@@ -3,7 +3,6 @@
 namespace App\Services\Database;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 class JsonQueryOptimizer
 {
@@ -13,7 +12,7 @@ class JsonQueryOptimizer
     public static function optimizeJsonQuery(Builder $query, string $jsonField, string $path, $value, string $operator = '='): Builder
     {
         $databaseType = config('database.default');
-        
+
         switch ($databaseType) {
             case 'mysql':
                 return self::optimizeMySQLJsonQuery($query, $jsonField, $path, $value, $operator);
@@ -34,7 +33,7 @@ class JsonQueryOptimizer
     {
         // Use JSON_EXTRACT for better performance with indexes
         $jsonPath = self::buildMySQLJsonPath($path);
-        
+
         switch ($operator) {
             case '=':
                 return $query->whereRaw("JSON_EXTRACT({$jsonField}, ?) = ?", [$jsonPath, $value]);
@@ -65,7 +64,7 @@ class JsonQueryOptimizer
     {
         // Use ->> for text extraction or -> for JSON extraction
         $jsonPath = self::buildPostgreSQLJsonPath($path);
-        
+
         switch ($operator) {
             case '=':
                 return $query->whereRaw("{$jsonField}{$jsonPath} = ?", [$value]);
@@ -96,7 +95,7 @@ class JsonQueryOptimizer
     {
         // SQLite JSON1 extension
         $jsonPath = self::buildSQLiteJsonPath($path);
-        
+
         switch ($operator) {
             case '=':
                 return $query->whereRaw("json_extract({$jsonField}, ?) = ?", [$jsonPath, $value]);
@@ -125,7 +124,7 @@ class JsonQueryOptimizer
     {
         $parts = explode('.', $path);
         $jsonPath = '$';
-        
+
         foreach ($parts as $part) {
             if (is_numeric($part)) {
                 $jsonPath .= "[{$part}]";
@@ -133,7 +132,7 @@ class JsonQueryOptimizer
                 $jsonPath .= ".{$part}";
             }
         }
-        
+
         return $jsonPath;
     }
 
@@ -144,7 +143,7 @@ class JsonQueryOptimizer
     {
         $parts = explode('.', $path);
         $jsonPath = '';
-        
+
         foreach ($parts as $part) {
             if (is_numeric($part)) {
                 $jsonPath .= "->{$part}";
@@ -152,10 +151,10 @@ class JsonQueryOptimizer
                 $jsonPath .= "->'{$part}'";
             }
         }
-        
+
         // Use ->> for the last element to get text
         $jsonPath = preg_replace('/->\'([^\']+)\'$/', '->>\'$1\'', $jsonPath);
-        
+
         return $jsonPath;
     }
 
@@ -166,7 +165,7 @@ class JsonQueryOptimizer
     {
         $parts = explode('.', $path);
         $jsonPath = '$';
-        
+
         foreach ($parts as $part) {
             if (is_numeric($part)) {
                 $jsonPath .= "[{$part}]";
@@ -174,7 +173,7 @@ class JsonQueryOptimizer
                 $jsonPath .= ".{$part}";
             }
         }
-        
+
         return $jsonPath;
     }
 
@@ -184,16 +183,18 @@ class JsonQueryOptimizer
     public static function searchJsonArray(Builder $query, string $jsonField, string $arrayPath, $value): Builder
     {
         $databaseType = config('database.default');
-        
+
         switch ($databaseType) {
             case 'mysql':
                 $jsonPath = self::buildMySQLJsonPath($arrayPath);
+
                 return $query->whereRaw("JSON_SEARCH({$jsonField}, 'one', ?, NULL, ?) IS NOT NULL", [$value, $jsonPath]);
             case 'pgsql':
                 return $query->whereRaw("{$jsonField} @> ?", [json_encode([$arrayPath => [$value]])]);
             case 'sqlite':
                 // SQLite doesn't have native JSON array search, use a workaround
                 $jsonPath = self::buildSQLiteJsonPath($arrayPath);
+
                 return $query->whereRaw("json_extract({$jsonField}, ?) LIKE ?", [$jsonPath, "%{$value}%"]);
             default:
                 return $query->whereJsonContains($jsonField, $value, $arrayPath);
@@ -206,16 +207,19 @@ class JsonQueryOptimizer
     public static function orderByJson(Builder $query, string $jsonField, string $path, string $direction = 'asc'): Builder
     {
         $databaseType = config('database.default');
-        
+
         switch ($databaseType) {
             case 'mysql':
                 $jsonPath = self::buildMySQLJsonPath($path);
+
                 return $query->orderByRaw("JSON_EXTRACT({$jsonField}, ?) {$direction}", [$jsonPath]);
             case 'pgsql':
                 $jsonPath = self::buildPostgreSQLJsonPath($path);
+
                 return $query->orderByRaw("{$jsonField}{$jsonPath} {$direction}");
             case 'sqlite':
                 $jsonPath = self::buildSQLiteJsonPath($path);
+
                 return $query->orderByRaw("json_extract({$jsonField}, ?) {$direction}", [$jsonPath]);
             default:
                 return $query->orderBy("{$jsonField}->{$path}", $direction);
@@ -228,16 +232,19 @@ class JsonQueryOptimizer
     public static function groupByJson(Builder $query, string $jsonField, string $path): Builder
     {
         $databaseType = config('database.default');
-        
+
         switch ($databaseType) {
             case 'mysql':
                 $jsonPath = self::buildMySQLJsonPath($path);
+
                 return $query->groupByRaw("JSON_EXTRACT({$jsonField}, ?)", [$jsonPath]);
             case 'pgsql':
                 $jsonPath = self::buildPostgreSQLJsonPath($path);
+
                 return $query->groupByRaw("{$jsonField}{$jsonPath}");
             case 'sqlite':
                 $jsonPath = self::buildSQLiteJsonPath($path);
+
                 return $query->groupByRaw("json_extract({$jsonField}, ?)", [$jsonPath]);
             default:
                 return $query->groupBy("{$jsonField}->{$path}");
@@ -250,18 +257,21 @@ class JsonQueryOptimizer
     public static function countDistinctJson(Builder $query, string $jsonField, string $path): int
     {
         $databaseType = config('database.default');
-        
+
         switch ($databaseType) {
             case 'mysql':
                 $jsonPath = self::buildMySQLJsonPath($path);
+
                 return $query->selectRaw("COUNT(DISTINCT JSON_EXTRACT({$jsonField}, ?)) as count", [$jsonPath])
                     ->value('count') ?? 0;
             case 'pgsql':
                 $jsonPath = self::buildPostgreSQLJsonPath($path);
+
                 return $query->selectRaw("COUNT(DISTINCT {$jsonField}{$jsonPath}) as count")
                     ->value('count') ?? 0;
             case 'sqlite':
                 $jsonPath = self::buildSQLiteJsonPath($path);
+
                 return $query->selectRaw("COUNT(DISTINCT json_extract({$jsonField}, ?)) as count", [$jsonPath])
                     ->value('count') ?? 0;
             default:

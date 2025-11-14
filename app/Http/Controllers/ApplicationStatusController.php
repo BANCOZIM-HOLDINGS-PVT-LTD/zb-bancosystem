@@ -5,21 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\ApplicationState;
 use App\Services\NotificationService;
 use App\Services\ReferenceCodeService;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\StreamedResponse;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ApplicationStatusController extends Controller
 {
     protected $referenceCodeService;
+
     protected $notificationService;
 
     /**
      * Create a new controller instance.
      *
-     * @param ReferenceCodeService $referenceCodeService
-     * @param NotificationService $notificationService
      * @return void
      */
     public function __construct(ReferenceCodeService $referenceCodeService, NotificationService $notificationService)
@@ -27,6 +25,7 @@ class ApplicationStatusController extends Controller
         $this->referenceCodeService = $referenceCodeService;
         $this->notificationService = $notificationService;
     }
+
     /**
      * Get application status by reference number
      */
@@ -45,12 +44,12 @@ class ApplicationStatusController extends Controller
         }
 
         // If not found by reference code, try by session ID
-        if (!$application) {
+        if (! $application) {
             $application = ApplicationState::where('session_id', $reference)->first();
         }
 
         // If still not found, search in form_data for National ID
-        if (!$application) {
+        if (! $application) {
             $applications = ApplicationState::whereNotNull('form_data')->get();
             foreach ($applications as $app) {
                 $formData = $app->form_data ?? [];
@@ -64,9 +63,9 @@ class ApplicationStatusController extends Controller
             }
         }
 
-        if (!$application) {
+        if (! $application) {
             return response()->json([
-                'error' => 'Application not found. Please check your National ID number or reference number and try again.'
+                'error' => 'Application not found. Please check your National ID number or reference number and try again.',
             ], 404);
         }
 
@@ -82,7 +81,7 @@ class ApplicationStatusController extends Controller
 
         // Get applicant name
         $applicantName = trim(
-            ($formResponses['firstName'] ?? '') . ' ' .
+            ($formResponses['firstName'] ?? '').' '.
             ($formResponses['lastName'] ?? ($formResponses['surname'] ?? ''))
         ) ?: 'N/A';
 
@@ -140,7 +139,7 @@ class ApplicationStatusController extends Controller
 
         $application = ApplicationState::where('session_id', $sessionId)->first();
 
-        if (!$application) {
+        if (! $application) {
             return response()->json(['error' => 'Application not found'], 404);
         }
 
@@ -209,11 +208,11 @@ class ApplicationStatusController extends Controller
         }
 
         // If not found by reference code, try by session ID
-        if (!$application) {
+        if (! $application) {
             $application = ApplicationState::where('session_id', $reference)->first();
         }
 
-        if (!$application) {
+        if (! $application) {
             return response()->json(['error' => 'Application not found'], 404);
         }
 
@@ -245,6 +244,7 @@ class ApplicationStatusController extends Controller
             if (isset($metadata['reviewed_at'])) {
                 return isset($metadata['approved']) && $metadata['approved'] ? 'approved' : 'rejected';
             }
+
             return 'under_review';
         }
 
@@ -409,7 +409,7 @@ class ApplicationStatusController extends Controller
                 'timestamp' => isset($metadata['disbursed_at'])
                     ? Carbon::parse($metadata['disbursed_at'])->format('F j, Y g:i A')
                     : (isset($metadata['approval_details']['disbursement_date'])
-                        ? 'Expected: ' . Carbon::parse($metadata['approval_details']['disbursement_date'])->format('F j, Y')
+                        ? 'Expected: '.Carbon::parse($metadata['approval_details']['disbursement_date'])->format('F j, Y')
                         : 'Processing'),
                 'status' => $disbursementStatus,
                 'details' => $disbursementStatus === 'completed'
@@ -444,7 +444,7 @@ class ApplicationStatusController extends Controller
      */
     private function calculateProgressPercentage(string $status, array $timeline): int
     {
-        $completedSteps = count(array_filter($timeline, fn($event) => $event['status'] === 'completed'));
+        $completedSteps = count(array_filter($timeline, fn ($event) => $event['status'] === 'completed'));
         $totalSteps = count($timeline);
 
         switch ($status) {
@@ -520,30 +520,30 @@ class ApplicationStatusController extends Controller
         }
 
         // If not found by reference code, try by session ID
-        if (!$application) {
+        if (! $application) {
             $application = ApplicationState::where('session_id', $reference)->first();
         }
 
-        if (!$application) {
+        if (! $application) {
             return response()->json(['error' => 'Application not found'], 404);
         }
 
         return response()->stream(function () use ($application) {
             // Set headers for Server-Sent Events
-            echo "data: " . json_encode([
+            echo 'data: '.json_encode([
                 'type' => 'connected',
                 'session_id' => $application->session_id,
-                'timestamp' => now()->toIso8601String()
-            ]) . "\n\n";
+                'timestamp' => now()->toIso8601String(),
+            ])."\n\n";
 
             // Send initial status
             $status = $this->determineApplicationStatus($application);
-            echo "data: " . json_encode([
+            echo 'data: '.json_encode([
                 'type' => 'status_update',
                 'status' => $status,
                 'progress' => $this->calculateProgressPercentage($status, $this->buildApplicationTimeline($application, $status)),
-                'timestamp' => now()->toIso8601String()
-            ]) . "\n\n";
+                'timestamp' => now()->toIso8601String(),
+            ])."\n\n";
 
             // Keep connection alive and check for updates
             $lastUpdate = $application->updated_at;
@@ -552,20 +552,20 @@ class ApplicationStatusController extends Controller
                 $application->refresh();
                 if ($application->updated_at > $lastUpdate) {
                     $newStatus = $this->determineApplicationStatus($application);
-                    echo "data: " . json_encode([
+                    echo 'data: '.json_encode([
                         'type' => 'status_update',
                         'status' => $newStatus,
                         'progress' => $this->calculateProgressPercentage($newStatus, $this->buildApplicationTimeline($application, $newStatus)),
-                        'timestamp' => $application->updated_at->toIso8601String()
-                    ]) . "\n\n";
+                        'timestamp' => $application->updated_at->toIso8601String(),
+                    ])."\n\n";
                     $lastUpdate = $application->updated_at;
                 }
 
                 // Send heartbeat every 30 seconds
-                echo "data: " . json_encode([
+                echo 'data: '.json_encode([
                     'type' => 'heartbeat',
-                    'timestamp' => now()->toIso8601String()
-                ]) . "\n\n";
+                    'timestamp' => now()->toIso8601String(),
+                ])."\n\n";
 
                 ob_flush();
                 flush();
@@ -596,11 +596,11 @@ class ApplicationStatusController extends Controller
         }
 
         // If not found by reference code, try by session ID
-        if (!$application) {
+        if (! $application) {
             $application = ApplicationState::where('session_id', $reference)->first();
         }
 
-        if (!$application) {
+        if (! $application) {
             return response()->json(['error' => 'Application not found'], 404);
         }
 
@@ -629,32 +629,32 @@ class ApplicationStatusController extends Controller
                 'name' => 'Initial Review',
                 'description' => 'Your application is being prepared for review',
                 'icon' => 'clock',
-                'color' => 'yellow'
+                'color' => 'yellow',
             ],
             'under_review' => [
                 'name' => 'Under Review',
                 'description' => 'Our team is evaluating your application',
                 'icon' => 'search',
-                'color' => 'blue'
+                'color' => 'blue',
             ],
             'approved' => [
                 'name' => 'Approved',
                 'description' => 'Your application has been approved',
                 'icon' => 'check-circle',
-                'color' => 'green'
+                'color' => 'green',
             ],
             'rejected' => [
                 'name' => 'Requires Review',
                 'description' => 'Your application needs additional attention',
                 'icon' => 'alert-circle',
-                'color' => 'red'
+                'color' => 'red',
             ],
             'completed' => [
                 'name' => 'Completed',
                 'description' => 'Your loan has been processed and disbursed',
                 'icon' => 'package',
-                'color' => 'emerald'
-            ]
+                'color' => 'emerald',
+            ],
         ];
 
         return $stages[$status] ?? $stages['pending'];
@@ -672,7 +672,7 @@ class ApplicationStatusController extends Controller
             $milestones[] = [
                 'name' => 'Application Submitted',
                 'completedAt' => $metadata['completed_at'] ?? $application->updated_at->toIso8601String(),
-                'description' => 'All required information provided'
+                'description' => 'All required information provided',
             ];
         }
 
@@ -681,7 +681,7 @@ class ApplicationStatusController extends Controller
             $milestones[] = [
                 'name' => 'Documents Verified',
                 'completedAt' => $metadata['documents_verified_at'],
-                'description' => 'All documents have been verified'
+                'description' => 'All documents have been verified',
             ];
         }
 
@@ -690,7 +690,7 @@ class ApplicationStatusController extends Controller
             $milestones[] = [
                 'name' => 'Credit Assessment',
                 'completedAt' => $metadata['credit_check_completed_at'],
-                'description' => 'Credit evaluation completed'
+                'description' => 'Credit evaluation completed',
             ];
         }
 
@@ -709,27 +709,27 @@ class ApplicationStatusController extends Controller
                 $upcoming[] = [
                     'name' => 'Document Verification',
                     'estimatedDate' => Carbon::now()->addDays(1)->format('Y-m-d'),
-                    'description' => 'Verification of submitted documents'
+                    'description' => 'Verification of submitted documents',
                 ];
                 $upcoming[] = [
                     'name' => 'Credit Assessment',
                     'estimatedDate' => Carbon::now()->addDays(2)->format('Y-m-d'),
-                    'description' => 'Evaluation of creditworthiness'
+                    'description' => 'Evaluation of creditworthiness',
                 ];
                 break;
 
             case 'under_review':
-                if (!isset($metadata['credit_check_completed'])) {
+                if (! isset($metadata['credit_check_completed'])) {
                     $upcoming[] = [
                         'name' => 'Credit Assessment',
                         'estimatedDate' => Carbon::now()->addDays(1)->format('Y-m-d'),
-                        'description' => 'Evaluation of creditworthiness'
+                        'description' => 'Evaluation of creditworthiness',
                     ];
                 }
                 $upcoming[] = [
                     'name' => 'Final Decision',
                     'estimatedDate' => Carbon::now()->addDays(2)->format('Y-m-d'),
-                    'description' => 'Approval committee decision'
+                    'description' => 'Approval committee decision',
                 ];
                 break;
 
@@ -739,7 +739,7 @@ class ApplicationStatusController extends Controller
                     'estimatedDate' => isset($metadata['approval_details']['disbursement_date'])
                         ? $metadata['approval_details']['disbursement_date']
                         : Carbon::now()->addDays(1)->format('Y-m-d'),
-                    'description' => 'Transfer of approved loan amount'
+                    'description' => 'Transfer of approved loan amount',
                 ];
                 break;
         }
@@ -756,17 +756,17 @@ class ApplicationStatusController extends Controller
             case 'pending':
                 return [
                     'days' => 5,
-                    'description' => 'Estimated time to decision'
+                    'description' => 'Estimated time to decision',
                 ];
             case 'under_review':
                 return [
                     'days' => 3,
-                    'description' => 'Estimated time to decision'
+                    'description' => 'Estimated time to decision',
                 ];
             case 'approved':
                 return [
                     'days' => 1,
-                    'description' => 'Estimated time to disbursement'
+                    'description' => 'Estimated time to disbursement',
                 ];
             default:
                 return null;
@@ -787,18 +787,18 @@ class ApplicationStatusController extends Controller
                 'title' => 'Complete Application',
                 'description' => 'Please complete all required sections of your application',
                 'priority' => 'high',
-                'dueDate' => Carbon::now()->addDays(7)->format('Y-m-d')
+                'dueDate' => Carbon::now()->addDays(7)->format('Y-m-d'),
             ];
         }
 
         // Check for missing documents
-        if (!isset($metadata['documents_verified']) && $status !== 'rejected') {
+        if (! isset($metadata['documents_verified']) && $status !== 'rejected') {
             $actionItems[] = [
                 'type' => 'optional',
                 'title' => 'Document Verification',
                 'description' => 'Ensure all required documents are uploaded and clear',
                 'priority' => 'medium',
-                'dueDate' => null
+                'dueDate' => null,
             ];
         }
 
@@ -809,7 +809,7 @@ class ApplicationStatusController extends Controller
                 'title' => 'Review Feedback',
                 'description' => 'Review the rejection reason and consider reapplying with additional information',
                 'priority' => 'medium',
-                'dueDate' => null
+                'dueDate' => null,
             ];
         }
 
@@ -833,11 +833,11 @@ class ApplicationStatusController extends Controller
         }
 
         // If not found by reference code, try by session ID
-        if (!$application) {
+        if (! $application) {
             $application = ApplicationState::where('session_id', $reference)->first();
         }
 
-        if (!$application) {
+        if (! $application) {
             return response()->json(['error' => 'Application not found'], 404);
         }
 
@@ -991,8 +991,8 @@ class ApplicationStatusController extends Controller
         ];
 
         // Overall risk assessment
-        $highRiskCount = count(array_filter($riskFactors, fn($factor) => $factor['risk_level'] === 'high'));
-        $mediumRiskCount = count(array_filter($riskFactors, fn($factor) => $factor['risk_level'] === 'medium'));
+        $highRiskCount = count(array_filter($riskFactors, fn ($factor) => $factor['risk_level'] === 'high'));
+        $mediumRiskCount = count(array_filter($riskFactors, fn ($factor) => $factor['risk_level'] === 'medium'));
 
         $overallRisk = 'low';
         if ($highRiskCount > 1) {
@@ -1098,7 +1098,7 @@ class ApplicationStatusController extends Controller
         }
 
         // Add general recommendations
-        if (!isset($metadata['documents_verified'])) {
+        if (! isset($metadata['documents_verified'])) {
             $recommendations[] = [
                 'type' => 'tip',
                 'title' => 'Document Quality',
@@ -1146,20 +1146,20 @@ class ApplicationStatusController extends Controller
         // Add status-based notifications if not already present
         $existingIds = array_column($notifications, 'id');
 
-        if ($status === 'approved' && !in_array('approval', $existingIds)) {
+        if ($status === 'approved' && ! in_array('approval', $existingIds)) {
             $approvalDetails = $metadata['approval_details'] ?? [];
             $notifications[] = [
                 'id' => 'approval',
                 'type' => 'success',
                 'title' => 'Application Approved!',
-                'message' => 'Your loan application has been approved for $' . ($approvalDetails['amount'] ?? 'N/A'),
+                'message' => 'Your loan application has been approved for $'.($approvalDetails['amount'] ?? 'N/A'),
                 'timestamp' => $metadata['status_updated_at'] ?? $application->updated_at->toIso8601String(),
                 'read' => false,
-                'priority' => 'high'
+                'priority' => 'high',
             ];
         }
 
-        if ($status === 'under_review' && !in_array('review', $existingIds)) {
+        if ($status === 'under_review' && ! in_array('review', $existingIds)) {
             $notifications[] = [
                 'id' => 'review',
                 'type' => 'info',
@@ -1167,23 +1167,23 @@ class ApplicationStatusController extends Controller
                 'message' => 'Our team is currently reviewing your application. We may contact you if additional information is needed.',
                 'timestamp' => $metadata['status_updated_at'] ?? $application->updated_at->toIso8601String(),
                 'read' => false,
-                'priority' => 'medium'
+                'priority' => 'medium',
             ];
         }
 
-        if ($status === 'rejected' && !in_array('rejection', $existingIds)) {
+        if ($status === 'rejected' && ! in_array('rejection', $existingIds)) {
             $notifications[] = [
                 'id' => 'rejection',
                 'type' => 'error',
                 'title' => 'Application Decision',
-                'message' => 'Unfortunately, your application was not approved. ' . ($metadata['rejection_reason'] ?? 'Please contact us for more details.'),
+                'message' => 'Unfortunately, your application was not approved. '.($metadata['rejection_reason'] ?? 'Please contact us for more details.'),
                 'timestamp' => $metadata['status_updated_at'] ?? $application->updated_at->toIso8601String(),
                 'read' => false,
-                'priority' => 'high'
+                'priority' => 'high',
             ];
         }
 
-        if ($status === 'completed' && !in_array('completion', $existingIds)) {
+        if ($status === 'completed' && ! in_array('completion', $existingIds)) {
             $notifications[] = [
                 'id' => 'completion',
                 'type' => 'success',
@@ -1191,7 +1191,7 @@ class ApplicationStatusController extends Controller
                 'message' => 'Your loan has been successfully disbursed. You can now track product delivery.',
                 'timestamp' => $metadata['status_updated_at'] ?? $application->updated_at->toIso8601String(),
                 'read' => false,
-                'priority' => 'high'
+                'priority' => 'high',
             ];
         }
 
@@ -1199,7 +1199,7 @@ class ApplicationStatusController extends Controller
         $this->addProgressMilestoneNotifications($notifications, $application, $status);
 
         // Sort notifications by timestamp (newest first) and priority
-        usort($notifications, function($a, $b) {
+        usort($notifications, function ($a, $b) {
             $priorityOrder = ['high' => 3, 'medium' => 2, 'low' => 1];
             $aPriority = $priorityOrder[$a['priority'] ?? 'low'];
             $bPriority = $priorityOrder[$b['priority'] ?? 'low'];
@@ -1223,7 +1223,7 @@ class ApplicationStatusController extends Controller
         $existingIds = array_column($notifications, 'id');
 
         // Document verification milestone
-        if (isset($metadata['documents_verified']) && !in_array('docs_verified', $existingIds)) {
+        if (isset($metadata['documents_verified']) && ! in_array('docs_verified', $existingIds)) {
             $notifications[] = [
                 'id' => 'docs_verified',
                 'type' => 'success',
@@ -1231,12 +1231,12 @@ class ApplicationStatusController extends Controller
                 'message' => 'All your submitted documents have been verified successfully.',
                 'timestamp' => $metadata['documents_verified_at'] ?? $application->updated_at->toIso8601String(),
                 'read' => false,
-                'priority' => 'medium'
+                'priority' => 'medium',
             ];
         }
 
         // Credit check milestone
-        if (isset($metadata['credit_check_completed']) && !in_array('credit_check', $existingIds)) {
+        if (isset($metadata['credit_check_completed']) && ! in_array('credit_check', $existingIds)) {
             $notifications[] = [
                 'id' => 'credit_check',
                 'type' => 'info',
@@ -1244,12 +1244,12 @@ class ApplicationStatusController extends Controller
                 'message' => 'Your credit assessment has been completed as part of the review process.',
                 'timestamp' => $metadata['credit_check_completed_at'] ?? $application->updated_at->toIso8601String(),
                 'read' => false,
-                'priority' => 'medium'
+                'priority' => 'medium',
             ];
         }
 
         // Approval committee review
-        if (isset($metadata['committee_review_started']) && !in_array('committee_review', $existingIds)) {
+        if (isset($metadata['committee_review_started']) && ! in_array('committee_review', $existingIds)) {
             $notifications[] = [
                 'id' => 'committee_review',
                 'type' => 'info',
@@ -1257,9 +1257,8 @@ class ApplicationStatusController extends Controller
                 'message' => 'Your application is now being reviewed by our approval committee.',
                 'timestamp' => $metadata['committee_review_started_at'] ?? $application->updated_at->toIso8601String(),
                 'read' => false,
-                'priority' => 'medium'
+                'priority' => 'medium',
             ];
         }
     }
 }
-

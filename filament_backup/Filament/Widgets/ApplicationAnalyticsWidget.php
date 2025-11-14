@@ -3,25 +3,23 @@
 namespace App\Filament\Widgets;
 
 use App\Models\ApplicationState;
-use App\Models\Agent;
 use Carbon\Carbon;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Facades\DB;
 
 class ApplicationAnalyticsWidget extends ChartWidget
 {
     protected static ?string $heading = 'Application Analytics';
-    
+
     protected static ?int $sort = 4;
-    
-    protected int | string | array $columnSpan = 'full';
-    
+
+    protected int|string|array $columnSpan = 'full';
+
     public ?string $filter = '7days';
 
     protected function getData(): array
     {
         $period = $this->filter;
-        
+
         switch ($period) {
             case '7days':
                 return $this->getWeeklyData();
@@ -47,11 +45,11 @@ class ApplicationAnalyticsWidget extends ChartWidget
     {
         $data = [];
         $labels = [];
-        
+
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
             $labels[] = $date->format('M j');
-            
+
             $applications = ApplicationState::whereDate('created_at', $date)->count();
             $completed = ApplicationState::whereDate('created_at', $date)
                 ->where('current_step', 'completed')
@@ -59,7 +57,7 @@ class ApplicationAnalyticsWidget extends ChartWidget
             $approved = ApplicationState::whereDate('created_at', $date)
                 ->where('current_step', 'approved')
                 ->count();
-            
+
             $data['applications'][] = $applications;
             $data['completed'][] = $completed;
             $data['approved'][] = $approved;
@@ -97,16 +95,16 @@ class ApplicationAnalyticsWidget extends ChartWidget
     {
         $data = [];
         $labels = [];
-        
+
         for ($i = 29; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
             $labels[] = $date->format('M j');
-            
+
             $applications = ApplicationState::whereDate('created_at', $date)->count();
             $completed = ApplicationState::whereDate('created_at', $date)
                 ->where('current_step', 'completed')
                 ->count();
-            
+
             $data['applications'][] = $applications;
             $data['completed'][] = $completed;
         }
@@ -136,18 +134,18 @@ class ApplicationAnalyticsWidget extends ChartWidget
     {
         $data = [];
         $labels = [];
-        
+
         // Group by weeks for quarterly view
         for ($i = 12; $i >= 0; $i--) {
             $startDate = Carbon::now()->subWeeks($i)->startOfWeek();
             $endDate = Carbon::now()->subWeeks($i)->endOfWeek();
             $labels[] = $startDate->format('M j');
-            
+
             $applications = ApplicationState::whereBetween('created_at', [$startDate, $endDate])->count();
             $completed = ApplicationState::whereBetween('created_at', [$startDate, $endDate])
                 ->where('current_step', 'completed')
                 ->count();
-            
+
             $data['applications'][] = $applications;
             $data['completed'][] = $completed;
         }

@@ -4,10 +4,9 @@ namespace App\Repositories;
 
 use App\Models\ApplicationState;
 use App\Services\Database\JsonQueryOptimizer;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
 
 class ApplicationStateRepository
 {
@@ -38,7 +37,7 @@ class ApplicationStateRepository
     /**
      * Find application states by user identifier
      */
-    public function findByUserIdentifier(string $userIdentifier, string $channel = null): Collection
+    public function findByUserIdentifier(string $userIdentifier, ?string $channel = null): Collection
     {
         $query = ApplicationState::where('user_identifier', $userIdentifier);
 
@@ -76,7 +75,7 @@ class ApplicationStateRepository
     /**
      * Get application states by current step
      */
-    public function getByCurrentStep(string $step, int $limit = null): Collection
+    public function getByCurrentStep(string $step, ?int $limit = null): Collection
     {
         $query = ApplicationState::where('current_step', $step)
             ->orderBy('updated_at', 'desc');
@@ -101,7 +100,7 @@ class ApplicationStateRepository
     /**
      * Get application states by channel
      */
-    public function getByChannel(string $channel, int $limit = null): Collection
+    public function getByChannel(string $channel, ?int $limit = null): Collection
     {
         $query = ApplicationState::where('channel', $channel)
             ->orderBy('created_at', 'desc');
@@ -140,11 +139,11 @@ class ApplicationStateRepository
         }
 
         if (isset($filters['user_identifier'])) {
-            $query->where('user_identifier', 'like', '%' . $filters['user_identifier'] . '%');
+            $query->where('user_identifier', 'like', '%'.$filters['user_identifier'].'%');
         }
 
         if (isset($filters['reference_code'])) {
-            $query->where('reference_code', 'like', '%' . $filters['reference_code'] . '%');
+            $query->where('reference_code', 'like', '%'.$filters['reference_code'].'%');
         }
 
         if (isset($filters['date_from'])) {
@@ -160,11 +159,11 @@ class ApplicationStateRepository
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('session_id', 'like', "%{$search}%")
-                  ->orWhere('user_identifier', 'like', "%{$search}%")
-                  ->orWhere('reference_code', 'like', "%{$search}%")
-                  ->orWhereJsonContains('form_data->formResponses->firstName', $search)
-                  ->orWhereJsonContains('form_data->formResponses->lastName', $search)
-                  ->orWhereJsonContains('form_data->formResponses->surname', $search);
+                    ->orWhere('user_identifier', 'like', "%{$search}%")
+                    ->orWhere('reference_code', 'like', "%{$search}%")
+                    ->orWhereJsonContains('form_data->formResponses->firstName', $search)
+                    ->orWhereJsonContains('form_data->formResponses->lastName', $search)
+                    ->orWhereJsonContains('form_data->formResponses->surname', $search);
             });
         }
 
@@ -411,11 +410,11 @@ class ApplicationStateRepository
         }
 
         if (isset($filters['user_identifier'])) {
-            $query->where('user_identifier', 'like', '%' . $filters['user_identifier'] . '%');
+            $query->where('user_identifier', 'like', '%'.$filters['user_identifier'].'%');
         }
 
         if (isset($filters['reference_code'])) {
-            $query->where('reference_code', 'like', '%' . $filters['reference_code'] . '%');
+            $query->where('reference_code', 'like', '%'.$filters['reference_code'].'%');
         }
 
         // Date range filters with indexes
@@ -462,8 +461,8 @@ class ApplicationStateRepository
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('session_id', 'like', "%{$search}%")
-                  ->orWhere('user_identifier', 'like', "%{$search}%")
-                  ->orWhere('reference_code', 'like', "%{$search}%");
+                    ->orWhere('user_identifier', 'like', "%{$search}%")
+                    ->orWhere('reference_code', 'like', "%{$search}%");
 
                 // Add optimized JSON searches
                 JsonQueryOptimizer::optimizeJsonQuery($q, 'form_data', 'formResponses.firstName', $search, 'like');

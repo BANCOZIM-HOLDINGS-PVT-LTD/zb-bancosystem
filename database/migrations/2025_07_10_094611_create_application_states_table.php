@@ -21,7 +21,7 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
-            
+
             $table->index(['user_identifier', 'channel']);
             $table->index('session_id');
             $table->index('expires_at');

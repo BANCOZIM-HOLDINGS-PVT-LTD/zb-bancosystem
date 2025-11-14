@@ -4,10 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\GeneratePDFJob;
-use App\Models\ApplicationState;
 use App\Repositories\ApplicationStateRepository;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 
@@ -45,8 +44,8 @@ class PDFJobController extends Controller
 
         // Find application state
         $applicationState = $this->repository->findBySessionId($validated['session_id']);
-        
-        if (!$applicationState) {
+
+        if (! $applicationState) {
             return response()->json([
                 'success' => false,
                 'message' => 'Application state not found',
@@ -109,7 +108,7 @@ class PDFJobController extends Controller
     {
         $status = $this->getJobStatus($sessionId);
 
-        if (!$status) {
+        if (! $status) {
             return response()->json([
                 'success' => false,
                 'message' => 'No PDF generation job found for this session',
@@ -129,17 +128,17 @@ class PDFJobController extends Controller
     {
         $status = $this->getJobStatus($sessionId);
 
-        if (!$status) {
+        if (! $status) {
             return response()->json([
                 'success' => false,
                 'message' => 'No PDF generation job found for this session',
             ], 404);
         }
 
-        if (!in_array($status['status'], ['queued', 'processing'])) {
+        if (! in_array($status['status'], ['queued', 'processing'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Job cannot be cancelled in current status: ' . $status['status'],
+                'message' => 'Job cannot be cancelled in current status: '.$status['status'],
             ], 400);
         }
 
@@ -173,6 +172,7 @@ class PDFJobController extends Controller
     private function getJobStatus(string $sessionId): ?array
     {
         $cacheKey = "pdf_job_status:{$sessionId}";
+
         return Cache::get($cacheKey);
     }
 
@@ -182,7 +182,7 @@ class PDFJobController extends Controller
     private function setJobStatus(string $sessionId, string $status, array $data = []): void
     {
         $cacheKey = "pdf_job_status:{$sessionId}";
-        
+
         $statusData = [
             'status' => $status,
             'session_id' => $sessionId,
@@ -218,7 +218,7 @@ class PDFJobController extends Controller
         // This is a simplified implementation
         // In a real application, you'd store job statuses in a database table
         $allStatuses = [];
-        
+
         // Get recent application states and check their job statuses
         $recentApplications = $this->repository->getByDateRange(
             now()->subDays(7),
@@ -227,7 +227,7 @@ class PDFJobController extends Controller
 
         foreach ($recentApplications as $application) {
             $status = $this->getJobStatus($application->session_id);
-            if ($status && (!isset($validated['status']) || $status['status'] === $validated['status'])) {
+            if ($status && (! isset($validated['status']) || $status['status'] === $validated['status'])) {
                 $allStatuses[] = $status;
             }
         }

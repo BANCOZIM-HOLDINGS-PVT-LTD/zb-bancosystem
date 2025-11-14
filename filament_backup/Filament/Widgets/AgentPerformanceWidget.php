@@ -21,18 +21,18 @@ class AgentPerformanceWidget extends BaseWidget
         // Agent statistics
         $totalAgents = Agent::count();
         $activeAgents = Agent::active()->count();
-        
+
         // Commission statistics
         $totalCommissions = Commission::sum('amount');
         $thisMonthCommissions = Commission::where('earned_date', '>=', $thisMonth)->sum('amount');
         $lastMonthCommissions = Commission::whereBetween('earned_date', [$lastMonth, $thisMonth])->sum('amount');
-        
+
         $pendingCommissions = Commission::pending()->sum('amount');
         $paidCommissions = Commission::paid()->sum('amount');
 
         // Calculate trends
-        $commissionTrend = $lastMonthCommissions > 0 
-            ? round((($thisMonthCommissions - $lastMonthCommissions) / $lastMonthCommissions) * 100, 1) 
+        $commissionTrend = $lastMonthCommissions > 0
+            ? round((($thisMonthCommissions - $lastMonthCommissions) / $lastMonthCommissions) * 100, 1)
             : 0;
 
         // Top performer
@@ -43,23 +43,23 @@ class AgentPerformanceWidget extends BaseWidget
 
         return [
             Stat::make('Total Agents', $totalAgents)
-                ->description($activeAgents . ' active agents')
+                ->description($activeAgents.' active agents')
                 ->descriptionIcon('heroicon-m-users')
                 ->color('primary'),
 
-            Stat::make('Total Commissions', '$' . number_format($totalCommissions, 2))
-                ->description('$' . number_format($thisMonthCommissions, 2) . ' this month')
+            Stat::make('Total Commissions', '$'.number_format($totalCommissions, 2))
+                ->description('$'.number_format($thisMonthCommissions, 2).' this month')
                 ->descriptionIcon($commissionTrend >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
                 ->color($commissionTrend >= 0 ? 'success' : 'danger')
                 ->chart($this->getCommissionChart()),
 
-            Stat::make('Pending Commissions', '$' . number_format($pendingCommissions, 2))
+            Stat::make('Pending Commissions', '$'.number_format($pendingCommissions, 2))
                 ->description('Awaiting approval/payment')
                 ->descriptionIcon('heroicon-m-clock')
                 ->color($pendingCommissions > 10000 ? 'warning' : 'info'),
 
             Stat::make('Top Performer', $topAgent ? $topAgent->full_name : 'N/A')
-                ->description($topAgent ? $topAgent->applications_count . ' applications' : 'No data')
+                ->description($topAgent ? $topAgent->applications_count.' applications' : 'No data')
                 ->descriptionIcon('heroicon-m-trophy')
                 ->color('success'),
         ];
@@ -71,7 +71,7 @@ class AgentPerformanceWidget extends BaseWidget
     private function getCommissionChart(): array
     {
         $data = [];
-        
+
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i)->startOfDay();
             $amount = Commission::whereDate('earned_date', $date)->sum('amount');

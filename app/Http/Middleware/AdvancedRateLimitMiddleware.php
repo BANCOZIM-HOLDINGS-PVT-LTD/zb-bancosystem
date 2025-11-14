@@ -17,7 +17,7 @@ class AdvancedRateLimitMiddleware
     public function handle(Request $request, Closure $next, string $limiter = 'default'): Response
     {
         $key = $this->resolveRequestSignature($request);
-        
+
         // Check if IP is blocked
         if ($this->isBlocked($request->ip())) {
             return $this->blocked($request);
@@ -33,8 +33,9 @@ class AdvancedRateLimitMiddleware
             $this->getDecayMinutes($limiter)
         );
 
-        if (!$executed) {
+        if (! $executed) {
             $this->handleRateLimitExceeded($request, $key);
+
             return $this->buildResponse($request, $key);
         }
 
@@ -49,10 +50,10 @@ class AdvancedRateLimitMiddleware
         $ip = $request->ip();
         $route = $request->route()?->getName() ?? 'unknown';
         $userAgent = md5($request->userAgent() ?? '');
-        
+
         // Include user ID if authenticated
         $userId = $request->user()?->id ?? 'guest';
-        
+
         return "rate_limit:{$ip}:{$route}:{$userId}:{$userAgent}";
     }
 
@@ -92,6 +93,7 @@ class AdvancedRateLimitMiddleware
     protected function isBlocked(string $ip): bool
     {
         $blockKey = "blocked_ip:{$ip}";
+
         return Cache::has($blockKey);
     }
 
@@ -102,7 +104,7 @@ class AdvancedRateLimitMiddleware
     {
         $ip = $request->ip();
         $violations = $this->incrementViolations($ip);
-        
+
         Log::warning('Rate limit exceeded', [
             'ip' => $ip,
             'key' => $key,
@@ -115,7 +117,7 @@ class AdvancedRateLimitMiddleware
         // Block IP after multiple violations
         if ($violations >= 5) {
             $this->blockIp($ip, 3600); // Block for 1 hour
-            
+
             Log::alert('IP blocked due to repeated rate limit violations', [
                 'ip' => $ip,
                 'violations' => $violations,
@@ -131,9 +133,9 @@ class AdvancedRateLimitMiddleware
     {
         $violationKey = "violations:{$ip}";
         $violations = Cache::get($violationKey, 0) + 1;
-        
+
         Cache::put($violationKey, $violations, 3600); // Store for 1 hour
-        
+
         return $violations;
     }
 
@@ -144,11 +146,11 @@ class AdvancedRateLimitMiddleware
     {
         $blockKey = "blocked_ip:{$ip}";
         Cache::put($blockKey, true, $seconds);
-        
+
         // Also add to permanent block list if too many blocks
         $blockCount = Cache::get("block_count:{$ip}", 0) + 1;
         Cache::put("block_count:{$ip}", $blockCount, 86400); // 24 hours
-        
+
         if ($blockCount >= 3) {
             // Add to permanent block list (would typically be in database)
             Log::critical('IP added to permanent block list', [
@@ -164,7 +166,7 @@ class AdvancedRateLimitMiddleware
     protected function buildResponse(Request $request, string $key): Response
     {
         $retryAfter = RateLimiter::availableIn($key);
-        
+
         $response = response()->json([
             'error' => 'Too Many Requests',
             'message' => 'Rate limit exceeded. Please try again later.',
@@ -215,8 +217,8 @@ class AdvancedRateLimitMiddleware
         $userAgent = $request->userAgent() ?? '';
 
         foreach ($suspiciousPatterns as $pattern) {
-            if (preg_match($pattern, $content) || 
-                preg_match($pattern, $queryString) || 
+            if (preg_match($pattern, $content) ||
+                preg_match($pattern, $queryString) ||
                 preg_match($pattern, $userAgent)) {
                 return true;
             }
@@ -240,7 +242,7 @@ class AdvancedRateLimitMiddleware
 
         // Check request frequency pattern
         $recentRequests = $this->getRecentRequestCount($ip);
-        
+
         if ($recentRequests > 100) {
             return max(10, $baseLimit * 0.2);
         }
@@ -259,9 +261,9 @@ class AdvancedRateLimitMiddleware
     {
         $key = "request_count:{$ip}";
         $count = Cache::get($key, 0);
-        
+
         Cache::put($key, $count + 1, 300); // 5 minutes
-        
+
         return $count;
     }
 

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\CrossPlatformSyncService;
 use App\Services\ReferenceCodeService;
 use App\Services\StateManager;
-use App\Services\CrossPlatformSyncService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -13,11 +13,13 @@ use Inertia\Response;
 class ApplicationWizardController extends Controller
 {
     private StateManager $stateManager;
+
     private ReferenceCodeService $referenceCodeService;
+
     private CrossPlatformSyncService $syncService;
-    
+
     public function __construct(
-        StateManager $stateManager, 
+        StateManager $stateManager,
         ReferenceCodeService $referenceCodeService,
         CrossPlatformSyncService $syncService
     ) {
@@ -25,7 +27,7 @@ class ApplicationWizardController extends Controller
         $this->referenceCodeService = $referenceCodeService;
         $this->syncService = $syncService;
     }
-    
+
     /**
      * Show the application wizard
      */
@@ -124,7 +126,7 @@ class ApplicationWizardController extends Controller
             'referralCode' => $referralCode,
         ]);
     }
-    
+
     /**
      * Resume an existing application
      */
@@ -132,7 +134,7 @@ class ApplicationWizardController extends Controller
     {
         $state = null;
         $referenceCode = null;
-        
+
         // Check if it's a reference code (6 characters) or session ID
         if (strlen($identifier) === 6 && ctype_alnum($identifier)) {
             // It's a reference code
@@ -143,52 +145,52 @@ class ApplicationWizardController extends Controller
             $state = \App\Models\ApplicationState::where('session_id', $identifier)
                 ->where('expires_at', '>', now())
                 ->first();
-                
+
             // If we found a state by session ID, check if it has a reference code
             if ($state && $state->reference_code) {
                 $referenceCode = $state->reference_code;
             }
         }
-        
-        if (!$state) {
+
+        if (! $state) {
             return redirect()->route('home')->with('error', 'Application session not found or expired');
         }
-        
+
         // If the reference code is about to expire, extend it
         if ($referenceCode && $state->reference_code_expires_at) {
-            $expiresAt = is_string($state->reference_code_expires_at) 
+            $expiresAt = is_string($state->reference_code_expires_at)
                 ? \Carbon\Carbon::parse($state->reference_code_expires_at)
                 : $state->reference_code_expires_at;
-                
+
             if ($expiresAt->diffInDays(now()) < 5) {
                 $this->referenceCodeService->extendReferenceCode($referenceCode);
             }
         }
-        
+
         // Check if there's a WhatsApp session to sync with
         $syncStatus = null;
         if ($state->channel === 'web') {
             $phoneNumber = data_get($state->metadata, 'phone_number');
             if ($phoneNumber) {
-                $whatsappSessionId = 'whatsapp_' . $phoneNumber;
+                $whatsappSessionId = 'whatsapp_'.$phoneNumber;
                 try {
                     $syncStatus = $this->syncService->getSyncStatus($state->session_id, $whatsappSessionId);
                 } catch (\Exception $e) {
-                    Log::warning('Could not get sync status: ' . $e->getMessage());
+                    Log::warning('Could not get sync status: '.$e->getMessage());
                 }
             }
         }
-        
+
         return Inertia::render('ApplicationWizard', [
             'initialStep' => $state->current_step,
             'initialData' => $this->syncService->normalizeDataForPlatform($state->form_data ?? [], 'web'),
             'sessionId' => $state->session_id,
             'referenceCode' => $referenceCode,
             'syncStatus' => $syncStatus,
-            'platformSwitchAvailable' => !empty(data_get($state->metadata, 'phone_number')),
+            'platformSwitchAvailable' => ! empty(data_get($state->metadata, 'phone_number')),
         ]);
     }
-    
+
     /**
      * Show application status page
      */
@@ -210,9 +212,9 @@ class ApplicationWizardController extends Controller
             try {
                 // Look up application state by reference code (National ID)
                 $state = \App\Models\ApplicationState::where('reference_code', $referenceCode)
-                    ->orWhere(function($query) use ($referenceCode) {
+                    ->orWhere(function ($query) use ($referenceCode) {
                         $query->whereJsonContains('form_data->nationalId', $referenceCode)
-                              ->orWhereJsonContains('form_data->contact->phone', $referenceCode);
+                            ->orWhereJsonContains('form_data->contact->phone', $referenceCode);
                     })
                     ->latest()
                     ->first();
@@ -230,7 +232,7 @@ class ApplicationWizardController extends Controller
             } catch (\Exception $e) {
                 \Log::warning('Could not retrieve phone number for application success page', [
                     'reference_code' => $referenceCode,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -248,7 +250,7 @@ class ApplicationWizardController extends Controller
     {
         return Inertia::render('DeliveryTracking');
     }
-    
+
     /**
      * Show reference code lookup page
      */
@@ -256,7 +258,7 @@ class ApplicationWizardController extends Controller
     {
         return Inertia::render('ReferenceCodeLookup');
     }
-    
+
     /**
      * Switch application to WhatsApp
      */
@@ -266,30 +268,30 @@ class ApplicationWizardController extends Controller
             'session_id' => 'required|string',
             'phone_number' => 'required|string|regex:/^\+?[1-9]\d{1,14}$/',
         ]);
-        
+
         try {
             $syncResult = $this->syncService->switchToWhatsApp(
                 $request->session_id,
                 $request->phone_number
             );
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Application successfully linked to WhatsApp',
                 'reference_code' => $syncResult['reference_code'],
                 'whatsapp_instructions' => $this->getWhatsAppInstructions($syncResult['reference_code']),
             ]);
-            
+
         } catch (\Exception $e) {
-            Log::error('Failed to switch to WhatsApp: ' . $e->getMessage());
-            
+            Log::error('Failed to switch to WhatsApp: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to link application to WhatsApp. Please try again.',
             ], 500);
         }
     }
-    
+
     /**
      * Switch application to web
      */
@@ -298,27 +300,27 @@ class ApplicationWizardController extends Controller
         $request->validate([
             'whatsapp_session_id' => 'required|string',
         ]);
-        
+
         try {
             $syncResult = $this->syncService->switchToWeb($request->whatsapp_session_id);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Application successfully switched to web',
                 'web_session_id' => $syncResult['web_state']->session_id,
                 'resume_url' => route('application.resume', $syncResult['web_state']->session_id),
             ]);
-            
+
         } catch (\Exception $e) {
-            Log::error('Failed to switch to web: ' . $e->getMessage());
-            
+            Log::error('Failed to switch to web: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to switch application to web. Please try again.',
             ], 500);
         }
     }
-    
+
     /**
      * Get synchronization status
      */
@@ -328,28 +330,28 @@ class ApplicationWizardController extends Controller
             'session_id_1' => 'required|string',
             'session_id_2' => 'required|string',
         ]);
-        
+
         try {
             $syncStatus = $this->syncService->getSyncStatus(
                 $request->session_id_1,
                 $request->session_id_2
             );
-            
+
             return response()->json([
                 'success' => true,
                 'sync_status' => $syncStatus,
             ]);
-            
+
         } catch (\Exception $e) {
-            Log::error('Failed to get sync status: ' . $e->getMessage());
-            
+            Log::error('Failed to get sync status: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get synchronization status.',
             ], 500);
         }
     }
-    
+
     /**
      * Manually synchronize application data
      */
@@ -359,40 +361,40 @@ class ApplicationWizardController extends Controller
             'primary_session_id' => 'required|string',
             'secondary_session_id' => 'required|string',
         ]);
-        
+
         try {
             $syncResult = $this->syncService->synchronizeApplicationData(
                 $request->primary_session_id,
                 $request->secondary_session_id
             );
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Application data synchronized successfully',
                 'sync_result' => $syncResult,
             ]);
-            
+
         } catch (\Exception $e) {
-            Log::error('Failed to synchronize data: ' . $e->getMessage());
-            
+            Log::error('Failed to synchronize data: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to synchronize application data. Please try again.',
             ], 500);
         }
     }
-    
+
     /**
      * Get WhatsApp instructions for user
      */
     private function getWhatsAppInstructions(string $referenceCode): array
     {
         return [
-            'message' => "Your application is now linked to WhatsApp!",
+            'message' => 'Your application is now linked to WhatsApp!',
             'steps' => [
-                "Send a WhatsApp message to " . config('services.twilio.whatsapp_from'),
+                'Send a WhatsApp message to '.config('services.twilio.whatsapp_from'),
                 "Type: resume {$referenceCode}",
-                "Continue your application via WhatsApp",
+                'Continue your application via WhatsApp',
             ],
             'reference_code' => $referenceCode,
         ];

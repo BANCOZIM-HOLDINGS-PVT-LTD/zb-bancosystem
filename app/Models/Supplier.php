@@ -20,26 +20,26 @@ class Supplier extends Model
         'status',
         'rating',
         'payment_terms',
-        'metadata'
+        'metadata',
     ];
-    
+
     protected $casts = [
         'rating' => 'decimal:2',
         'payment_terms' => 'array',
         'metadata' => 'array',
     ];
-    
+
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($supplier) {
             if (empty($supplier->supplier_code)) {
                 $supplier->supplier_code = self::generateSupplierCode();
             }
         });
     }
-    
+
     /**
      * Generate unique supplier code
      */
@@ -47,10 +47,10 @@ class Supplier extends Model
     {
         $lastSupplier = self::orderBy('id', 'desc')->first();
         $nextId = $lastSupplier ? $lastSupplier->id + 1 : 1;
-        
-        return 'SUP-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+
+        return 'SUP-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
     }
-    
+
     /**
      * Get supplier's purchase orders
      */
@@ -58,7 +58,7 @@ class Supplier extends Model
     {
         return $this->hasMany(PurchaseOrder::class);
     }
-    
+
     /**
      * Get supplier's products
      */
@@ -66,7 +66,7 @@ class Supplier extends Model
     {
         return $this->hasMany(Product::class);
     }
-    
+
     /**
      * Get total orders count
      */
@@ -74,7 +74,7 @@ class Supplier extends Model
     {
         return $this->purchaseOrders()->count();
     }
-    
+
     /**
      * Get total order value
      */
@@ -82,7 +82,7 @@ class Supplier extends Model
     {
         return $this->purchaseOrders()->sum('total_amount');
     }
-    
+
     /**
      * Get average delivery time in days
      */
@@ -92,19 +92,19 @@ class Supplier extends Model
             ->whereNotNull('order_date')
             ->whereNotNull('actual_delivery_date')
             ->get();
-        
+
         if ($orders->isEmpty()) {
             return 0;
         }
-        
+
         $totalDays = 0;
         foreach ($orders as $order) {
             $totalDays += $order->order_date->diffInDays($order->actual_delivery_date);
         }
-        
+
         return round($totalDays / $orders->count(), 1);
     }
-    
+
     /**
      * Get on-time delivery rate
      */
@@ -114,18 +114,18 @@ class Supplier extends Model
             ->whereNotNull('expected_delivery_date')
             ->whereNotNull('actual_delivery_date')
             ->get();
-        
+
         if ($orders->isEmpty()) {
             return 100;
         }
-        
+
         $onTimeCount = $orders->filter(function ($order) {
             return $order->actual_delivery_date <= $order->expected_delivery_date;
         })->count();
-        
+
         return round(($onTimeCount / $orders->count()) * 100, 2);
     }
-    
+
     /**
      * Scope for active suppliers
      */
@@ -133,7 +133,7 @@ class Supplier extends Model
     {
         return $query->where('status', 'active');
     }
-    
+
     /**
      * Scope for suppliers by rating
      */
@@ -141,14 +141,14 @@ class Supplier extends Model
     {
         return $query->where('rating', '>=', $minRating);
     }
-    
+
     /**
      * Update supplier rating based on performance
      */
     public function updateRating(): void
     {
         $onTimeRate = $this->on_time_delivery_rate;
-        
+
         // Simple rating calculation based on on-time delivery
         if ($onTimeRate >= 95) {
             $rating = 5.0;
@@ -163,7 +163,7 @@ class Supplier extends Model
         } else {
             $rating = 2.0;
         }
-        
+
         $this->update(['rating' => $rating]);
     }
 }

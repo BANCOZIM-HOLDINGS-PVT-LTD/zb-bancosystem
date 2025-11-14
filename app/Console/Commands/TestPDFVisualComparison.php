@@ -2,13 +2,13 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Services\PDFVisualComparisonService;
-use App\Services\PDFLoggingService;
 use App\Services\PDFGeneratorService;
+use App\Services\PDFLoggingService;
+use App\Services\PDFVisualComparisonService;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class TestPDFVisualComparison extends Command
 {
@@ -43,66 +43,68 @@ class TestPDFVisualComparison extends Command
         $generateReport = $this->option('report') || config('pdf_visual_testing.reports.generate_html', true);
         $outputDir = $this->option('output') ?? storage_path('app/temp/pdf-visual-tests/reports');
         $ciMode = $this->option('ci');
-        
+
         // Create PDF generator service
         $pdfGeneratorService = new PDFGeneratorService($pdfLoggingService);
-        
+
         // Set up storage for tests
         Storage::fake('public');
         Storage::disk('public')->makeDirectory('applications');
-        
+
         // Create temp directory for test files
         $tempDir = config('pdf_visual_testing.paths.temp_directory', storage_path('app/temp/pdf-visual-tests'));
-        if (!File::exists($tempDir)) {
+        if (! File::exists($tempDir)) {
             File::makeDirectory($tempDir, 0755, true);
         }
-        
+
         // Create output directory if needed
-        if (!File::exists($outputDir)) {
+        if (! File::exists($outputDir)) {
             File::makeDirectory($outputDir, 0755, true);
         }
-        
+
         // Define templates to test
         $templates = [
             'zb_account_opening' => [
                 'name' => 'ZB Account Opening',
-                'design' => 'zb_account_opening'
+                'design' => 'zb_account_opening',
             ],
             'ssb' => [
                 'name' => 'SSB Form',
-                'design' => 'ssb'
+                'design' => 'ssb',
             ],
             'sme_account_opening' => [
                 'name' => 'SME Account Opening',
-                'design' => 'sme_account_opening'
+                'design' => 'sme_account_opening',
             ],
             'account_holders' => [
                 'name' => 'Account Holders',
-                'design' => 'account_holders'
-            ]
+                'design' => 'account_holders',
+            ],
         ];
-        
+
         // Filter templates if specific one requested
         if ($template && isset($templates[$template])) {
             $templates = [
-                $template => $templates[$template]
+                $template => $templates[$template],
             ];
-        } elseif ($template && !isset($templates[$template])) {
+        } elseif ($template && ! isset($templates[$template])) {
             $this->error("Unknown template: {$template}");
+
             return 1;
         }
-        
+
         // Define dataset types to test
         $datasetTypes = ['default', 'edge_case', 'variation'];
-        
+
         // Filter dataset types if specific one requested
         if ($dataset !== 'all' && in_array($dataset, $datasetTypes)) {
             $datasetTypes = [$dataset];
-        } elseif ($dataset !== 'all' && !in_array($dataset, $datasetTypes)) {
+        } elseif ($dataset !== 'all' && ! in_array($dataset, $datasetTypes)) {
             $this->error("Unknown dataset type: {$dataset}");
+
             return 1;
         }
-        
+
         // Initialize results
         $results = [
             'timestamp' => now()->toDateTimeString(),
@@ -110,190 +112,189 @@ class TestPDFVisualComparison extends Command
             'datasets_tested' => 0,
             'tests_passed' => 0,
             'tests_failed' => 0,
-            'template_results' => []
+            'template_results' => [],
         ];
-        
+
         // Create summary report file
-        $summaryReportPath = $outputDir . '/summary_report_' . now()->format('Ymd_His') . '.html';
-        
-        if (!$ciMode) {
-            $this->info("Starting PDF visual comparison tests");
-            $this->info("Templates to test: " . implode(', ', array_keys($templates)));
-            $this->info("Dataset types to test: " . implode(', ', $datasetTypes));
+        $summaryReportPath = $outputDir.'/summary_report_'.now()->format('Ymd_His').'.html';
+
+        if (! $ciMode) {
+            $this->info('Starting PDF visual comparison tests');
+            $this->info('Templates to test: '.implode(', ', array_keys($templates)));
+            $this->info('Dataset types to test: '.implode(', ', $datasetTypes));
         }
-        
+
         // Test each template
         foreach ($templates as $templateKey => $templateConfig) {
             // Get threshold for this template
             if ($threshold === null) {
-                $templateThreshold = config("pdf_visual_testing.template_thresholds.{$templateKey}", 
+                $templateThreshold = config("pdf_visual_testing.template_thresholds.{$templateKey}",
                     config('pdf_visual_testing.default_threshold', 5.0));
             } else {
                 $templateThreshold = $threshold;
             }
-            
-            if (!$ciMode) {
+
+            if (! $ciMode) {
                 $this->info("\nTesting template: {$templateConfig['name']}");
                 $this->info("Using difference threshold: {$templateThreshold}%");
             }
-            
+
             $templateResults = [
                 'name' => $templateConfig['name'],
                 'threshold' => $templateThreshold,
                 'datasets_tested' => 0,
                 'datasets_passed' => 0,
-                'dataset_results' => []
+                'dataset_results' => [],
             ];
-            
+
             // Test each dataset type
             foreach ($datasetTypes as $datasetType) {
-                if (!$ciMode) {
+                if (! $ciMode) {
                     $this->info("\n  Testing dataset type: {$datasetType}");
                 }
-                
+
                 // Get test data sets for this template and dataset type
                 $dataSets = $this->getDataSets($templateKey, $datasetType);
                 $templateResults['datasets_tested'] += count($dataSets);
                 $results['datasets_tested'] += count($dataSets);
-                
+
                 // Test each data set
                 foreach ($dataSets as $dataSetKey => $dataSet) {
-                    if (!$ciMode) {
+                    if (! $ciMode) {
                         $this->info("    Testing dataset: {$dataSetKey}");
                     }
-                    
+
                     try {
                         // Generate PDF
                         $pdfPath = $pdfGeneratorService->generateApplicationPDF($dataSet['state']);
-                        
-                        if (!$ciMode) {
+
+                        if (! $ciMode) {
                             $this->info("    PDF generated: {$pdfPath}");
                         }
-                        
+
                         // Compare with design template
                         $comparisonResult = $comparisonService->comparePdfWithDesign(
-                            $pdfPath, 
-                            $templateConfig['design'], 
+                            $pdfPath,
+                            $templateConfig['design'],
                             $templateThreshold
                         );
-                        
+
                         // Generate report if requested
                         $reportPath = null;
                         if ($generateReport) {
                             $reportName = "{$templateKey}_{$datasetType}_{$dataSetKey}";
                             $reportPath = $comparisonService->generateVisualReport($comparisonResult, $reportName);
-                            
-                            if (!$ciMode) {
+
+                            if (! $ciMode) {
                                 $this->info("    Visual report generated: {$reportPath}");
                             }
                         }
-                        
+
                         // Store dataset result
                         $datasetResult = [
                             'match' => $comparisonResult['overall_match'],
                             'difference' => $this->calculateAverageDifference($comparisonResult),
                             'max_difference' => $comparisonResult['max_difference'] ?? 0,
                             'report' => $reportPath,
-                            'page_results' => []
+                            'page_results' => [],
                         ];
-                        
+
                         // Store page results
                         foreach ($comparisonResult['page_results'] as $pageResult) {
                             $datasetResult['page_results'][] = [
                                 'page' => $pageResult['page'],
                                 'match' => $pageResult['match'],
-                                'difference' => $pageResult['difference']
+                                'difference' => $pageResult['difference'],
                             ];
                         }
-                        
+
                         $templateResults['dataset_results']["{$datasetType}_{$dataSetKey}"] = $datasetResult;
-                        
+
                         // Update counts
                         if ($comparisonResult['overall_match']) {
                             $templateResults['datasets_passed']++;
                             $results['tests_passed']++;
-                            
-                            if (!$ciMode) {
+
+                            if (! $ciMode) {
                                 $this->info("    ✅ Dataset {$dataSetKey} matches design within threshold of {$templateThreshold}%");
                             }
                         } else {
                             $results['tests_failed']++;
-                            
-                            if (!$ciMode) {
+
+                            if (! $ciMode) {
                                 $this->error("    ❌ Dataset {$dataSetKey} does not match design within threshold of {$templateThreshold}%");
-                                
+
                                 // Show page-by-page results
                                 foreach ($comparisonResult['page_results'] as $pageResult) {
                                     $status = $pageResult['match'] ? '✅' : '❌';
-                                    $this->line("      {$status} Page {$pageResult['page']}: Difference " . number_format($pageResult['difference'], 2) . "%");
+                                    $this->line("      {$status} Page {$pageResult['page']}: Difference ".number_format($pageResult['difference'], 2).'%');
                                 }
                             }
                         }
                     } catch (\Exception $e) {
                         $results['tests_failed']++;
-                        
-                        if (!$ciMode) {
+
+                        if (! $ciMode) {
                             $this->error("    ❌ Error testing dataset {$dataSetKey}: {$e->getMessage()}");
                         }
-                        
+
                         // Log the error
-                        Log::error("Error in PDF visual comparison test", [
+                        Log::error('Error in PDF visual comparison test', [
                             'template' => $templateKey,
                             'dataset_type' => $datasetType,
                             'dataset' => $dataSetKey,
-                            'error' => $e->getMessage()
+                            'error' => $e->getMessage(),
                         ]);
-                        
+
                         // Store error result
                         $templateResults['dataset_results']["{$datasetType}_{$dataSetKey}"] = [
                             'match' => false,
-                            'error' => $e->getMessage()
+                            'error' => $e->getMessage(),
                         ];
                     }
                 }
             }
-            
+
             // Store template results
             $results['template_results'][$templateKey] = $templateResults;
-            
+
             // Output template summary
-            if (!$ciMode) {
+            if (! $ciMode) {
                 $this->info("\n  Template {$templateConfig['name']} summary:");
                 $this->info("  Datasets tested: {$templateResults['datasets_tested']}");
                 $this->info("  Datasets passed: {$templateResults['datasets_passed']}");
-                $this->info("  Success rate: " . $this->calculateSuccessRate($templateResults['datasets_passed'], $templateResults['datasets_tested']) . "%");
+                $this->info('  Success rate: '.$this->calculateSuccessRate($templateResults['datasets_passed'], $templateResults['datasets_tested']).'%');
             }
         }
-        
+
         // Generate summary report
         $this->generateSummaryReport($results, $summaryReportPath);
-        
+
         // Output overall result
-        if (!$ciMode) {
+        if (! $ciMode) {
             $this->newLine();
-            $this->info("Overall results:");
+            $this->info('Overall results:');
             $this->info("Templates tested: {$results['templates_tested']}");
             $this->info("Datasets tested: {$results['datasets_tested']}");
             $this->info("Tests passed: {$results['tests_passed']}");
             $this->info("Tests failed: {$results['tests_failed']}");
-            $this->info("Success rate: " . $this->calculateSuccessRate($results['tests_passed'], $results['datasets_tested']) . "%");
+            $this->info('Success rate: '.$this->calculateSuccessRate($results['tests_passed'], $results['datasets_tested']).'%');
             $this->info("Summary report: {$summaryReportPath}");
         } else {
             // In CI mode, just output the basic results
-            $this->line("PDF Visual Comparison: {$results['tests_passed']}/{$results['datasets_tested']} tests passed (" . 
-                $this->calculateSuccessRate($results['tests_passed'], $results['datasets_tested']) . "%)");
+            $this->line("PDF Visual Comparison: {$results['tests_passed']}/{$results['datasets_tested']} tests passed (".
+                $this->calculateSuccessRate($results['tests_passed'], $results['datasets_tested']).'%)');
         }
-        
+
         // Return success if all tests passed
         return $results['tests_failed'] === 0 ? 0 : 1;
-    } 
-   
+    }
+
     /**
      * Generate a summary HTML report of all test results
-     * 
-     * @param array $results Test results
-     * @param string $reportPath Path to save the report
-     * @return void
+     *
+     * @param  array  $results  Test results
+     * @param  string  $reportPath  Path to save the report
      */
     private function generateSummaryReport(array $results, string $reportPath): void
     {
@@ -333,14 +334,14 @@ class TestPDFVisualComparison extends Command
         <h2>Summary</h2>
         <div class="stats">
             <div class="stat-box">
-                <strong>Generated:</strong> ' . $results['timestamp'] . '<br>
-                <strong>Templates Tested:</strong> ' . $results['templates_tested'] . '<br>
-                <strong>Datasets Tested:</strong> ' . $results['datasets_tested'] . '
+                <strong>Generated:</strong> '.$results['timestamp'].'<br>
+                <strong>Templates Tested:</strong> '.$results['templates_tested'].'<br>
+                <strong>Datasets Tested:</strong> '.$results['datasets_tested'].'
             </div>
             <div class="stat-box">
-                <strong>Tests Passed:</strong> ' . $results['tests_passed'] . '<br>
-                <strong>Tests Failed:</strong> ' . $results['tests_failed'] . '<br>
-                <strong>Success Rate:</strong> ' . $this->calculateSuccessRate($results['tests_passed'], $results['datasets_tested']) . '%
+                <strong>Tests Passed:</strong> '.$results['tests_passed'].'<br>
+                <strong>Tests Failed:</strong> '.$results['tests_failed'].'<br>
+                <strong>Success Rate:</strong> '.$this->calculateSuccessRate($results['tests_passed'], $results['datasets_tested']).'%
             </div>
         </div>
         
@@ -355,36 +356,36 @@ class TestPDFVisualComparison extends Command
                 </tr>
             </thead>
             <tbody>';
-        
+
         foreach ($results['template_results'] as $templateKey => $templateResult) {
             $html .= '
                 <tr>
-                    <td>' . $templateResult['name'] . '</td>
-                    <td>' . $templateResult['datasets_tested'] . '</td>
-                    <td>' . $templateResult['datasets_passed'] . '</td>
-                    <td>' . $this->calculateSuccessRate($templateResult['datasets_passed'], $templateResult['datasets_tested']) . '%</td>
+                    <td>'.$templateResult['name'].'</td>
+                    <td>'.$templateResult['datasets_tested'].'</td>
+                    <td>'.$templateResult['datasets_passed'].'</td>
+                    <td>'.$this->calculateSuccessRate($templateResult['datasets_passed'], $templateResult['datasets_tested']).'%</td>
                 </tr>';
         }
-        
+
         $html .= '
             </tbody>
         </table>
     </div>';
-        
+
         // Add template details
         foreach ($results['template_results'] as $templateKey => $templateResult) {
             $html .= '
     <div class="template">
         <div class="template-header">
-            <h2>' . $templateResult['name'] . '</h2>
+            <h2>'.$templateResult['name'].'</h2>
             <div class="stats">
                 <div class="stat-box">
-                    <strong>Datasets Tested:</strong> ' . $templateResult['datasets_tested'] . '<br>
-                    <strong>Datasets Passed:</strong> ' . $templateResult['datasets_passed'] . '<br>
-                    <strong>Success Rate:</strong> ' . $this->calculateSuccessRate($templateResult['datasets_passed'], $templateResult['datasets_tested']) . '%
+                    <strong>Datasets Tested:</strong> '.$templateResult['datasets_tested'].'<br>
+                    <strong>Datasets Passed:</strong> '.$templateResult['datasets_passed'].'<br>
+                    <strong>Success Rate:</strong> '.$this->calculateSuccessRate($templateResult['datasets_passed'], $templateResult['datasets_tested']).'%
                 </div>
                 <div class="stat-box">
-                    <strong>Threshold:</strong> ' . $templateResult['threshold'] . '%
+                    <strong>Threshold:</strong> '.$templateResult['threshold'].'%
                 </div>
             </div>
         </div>
@@ -401,39 +402,39 @@ class TestPDFVisualComparison extends Command
                 </tr>
             </thead>
             <tbody>';
-            
+
             foreach ($templateResult['dataset_results'] as $datasetKey => $datasetResult) {
                 $match = isset($datasetResult['match']) && $datasetResult['match'] ? '<span class="match">Yes</span>' : '<span class="no-match">No</span>';
-                $difference = isset($datasetResult['difference']) ? number_format($datasetResult['difference'], 2) . '%' : 'N/A';
-                $maxDifference = isset($datasetResult['max_difference']) ? number_format($datasetResult['max_difference'], 2) . '%' : 'N/A';
-                $report = isset($datasetResult['report']) ? '<a href="file://' . $datasetResult['report'] . '">View Report</a>' : 'N/A';
-                
+                $difference = isset($datasetResult['difference']) ? number_format($datasetResult['difference'], 2).'%' : 'N/A';
+                $maxDifference = isset($datasetResult['max_difference']) ? number_format($datasetResult['max_difference'], 2).'%' : 'N/A';
+                $report = isset($datasetResult['report']) ? '<a href="file://'.$datasetResult['report'].'">View Report</a>' : 'N/A';
+
                 if (isset($datasetResult['error'])) {
                     $match = '<span class="no-match">Error</span>';
-                    $difference = '<span class="no-match">' . $datasetResult['error'] . '</span>';
+                    $difference = '<span class="no-match">'.$datasetResult['error'].'</span>';
                 }
-                
+
                 $html .= '
                 <tr>
-                    <td>' . $datasetKey . '</td>
-                    <td>' . $match . '</td>
-                    <td>' . $difference . '</td>
-                    <td>' . $maxDifference . '</td>
-                    <td>' . $report . '</td>
+                    <td>'.$datasetKey.'</td>
+                    <td>'.$match.'</td>
+                    <td>'.$difference.'</td>
+                    <td>'.$maxDifference.'</td>
+                    <td>'.$report.'</td>
                 </tr>';
             }
-            
+
             $html .= '
             </tbody>
         </table>';
-            
+
             // Add page details for each dataset
             foreach ($templateResult['dataset_results'] as $datasetKey => $datasetResult) {
-                if (isset($datasetResult['page_results']) && !empty($datasetResult['page_results'])) {
+                if (isset($datasetResult['page_results']) && ! empty($datasetResult['page_results'])) {
                     $html .= '
         <div class="dataset">
             <div class="dataset-header">
-                <h4>Page Details for ' . $datasetKey . '</h4>
+                <h4>Page Details for '.$datasetKey.'</h4>
             </div>
             
             <table>
@@ -445,43 +446,43 @@ class TestPDFVisualComparison extends Command
                     </tr>
                 </thead>
                 <tbody>';
-                    
+
                     foreach ($datasetResult['page_results'] as $pageResult) {
                         $match = $pageResult['match'] ? '<span class="match">Yes</span>' : '<span class="no-match">No</span>';
-                        $difference = number_format($pageResult['difference'], 2) . '%';
-                        
+                        $difference = number_format($pageResult['difference'], 2).'%';
+
                         $html .= '
                     <tr>
-                        <td>Page ' . $pageResult['page'] . '</td>
-                        <td>' . $match . '</td>
-                        <td>' . $difference . '</td>
+                        <td>Page '.$pageResult['page'].'</td>
+                        <td>'.$match.'</td>
+                        <td>'.$difference.'</td>
                     </tr>';
                     }
-                    
+
                     $html .= '
                 </tbody>
             </table>
         </div>';
                 }
             }
-            
+
             $html .= '
     </div>';
         }
-        
+
         $html .= '
 </body>
 </html>';
-        
+
         // Write the report to file
         File::put($reportPath, $html);
     }
-    
+
     /**
      * Calculate success rate percentage
-     * 
-     * @param int $passed Number of passed tests
-     * @param int $total Total number of tests
+     *
+     * @param  int  $passed  Number of passed tests
+     * @param  int  $total  Total number of tests
      * @return string Formatted success rate percentage
      */
     private function calculateSuccessRate(int $passed, int $total): string
@@ -489,14 +490,14 @@ class TestPDFVisualComparison extends Command
         if ($total === 0) {
             return '0';
         }
-        
+
         return number_format(($passed / $total) * 100, 1);
     }
-    
+
     /**
      * Calculate average difference from comparison results
-     * 
-     * @param array $results Comparison results
+     *
+     * @param  array  $results  Comparison results
      * @return float Average difference percentage
      */
     private function calculateAverageDifference(array $results): float
@@ -504,44 +505,44 @@ class TestPDFVisualComparison extends Command
         if (empty($results['page_results'])) {
             return 0;
         }
-        
+
         $total = 0;
         foreach ($results['page_results'] as $pageResult) {
             $total += $pageResult['difference'];
         }
-        
+
         return $total / count($results['page_results']);
-    }    
+    }
 
     /**
      * Get test data sets for a template
-     * 
-     * @param string $template Template key
-     * @param string $datasetType Type of dataset to use
+     *
+     * @param  string  $template  Template key
+     * @param  string  $datasetType  Type of dataset to use
      * @return array Array of test data sets
      */
     private function getDataSets(string $template, string $datasetType): array
     {
         $dataSets = [];
-        
+
         switch ($template) {
             case 'zb_account_opening':
                 if ($datasetType === 'default') {
                     $dataSets['standard'] = [
-                        'state' => $this->createZBAccountOpeningTestData()
+                        'state' => $this->createZBAccountOpeningTestData(),
                     ];
                 } elseif ($datasetType === 'edge_case') {
                     $dataSets['long_name'] = [
                         'state' => $this->createZBAccountOpeningTestData(
-                            'Johnathon-Christopher-Alexander', 
+                            'Johnathon-Christopher-Alexander',
                             'Smith-Johnson-Williams-Brown-Davis-Miller-Wilson'
-                        )
+                        ),
                     ];
                     $dataSets['special_chars'] = [
                         'state' => $this->createZBAccountOpeningTestData(
-                            'John-Émile', 
+                            'John-Émile',
                             "O'Connor-Müller"
-                        )
+                        ),
                     ];
                 } elseif ($datasetType === 'variation') {
                     $dataSets['variation1'] = [
@@ -549,73 +550,73 @@ class TestPDFVisualComparison extends Command
                             'title' => 'Dr',
                             'gender' => 'Female',
                             'employmentStatus' => 'Contract',
-                            'accountCurrency' => 'ZWL'
-                        ])
+                            'accountCurrency' => 'ZWL',
+                        ]),
                     ];
                     $dataSets['variation2'] = [
                         'state' => $this->createZBAccountOpeningTestDataWithCustomValues('Jane', 'Smith', [
                             'title' => 'Mrs',
                             'gender' => 'Female',
                             'employmentStatus' => 'Self-Employed',
-                            'accountCurrency' => 'USD'
-                        ])
+                            'accountCurrency' => 'USD',
+                        ]),
                     ];
                 }
                 break;
-                
+
             case 'ssb':
                 if ($datasetType === 'default') {
                     $dataSets['standard'] = [
-                        'state' => $this->createSSBFormTestData()
+                        'state' => $this->createSSBFormTestData(),
                     ];
                 } elseif ($datasetType === 'edge_case') {
                     $dataSets['long_name'] = [
                         'state' => $this->createSSBFormTestData(
-                            'Johnathon-Christopher-Alexander', 
+                            'Johnathon-Christopher-Alexander',
                             'Smith-Johnson-Williams-Brown-Davis-Miller-Wilson'
-                        )
+                        ),
                     ];
                     $dataSets['max_values'] = [
                         'state' => $this->createSSBFormTestDataWithCustomValues('John', 'Doe', [
                             'grossMonthlySalary' => '999999999',
                             'loanAmount' => '999999999',
-                            'repaymentPeriod' => '999'
-                        ])
+                            'repaymentPeriod' => '999',
+                        ]),
                     ];
                 } elseif ($datasetType === 'variation') {
                     $dataSets['variation1'] = [
                         'state' => $this->createSSBFormTestDataWithCustomValues('Jane', 'Smith', [
                             'department' => 'Health',
                             'loanPurpose' => 'Education',
-                            'repaymentPeriod' => '48'
-                        ])
+                            'repaymentPeriod' => '48',
+                        ]),
                     ];
                     $dataSets['variation2'] = [
                         'state' => $this->createSSBFormTestDataWithCustomValues('Robert', 'Johnson', [
                             'department' => 'Finance',
                             'loanPurpose' => 'Vehicle Purchase',
-                            'repaymentPeriod' => '36'
-                        ])
+                            'repaymentPeriod' => '36',
+                        ]),
                     ];
                 }
                 break;
-                
+
             case 'sme_account_opening':
                 if ($datasetType === 'default') {
                     $dataSets['standard'] = [
-                        'state' => $this->createSMEAccountOpeningTestData()
+                        'state' => $this->createSMEAccountOpeningTestData(),
                     ];
                 } elseif ($datasetType === 'edge_case') {
                     $dataSets['long_name'] = [
                         'state' => $this->createSMEAccountOpeningTestData(
                             'Extremely Long Business Name That Exceeds Normal Limits For Testing Purposes Only'
-                        )
+                        ),
                     ];
                     $dataSets['min_values'] = [
                         'state' => $this->createSMEAccountOpeningTestDataWithCustomValues('Micro Business', [
                             'annualTurnover' => '0',
-                            'numberOfEmployees' => '1'
-                        ])
+                            'numberOfEmployees' => '1',
+                        ]),
                     ];
                 } elseif ($datasetType === 'variation') {
                     $dataSets['variation1'] = [
@@ -623,38 +624,38 @@ class TestPDFVisualComparison extends Command
                             'businessType' => 'Public Limited Company',
                             'natureOfBusiness' => 'Manufacturing',
                             'numberOfEmployees' => '500',
-                            'accountCurrency' => 'ZWL'
-                        ])
+                            'accountCurrency' => 'ZWL',
+                        ]),
                     ];
                     $dataSets['variation2'] = [
                         'state' => $this->createSMEAccountOpeningTestDataWithCustomValues('Small Business', [
                             'businessType' => 'Sole Proprietorship',
                             'natureOfBusiness' => 'Retail',
                             'numberOfEmployees' => '5',
-                            'accountCurrency' => 'USD'
-                        ])
+                            'accountCurrency' => 'USD',
+                        ]),
                     ];
                 }
                 break;
-                
+
             case 'account_holders':
                 if ($datasetType === 'default') {
                     $dataSets['standard'] = [
-                        'state' => $this->createAccountHoldersTestData()
+                        'state' => $this->createAccountHoldersTestData(),
                     ];
                 } elseif ($datasetType === 'edge_case') {
                     $dataSets['long_name'] = [
                         'state' => $this->createAccountHoldersTestData(
-                            'Johnathon-Christopher-Alexander', 
+                            'Johnathon-Christopher-Alexander',
                             'Smith-Johnson-Williams-Brown-Davis-Miller-Wilson'
-                        )
+                        ),
                     ];
                     $dataSets['max_values'] = [
                         'state' => $this->createAccountHoldersTestDataWithCustomValues('John', 'Doe', [
                             'grossMonthlySalary' => '999999999',
                             'loanAmount' => '999999999',
-                            'repaymentPeriod' => '999'
-                        ])
+                            'repaymentPeriod' => '999',
+                        ]),
                     ];
                 } elseif ($datasetType === 'variation') {
                     $dataSets['variation1'] = [
@@ -662,35 +663,34 @@ class TestPDFVisualComparison extends Command
                             'title' => 'Prof',
                             'occupation' => 'Medical Doctor',
                             'loanPurpose' => 'Business Investment',
-                            'repaymentPeriod' => '60'
-                        ])
+                            'repaymentPeriod' => '60',
+                        ]),
                     ];
                     $dataSets['variation2'] = [
                         'state' => $this->createAccountHoldersTestDataWithCustomValues('Sarah', 'Davis', [
                             'title' => 'Ms',
                             'occupation' => 'Teacher',
                             'loanPurpose' => 'Education',
-                            'repaymentPeriod' => '24'
-                        ])
+                            'repaymentPeriod' => '24',
+                        ]),
                     ];
                 }
                 break;
         }
-        
+
         return $dataSets;
     }
-    
+
     /**
      * Create test data for ZB account opening
-     * 
-     * @param string $firstName First name for test data
-     * @param string $lastName Last name for test data
-     * @return \App\Models\ApplicationState
+     *
+     * @param  string  $firstName  First name for test data
+     * @param  string  $lastName  Last name for test data
      */
     private function createZBAccountOpeningTestData(string $firstName = 'John', string $lastName = 'Doe'): \App\Models\ApplicationState
     {
         return new \App\Models\ApplicationState([
-            'session_id' => 'test-zb-account-' . uniqid(),
+            'session_id' => 'test-zb-account-'.uniqid(),
             'current_step' => 'completed',
             'form_data' => [
                 'employer' => 'some-employer',
@@ -703,7 +703,7 @@ class TestPDFVisualComparison extends Command
                     'gender' => 'Male',
                     'dateOfBirth' => '1980-01-01',
                     'nationalIdNumber' => '12-345678-A-90',
-                    'emailAddress' => $firstName . '.' . $lastName . '@example.com',
+                    'emailAddress' => $firstName.'.'.$lastName.'@example.com',
                     'mobile' => '0771234567',
                     'residentialAddress' => '123 Main Street, Harare',
                     'employerName' => 'ABC Company',
@@ -711,42 +711,40 @@ class TestPDFVisualComparison extends Command
                     'employmentStatus' => 'Permanent',
                     'grossMonthlySalary' => '5000',
                     'accountCurrency' => 'USD',
-                    'serviceCenter' => 'Harare Main Branch'
-                ]
-            ]
+                    'serviceCenter' => 'Harare Main Branch',
+                ],
+            ],
         ]);
     }
-    
+
     /**
      * Create test data for ZB account opening with custom values
-     * 
-     * @param string $firstName First name for test data
-     * @param string $lastName Last name for test data
-     * @param array $customValues Custom values to override defaults
-     * @return \App\Models\ApplicationState
+     *
+     * @param  string  $firstName  First name for test data
+     * @param  string  $lastName  Last name for test data
+     * @param  array  $customValues  Custom values to override defaults
      */
     private function createZBAccountOpeningTestDataWithCustomValues(string $firstName, string $lastName, array $customValues): \App\Models\ApplicationState
     {
         $state = $this->createZBAccountOpeningTestData($firstName, $lastName);
-        
+
         foreach ($customValues as $key => $value) {
             $state->form_data['formResponses'][$key] = $value;
         }
-        
+
         return $state;
     }
-    
+
     /**
      * Create test data for SSB form
-     * 
-     * @param string $firstName First name for test data
-     * @param string $lastName Last name for test data
-     * @return \App\Models\ApplicationState
+     *
+     * @param  string  $firstName  First name for test data
+     * @param  string  $lastName  Last name for test data
      */
     private function createSSBFormTestData(string $firstName = 'John', string $lastName = 'Doe'): \App\Models\ApplicationState
     {
         return new \App\Models\ApplicationState([
-            'session_id' => 'test-ssb-form-' . uniqid(),
+            'session_id' => 'test-ssb-form-'.uniqid(),
             'current_step' => 'completed',
             'form_data' => [
                 'employer' => 'goz-ssb',
@@ -759,7 +757,7 @@ class TestPDFVisualComparison extends Command
                     'gender' => 'Male',
                     'dateOfBirth' => '1980-01-01',
                     'nationalIdNumber' => '12-345678-A-90',
-                    'emailAddress' => $firstName . '.' . $lastName . '@example.com',
+                    'emailAddress' => $firstName.'.'.$lastName.'@example.com',
                     'mobile' => '0771234567',
                     'residentialAddress' => '123 Main Street, Harare',
                     'employerName' => 'Government of Zimbabwe',
@@ -768,41 +766,39 @@ class TestPDFVisualComparison extends Command
                     'grossMonthlySalary' => '3000',
                     'loanAmount' => '10000',
                     'loanPurpose' => 'Home Improvement',
-                    'repaymentPeriod' => '24'
-                ]
-            ]
+                    'repaymentPeriod' => '24',
+                ],
+            ],
         ]);
     }
-    
+
     /**
      * Create test data for SSB form with custom values
-     * 
-     * @param string $firstName First name for test data
-     * @param string $lastName Last name for test data
-     * @param array $customValues Custom values to override defaults
-     * @return \App\Models\ApplicationState
+     *
+     * @param  string  $firstName  First name for test data
+     * @param  string  $lastName  Last name for test data
+     * @param  array  $customValues  Custom values to override defaults
      */
     private function createSSBFormTestDataWithCustomValues(string $firstName, string $lastName, array $customValues): \App\Models\ApplicationState
     {
         $state = $this->createSSBFormTestData($firstName, $lastName);
-        
+
         foreach ($customValues as $key => $value) {
             $state->form_data['formResponses'][$key] = $value;
         }
-        
+
         return $state;
     }
-    
+
     /**
      * Create test data for SME account opening
-     * 
-     * @param string $businessName Business name for test data
-     * @return \App\Models\ApplicationState
+     *
+     * @param  string  $businessName  Business name for test data
      */
     private function createSMEAccountOpeningTestData(string $businessName = 'Test Business'): \App\Models\ApplicationState
     {
         return new \App\Models\ApplicationState([
-            'session_id' => 'test-sme-account-' . uniqid(),
+            'session_id' => 'test-sme-account-'.uniqid(),
             'current_step' => 'completed',
             'form_data' => [
                 'employer' => 'entrepreneur',
@@ -810,8 +806,8 @@ class TestPDFVisualComparison extends Command
                 'formId' => 'smes_business_account_opening.json',
                 'formResponses' => [
                     'businessName' => $businessName,
-                    'tradingName' => $businessName . ' Trading',
-                    'registrationNumber' => 'REG' . rand(10000, 99999),
+                    'tradingName' => $businessName.' Trading',
+                    'registrationNumber' => 'REG'.rand(10000, 99999),
                     'businessType' => 'Private Limited Company',
                     'dateOfIncorporation' => '2010-01-01',
                     'natureOfBusiness' => 'Technology Services',
@@ -820,44 +816,42 @@ class TestPDFVisualComparison extends Command
                     'contactPerson' => 'Jane Manager',
                     'position' => 'General Manager',
                     'telephone' => '0772345678',
-                    'email' => 'info@' . strtolower(str_replace(' ', '', $businessName)) . '.com',
+                    'email' => 'info@'.strtolower(str_replace(' ', '', $businessName)).'.com',
                     'annualTurnover' => '500000',
                     'numberOfEmployees' => '15',
-                    'accountCurrency' => 'USD'
-                ]
-            ]
+                    'accountCurrency' => 'USD',
+                ],
+            ],
         ]);
     }
-    
+
     /**
      * Create test data for SME account opening with custom values
-     * 
-     * @param string $businessName Business name for test data
-     * @param array $customValues Custom values to override defaults
-     * @return \App\Models\ApplicationState
+     *
+     * @param  string  $businessName  Business name for test data
+     * @param  array  $customValues  Custom values to override defaults
      */
     private function createSMEAccountOpeningTestDataWithCustomValues(string $businessName, array $customValues): \App\Models\ApplicationState
     {
         $state = $this->createSMEAccountOpeningTestData($businessName);
-        
+
         foreach ($customValues as $key => $value) {
             $state->form_data['formResponses'][$key] = $value;
         }
-        
+
         return $state;
     }
-    
+
     /**
      * Create test data for account holders
-     * 
-     * @param string $firstName First name for test data
-     * @param string $lastName Last name for test data
-     * @return \App\Models\ApplicationState
+     *
+     * @param  string  $firstName  First name for test data
+     * @param  string  $lastName  Last name for test data
      */
     private function createAccountHoldersTestData(string $firstName = 'John', string $lastName = 'Doe'): \App\Models\ApplicationState
     {
         return new \App\Models\ApplicationState([
-            'session_id' => 'test-account-holders-' . uniqid(),
+            'session_id' => 'test-account-holders-'.uniqid(),
             'current_step' => 'completed',
             'form_data' => [
                 'employer' => 'some-employer',
@@ -870,7 +864,7 @@ class TestPDFVisualComparison extends Command
                     'gender' => 'Male',
                     'dateOfBirth' => '1980-01-01',
                     'nationalIdNumber' => '12-345678-A-90',
-                    'emailAddress' => $firstName . '.' . $lastName . '@example.com',
+                    'emailAddress' => $firstName.'.'.$lastName.'@example.com',
                     'mobile' => '0771234567',
                     'residentialAddress' => '123 Main Street, Harare',
                     'employerName' => 'ABC Company',
@@ -880,28 +874,27 @@ class TestPDFVisualComparison extends Command
                     'accountNumber' => '4001234567890',
                     'loanAmount' => '15000',
                     'loanPurpose' => 'Vehicle Purchase',
-                    'repaymentPeriod' => '36'
-                ]
-            ]
+                    'repaymentPeriod' => '36',
+                ],
+            ],
         ]);
     }
-    
+
     /**
      * Create test data for account holders with custom values
-     * 
-     * @param string $firstName First name for test data
-     * @param string $lastName Last name for test data
-     * @param array $customValues Custom values to override defaults
-     * @return \App\Models\ApplicationState
+     *
+     * @param  string  $firstName  First name for test data
+     * @param  string  $lastName  Last name for test data
+     * @param  array  $customValues  Custom values to override defaults
      */
     private function createAccountHoldersTestDataWithCustomValues(string $firstName, string $lastName, array $customValues): \App\Models\ApplicationState
     {
         $state = $this->createAccountHoldersTestData($firstName, $lastName);
-        
+
         foreach ($customValues as $key => $value) {
             $state->form_data['formResponses'][$key] = $value;
         }
-        
+
         return $state;
     }
 }

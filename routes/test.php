@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Models\ApplicationState;
 use App\Services\PDFGeneratorService;
+use Illuminate\Support\Facades\Route;
 
 // Test PDF generation route
 Route::get('/test-pdf/{sessionId?}', function ($sessionId = null) {
@@ -12,15 +12,15 @@ Route::get('/test-pdf/{sessionId?}', function ($sessionId = null) {
 
         $state = ApplicationState::where('session_id', $sessionId)->first();
 
-        if (!$state) {
+        if (! $state) {
             return response()->json([
                 'error' => 'Application not found',
                 'session_id' => $sessionId,
-                'available' => ApplicationState::pluck('session_id')->take(5)
+                'available' => ApplicationState::pluck('session_id')->take(5),
             ], 404);
         }
 
-        $pdfGenerator = new PDFGeneratorService();
+        $pdfGenerator = new PDFGeneratorService;
         $pdfPath = $pdfGenerator->generateApplicationPDF($state);
 
         return response()->json([
@@ -38,7 +38,7 @@ Route::get('/test-pdf/{sessionId?}', function ($sessionId = null) {
             'error' => $e->getMessage(),
             'file' => $e->getFile(),
             'line' => $e->getLine(),
-            'trace' => $e->getTraceAsString()
+            'trace' => $e->getTraceAsString(),
         ], 500);
     }
 });
@@ -47,10 +47,10 @@ Route::get('/test-pdf/{sessionId?}', function ($sessionId = null) {
 Route::get('/test-ssb-pdf', function () {
     try {
         // Create test application state with SSB employer
-        $testState = new ApplicationState();
+        $testState = new ApplicationState;
         $testState->id = 9999;
-        $testState->session_id = 'test-ssb-pdf-' . time();
-        $testState->reference_code = 'SSB-TEST-' . time();
+        $testState->session_id = 'test-ssb-pdf-'.time();
+        $testState->reference_code = 'SSB-TEST-'.time();
         $testState->form_data = [
             'employer' => 'goz-ssb',
             'formResponses' => [
@@ -90,26 +90,26 @@ Route::get('/test-ssb-pdf', function () {
                         'fullName' => 'Jane Doe',
                         'relationship' => 'Spouse',
                         'phoneNumber' => '+263712345679',
-                        'residentialAddress' => '123 Main Street, Harare'
-                    ]
-                ]
+                        'residentialAddress' => '123 Main Street, Harare',
+                    ],
+                ],
             ],
             'monthlyPayment' => '200',
             // Add signature data for testing
             'documents' => [
-                'signature' => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+                'signature' => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
             ],
-            'signatureImage' => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+            'signatureImage' => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
         ];
 
-        $pdfGenerator = new PDFGeneratorService();
+        $pdfGenerator = new PDFGeneratorService;
 
         // Generate the PDF
         $pdfContent = $pdfGenerator->generatePDF($testState);
 
         // Save it to a test file
-        $filename = 'test_ssb_' . time() . '.pdf';
-        $filepath = 'applications/' . $filename;
+        $filename = 'test_ssb_'.time().'.pdf';
+        $filepath = 'applications/'.$filename;
         \Storage::disk('public')->put($filepath, $pdfContent);
 
         return response()->json([
@@ -119,10 +119,10 @@ Route::get('/test-ssb-pdf', function () {
             'reference_code' => $testState->reference_code,
             'pdf_path' => $filepath,
             'file_size' => strlen($pdfContent),
-            'download_url' => url('/storage/' . $filepath),
-            'view_url' => url('/storage/' . $filepath),
+            'download_url' => url('/storage/'.$filepath),
+            'view_url' => url('/storage/'.$filepath),
             'file_exists' => \Storage::disk('public')->exists($filepath),
-            'storage_file_size' => \Storage::disk('public')->size($filepath)
+            'storage_file_size' => \Storage::disk('public')->size($filepath),
         ]);
 
     } catch (\Exception $e) {
@@ -131,7 +131,7 @@ Route::get('/test-ssb-pdf', function () {
             'message' => $e->getMessage(),
             'file' => $e->getFile(),
             'line' => $e->getLine(),
-            'trace' => explode("\n", $e->getTraceAsString())
+            'trace' => explode("\n", $e->getTraceAsString()),
         ], 500);
     }
 });

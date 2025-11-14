@@ -86,7 +86,7 @@ class SecurityHeadersMiddleware
                 "form-action 'self'",
                 "frame-ancestors 'none'",
             ];
-            
+
             return implode('; ', $policies);
         }
 
@@ -106,7 +106,7 @@ class SecurityHeadersMiddleware
             "base-uri 'self'",
             "form-action 'self'",
             "frame-ancestors 'none'",
-            "upgrade-insecure-requests",
+            'upgrade-insecure-requests',
         ];
 
         return implode('; ', $policies);
@@ -153,7 +153,7 @@ class SecurityHeadersMiddleware
 
         $currentRoute = $request->route()?->getName();
 
-        if (!$currentRoute) {
+        if (! $currentRoute) {
             return false;
         }
 

@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 use App\Models\ApplicationState;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SystemMonitoringService
 {
@@ -22,7 +22,7 @@ class SystemMonitoringService
             'error' => $error,
             'timestamp' => now()->toIso8601String(),
             'memory_usage' => memory_get_peak_usage(true),
-            'memory_limit' => ini_get('memory_limit')
+            'memory_limit' => ini_get('memory_limit'),
         ];
 
         // Store in cache for real-time monitoring
@@ -55,7 +55,7 @@ class SystemMonitoringService
             'total_time' => 0,
             'max_time' => 0,
             'min_time' => PHP_FLOAT_MAX,
-            'errors' => []
+            'errors' => [],
         ]);
 
         $hourlyStats['total_generations']++;
@@ -85,29 +85,29 @@ class SystemMonitoringService
             $this->triggerAlert('pdf_generation_slow', [
                 'generation_time' => $generationTime,
                 'threshold' => 30,
-                'message' => "PDF generation took {$generationTime} seconds, exceeding 30s threshold"
+                'message' => "PDF generation took {$generationTime} seconds, exceeding 30s threshold",
             ]);
         }
 
         // Alert on failures
-        if (!$success) {
+        if (! $success) {
             $this->triggerAlert('pdf_generation_failed', [
                 'error' => $error,
-                'message' => "PDF generation failed: {$error}"
+                'message' => "PDF generation failed: {$error}",
             ]);
         }
 
         // Check failure rate
         $recentMetrics = Cache::get('pdf_metrics_recent', []);
         if (count($recentMetrics) >= 10) {
-            $recentFailures = array_filter(array_slice($recentMetrics, 0, 10), fn($m) => !$m['success']);
+            $recentFailures = array_filter(array_slice($recentMetrics, 0, 10), fn ($m) => ! $m['success']);
             $failureRate = count($recentFailures) / 10;
-            
+
             if ($failureRate > 0.3) { // 30% failure rate threshold
                 $this->triggerAlert('high_pdf_failure_rate', [
                     'failure_rate' => $failureRate,
                     'threshold' => 0.3,
-                    'message' => "PDF generation failure rate is {$failureRate}%, exceeding 30% threshold"
+                    'message' => "PDF generation failure rate is {$failureRate}%, exceeding 30% threshold",
                 ]);
             }
         }
@@ -124,7 +124,7 @@ class SystemMonitoringService
             'memory' => $this->checkMemoryHealth(),
             'pdf_service' => $this->checkPDFServiceHealth(),
             'application_states' => $this->checkApplicationStatesHealth(),
-            'timestamp' => now()->toIso8601String()
+            'timestamp' => now()->toIso8601String(),
         ];
     }
 
@@ -141,13 +141,13 @@ class SystemMonitoringService
             return [
                 'status' => 'healthy',
                 'response_time_ms' => round($responseTime, 2),
-                'connection' => 'active'
+                'connection' => 'active',
             ];
         } catch (\Exception $e) {
             return [
                 'status' => 'unhealthy',
                 'error' => $e->getMessage(),
-                'connection' => 'failed'
+                'connection' => 'failed',
             ];
         }
     }
@@ -171,14 +171,14 @@ class SystemMonitoringService
 
             return [
                 'status' => $status,
-                'free_space_gb' => round($diskSpace / (1024**3), 2),
-                'total_space_gb' => round($totalSpace / (1024**3), 2),
-                'used_percentage' => round($usedPercentage, 2)
+                'free_space_gb' => round($diskSpace / (1024 ** 3), 2),
+                'total_space_gb' => round($totalSpace / (1024 ** 3), 2),
+                'used_percentage' => round($usedPercentage, 2),
             ];
         } catch (\Exception $e) {
             return [
                 'status' => 'unhealthy',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }
@@ -201,10 +201,10 @@ class SystemMonitoringService
 
         return [
             'status' => $status,
-            'usage_mb' => round($memoryUsage / (1024**2), 2),
-            'limit_mb' => round($memoryLimit / (1024**2), 2),
+            'usage_mb' => round($memoryUsage / (1024 ** 2), 2),
+            'limit_mb' => round($memoryLimit / (1024 ** 2), 2),
             'usage_percentage' => round($usagePercentage, 2),
-            'peak_usage_mb' => round(memory_get_peak_usage(true) / (1024**2), 2)
+            'peak_usage_mb' => round(memory_get_peak_usage(true) / (1024 ** 2), 2),
         ];
     }
 
@@ -214,15 +214,15 @@ class SystemMonitoringService
     private function checkPDFServiceHealth(): array
     {
         $recentMetrics = Cache::get('pdf_metrics_recent', []);
-        
+
         if (empty($recentMetrics)) {
             return [
                 'status' => 'unknown',
-                'message' => 'No recent PDF generation data available'
+                'message' => 'No recent PDF generation data available',
             ];
         }
 
-        $recentSuccessful = array_filter(array_slice($recentMetrics, 0, 10), fn($m) => $m['success']);
+        $recentSuccessful = array_filter(array_slice($recentMetrics, 0, 10), fn ($m) => $m['success']);
         $successRate = count($recentSuccessful) / min(count($recentMetrics), 10);
         $avgGenerationTime = array_sum(array_column(array_slice($recentMetrics, 0, 10), 'generation_time')) / min(count($recentMetrics), 10);
 
@@ -237,7 +237,7 @@ class SystemMonitoringService
             'status' => $status,
             'success_rate' => round($successRate * 100, 2),
             'avg_generation_time' => round($avgGenerationTime, 2),
-            'recent_generations' => count($recentMetrics)
+            'recent_generations' => count($recentMetrics),
         ];
     }
 
@@ -258,12 +258,12 @@ class SystemMonitoringService
                 'active_states' => $activeStates,
                 'expired_states' => $expiredStates,
                 'completed_states' => $completedStates,
-                'completion_rate' => $totalStates > 0 ? round(($completedStates / $totalStates) * 100, 2) : 0
+                'completion_rate' => $totalStates > 0 ? round(($completedStates / $totalStates) * 100, 2) : 0,
             ];
         } catch (\Exception $e) {
             return [
                 'status' => 'unhealthy',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ];
         }
     }
@@ -280,12 +280,12 @@ class SystemMonitoringService
             'period' => [
                 'start' => $startDate->toDateString(),
                 'end' => $endDate->toDateString(),
-                'days' => $days
+                'days' => $days,
             ],
             'applications' => $this->getApplicationAnalytics($startDate, $endDate),
             'pdf_generation' => $this->getPDFAnalytics($days),
             'platform_usage' => $this->getPlatformUsageAnalytics($startDate, $endDate),
-            'performance' => $this->getPerformanceAnalytics($days)
+            'performance' => $this->getPerformanceAnalytics($days),
         ];
     }
 
@@ -298,16 +298,16 @@ class SystemMonitoringService
 
         $byChannel = $applications->groupBy('channel')->map->count();
         $byStep = $applications->groupBy('current_step')->map->count();
-        $byIntent = $applications->map(fn($app) => $app->form_data['intent'] ?? 'unknown')->countBy();
+        $byIntent = $applications->map(fn ($app) => $app->form_data['intent'] ?? 'unknown')->countBy();
 
         return [
             'total' => $applications->count(),
             'by_channel' => $byChannel->toArray(),
             'by_step' => $byStep->toArray(),
             'by_intent' => $byIntent->toArray(),
-            'completion_rate' => $applications->count() > 0 
-                ? round(($byStep['completed'] ?? 0) / $applications->count() * 100, 2) 
-                : 0
+            'completion_rate' => $applications->count() > 0
+                ? round(($byStep['completed'] ?? 0) / $applications->count() * 100, 2)
+                : 0,
         ];
     }
 
@@ -324,8 +324,8 @@ class SystemMonitoringService
         for ($i = 0; $i < $days * 24; $i++) {
             $hour = now()->subHours($i)->format('Y-m-d-H');
             $hourlyStats = Cache::get("pdf_stats_hourly_{$hour}", []);
-            
-            if (!empty($hourlyStats)) {
+
+            if (! empty($hourlyStats)) {
                 $totalGenerations += $hourlyStats['total_generations'] ?? 0;
                 $totalSuccessful += $hourlyStats['successful_generations'] ?? 0;
                 $totalTime += $hourlyStats['total_time'] ?? 0;
@@ -337,7 +337,7 @@ class SystemMonitoringService
             'successful_generations' => $totalSuccessful,
             'failed_generations' => $totalGenerations - $totalSuccessful,
             'success_rate' => $totalGenerations > 0 ? round(($totalSuccessful / $totalGenerations) * 100, 2) : 0,
-            'avg_generation_time' => $totalGenerations > 0 ? round($totalTime / $totalGenerations, 2) : 0
+            'avg_generation_time' => $totalGenerations > 0 ? round($totalTime / $totalGenerations, 2) : 0,
         ];
     }
 
@@ -347,9 +347,9 @@ class SystemMonitoringService
     private function getPlatformUsageAnalytics(Carbon $startDate, Carbon $endDate): array
     {
         $applications = ApplicationState::whereBetween('created_at', [$startDate, $endDate])->get();
-        
+
         $crossPlatform = $applications->filter(function ($app) {
-            return isset($app->metadata['linked_whatsapp_session']) || 
+            return isset($app->metadata['linked_whatsapp_session']) ||
                    isset($app->metadata['linked_web_session']);
         });
 
@@ -357,9 +357,9 @@ class SystemMonitoringService
             'web_only' => $applications->where('channel', 'web')->whereNotIn('session_id', $crossPlatform->pluck('session_id'))->count(),
             'whatsapp_only' => $applications->where('channel', 'whatsapp')->whereNotIn('session_id', $crossPlatform->pluck('session_id'))->count(),
             'cross_platform' => $crossPlatform->count(),
-            'platform_switching_rate' => $applications->count() > 0 
-                ? round(($crossPlatform->count() / $applications->count()) * 100, 2) 
-                : 0
+            'platform_switching_rate' => $applications->count() > 0
+                ? round(($crossPlatform->count() / $applications->count()) * 100, 2)
+                : 0,
         ];
     }
 
@@ -369,25 +369,25 @@ class SystemMonitoringService
     private function getPerformanceAnalytics(int $days): array
     {
         $recentMetrics = Cache::get('pdf_metrics_recent', []);
-        
+
         if (empty($recentMetrics)) {
             return [
                 'avg_response_time' => 0,
                 'p95_response_time' => 0,
-                'error_rate' => 0
+                'error_rate' => 0,
             ];
         }
 
         $times = array_column($recentMetrics, 'generation_time');
         sort($times);
-        
+
         $p95Index = (int) ceil(0.95 * count($times)) - 1;
-        $errors = array_filter($recentMetrics, fn($m) => !$m['success']);
+        $errors = array_filter($recentMetrics, fn ($m) => ! $m['success']);
 
         return [
             'avg_response_time' => round(array_sum($times) / count($times), 2),
             'p95_response_time' => round($times[$p95Index] ?? 0, 2),
-            'error_rate' => round((count($errors) / count($recentMetrics)) * 100, 2)
+            'error_rate' => round((count($errors) / count($recentMetrics)) * 100, 2),
         ];
     }
 
@@ -400,7 +400,7 @@ class SystemMonitoringService
             'type' => $type,
             'severity' => $this->getAlertSeverity($type),
             'data' => $data,
-            'timestamp' => now()->toIso8601String()
+            'timestamp' => now()->toIso8601String(),
         ];
 
         // Store alert in cache
@@ -424,6 +424,7 @@ class SystemMonitoringService
     private function getAlertSeverity(string $type): string
     {
         $criticalAlerts = ['pdf_generation_failed', 'high_pdf_failure_rate'];
+
         return in_array($type, $criticalAlerts) ? 'critical' : 'warning';
     }
 
@@ -463,6 +464,7 @@ class SystemMonitoringService
     public function getRecentAlerts(int $limit = 20): array
     {
         $alerts = Cache::get('system_alerts', []);
+
         return array_slice($alerts, 0, $limit);
     }
 

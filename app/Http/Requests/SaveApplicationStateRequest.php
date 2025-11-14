@@ -46,7 +46,7 @@ class SaveApplicationStateRequest extends FormRequest
                 Rule::in([
                     'language', 'intent', 'employer', 'product', 'account',
                     'summary', 'form', 'documents', 'completed', 'in_review',
-                    'approved', 'rejected', 'pending_documents', 'processing'
+                    'approved', 'rejected', 'pending_documents', 'processing',
                 ]),
             ],
             'form_data' => [
@@ -153,7 +153,7 @@ class SaveApplicationStateRequest extends FormRequest
         // Sanitize form data if present
         if ($this->has('form_data') && is_array($this->form_data)) {
             $formData = $this->form_data;
-            
+
             // Sanitize form responses
             if (isset($formData['formResponses']) && is_array($formData['formResponses'])) {
                 foreach ($formData['formResponses'] as $key => $value) {
@@ -162,7 +162,7 @@ class SaveApplicationStateRequest extends FormRequest
                     }
                 }
             }
-            
+
             $this->merge(['form_data' => $formData]);
         }
     }
@@ -175,10 +175,10 @@ class SaveApplicationStateRequest extends FormRequest
         if ($input === null) {
             return null;
         }
-        
+
         // Remove null bytes and control characters
         $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $input);
-        
+
         // Trim whitespace
         return trim($sanitized);
     }

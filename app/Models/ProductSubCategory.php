@@ -43,7 +43,7 @@ class ProductSubCategory extends Model
     public function getPriceRangeAttribute(): array
     {
         $products = $this->products();
-        
+
         return [
             'min' => $products->min('base_price') ?? 0,
             'max' => $products->max('base_price') ?? 0,

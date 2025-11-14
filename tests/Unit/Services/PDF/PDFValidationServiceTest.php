@@ -4,8 +4,8 @@ namespace Tests\Unit\Services\PDF;
 
 use App\Models\ApplicationState;
 use App\Services\PDF\PDFValidationService;
-use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class PDFValidationServiceTest extends TestCase
 {
@@ -16,7 +16,7 @@ class PDFValidationServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new PDFValidationService();
+        $this->service = new PDFValidationService;
     }
 
     public function test_validates_complete_application_state()
@@ -30,8 +30,8 @@ class PDFValidationServiceTest extends TestCase
                     'emailAddress' => 'john.doe@example.com',
                     'mobile' => '+263771234567',
                     'nationalIdNumber' => '12-345678-A-12',
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $errors = $this->service->validateApplicationState($applicationState);
@@ -43,7 +43,7 @@ class PDFValidationServiceTest extends TestCase
     {
         $applicationState = ApplicationState::factory()->create([
             'current_step' => 'form',
-            'form_data' => []
+            'form_data' => [],
         ]);
 
         $errors = $this->service->validateApplicationState($applicationState);
@@ -56,7 +56,7 @@ class PDFValidationServiceTest extends TestCase
     {
         $applicationState = ApplicationState::factory()->create([
             'current_step' => 'completed',
-            'form_data' => null
+            'form_data' => null,
         ]);
 
         $errors = $this->service->validateApplicationState($applicationState);
@@ -74,7 +74,7 @@ class PDFValidationServiceTest extends TestCase
                 'emailAddress' => 'john.doe@example.com',
                 'mobile' => '+263771234567',
                 'nationalIdNumber' => '12-345678-A-12',
-            ]
+            ],
         ];
 
         $errors = $this->service->validateFormData($formData, 'individual_account_opening.json');
@@ -88,7 +88,7 @@ class PDFValidationServiceTest extends TestCase
             'formResponses' => [
                 'firstName' => 'John',
                 // Missing lastName, email, etc.
-            ]
+            ],
         ];
 
         $errors = $this->service->validateFormData($formData, 'individual_account_opening.json');
@@ -107,7 +107,7 @@ class PDFValidationServiceTest extends TestCase
                 'emailAddress' => 'invalid-email',
                 'mobile' => '+263771234567',
                 'nationalIdNumber' => '12-345678-A-12',
-            ]
+            ],
         ];
 
         $errors = $this->service->validateFormData($formData, 'individual_account_opening.json');
@@ -125,7 +125,7 @@ class PDFValidationServiceTest extends TestCase
                 'emailAddress' => 'john.doe@example.com',
                 'mobile' => 'invalid-phone',
                 'nationalIdNumber' => '12-345678-A-12',
-            ]
+            ],
         ];
 
         $errors = $this->service->validateFormData($formData, 'individual_account_opening.json');
@@ -143,7 +143,7 @@ class PDFValidationServiceTest extends TestCase
                 'emailAddress' => 'john.doe@example.com',
                 'mobile' => '+263771234567',
                 'nationalIdNumber' => 'invalid-id',
-            ]
+            ],
         ];
 
         $errors = $this->service->validateFormData($formData, 'individual_account_opening.json');
@@ -162,7 +162,7 @@ class PDFValidationServiceTest extends TestCase
                 'mobile' => '+263771234567',
                 'nationalIdNumber' => '12-345678-A-12',
                 'loanAmount' => 50,  // Too low
-            ]
+            ],
         ];
 
         $errors = $this->service->validateFormData($formData, 'account_holder_loan_application.json');
@@ -181,7 +181,7 @@ class PDFValidationServiceTest extends TestCase
                 'mobile' => '+263771234567',
                 'nationalIdNumber' => '12-345678-A-12',
                 'dateOfBirth' => now()->subYears(17)->format('Y-m-d'), // Under 18
-            ]
+            ],
         ];
 
         $errors = $this->service->validateFormData($formData, 'individual_account_opening.json');
@@ -202,7 +202,7 @@ class PDFValidationServiceTest extends TestCase
                 'businessName' => 'Test Business',
                 'businessRegistrationNumber' => 'BR123456',
                 'businessType' => 'retail',
-            ]
+            ],
         ];
 
         $errors = $this->service->validateFormData($formData, 'smes_business_account_opening.json');
@@ -220,7 +220,7 @@ class PDFValidationServiceTest extends TestCase
                 'mobile' => '+263771234567',
                 'nationalIdNumber' => '12-345678-A-12',
                 // Missing business information
-            ]
+            ],
         ];
 
         $errors = $this->service->validateFormData($formData, 'smes_business_account_opening.json');
@@ -249,10 +249,10 @@ class PDFValidationServiceTest extends TestCase
                             'path' => 'documents/id_front.jpg',
                             'type' => 'image/jpeg',
                             'size' => 1024000,
-                        ]
-                    ]
-                ]
-            ]
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         $errors = $this->service->validateDocuments($formData);
@@ -263,7 +263,7 @@ class PDFValidationServiceTest extends TestCase
     public function test_validation_fails_for_missing_required_documents()
     {
         $formData = [
-            'documents' => []
+            'documents' => [],
         ];
 
         $errors = $this->service->validateDocuments($formData);
@@ -283,10 +283,10 @@ class PDFValidationServiceTest extends TestCase
                             'path' => 'documents/id_front.txt',
                             'type' => 'text/plain',
                             'size' => 1024,
-                        ]
-                    ]
-                ]
-            ]
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         $errors = $this->service->validateDocuments($formData);
@@ -306,10 +306,10 @@ class PDFValidationServiceTest extends TestCase
                             'path' => 'documents/id_front.jpg',
                             'type' => 'image/jpeg',
                             'size' => 10 * 1024 * 1024, // 10MB - too large
-                        ]
-                    ]
-                ]
-            ]
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         $errors = $this->service->validateDocuments($formData);
@@ -348,7 +348,7 @@ class PDFValidationServiceTest extends TestCase
                 'nationalIdNumber' => '12-345678-A-12',
                 'maritalStatus' => 'married',
                 // Missing spouse information
-            ]
+            ],
         ];
 
         $errors = $this->service->validateFormData($formData, 'individual_account_opening.json');

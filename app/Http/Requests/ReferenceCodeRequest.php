@@ -22,7 +22,7 @@ class ReferenceCodeRequest extends FormRequest
     public function rules(): array
     {
         $action = $this->route()->getActionMethod();
-        
+
         switch ($action) {
             case 'validate':
                 return $this->validateRules();
@@ -123,14 +123,14 @@ class ReferenceCodeRequest extends FormRequest
         // Convert code to uppercase and remove spaces/dashes (for National IDs)
         if ($this->has('code')) {
             $this->merge([
-                'code' => strtoupper(str_replace([' ', '-'], '', $this->sanitizeString($this->code)))
+                'code' => strtoupper(str_replace([' ', '-'], '', $this->sanitizeString($this->code))),
             ]);
         }
 
         // Convert reference code to uppercase
         if ($this->has('reference_code')) {
             $this->merge([
-                'reference_code' => strtoupper($this->sanitizeString($this->reference_code))
+                'reference_code' => strtoupper($this->sanitizeString($this->reference_code)),
             ]);
         }
 
@@ -153,7 +153,7 @@ class ReferenceCodeRequest extends FormRequest
             $sanitized['email'] = $this->sanitizeString($this->email);
         }
 
-        if (!empty($sanitized)) {
+        if (! empty($sanitized)) {
             $this->merge($sanitized);
         }
     }
@@ -166,10 +166,10 @@ class ReferenceCodeRequest extends FormRequest
         if ($input === null) {
             return null;
         }
-        
+
         // Remove null bytes and control characters
         $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $input);
-        
+
         // Trim whitespace
         return trim($sanitized);
     }
@@ -182,15 +182,15 @@ class ReferenceCodeRequest extends FormRequest
         if ($input === null) {
             return null;
         }
-        
+
         // Remove all non-digit characters except + at the beginning
         $sanitized = preg_replace('/[^\d+]/', '', $input);
-        
+
         // Ensure + is only at the beginning
         if (str_contains($sanitized, '+')) {
-            $sanitized = '+' . str_replace('+', '', $sanitized);
+            $sanitized = '+'.str_replace('+', '', $sanitized);
         }
-        
+
         return $sanitized;
     }
 }

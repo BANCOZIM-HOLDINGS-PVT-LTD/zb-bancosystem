@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\ApplicationState;
 use App\Http\Controllers\Admin\PDFManagementController;
+use App\Models\ApplicationState;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Tests\TestCase;
 
 class AdminPDFManagementTest extends TestCase
 {
@@ -36,8 +36,8 @@ class AdminPDFManagementTest extends TestCase
                     'formType' => 'ssb',
                     'firstName' => 'John',
                     'surname' => 'Doe',
-                    'responsibleMinistry' => 'Education'
-                ]
+                    'responsibleMinistry' => 'Education',
+                ],
             ]),
             'sme' => new ApplicationState([
                 'session_id' => 'test_sme_admin_001',
@@ -47,8 +47,8 @@ class AdminPDFManagementTest extends TestCase
                 'form_data' => [
                     'formType' => 'sme_business',
                     'businessName' => 'Test Business',
-                    'businessRegistration' => 'TEST123'
-                ]
+                    'businessRegistration' => 'TEST123',
+                ],
             ]),
             'zb' => new ApplicationState([
                 'session_id' => 'test_zb_admin_001',
@@ -59,15 +59,15 @@ class AdminPDFManagementTest extends TestCase
                     'formType' => 'zb_account_opening',
                     'firstName' => 'Sarah',
                     'surname' => 'Johnson',
-                    'accountType' => 'savings'
-                ]
-            ])
+                    'accountType' => 'savings',
+                ],
+            ]),
         ];
 
         foreach ($applications as $type => $app) {
             // Test that the controller can detect form types
             $detectedType = $this->invokeMethod($this->controller, 'detectFormType', [$app]);
-            
+
             switch ($type) {
                 case 'ssb':
                     $this->assertEquals('SSB', $detectedType);
@@ -95,13 +95,13 @@ class AdminPDFManagementTest extends TestCase
             'form_data' => [
                 'firstName' => 'John',
                 'surname' => 'Doe',
-                'formType' => 'ssb'
+                'formType' => 'ssb',
             ],
-            'created_at' => now()
+            'created_at' => now(),
         ]);
 
         $filename = $this->invokeMethod($this->controller, 'generatePDFFilename', [$application, 'ssb']);
-        
+
         $expectedPattern = '/John_Doe_ssb_Application_\d{8}\.pdf/';
         $this->assertMatchesRegularExpression($expectedPattern, $filename);
     }
@@ -117,7 +117,7 @@ class AdminPDFManagementTest extends TestCase
             'channel' => 'web',
             'user_identifier' => 'test1@example.com',
             'current_step' => 'completed',
-            'form_data' => ['firstName' => 'Test', 'surname' => 'User1']
+            'form_data' => ['firstName' => 'Test', 'surname' => 'User1'],
         ]);
 
         ApplicationState::create([
@@ -125,7 +125,7 @@ class AdminPDFManagementTest extends TestCase
             'channel' => 'whatsapp',
             'user_identifier' => 'test2@example.com',
             'current_step' => 'form_step',
-            'form_data' => ['firstName' => 'Test', 'surname' => 'User2']
+            'form_data' => ['firstName' => 'Test', 'surname' => 'User2'],
         ]);
 
         $response = $this->controller->statistics();
@@ -134,7 +134,7 @@ class AdminPDFManagementTest extends TestCase
         $this->assertArrayHasKey('total_applications', $data);
         $this->assertArrayHasKey('completion_rates', $data);
         $this->assertArrayHasKey('channel_breakdown', $data);
-        
+
         $this->assertEquals(2, $data['total_applications']);
         $this->assertIsArray($data['completion_rates']);
         $this->assertIsArray($data['channel_breakdown']);
@@ -152,7 +152,7 @@ class AdminPDFManagementTest extends TestCase
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
             'form_data' => ['formType' => 'ssb'],
-            'metadata' => ['form_type' => 'ssb']
+            'metadata' => ['form_type' => 'ssb'],
         ]);
 
         ApplicationState::create([
@@ -161,11 +161,11 @@ class AdminPDFManagementTest extends TestCase
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
             'form_data' => ['formType' => 'sme_business'],
-            'metadata' => ['form_type' => 'sme_business']
+            'metadata' => ['form_type' => 'sme_business'],
         ]);
 
         $breakdown = $this->invokeMethod($this->controller, 'getFormTypeBreakdown', []);
-        
+
         $this->assertIsArray($breakdown);
         // Should have entries for different form types
     }
@@ -187,8 +187,8 @@ class AdminPDFManagementTest extends TestCase
      */
     public function test_error_handling_for_missing_applications()
     {
-        $response = $this->controller->download(new Request(), 'nonexistent_session_id');
-        
+        $response = $this->controller->download(new Request, 'nonexistent_session_id');
+
         $this->assertEquals(404, $response->getStatusCode());
     }
 
@@ -198,11 +198,11 @@ class AdminPDFManagementTest extends TestCase
     public function test_bulk_download_validation()
     {
         $request = new Request([
-            'session_ids' => ['nonexistent_id_1', 'nonexistent_id_2']
+            'session_ids' => ['nonexistent_id_1', 'nonexistent_id_2'],
         ]);
 
         $response = $this->controller->bulkDownload($request);
-        
+
         // Should handle gracefully when no applications found
         $this->assertEquals(404, $response->getStatusCode());
     }

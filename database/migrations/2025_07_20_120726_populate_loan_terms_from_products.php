@@ -1,11 +1,9 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-use App\Models\Product;
 use App\Models\LoanTerm;
+use App\Models\Product;
 use App\Models\ProductInventory;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -33,8 +31,8 @@ return new class extends Migration
                 'is_active' => true,
                 'is_featured' => rand(0, 1) == 1,
                 'availability_status' => 'available',
-                'warehouse_location' => 'Main Warehouse - Section ' . chr(65 + rand(0, 5)),
-                'notes' => 'Auto-generated inventory record for ' . $product->name,
+                'warehouse_location' => 'Main Warehouse - Section '.chr(65 + rand(0, 5)),
+                'notes' => 'Auto-generated inventory record for '.$product->name,
             ]);
 
             // Create multiple loan terms for each product
@@ -55,7 +53,7 @@ return new class extends Migration
             $loanTermsData = [
                 [
                     'name' => 'Quick 6-Month Plan',
-                    'description' => 'Fast approval, 6-month repayment for ' . $productName,
+                    'description' => 'Fast approval, 6-month repayment for '.$productName,
                     'duration_months' => 6,
                     'interest_rate' => 15.00,
                     'interest_type' => 'reducing',
@@ -66,7 +64,7 @@ return new class extends Migration
                 ],
                 [
                     'name' => 'Standard 12-Month Plan',
-                    'description' => 'Standard repayment plan for ' . $productName,
+                    'description' => 'Standard repayment plan for '.$productName,
                     'duration_months' => 12,
                     'interest_rate' => 12.00,
                     'interest_type' => 'reducing',
@@ -76,7 +74,7 @@ return new class extends Migration
                 ],
                 [
                     'name' => 'Extended 18-Month Plan',
-                    'description' => 'Lower monthly payments for ' . $productName,
+                    'description' => 'Lower monthly payments for '.$productName,
                     'duration_months' => 18,
                     'interest_rate' => 14.00,
                     'interest_type' => 'reducing',
@@ -90,7 +88,7 @@ return new class extends Migration
             $loanTermsData = [
                 [
                     'name' => 'Standard 12-Month Plan',
-                    'description' => 'Standard financing for ' . $productName,
+                    'description' => 'Standard financing for '.$productName,
                     'duration_months' => 12,
                     'interest_rate' => 10.00,
                     'interest_type' => 'reducing',
@@ -101,7 +99,7 @@ return new class extends Migration
                 ],
                 [
                     'name' => 'Extended 24-Month Plan',
-                    'description' => 'Extended repayment for ' . $productName,
+                    'description' => 'Extended repayment for '.$productName,
                     'duration_months' => 24,
                     'interest_rate' => 12.00,
                     'interest_type' => 'reducing',
@@ -111,7 +109,7 @@ return new class extends Migration
                 ],
                 [
                     'name' => 'Premium 36-Month Plan',
-                    'description' => 'Low monthly payments for ' . $productName,
+                    'description' => 'Low monthly payments for '.$productName,
                     'duration_months' => 36,
                     'interest_rate' => 14.00,
                     'interest_type' => 'reducing',
@@ -125,7 +123,7 @@ return new class extends Migration
             $loanTermsData = [
                 [
                     'name' => 'Business 24-Month Plan',
-                    'description' => 'Business financing for ' . $productName,
+                    'description' => 'Business financing for '.$productName,
                     'duration_months' => 24,
                     'interest_rate' => 8.00,
                     'interest_type' => 'reducing',
@@ -136,7 +134,7 @@ return new class extends Migration
                 ],
                 [
                     'name' => 'Extended 36-Month Plan',
-                    'description' => 'Extended business financing for ' . $productName,
+                    'description' => 'Extended business financing for '.$productName,
                     'duration_months' => 36,
                     'interest_rate' => 10.00,
                     'interest_type' => 'reducing',
@@ -146,7 +144,7 @@ return new class extends Migration
                 ],
                 [
                     'name' => 'Long-term 48-Month Plan',
-                    'description' => 'Long-term financing for ' . $productName,
+                    'description' => 'Long-term financing for '.$productName,
                     'duration_months' => 48,
                     'interest_rate' => 12.00,
                     'interest_type' => 'reducing',

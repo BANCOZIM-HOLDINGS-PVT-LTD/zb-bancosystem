@@ -24,9 +24,9 @@ class ProfessionValidationService
             'Librarian',
             'Academic Administrator',
             'Research Officer',
-            'Early Childhood Development Practitioner'
+            'Early Childhood Development Practitioner',
         ],
-        
+
         'Health and Child Care' => [
             'Doctor',
             'Nurse',
@@ -43,9 +43,9 @@ class ProfessionValidationService
             'Optometrist',
             'Medical Technologist',
             'Community Health Worker',
-            'Environmental Health Officer'
+            'Environmental Health Officer',
         ],
-        
+
         'Home Affairs and Cultural Heritage' => [
             'Immigration Officer',
             'Civil Servant',
@@ -56,9 +56,9 @@ class ProfessionValidationService
             'Border Control Officer',
             'Identity Document Officer',
             'Citizenship Officer',
-            'Cultural Preservation Officer'
+            'Cultural Preservation Officer',
         ],
-        
+
         'Justice, Legal and Parliamentary Affairs' => [
             'Lawyer',
             'Attorney',
@@ -72,9 +72,9 @@ class ProfessionValidationService
             'Court Reporter',
             'Sheriff',
             'Parliamentary Officer',
-            'Legislative Drafter'
+            'Legislative Drafter',
         ],
-        
+
         'Finance and Economic Development' => [
             'Accountant',
             'Auditor',
@@ -88,9 +88,9 @@ class ProfessionValidationService
             'Financial Planner',
             'Treasury Officer',
             'Insurance Officer',
-            'Actuarial Scientist'
+            'Actuarial Scientist',
         ],
-        
+
         'Lands, Agriculture, Fisheries, Water and Rural Development' => [
             'Agricultural Officer',
             'Veterinarian',
@@ -105,9 +105,9 @@ class ProfessionValidationService
             'Fisheries Officer',
             'Agricultural Economist',
             'Extension Officer',
-            'Food Scientist'
+            'Food Scientist',
         ],
-        
+
         'Energy and Power Development' => [
             'Electrical Engineer',
             'Power Engineer',
@@ -118,9 +118,9 @@ class ProfessionValidationService
             'Grid Operator',
             'Power Plant Operator',
             'Energy Consultant',
-            'Electrical Technician'
+            'Electrical Technician',
         ],
-        
+
         'Transport and Infrastructural Development' => [
             'Civil Engineer',
             'Transport Planner',
@@ -133,9 +133,9 @@ class ProfessionValidationService
             'Traffic Engineer',
             'Infrastructure Analyst',
             'Transportation Officer',
-            'Construction Technician'
+            'Construction Technician',
         ],
-        
+
         'Information Communication Technology, Postal and Courier Services' => [
             'Software Developer',
             'Systems Administrator',
@@ -149,9 +149,9 @@ class ProfessionValidationService
             'Telecommunications Engineer',
             'ICT Officer',
             'Digital Marketing Specialist',
-            'IT Consultant'
+            'IT Consultant',
         ],
-        
+
         'Public Service, Labour and Social Welfare' => [
             'Social Worker',
             'Human Resources Officer',
@@ -162,9 +162,9 @@ class ProfessionValidationService
             'Community Development Officer',
             'Training Officer',
             'Industrial Relations Officer',
-            'Occupational Safety Officer'
+            'Occupational Safety Officer',
         ],
-        
+
         'Higher and Tertiary Education, Innovation, Science and Technology Development' => [
             'Research Scientist',
             'University Lecturer',
@@ -175,9 +175,9 @@ class ProfessionValidationService
             'Science Officer',
             'Technology Developer',
             'Patent Officer',
-            'Academic Researcher'
+            'Academic Researcher',
         ],
-        
+
         'Environment, Climate, Tourism and Hospitality Industry' => [
             'Environmental Officer',
             'Climate Change Officer',
@@ -190,9 +190,9 @@ class ProfessionValidationService
             'Hospitality Manager',
             'Park Ranger',
             'Wildlife Officer',
-            'Meteorologist'
+            'Meteorologist',
         ],
-        
+
         'Industry and Commerce' => [
             'Industrial Engineer',
             'Production Manager',
@@ -203,9 +203,9 @@ class ProfessionValidationService
             'Industrial Relations Officer',
             'Standards Officer',
             'Export Officer',
-            'Import Officer'
+            'Import Officer',
         ],
-        
+
         'Mines and Mining Development' => [
             'Mining Engineer',
             'Geologist',
@@ -215,9 +215,9 @@ class ProfessionValidationService
             'Exploration Geologist',
             'Mine Surveyor',
             'Minerals Processing Engineer',
-            'Environmental Mining Officer'
+            'Environmental Mining Officer',
         ],
-        
+
         'Defence and War Veterans Affairs' => [
             'Military Officer',
             'Defence Analyst',
@@ -226,9 +226,9 @@ class ProfessionValidationService
             'War Veterans Officer',
             'Defence Procurement Officer',
             'Military Engineer',
-            'Defence Contractor'
+            'Defence Contractor',
         ],
-        
+
         'National Housing and Social Amenities' => [
             'Housing Officer',
             'Urban Planner',
@@ -236,9 +236,9 @@ class ProfessionValidationService
             'Social Amenities Officer',
             'Community Planner',
             'Housing Policy Officer',
-            'Development Officer'
+            'Development Officer',
         ],
-        
+
         'Women Affairs, Community, Small and Medium Enterprises Development' => [
             'Gender Officer',
             'Women Empowerment Officer',
@@ -246,9 +246,9 @@ class ProfessionValidationService
             'Community Development Officer',
             'Microfinance Officer',
             'Entrepreneurship Officer',
-            'Cooperative Officer'
+            'Cooperative Officer',
         ],
-        
+
         'Youth, Sport, Arts and Recreation' => [
             'Youth Officer',
             'Sports Coordinator',
@@ -256,10 +256,10 @@ class ProfessionValidationService
             'Youth Development Officer',
             'Sports Administrator',
             'Arts Coordinator',
-            'Youth Counsellor'
-        ]
+            'Youth Counsellor',
+        ],
     ];
-    
+
     /**
      * Additional professions not directly under specific ministries
      */
@@ -305,43 +305,43 @@ class ProfessionValidationService
         'Priest',
         'Religious Leader',
         'Traditional Healer',
-        'Other'
+        'Other',
     ];
-    
+
     /**
      * Get all valid professions
      */
     public static function getAllProfessions(): array
     {
         $allProfessions = [];
-        
+
         // Add ministry professions
         foreach (self::$ministryProfessions as $ministry => $professions) {
             $allProfessions = array_merge($allProfessions, $professions);
         }
-        
+
         // Add general professions
         $allProfessions = array_merge($allProfessions, self::$generalProfessions);
-        
+
         // Remove duplicates and sort
         $allProfessions = array_unique($allProfessions);
         sort($allProfessions);
-        
+
         return $allProfessions;
     }
-    
+
     /**
      * Validate if a profession is acceptable
      */
     public static function validateProfession(string $profession): bool
     {
         $allProfessions = self::getAllProfessions();
-        
+
         // Exact match
         if (in_array($profession, $allProfessions)) {
             return true;
         }
-        
+
         // Case-insensitive match
         $lowerProfession = strtolower($profession);
         foreach ($allProfessions as $validProfession) {
@@ -349,18 +349,18 @@ class ProfessionValidationService
                 return true;
             }
         }
-        
+
         // Partial match for flexibility
         foreach ($allProfessions as $validProfession) {
-            if (stripos($validProfession, $profession) !== false || 
+            if (stripos($validProfession, $profession) !== false ||
                 stripos($profession, $validProfession) !== false) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     /**
      * Get ministry for a given profession
      */
@@ -375,10 +375,10 @@ class ProfessionValidationService
                 }
             }
         }
-        
+
         return null; // General profession or not found
     }
-    
+
     /**
      * Get professions by ministry
      */
@@ -386,7 +386,7 @@ class ProfessionValidationService
     {
         return self::$ministryProfessions[$ministry] ?? [];
     }
-    
+
     /**
      * Get all ministries
      */
@@ -394,7 +394,7 @@ class ProfessionValidationService
     {
         return array_keys(self::$ministryProfessions);
     }
-    
+
     /**
      * Get profession suggestions based on partial input
      */
@@ -403,26 +403,26 @@ class ProfessionValidationService
         $input = strtolower($input);
         $allProfessions = self::getAllProfessions();
         $suggestions = [];
-        
+
         // First pass: exact word matches
         foreach ($allProfessions as $profession) {
             if (stripos($profession, $input) === 0) {
                 $suggestions[] = $profession;
             }
         }
-        
+
         // Second pass: contains matches
         if (count($suggestions) < $limit) {
             foreach ($allProfessions as $profession) {
-                if (stripos($profession, $input) !== false && !in_array($profession, $suggestions)) {
+                if (stripos($profession, $input) !== false && ! in_array($profession, $suggestions)) {
                     $suggestions[] = $profession;
                 }
             }
         }
-        
+
         return array_slice($suggestions, 0, $limit);
     }
-    
+
     /**
      * Get formatted profession list for forms
      */
@@ -430,15 +430,15 @@ class ProfessionValidationService
     {
         $allProfessions = self::getAllProfessions();
         $formatted = [];
-        
+
         foreach ($allProfessions as $profession) {
             $formatted[] = [
                 'value' => $profession,
                 'label' => $profession,
-                'ministry' => self::getMinistryForProfession($profession)
+                'ministry' => self::getMinistryForProfession($profession),
             ];
         }
-        
+
         return $formatted;
     }
 }

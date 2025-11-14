@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 class AddNationalIdToUser extends Command
 {
     protected $signature = 'user:add-national-id {email} {national_id} {phone}';
+
     protected $description = 'Add National ID and phone number to an existing user';
 
     public function handle()
@@ -18,8 +19,9 @@ class AddNationalIdToUser extends Command
 
         $user = User::where('email', $email)->first();
 
-        if (!$user) {
+        if (! $user) {
             $this->error("User with email {$email} not found!");
+
             return 1;
         }
 
@@ -28,7 +30,7 @@ class AddNationalIdToUser extends Command
         $user->phone_verified = false;
         $user->save();
 
-        $this->info("User updated successfully!");
+        $this->info('User updated successfully!');
         $this->info("Name: {$user->name}");
         $this->info("Email: {$user->email}");
         $this->info("National ID: {$user->national_id}");

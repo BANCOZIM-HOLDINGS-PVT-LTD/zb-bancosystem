@@ -6,9 +6,9 @@ import { ChevronLeft, CheckCircle, User, Building, DollarSign, CreditCard, MapPi
 interface ApplicationData {
     language?: string;
     intent?: string;
-    employer: string;
-    hasAccount: boolean;
-    wantsAccount: boolean;
+    employer?: string;
+    hasAccount?: boolean;
+    wantsAccount?: boolean;
     specificEmployer?: string;
     business?: string;
     category?: string;
@@ -51,7 +51,7 @@ const getFormIdByEmployer = (employerId: string, hasAccount: boolean, wantsAccou
 };
 
 const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, onBack, loading }) => {
-    const formId = getFormIdByEmployer(data.employer, data.hasAccount, data.wantsAccount);
+    const formId = getFormIdByEmployer(data.employer || '', data.hasAccount || false, data.wantsAccount || false);
 
     const handleSubmit = () => {
         onNext({
@@ -119,7 +119,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                     <div className="space-y-3">
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Employer</p>
-                            <p className="font-medium">{getEmployerName(data.employer)}</p>
+                            <p className="font-medium">{getEmployerName(data.employer || '')}</p>
                         </div>
                         {data.specificEmployer && (
                             <div>

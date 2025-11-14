@@ -54,10 +54,15 @@ class ProductPackage extends Model
      * Package types
      */
     const TYPE_STANDARD = 'standard';
+
     const TYPE_PREMIUM = 'premium';
+
     const TYPE_ECONOMY = 'economy';
+
     const TYPE_BUNDLE = 'bundle';
+
     const TYPE_CUSTOM = 'custom';
+
     const TYPE_PROMOTIONAL = 'promotional';
 
     /**
@@ -170,11 +175,11 @@ class ProductPackage extends Model
     private function calculateQuantityDiscount(int $quantity): float
     {
         $rules = $this->custom_pricing_rules['quantity_tiers'] ?? [];
-        
+
         foreach ($rules as $tier) {
-            if ($quantity >= $tier['min_quantity'] && 
+            if ($quantity >= $tier['min_quantity'] &&
                 ($tier['max_quantity'] === null || $quantity <= $tier['max_quantity'])) {
-                
+
                 if ($tier['discount_type'] === 'percentage') {
                     return ($this->base_price * $tier['discount_value']) / 100;
                 } else {
@@ -192,7 +197,7 @@ class ProductPackage extends Model
     private function calculateCustomerDiscount(array $customerData): float
     {
         $rules = $this->custom_pricing_rules['customer_rules'] ?? [];
-        
+
         foreach ($rules as $rule) {
             if ($this->customerMatchesRule($customerData, $rule)) {
                 if ($rule['discount_type'] === 'percentage') {
@@ -219,16 +224,24 @@ class ProductPackage extends Model
 
             switch ($operator) {
                 case 'equals':
-                    if ($customerValue !== $value) return false;
+                    if ($customerValue !== $value) {
+                        return false;
+                    }
                     break;
                 case 'greater_than':
-                    if ($customerValue <= $value) return false;
+                    if ($customerValue <= $value) {
+                        return false;
+                    }
                     break;
                 case 'less_than':
-                    if ($customerValue >= $value) return false;
+                    if ($customerValue >= $value) {
+                        return false;
+                    }
                     break;
                 case 'contains':
-                    if (strpos($customerValue, $value) === false) return false;
+                    if (strpos($customerValue, $value) === false) {
+                        return false;
+                    }
                     break;
             }
         }
@@ -241,7 +254,7 @@ class ProductPackage extends Model
      */
     public function getBundleContentsAttribute(): array
     {
-        if (!$this->is_bundle) {
+        if (! $this->is_bundle) {
             return [];
         }
 
@@ -264,7 +277,7 @@ class ProductPackage extends Model
      */
     public function getBundleTotalValueAttribute(): float
     {
-        if (!$this->is_bundle) {
+        if (! $this->is_bundle) {
             return $this->base_price;
         }
 
@@ -276,7 +289,7 @@ class ProductPackage extends Model
      */
     public function getIsAvailableAttribute(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -305,7 +318,7 @@ class ProductPackage extends Model
             self::TYPE_BUNDLE => 'Bundle Package',
             self::TYPE_CUSTOM => 'Custom Package',
             self::TYPE_PROMOTIONAL => 'Promotional Package',
-            default => ucfirst($this->package_type) . ' Package',
+            default => ucfirst($this->package_type).' Package',
         };
     }
 
@@ -341,11 +354,11 @@ class ProductPackage extends Model
         return $query->where('is_active', true)
             ->where(function ($q) {
                 $q->whereNull('availability_start')
-                  ->orWhere('availability_start', '<=', now());
+                    ->orWhere('availability_start', '<=', now());
             })
             ->where(function ($q) {
                 $q->whereNull('availability_end')
-                  ->orWhere('availability_end', '>', now());
+                    ->orWhere('availability_end', '>', now());
             });
     }
 

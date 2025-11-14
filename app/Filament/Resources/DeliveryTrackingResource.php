@@ -3,14 +3,14 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\DeliveryTrackingResource\Pages;
-use App\Models\DeliveryTracking;
 use App\Models\ApplicationState;
+use App\Models\DeliveryTracking;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Forms\Get;
 use Illuminate\Database\Eloquent\Builder;
 
 class DeliveryTrackingResource extends Resource
@@ -39,9 +39,8 @@ class DeliveryTrackingResource extends Resource
                                 'session_id',
                                 fn (Builder $query) => $query->whereIn('current_step', ['approved', 'completed'])
                             )
-                            ->getOptionLabelFromRecordUsing(fn (ApplicationState $record) =>
-                                "{$record->reference_code} - " .
-                                (data_get($record->form_data, 'formResponses.firstName') ?? '') . ' ' .
+                            ->getOptionLabelFromRecordUsing(fn (ApplicationState $record) => "{$record->reference_code} - ".
+                                (data_get($record->form_data, 'formResponses.firstName') ?? '').' '.
                                 (data_get($record->form_data, 'formResponses.surname') ?? 'N/A')
                             )
                             ->searchable(['session_id', 'reference_code'])
@@ -57,7 +56,7 @@ class DeliveryTrackingResource extends Resource
 
                                         // Set client name
                                         $clientName = trim(
-                                            ($formResponses['firstName'] ?? '') . ' ' .
+                                            ($formResponses['firstName'] ?? '').' '.
                                             ($formResponses['surname'] ?? '')
                                         );
                                         $set('recipient_name', $clientName);
@@ -70,9 +69,9 @@ class DeliveryTrackingResource extends Resource
 
                                         // Set delivery depot from deliverySelection
                                         $depot = '';
-                                        if (!empty($deliverySelection['city'])) {
-                                            $depot = $deliverySelection['city'] . ' (' . ($deliverySelection['agent'] ?? 'Swift') . ')';
-                                        } elseif (!empty($deliverySelection['depot'])) {
+                                        if (! empty($deliverySelection['city'])) {
+                                            $depot = $deliverySelection['city'].' ('.($deliverySelection['agent'] ?? 'Swift').')';
+                                        } elseif (! empty($deliverySelection['depot'])) {
                                             $depot = $deliverySelection['depot'];
                                         }
                                         $set('delivery_depot', $depot);

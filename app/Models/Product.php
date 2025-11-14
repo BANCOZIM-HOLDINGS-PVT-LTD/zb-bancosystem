@@ -89,7 +89,7 @@ class Product extends Model
     public function getPriceRangeAttribute(): array
     {
         $packageSizes = $this->packageSizes;
-        
+
         if ($packageSizes->isEmpty()) {
             return [
                 'min' => $this->base_price,
@@ -113,12 +113,12 @@ class Product extends Model
     public function getFormattedPriceRangeAttribute(): string
     {
         $range = $this->price_range;
-        
+
         if ($range['min'] == $range['max']) {
-            return '$' . number_format($range['min'], 2);
+            return '$'.number_format($range['min'], 2);
         }
-        
-        return '$' . number_format($range['min'], 2) . ' - $' . number_format($range['max'], 2);
+
+        return '$'.number_format($range['min'], 2).' - $'.number_format($range['max'], 2);
     }
 
     /**
@@ -126,7 +126,7 @@ class Product extends Model
      */
     public function getFullCategoryPathAttribute(): string
     {
-        return $this->category->name . ' > ' . $this->subCategory->name;
+        return $this->category->name.' > '.$this->subCategory->name;
     }
 
     /**

@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\CashPurchaseResource\Pages;
 
 use App\Filament\Resources\CashPurchaseResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListCashPurchases extends ListRecords

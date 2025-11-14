@@ -2,9 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -33,7 +32,7 @@ return new class extends Migration
 
             // JSON field indexes (MySQL 5.7+ / PostgreSQL)
             // Skip JSON indexes for MariaDB compatibility
-            if (config('database.default') === 'mysql' && !str_contains(DB::connection()->getPdo()->getAttribute(\PDO::ATTR_SERVER_VERSION), 'MariaDB')) {
+            if (config('database.default') === 'mysql' && ! str_contains(DB::connection()->getPdo()->getAttribute(\PDO::ATTR_SERVER_VERSION), 'MariaDB')) {
                 // MySQL JSON indexes (not MariaDB)
                 try {
                     DB::statement("ALTER TABLE application_states ADD INDEX idx_form_id ((JSON_EXTRACT(form_data, '$.formId')))");
@@ -93,15 +92,15 @@ return new class extends Migration
             $table->dropIndex('idx_created_at');
             $table->dropIndex('idx_updated_at');
 
-            if (config('database.default') === 'mysql' && !str_contains(DB::connection()->getPdo()->getAttribute(\PDO::ATTR_SERVER_VERSION), 'MariaDB')) {
+            if (config('database.default') === 'mysql' && ! str_contains(DB::connection()->getPdo()->getAttribute(\PDO::ATTR_SERVER_VERSION), 'MariaDB')) {
                 try {
-                    DB::statement("ALTER TABLE application_states DROP INDEX idx_form_id");
-                    DB::statement("ALTER TABLE application_states DROP INDEX idx_employer");
-                    DB::statement("ALTER TABLE application_states DROP INDEX idx_has_account");
-                    DB::statement("ALTER TABLE application_states DROP INDEX idx_amount");
-                    DB::statement("ALTER TABLE application_states DROP INDEX idx_email");
-                    DB::statement("ALTER TABLE application_states DROP INDEX idx_mobile");
-                    DB::statement("ALTER TABLE application_states DROP INDEX idx_national_id");
+                    DB::statement('ALTER TABLE application_states DROP INDEX idx_form_id');
+                    DB::statement('ALTER TABLE application_states DROP INDEX idx_employer');
+                    DB::statement('ALTER TABLE application_states DROP INDEX idx_has_account');
+                    DB::statement('ALTER TABLE application_states DROP INDEX idx_amount');
+                    DB::statement('ALTER TABLE application_states DROP INDEX idx_email');
+                    DB::statement('ALTER TABLE application_states DROP INDEX idx_mobile');
+                    DB::statement('ALTER TABLE application_states DROP INDEX idx_national_id');
                 } catch (\Exception $e) {
                     // Skip if indexes don't exist
                 }

@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ApplicationState;
 use App\Models\CashPurchase;
 use App\Services\ReferenceCodeService;
-use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 
 class DeliveryTrackingController extends Controller
 {
@@ -19,7 +19,7 @@ class DeliveryTrackingController extends Controller
 
     public function getStatus(string $reference): JsonResponse
     {
-        $reference = strtoupper(str_replace([" ", "-"], "", trim($reference)));
+        $reference = strtoupper(str_replace([' ', '-'], '', trim($reference)));
 
         // First, try to find a cash purchase by purchase number or national ID
         $cashPurchase = CashPurchase::where('purchase_number', $reference)
@@ -33,53 +33,53 @@ class DeliveryTrackingController extends Controller
         // If not found, search regular loan applications
         $application = $this->referenceCodeService->getStateByReferenceCode($reference);
 
-        if (!$application) {
-            $application = ApplicationState::where("session_id", $reference)->first();
+        if (! $application) {
+            $application = ApplicationState::where('session_id', $reference)->first();
         }
 
         // If still not found, search in form_data for National ID
-        if (!$application) {
-            $applications = ApplicationState::whereNotNull("form_data")->get();
+        if (! $application) {
+            $applications = ApplicationState::whereNotNull('form_data')->get();
             foreach ($applications as $app) {
                 $formData = $app->form_data ?? [];
-                $formResponses = $formData["formResponses"] ?? [];
-                $natId = $formResponses["idNumber"] ?? ($formResponses["nationalIdNumber"] ?? null);
+                $formResponses = $formData['formResponses'] ?? [];
+                $natId = $formResponses['idNumber'] ?? ($formResponses['nationalIdNumber'] ?? null);
 
-                if ($natId && strtoupper(str_replace([" ", "-"], "", $natId)) === $reference) {
+                if ($natId && strtoupper(str_replace([' ', '-'], '', $natId)) === $reference) {
                     $application = $app;
                     break;
                 }
             }
         }
 
-        if (!$application) {
-            return response()->json(["error" => "Delivery not found. Please check your reference number or National ID."], 404);
+        if (! $application) {
+            return response()->json(['error' => 'Delivery not found. Please check your reference number or National ID.'], 404);
         }
 
         $formData = $application->form_data ?? [];
-        $formResponses = $formData["formResponses"] ?? [];
+        $formResponses = $formData['formResponses'] ?? [];
 
         // Get customer information
-        $firstName = $formResponses["firstName"] ?? "";
-        $lastName = $formResponses["lastName"] ?? ($formResponses["surname"] ?? "");
-        $customerName = trim($firstName . " " . $lastName) ?: "N/A";
+        $firstName = $formResponses['firstName'] ?? '';
+        $lastName = $formResponses['lastName'] ?? ($formResponses['surname'] ?? '');
+        $customerName = trim($firstName.' '.$lastName) ?: 'N/A';
 
-        $product = $formData["business"] ?? "N/A";
+        $product = $formData['business'] ?? 'N/A';
 
         // Get delivery tracking information
         $deliveryTracking = $application->delivery;
 
         // Determine status and depot
-        $status = $deliveryTracking ? $deliveryTracking->status : "processing";
-        $depot = $deliveryTracking ? ($deliveryTracking->delivery_depot ?? $deliveryTracking->gain_depot_location ?? "Not yet assigned") : "Not yet assigned";
+        $status = $deliveryTracking ? $deliveryTracking->status : 'processing';
+        $depot = $deliveryTracking ? ($deliveryTracking->delivery_depot ?? $deliveryTracking->gain_depot_location ?? 'Not yet assigned') : 'Not yet assigned';
 
         // Calculate estimated delivery date
         $estimatedDelivery = null;
         if ($deliveryTracking && $deliveryTracking->estimated_delivery_date) {
-            $estimatedDelivery = Carbon::parse($deliveryTracking->estimated_delivery_date)->format("F j, Y");
+            $estimatedDelivery = Carbon::parse($deliveryTracking->estimated_delivery_date)->format('F j, Y');
         } else {
             // Default to 5-7 business days from now if not set
-            $estimatedDelivery = Carbon::now()->addDays(7)->format("F j, Y");
+            $estimatedDelivery = Carbon::now()->addDays(7)->format('F j, Y');
         }
 
         // Determine tracking number (Swift or Gain voucher)
@@ -89,31 +89,31 @@ class DeliveryTrackingController extends Controller
         if ($deliveryTracking) {
             if ($deliveryTracking->swift_tracking_number) {
                 $trackingNumber = $deliveryTracking->swift_tracking_number;
-                $trackingType = "Swift Tracking Number";
+                $trackingType = 'Swift Tracking Number';
             } elseif ($deliveryTracking->gain_voucher_number) {
                 $trackingNumber = $deliveryTracking->gain_voucher_number;
-                $trackingType = "Gain Voucher Number";
+                $trackingType = 'Gain Voucher Number';
             } elseif ($deliveryTracking->outlet_voucher_number) {
                 $trackingNumber = $deliveryTracking->outlet_voucher_number;
-                $trackingType = "Outlet Voucher Number";
+                $trackingType = 'Outlet Voucher Number';
             }
         }
 
-        if (!$trackingNumber) {
-            $trackingNumber = "Not yet assigned";
-            $trackingType = "Tracking Number";
+        if (! $trackingNumber) {
+            $trackingNumber = 'Not yet assigned';
+            $trackingType = 'Tracking Number';
         }
 
         return response()->json([
-            "sessionId" => $application->session_id,
-            "customerName" => $customerName,
-            "product" => $product,
-            "status" => $status,
-            "depot" => $depot,
-            "estimatedDelivery" => $estimatedDelivery,
-            "trackingNumber" => $trackingNumber,
-            "trackingType" => $trackingType,
-            "purchaseType" => "loan", // Indicate this is a loan application
+            'sessionId' => $application->session_id,
+            'customerName' => $customerName,
+            'product' => $product,
+            'status' => $status,
+            'depot' => $depot,
+            'estimatedDelivery' => $estimatedDelivery,
+            'trackingNumber' => $trackingNumber,
+            'trackingType' => $trackingType,
+            'purchaseType' => 'loan', // Indicate this is a loan application
         ]);
     }
 
@@ -125,36 +125,36 @@ class DeliveryTrackingController extends Controller
         // Calculate estimated delivery date
         $estimatedDelivery = null;
         if ($purchase->dispatched_at) {
-            $estimatedDelivery = Carbon::parse($purchase->dispatched_at)->addDays(3)->format("F j, Y");
+            $estimatedDelivery = Carbon::parse($purchase->dispatched_at)->addDays(3)->format('F j, Y');
         } elseif ($purchase->created_at) {
             // Default to 5-7 business days from purchase date
-            $estimatedDelivery = Carbon::parse($purchase->created_at)->addDays(7)->format("F j, Y");
+            $estimatedDelivery = Carbon::parse($purchase->created_at)->addDays(7)->format('F j, Y');
         }
 
         // Determine depot information
-        $depot = "Not yet assigned";
+        $depot = 'Not yet assigned';
         if ($purchase->delivery_type === 'gain_outlet' && $purchase->depot_name) {
-            $depot = $purchase->depot_name . ($purchase->region ? " ({$purchase->region})" : "");
+            $depot = $purchase->depot_name.($purchase->region ? " ({$purchase->region})" : '');
         } elseif ($purchase->delivery_type === 'swift' && $purchase->city) {
             $depot = "Swift Delivery - {$purchase->city}";
         }
 
         // Determine tracking number
-        $trackingNumber = $purchase->swift_tracking_number ?? "Not yet assigned";
-        $trackingType = $purchase->delivery_type === 'swift' ? "Swift Tracking Number" : "Depot Collection";
+        $trackingNumber = $purchase->swift_tracking_number ?? 'Not yet assigned';
+        $trackingType = $purchase->delivery_type === 'swift' ? 'Swift Tracking Number' : 'Depot Collection';
 
         return response()->json([
-            "sessionId" => $purchase->purchase_number,
-            "customerName" => $purchase->full_name,
-            "product" => $purchase->product_name,
-            "status" => $purchase->status,
-            "depot" => $depot,
-            "estimatedDelivery" => $estimatedDelivery,
-            "trackingNumber" => $trackingNumber,
-            "trackingType" => $trackingType,
-            "purchaseType" => "cash", // Indicate this is a cash purchase
-            "paymentStatus" => $purchase->payment_status,
-            "amountPaid" => '$' . number_format($purchase->amount_paid, 2),
+            'sessionId' => $purchase->purchase_number,
+            'customerName' => $purchase->full_name,
+            'product' => $purchase->product_name,
+            'status' => $purchase->status,
+            'depot' => $depot,
+            'estimatedDelivery' => $estimatedDelivery,
+            'trackingNumber' => $trackingNumber,
+            'trackingType' => $trackingType,
+            'purchaseType' => 'cash', // Indicate this is a cash purchase
+            'paymentStatus' => $purchase->payment_status,
+            'amountPaid' => '$'.number_format($purchase->amount_paid, 2),
         ]);
     }
 }

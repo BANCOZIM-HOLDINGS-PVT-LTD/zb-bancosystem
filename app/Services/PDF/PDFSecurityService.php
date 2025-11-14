@@ -20,12 +20,12 @@ class PDFSecurityService
      */
     public function applySecuritySettings($pdf, ApplicationState $applicationState): void
     {
-        if (!$this->shouldApplySecurity()) {
+        if (! $this->shouldApplySecurity()) {
             return;
         }
 
         $domPdf = $pdf->getDomPDF();
-        
+
         // Generate secure passwords
         $openPassword = null; // No password required to open
         $permissionPassword = $this->generateSecurePassword(
@@ -63,30 +63,30 @@ class PDFSecurityService
     {
         // Use cryptographically secure random bytes
         $randomBytes = random_bytes($length);
-        
+
         // Convert to base64 and clean up for password use
         $password = base64_encode($randomBytes);
-        
+
         // Remove characters that might cause issues in PDF passwords
         $password = str_replace(['+', '/', '='], ['A', 'B', 'C'], $password);
-        
+
         // Ensure we have the exact length requested
         $password = substr($password, 0, $length);
-        
+
         // Add session-specific entropy (but don't make it predictable)
-        $sessionHash = hash('sha256', $sessionId . config('app.key') . time());
+        $sessionHash = hash('sha256', $sessionId.config('app.key').time());
         $sessionEntropy = substr($sessionHash, 0, 4);
-        
+
         // Mix the random password with session entropy
-        $finalPassword = substr($password, 0, $length - 4) . $sessionEntropy;
-        
+        $finalPassword = substr($password, 0, $length - 4).$sessionEntropy;
+
         // Log password generation (without the actual password)
         $this->logger->logInfo('PDF password generated', [
             'session_id' => $sessionId,
             'password_length' => strlen($finalPassword),
-            'entropy_added' => true
+            'entropy_added' => true,
         ]);
-        
+
         return $finalPassword;
     }
 
@@ -114,9 +114,9 @@ class PDFSecurityService
     /**
      * Add watermark to PDF
      */
-    public function addWatermark($pdf, ApplicationState $applicationState, string $watermarkText = null): void
+    public function addWatermark($pdf, ApplicationState $applicationState, ?string $watermarkText = null): void
     {
-        if (!env('PDF_WATERMARK_ENABLED', false)) {
+        if (! env('PDF_WATERMARK_ENABLED', false)) {
             return;
         }
 
@@ -125,10 +125,10 @@ class PDFSecurityService
         try {
             // Get the canvas
             $canvas = $pdf->getDomPDF()->get_canvas();
-            
+
             // Add watermark to each page
             $pageCount = $canvas->get_page_count();
-            
+
             for ($i = 1; $i <= $pageCount; $i++) {
                 $this->addWatermarkToPage($canvas, $i, $watermarkText);
             }
@@ -173,7 +173,7 @@ class PDFSecurityService
     {
         $referenceCode = $applicationState->reference_code ?? 'DRAFT';
         $date = $applicationState->created_at->format('Y-m-d');
-        
+
         return "BANCOZIM - {$referenceCode} - {$date}";
     }
 
@@ -209,7 +209,7 @@ class PDFSecurityService
         // Check for excessively long content that might cause issues
         foreach ($data as $key => $value) {
             if (is_string($value) && strlen($value) > 10000) {
-                $issues[] = "Field '{$key}' contains excessively long content (" . strlen($value) . " characters)";
+                $issues[] = "Field '{$key}' contains excessively long content (".strlen($value).' characters)';
             }
         }
 
@@ -227,15 +227,15 @@ class PDFSecurityService
             if (is_string($value)) {
                 // Remove potentially dangerous content
                 $value = strip_tags($value, '<b><i><u><br><p><div><span>');
-                
+
                 // Remove null bytes and control characters
                 $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $value);
-                
+
                 // Limit length
                 if (strlen($value) > 5000) {
-                    $value = substr($value, 0, 5000) . '...';
+                    $value = substr($value, 0, 5000).'...';
                 }
-                
+
                 $sanitized[$key] = $value;
             } elseif (is_array($value)) {
                 $sanitized[$key] = $this->sanitizePdfData($value);

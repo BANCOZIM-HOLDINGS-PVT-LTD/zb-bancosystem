@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\Supplier;
+use Illuminate\Database\Seeder;
 
 class SupplierSeeder extends Seeder
 {
@@ -29,13 +28,13 @@ class SupplierSeeder extends Seeder
                 'payment_terms' => [
                     'net_days' => 30,
                     'discount_percentage' => 2,
-                    'discount_days' => 10
+                    'discount_days' => 10,
                 ],
                 'metadata' => [
                     'warranty_provider' => true,
                     'ecommerce_seller' => true,
-                    'preferred_supplier' => true
-                ]
+                    'preferred_supplier' => true,
+                ],
             ]
         );
     }

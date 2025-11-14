@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => env('APP_ENV') === 'production' 
+    'allowed_origins' => env('APP_ENV') === 'production'
         ? explode(',', env('CORS_ALLOWED_ORIGINS', ''))
         : ['*'],
 

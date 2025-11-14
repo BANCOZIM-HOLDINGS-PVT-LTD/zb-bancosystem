@@ -39,13 +39,13 @@ class ClientRegisterController extends Controller
                 'required',
                 'string',
                 'regex:/^[0-9]{2}-[0-9]{6,7}[A-Z][0-9]{2}$/', // Zimbabwe National ID format: 63-123456A12
-                'unique:users,national_id'
+                'unique:users,national_id',
             ],
             'phone' => [
                 'required',
                 'string',
                 'regex:/^\+263[0-9]{9}$/', // Zimbabwe phone format: +263771234567
-                'unique:users,phone'
+                'unique:users,phone',
             ],
         ], [
             'national_id.regex' => 'Please enter a valid Zimbabwe National ID (e.g., 63-123456A12)',
@@ -68,8 +68,9 @@ class ClientRegisterController extends Controller
         // Send OTP
         $otpSent = $this->otpService->sendOtp($user);
 
-        if (!$otpSent) {
+        if (! $otpSent) {
             $user->delete(); // Clean up if OTP sending fails
+
             return back()->withErrors(['phone' => 'Failed to send OTP. Please try again.']);
         }
 
@@ -86,14 +87,15 @@ class ClientRegisterController extends Controller
     {
         $userId = session('pending_user_id');
 
-        if (!$userId) {
+        if (! $userId) {
             return redirect()->route('client.register');
         }
 
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             session()->forget('pending_user_id');
+
             return redirect()->route('client.register');
         }
 
@@ -114,20 +116,21 @@ class ClientRegisterController extends Controller
 
         $userId = session('pending_user_id');
 
-        if (!$userId) {
+        if (! $userId) {
             return back()->withErrors(['otp' => 'Session expired. Please register again.']);
         }
 
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             session()->forget('pending_user_id');
+
             return back()->withErrors(['otp' => 'User not found. Please register again.']);
         }
 
         $verified = $this->otpService->verifyOtp($user, $request->otp);
 
-        if (!$verified) {
+        if (! $verified) {
             return back()->withErrors(['otp' => 'Invalid or expired OTP code. Please try again.']);
         }
 
@@ -146,20 +149,21 @@ class ClientRegisterController extends Controller
     {
         $userId = session('pending_user_id');
 
-        if (!$userId) {
+        if (! $userId) {
             return response()->json(['message' => 'Session expired. Please register again.'], 400);
         }
 
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             session()->forget('pending_user_id');
+
             return response()->json(['message' => 'User not found. Please register again.'], 400);
         }
 
         $otpSent = $this->otpService->resendOtp($user);
 
-        if (!$otpSent) {
+        if (! $otpSent) {
             return response()->json(['message' => 'Please wait before requesting a new code.'], 429);
         }
 
@@ -173,7 +177,7 @@ class ClientRegisterController extends Controller
     {
         // Convert +263771234567 to +263****4567
         if (strlen($phone) >= 8) {
-            return substr($phone, 0, 4) . '****' . substr($phone, -4);
+            return substr($phone, 0, 4).'****'.substr($phone, -4);
         }
 
         return $phone;

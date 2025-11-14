@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class PdfController extends Controller
 {
@@ -67,14 +66,14 @@ class PdfController extends Controller
                         'fullName' => 'Jane Doe',
                         'relationship' => 'Spouse',
                         'phoneNumber' => '+263 77 987 6543',
-                        'residentialAddress' => '123 Main Street, Harare'
+                        'residentialAddress' => '123 Main Street, Harare',
                     ],
                     [
                         'fullName' => 'John Smith',
                         'relationship' => 'Brother',
                         'phoneNumber' => '+263 77 555 1234',
-                        'residentialAddress' => '456 Second Street, Harare'
-                    ]
+                        'residentialAddress' => '456 Second Street, Harare',
+                    ],
                 ],
 
                 // Additional fields
@@ -100,21 +99,21 @@ class PdfController extends Controller
                     'payslip' => [
                         [
                             'path' => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-                            'name' => 'payslip.png'
-                        ]
+                            'name' => 'payslip.png',
+                        ],
                     ],
                     'nationalId' => [
                         [
                             'path' => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-                            'name' => 'national_id.png'
-                        ]
-                    ]
-                ]
+                            'name' => 'national_id.png',
+                        ],
+                    ],
+                ],
             ],
 
             // Signature image (another alternative location)
             'signatureImage' => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-            'selfieImage' => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+            'selfieImage' => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
         ];
 
         // Generate PDF with optimized settings

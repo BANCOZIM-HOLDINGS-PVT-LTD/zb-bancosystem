@@ -3,14 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Agent extends Model
 {
-
     protected $fillable = [
         'agent_code',
         'first_name',
@@ -44,7 +42,7 @@ class Agent extends Model
 
         static::creating(function ($agent) {
             if (empty($agent->agent_code)) {
-                $agent->agent_code = 'AGT' . strtoupper(Str::random(6));
+                $agent->agent_code = 'AGT'.strtoupper(Str::random(6));
             }
         });
     }
@@ -54,7 +52,7 @@ class Agent extends Model
      */
     public function getFullNameAttribute(): string
     {
-        return trim($this->first_name . ' ' . $this->last_name);
+        return trim($this->first_name.' '.$this->last_name);
     }
 
     /**
@@ -62,7 +60,7 @@ class Agent extends Model
      */
     public function getDisplayNameAttribute(): string
     {
-        return $this->full_name . ' (' . $this->agent_code . ')';
+        return $this->full_name.' ('.$this->agent_code.')';
     }
 
     /**
@@ -189,10 +187,10 @@ class Agent extends Model
     /**
      * Generate referral link
      */
-    public function generateReferralLink(string $campaignName = null): AgentReferralLink
+    public function generateReferralLink(?string $campaignName = null): AgentReferralLink
     {
-        $code = 'ref_' . $this->agent_code . '_' . Str::random(8);
-        $url = url('/apply?ref=' . $code);
+        $code = 'ref_'.$this->agent_code.'_'.Str::random(8);
+        $url = url('/apply?ref='.$code);
 
         return $this->referralLinks()->create([
             'code' => $code,
@@ -233,9 +231,9 @@ class Agent extends Model
     {
         return $query->where(function ($q) use ($search) {
             $q->where('first_name', 'like', "%{$search}%")
-              ->orWhere('last_name', 'like', "%{$search}%")
-              ->orWhere('agent_code', 'like', "%{$search}%")
-              ->orWhere('email', 'like', "%{$search}%");
+                ->orWhere('last_name', 'like', "%{$search}%")
+                ->orWhere('agent_code', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%");
         });
     }
 

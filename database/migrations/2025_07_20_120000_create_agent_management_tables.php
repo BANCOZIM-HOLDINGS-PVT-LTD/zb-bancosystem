@@ -32,7 +32,7 @@ return new class extends Migration
             $table->decimal('commission_rate', 5, 2)->default(0.00); // Percentage
             $table->json('metadata')->nullable(); // Additional agent data
             $table->timestamps();
-            
+
             $table->index(['status', 'type']);
             $table->index('agent_code');
         });
@@ -48,7 +48,7 @@ return new class extends Migration
             $table->decimal('team_commission_rate', 5, 2)->default(0.00);
             $table->json('metadata')->nullable();
             $table->timestamps();
-            
+
             $table->foreign('team_leader_id')->references('id')->on('agents')->onDelete('set null');
             $table->index('status');
         });
@@ -63,7 +63,7 @@ return new class extends Migration
             $table->enum('role', ['member', 'supervisor', 'leader'])->default('member');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            
+
             $table->foreign('agent_id')->references('id')->on('agents')->onDelete('cascade');
             $table->foreign('team_id')->references('id')->on('teams')->onDelete('cascade');
             $table->unique(['agent_id', 'team_id', 'is_active']);
@@ -85,7 +85,7 @@ return new class extends Migration
             $table->decimal('conversion_rate', 5, 2)->default(0.00); // Percentage
             $table->json('metrics')->nullable(); // Additional performance metrics
             $table->timestamps();
-            
+
             $table->foreign('agent_id')->references('id')->on('agents')->onDelete('cascade');
             $table->unique(['agent_id', 'period_start', 'period_end']);
             $table->index(['agent_id', 'period_start']);
@@ -109,7 +109,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();
-            
+
             $table->foreign('agent_id')->references('id')->on('agents')->onDelete('cascade');
             $table->foreign('application_id')->references('id')->on('application_states')->onDelete('set null');
             $table->index(['agent_id', 'status']);
@@ -130,7 +130,7 @@ return new class extends Migration
             $table->date('expires_at')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();
-            
+
             $table->foreign('agent_id')->references('id')->on('agents')->onDelete('cascade');
             $table->index(['agent_id', 'is_active']);
             $table->index('code');

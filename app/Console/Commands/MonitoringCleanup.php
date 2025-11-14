@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Services\SystemMonitoringService;
+use Illuminate\Console\Command;
 
 class MonitoringCleanup extends Command
 {
@@ -24,15 +24,11 @@ class MonitoringCleanup extends Command
 
     /**
      * The system monitoring service instance
-     *
-     * @var SystemMonitoringService
      */
     protected SystemMonitoringService $monitoringService;
 
     /**
      * Create a new command instance.
-     *
-     * @param SystemMonitoringService $monitoringService
      */
     public function __construct(SystemMonitoringService $monitoringService)
     {
@@ -49,9 +45,10 @@ class MonitoringCleanup extends Command
     {
         $this->info('Starting monitoring data cleanup...');
 
-        if (!$this->option('force')) {
-            if (!$this->confirm('This will remove old monitoring data. Do you want to continue?')) {
+        if (! $this->option('force')) {
+            if (! $this->confirm('This will remove old monitoring data. Do you want to continue?')) {
                 $this->info('Cleanup cancelled.');
+
                 return 0;
             }
         }
@@ -59,9 +56,11 @@ class MonitoringCleanup extends Command
         try {
             $this->monitoringService->cleanupOldData();
             $this->info('✅ Monitoring data cleanup completed successfully.');
+
             return 0;
         } catch (\Exception $e) {
-            $this->error('❌ Error during cleanup: ' . $e->getMessage());
+            $this->error('❌ Error during cleanup: '.$e->getMessage());
+
             return 1;
         }
     }

@@ -18,7 +18,7 @@ class ZimbabweanIDValidator
         '31', '32', '33', '34', '35', '36', '37', '38', '39', '40',
         '41', '42', '43', '44', '45', '46', '47', '48', '49', '50',
         '51', '52', '53', '54', '55', '56', '57', '58', '59', '60',
-        '61', '62', '64', '65', '66', '67', '68', '69', '70'
+        '61', '62', '64', '65', '66', '67', '68', '69', '70',
     ];
 
     /**
@@ -28,7 +28,7 @@ class ZimbabweanIDValidator
         '08' => 'Bulawayo',
         '63' => 'Harare',
         '03' => 'Mberengwa',
-        '21' => 'Insiza'
+        '21' => 'Insiza',
     ];
 
     /**
@@ -40,7 +40,7 @@ class ZimbabweanIDValidator
      * - Y: Letter (1 character A-Z)
      * - ZZ: Check digits (2 digits)
      *
-     * @param string $id The ID number to validate
+     * @param  string  $id  The ID number to validate
      * @return array ['valid' => bool, 'message' => string, 'formatted' => string|null]
      */
     public static function validate(string $id): array
@@ -49,7 +49,7 @@ class ZimbabweanIDValidator
             return [
                 'valid' => false,
                 'message' => 'ID number is required',
-                'formatted' => null
+                'formatted' => null,
             ];
         }
 
@@ -63,23 +63,23 @@ class ZimbabweanIDValidator
         $patternWithoutDashes = '/^(\d{2})(\d{6,7})([A-Z])(\d{2})$/';
 
         $matches = [];
-        if (!preg_match($patternWithDashes, $cleanedId, $matches) &&
-            !preg_match($patternWithoutDashes, $cleanedId, $matches)) {
+        if (! preg_match($patternWithDashes, $cleanedId, $matches) &&
+            ! preg_match($patternWithoutDashes, $cleanedId, $matches)) {
             return [
                 'valid' => false,
                 'message' => 'Invalid ID format. Expected format: XX-XXXXXXX-Y-ZZ (e.g., 08-2047823-Q-29)',
-                'formatted' => null
+                'formatted' => null,
             ];
         }
 
         [, $districtCode, $registrationNumber, $letter, $checkDigits] = $matches;
 
         // Validate district code
-        if (!in_array($districtCode, self::VALID_DISTRICT_CODES, true)) {
+        if (! in_array($districtCode, self::VALID_DISTRICT_CODES, true)) {
             return [
                 'valid' => false,
                 'message' => "Invalid district code: {$districtCode}. Please verify your ID number.",
-                'formatted' => null
+                'formatted' => null,
             ];
         }
 
@@ -88,7 +88,7 @@ class ZimbabweanIDValidator
             return [
                 'valid' => false,
                 'message' => 'Registration number must be 6-7 digits',
-                'formatted' => null
+                'formatted' => null,
             ];
         }
 
@@ -97,7 +97,7 @@ class ZimbabweanIDValidator
             return [
                 'valid' => false,
                 'message' => 'Check digits must be exactly 2 digits',
-                'formatted' => null
+                'formatted' => null,
             ];
         }
 
@@ -107,26 +107,27 @@ class ZimbabweanIDValidator
         return [
             'valid' => true,
             'message' => 'Valid Zimbabwean National ID',
-            'formatted' => $formatted
+            'formatted' => $formatted,
         ];
     }
 
     /**
      * Formats a Zimbabwean ID to the standard format with dashes
      *
-     * @param string $id The ID number to format
+     * @param  string  $id  The ID number to format
      * @return string The formatted ID or original if invalid
      */
     public static function format(string $id): string
     {
         $result = self::validate($id);
+
         return $result['formatted'] ?? $id;
     }
 
     /**
      * Extracts the district code from a Zimbabwean ID
      *
-     * @param string $id The ID number
+     * @param  string  $id  The ID number
      * @return string|null The district code or null if invalid
      */
     public static function getDistrictCode(string $id): ?string
@@ -135,13 +136,14 @@ class ZimbabweanIDValidator
         if (preg_match('/^(\d{2})/', $cleanedId, $matches)) {
             return $matches[1];
         }
+
         return null;
     }
 
     /**
      * Gets the district name from the district code
      *
-     * @param string $districtCode The district code
+     * @param  string  $districtCode  The district code
      * @return string The district name or 'Unknown District'
      */
     public static function getDistrictName(string $districtCode): string
@@ -152,7 +154,7 @@ class ZimbabweanIDValidator
     /**
      * Checks if an ID is valid (simple boolean check)
      *
-     * @param string $id The ID number to check
+     * @param  string  $id  The ID number to check
      * @return bool True if valid, false otherwise
      */
     public static function isValid(string $id): bool

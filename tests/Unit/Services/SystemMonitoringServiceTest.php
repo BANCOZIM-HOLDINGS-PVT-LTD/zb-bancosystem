@@ -2,12 +2,11 @@
 
 namespace Tests\Unit\Services;
 
-use Tests\TestCase;
-use App\Services\SystemMonitoringService;
 use App\Models\ApplicationState;
+use App\Services\SystemMonitoringService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
+use Tests\TestCase;
 
 class SystemMonitoringServiceTest extends TestCase
 {
@@ -27,9 +26,9 @@ class SystemMonitoringServiceTest extends TestCase
     {
         $sessionId = 'test_session_123';
         $generationTime = 5.5;
-        
+
         $this->monitoringService->recordPDFGenerationMetrics($sessionId, $generationTime, true);
-        
+
         // Check that metrics were stored in cache
         $recentMetrics = Cache::get('pdf_metrics_recent', []);
         $this->assertNotEmpty($recentMetrics);
@@ -44,9 +43,9 @@ class SystemMonitoringServiceTest extends TestCase
         $sessionId = 'test_session_456';
         $generationTime = 2.0;
         $error = 'Template not found';
-        
+
         $this->monitoringService->recordPDFGenerationMetrics($sessionId, $generationTime, false, $error);
-        
+
         // Check that failure metrics were stored
         $recentMetrics = Cache::get('pdf_metrics_recent', []);
         $this->assertNotEmpty($recentMetrics);
@@ -59,7 +58,7 @@ class SystemMonitoringServiceTest extends TestCase
     public function it_gets_system_health()
     {
         $health = $this->monitoringService->getSystemHealth();
-        
+
         $this->assertIsArray($health);
         $this->assertArrayHasKey('database', $health);
         $this->assertArrayHasKey('storage', $health);
@@ -73,7 +72,7 @@ class SystemMonitoringServiceTest extends TestCase
     public function it_checks_database_health()
     {
         $health = $this->monitoringService->getSystemHealth();
-        
+
         $this->assertEquals('healthy', $health['database']['status']);
         $this->assertArrayHasKey('response_time_ms', $health['database']);
         $this->assertArrayHasKey('connection', $health['database']);
@@ -89,7 +88,7 @@ class SystemMonitoringServiceTest extends TestCase
             'user_identifier' => 'web_test_1',
             'current_step' => 'completed',
             'form_data' => ['intent' => 'hirePurchase'],
-            'expires_at' => now()->addHours(24)
+            'expires_at' => now()->addHours(24),
         ]);
 
         ApplicationState::create([
@@ -98,18 +97,18 @@ class SystemMonitoringServiceTest extends TestCase
             'user_identifier' => '263771234567',
             'current_step' => 'form',
             'form_data' => ['intent' => 'microBiz'],
-            'expires_at' => now()->addDays(7)
+            'expires_at' => now()->addDays(7),
         ]);
 
         $analytics = $this->monitoringService->getUsageAnalytics(7);
-        
+
         $this->assertIsArray($analytics);
         $this->assertArrayHasKey('period', $analytics);
         $this->assertArrayHasKey('applications', $analytics);
         $this->assertArrayHasKey('pdf_generation', $analytics);
         $this->assertArrayHasKey('platform_usage', $analytics);
         $this->assertArrayHasKey('performance', $analytics);
-        
+
         // Check applications analytics
         $this->assertEquals(2, $analytics['applications']['total']);
         $this->assertArrayHasKey('web', $analytics['applications']['by_channel']);
@@ -120,15 +119,15 @@ class SystemMonitoringServiceTest extends TestCase
     public function it_stores_hourly_statistics()
     {
         $sessionId = 'test_session_stats';
-        
+
         // Record multiple metrics
-        $this->monitoringService->recordPDFGenerationMetrics($sessionId . '_1', 3.0, true);
-        $this->monitoringService->recordPDFGenerationMetrics($sessionId . '_2', 5.0, true);
-        $this->monitoringService->recordPDFGenerationMetrics($sessionId . '_3', 2.0, false, 'Test error');
-        
+        $this->monitoringService->recordPDFGenerationMetrics($sessionId.'_1', 3.0, true);
+        $this->monitoringService->recordPDFGenerationMetrics($sessionId.'_2', 5.0, true);
+        $this->monitoringService->recordPDFGenerationMetrics($sessionId.'_3', 2.0, false, 'Test error');
+
         $hour = now()->format('Y-m-d-H');
         $hourlyStats = Cache::get("pdf_stats_hourly_{$hour}");
-        
+
         $this->assertNotNull($hourlyStats);
         $this->assertEquals(3, $hourlyStats['total_generations']);
         $this->assertEquals(2, $hourlyStats['successful_generations']);
@@ -144,11 +143,11 @@ class SystemMonitoringServiceTest extends TestCase
     {
         // Trigger an alert by recording a slow PDF generation
         $this->monitoringService->recordPDFGenerationMetrics('slow_test', 35.0, true);
-        
+
         $alerts = $this->monitoringService->getRecentAlerts(10);
-        
+
         $this->assertIsArray($alerts);
-        if (!empty($alerts)) {
+        if (! empty($alerts)) {
             $this->assertArrayHasKey('type', $alerts[0]);
             $this->assertArrayHasKey('severity', $alerts[0]);
             $this->assertArrayHasKey('data', $alerts[0]);
@@ -163,9 +162,9 @@ class SystemMonitoringServiceTest extends TestCase
         for ($i = 0; $i < 10; $i++) {
             $this->monitoringService->recordPDFGenerationMetrics("fail_test_{$i}", 1.0, false, 'Test failure');
         }
-        
+
         $alerts = $this->monitoringService->getRecentAlerts(5);
-        
+
         // Should have triggered a high failure rate alert
         $failureRateAlert = collect($alerts)->firstWhere('type', 'high_pdf_failure_rate');
         $this->assertNotNull($failureRateAlert);
@@ -177,7 +176,7 @@ class SystemMonitoringServiceTest extends TestCase
     {
         // This test mainly ensures the method runs without errors
         $this->monitoringService->cleanupOldData();
-        
+
         // The method should complete without throwing exceptions
         $this->assertTrue(true);
     }

@@ -44,7 +44,7 @@ class ProductPackageSize extends Model
      */
     public function getFormattedPriceAttribute(): string
     {
-        return '$' . number_format($this->calculated_price, 2);
+        return '$'.number_format($this->calculated_price, 2);
     }
 
     /**
@@ -52,6 +52,6 @@ class ProductPackageSize extends Model
      */
     public function getDisplayNameAttribute(): string
     {
-        return $this->name . ' - ' . $this->formatted_price;
+        return $this->name.' - '.$this->formatted_price;
     }
 }

@@ -153,6 +153,7 @@ class CashPurchaseResource extends Resource
                         if (strlen($state) <= 30) {
                             return null;
                         }
+
                         return $state;
                     }),
                 Tables\Columns\TextColumn::make('national_id')
@@ -175,6 +176,7 @@ class CashPurchaseResource extends Resource
                         if (strlen($state) <= 25) {
                             return null;
                         }
+
                         return $state;
                     }),
                 Tables\Columns\TextColumn::make('transaction_id')

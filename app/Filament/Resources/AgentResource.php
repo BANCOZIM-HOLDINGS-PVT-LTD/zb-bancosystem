@@ -7,12 +7,12 @@ use App\Models\Agent;
 use App\Services\AgentReferralLinkService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
-use Filament\Notifications\Notification;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 class AgentResource extends Resource
@@ -167,12 +167,12 @@ class AgentResource extends Resource
 
                 Tables\Columns\TextColumn::make('conversion_rate')
                     ->label('Conversion %')
-                    ->getStateUsing(fn (Agent $record) => $record->conversion_rate . '%')
+                    ->getStateUsing(fn (Agent $record) => $record->conversion_rate.'%')
                     ->sortable(false),
 
                 Tables\Columns\TextColumn::make('total_commission_earned')
                     ->label('Total Earned')
-                    ->getStateUsing(fn (Agent $record) => '$' . number_format($record->total_commission_earned, 2))
+                    ->getStateUsing(fn (Agent $record) => '$'.number_format($record->total_commission_earned, 2))
                     ->sortable(false),
 
                 Tables\Columns\TextColumn::make('region')
@@ -240,7 +240,7 @@ class AgentResource extends Resource
                     ])
                     ->action(function (Agent $record, array $data): void {
                         $link = $record->generateReferralLink($data['campaign_name'] ?? null);
-                        
+
                         Notification::make()
                             ->title('Referral link generated')
                             ->body("Link: {$link->url}")
@@ -255,7 +255,7 @@ class AgentResource extends Resource
                     ->action(function (Agent $record): void {
                         $newStatus = $record->status === 'active' ? 'inactive' : 'active';
                         $record->update(['status' => $newStatus]);
-                        
+
                         Notification::make()
                             ->title('Agent status updated')
                             ->body("Agent is now {$newStatus}")
@@ -274,7 +274,7 @@ class AgentResource extends Resource
                         ->color('success')
                         ->action(function ($records): void {
                             $records->each->update(['status' => 'active']);
-                            
+
                             Notification::make()
                                 ->title('Agents activated')
                                 ->success()
@@ -301,7 +301,7 @@ class AgentResource extends Resource
                         ->form([
                             Forms\Components\TextInput::make('campaign_name')
                                 ->label('Campaign Name')
-                                ->default('Bulk Campaign ' . now()->format('Y-m-d'))
+                                ->default('Bulk Campaign '.now()->format('Y-m-d'))
                                 ->required(),
                             Forms\Components\Textarea::make('description')
                                 ->label('Campaign Description')

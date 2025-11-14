@@ -4,9 +4,8 @@ namespace App\Services\PDF;
 
 use App\Models\ApplicationState;
 use App\Services\PDFLoggingService;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class PDFStorageService
 {
@@ -25,7 +24,7 @@ class PDFStorageService
         try {
             $filename = $this->generateFilename($applicationState);
             $path = $this->getStoragePath($applicationState);
-            $fullPath = $path . '/' . $filename;
+            $fullPath = $path.'/'.$filename;
 
             // Ensure directory exists
             $this->ensureDirectoryExists($path);
@@ -33,7 +32,7 @@ class PDFStorageService
             // Store the PDF
             $stored = Storage::disk('local')->put($fullPath, $pdfContent);
 
-            if (!$stored) {
+            if (! $stored) {
                 throw new \Exception('Failed to store PDF file');
             }
 
@@ -68,7 +67,7 @@ class PDFStorageService
         $referenceCode = $applicationState->reference_code ?? 'DRAFT';
         $timestamp = now()->format('Y-m-d_H-i-s');
         $sessionHash = substr(md5($applicationState->session_id), 0, 8);
-        
+
         return "application_{$referenceCode}_{$timestamp}_{$sessionHash}.pdf";
     }
 
@@ -80,7 +79,7 @@ class PDFStorageService
         $year = $applicationState->created_at->format('Y');
         $month = $applicationState->created_at->format('m');
         $channel = $applicationState->channel;
-        
+
         return "pdfs/{$year}/{$month}/{$channel}";
     }
 
@@ -89,7 +88,7 @@ class PDFStorageService
      */
     private function ensureDirectoryExists(string $path): void
     {
-        if (!Storage::disk('local')->exists($path)) {
+        if (! Storage::disk('local')->exists($path)) {
             Storage::disk('local')->makeDirectory($path, 0755, true);
         }
     }
@@ -122,7 +121,7 @@ class PDFStorageService
     {
         // Generate a secure token for PDF access
         $token = $this->generateAccessToken($path, $applicationState);
-        
+
         // Use admin.pdf.download route if in admin context, otherwise use application.pdf.download
         return route('application.pdf.download', [
             'sessionId' => $applicationState->session_id,
@@ -143,7 +142,7 @@ class PDFStorageService
         $payload = base64_encode(json_encode($data));
         $signature = hash_hmac('sha256', $payload, config('app.key'));
 
-        return $payload . '.' . $signature;
+        return $payload.'.'.$signature;
     }
 
     /**
@@ -158,16 +157,16 @@ class PDFStorageService
             }
 
             [$payload, $signature] = $parts;
-            
+
             // Verify signature
             $expectedSignature = hash_hmac('sha256', $payload, config('app.key'));
-            if (!hash_equals($expectedSignature, $signature)) {
+            if (! hash_equals($expectedSignature, $signature)) {
                 return null;
             }
 
             // Decode payload
             $data = json_decode(base64_decode($payload), true);
-            if (!$data) {
+            if (! $data) {
                 return null;
             }
 
@@ -180,6 +179,7 @@ class PDFStorageService
 
         } catch (\Exception $e) {
             Log::warning('Invalid PDF access token', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -190,7 +190,7 @@ class PDFStorageService
     public function retrievePDF(string $path): ?string
     {
         try {
-            if (!Storage::disk('local')->exists($path)) {
+            if (! Storage::disk('local')->exists($path)) {
                 return null;
             }
 
@@ -214,11 +214,11 @@ class PDFStorageService
         try {
             if (Storage::disk('local')->exists($path)) {
                 $deleted = Storage::disk('local')->delete($path);
-                
+
                 if ($deleted) {
                     $this->logger->logInfo('PDF deleted', ['path' => $path]);
                 }
-                
+
                 return $deleted;
             }
 
@@ -244,10 +244,10 @@ class PDFStorageService
 
         try {
             $files = Storage::disk('local')->allFiles('pdfs');
-            
+
             foreach ($files as $file) {
                 $lastModified = Storage::disk('local')->lastModified($file);
-                
+
                 if ($lastModified < $cutoffDate->timestamp) {
                     if (Storage::disk('local')->delete($file)) {
                         $deletedCount++;
@@ -317,6 +317,6 @@ class PDFStorageService
             $bytes /= 1024;
         }
 
-        return round($bytes, $precision) . ' ' . $units[$i];
+        return round($bytes, $precision).' '.$units[$i];
     }
 }

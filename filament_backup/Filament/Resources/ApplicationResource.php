@@ -5,34 +5,34 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ApplicationResource\Pages;
 use App\Filament\Widgets;
 use App\Models\ApplicationState;
-use App\Services\PDFGeneratorService;
-use App\Services\NotificationService;
 use App\Services\ApplicationWorkflowService;
+use App\Services\NotificationService;
+use App\Services\PDFGeneratorService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
 use Filament\Tables\Actions\Action;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
-use Filament\Notifications\Notification;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ApplicationResource extends Resource
 {
     protected static ?string $model = ApplicationState::class;
-    
+
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
-    
+
     protected static ?string $navigationLabel = 'Loan Applications';
-    
+
     protected static ?int $navigationSort = 1;
-    
+
     public static function form(Form $form): Form
     {
         return $form
@@ -82,20 +82,22 @@ class ApplicationResource extends Resource
                             ->formatStateUsing(function ($record) {
                                 if ($record && $record->status_updated_by) {
                                     $user = \App\Models\User::find($record->status_updated_by);
+
                                     return $user ? $user->name : 'Unknown Admin';
                                 }
+
                                 return null;
                             }),
                     ])
                     ->columns(2),
-                    
+
                 Forms\Components\Section::make('Applicant Information')
                     ->schema([
                         Forms\Components\ViewField::make('form_data')
                             ->label('Application Data')
-                            ->view('filament.forms.components.application-data')
+                            ->view('filament.forms.components.application-data'),
                     ]),
-                    
+
                 Forms\Components\Section::make('Status History')
                     ->schema([
                         Forms\Components\Repeater::make('transitions')
@@ -117,10 +119,10 @@ class ApplicationResource extends Resource
                             ->columns(4)
                             ->disabled()
                             ->addable(false)
-                            ->deletable(false)
+                            ->deletable(false),
                     ])
                     ->collapsible(),
-                    
+
                 Forms\Components\Section::make('Admin Notes')
                     ->schema([
                         Forms\Components\Textarea::make('admin_notes')
@@ -131,50 +133,51 @@ class ApplicationResource extends Resource
                     ->collapsible(),
             ]);
     }
-    
+
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label('App #')
-                    ->formatStateUsing(fn ($state) => 'ZB' . date('Y') . str_pad($state, 6, '0', STR_PAD_LEFT))
+                    ->formatStateUsing(fn ($state) => 'ZB'.date('Y').str_pad($state, 6, '0', STR_PAD_LEFT))
                     ->sortable()
                     ->searchable(),
-                    
+
                 Tables\Columns\TextColumn::make('reference_code')
                     ->label('Ref Code')
                     ->searchable()
                     ->copyable()
                     ->tooltip('Reference code for applicant tracking'),
-                    
+
                 Tables\Columns\TextColumn::make('applicant_name')
                     ->label('Applicant')
                     ->getStateUsing(function (Model $record) {
                         $data = $record->form_data['formResponses'] ?? [];
                         $firstName = $data['firstName'] ?? '';
                         $lastName = $data['lastName'] ?? '';
-                        return trim($firstName . ' ' . $lastName) ?: 'N/A';
+
+                        return trim($firstName.' '.$lastName) ?: 'N/A';
                     })
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         return $query->whereRaw("JSON_EXTRACT(form_data, '$.formResponses.firstName') LIKE ?", ["%{$search}%"])
                             ->orWhereRaw("JSON_EXTRACT(form_data, '$.formResponses.lastName') LIKE ?", ["%{$search}%"]);
                     }),
-                    
+
                 Tables\Columns\TextColumn::make('business_type')
                     ->label('Business')
                     ->getStateUsing(fn (Model $record) => $record->form_data['selectedBusiness']['name'] ?? 'N/A')
                     ->sortable(query: function (Builder $query, string $direction): Builder {
                         return $query->orderByRaw("JSON_EXTRACT(form_data, '$.selectedBusiness.name') {$direction}");
                     }),
-                    
+
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Amount')
-                    ->getStateUsing(fn (Model $record) => '$' . number_format($record->form_data['finalPrice'] ?? 0))
+                    ->getStateUsing(fn (Model $record) => '$'.number_format($record->form_data['finalPrice'] ?? 0))
                     ->sortable(query: function (Builder $query, string $direction): Builder {
                         return $query->orderByRaw("CAST(JSON_EXTRACT(form_data, '$.finalPrice') AS DECIMAL(10,2)) {$direction}");
                     }),
-                    
+
                 Tables\Columns\BadgeColumn::make('channel')
                     ->colors([
                         'primary' => 'web',
@@ -183,7 +186,7 @@ class ApplicationResource extends Resource
                         'danger' => 'mobile_app',
                     ])
                     ->sortable(),
-                    
+
                 Tables\Columns\BadgeColumn::make('current_step')
                     ->label('Status')
                     ->colors([
@@ -193,12 +196,12 @@ class ApplicationResource extends Resource
                         'gray' => fn ($state): bool => in_array($state, ['language', 'intent', 'employer', 'form', 'product', 'business']),
                     ])
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Submitted')
                     ->dateTime('M j, Y g:i A')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label('Last Updated')
                     ->dateTime('M j, Y g:i A')
@@ -213,7 +216,7 @@ class ApplicationResource extends Resource
                         'ussd' => 'USSD',
                         'mobile_app' => 'Mobile App',
                     ]),
-                    
+
                 SelectFilter::make('current_step')
                     ->label('Status')
                     ->options([
@@ -226,7 +229,7 @@ class ApplicationResource extends Resource
                         'form' => 'In Progress',
                         'abandoned' => 'Abandoned',
                     ]),
-                    
+
                 Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('created_from'),
@@ -243,14 +246,14 @@ class ApplicationResource extends Resource
                                 fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
                             );
                     }),
-                    
+
                 TernaryFilter::make('has_documents')
                     ->label('Has Documents')
                     ->queries(
                         true: fn (Builder $query) => $query->whereRaw("JSON_EXTRACT(form_data, '$.documents.uploadedDocuments') IS NOT NULL"),
                         false: fn (Builder $query) => $query->whereRaw("JSON_EXTRACT(form_data, '$.documents.uploadedDocuments') IS NULL"),
                     ),
-                    
+
                 Filter::make('amount_range')
                     ->form([
                         Forms\Components\TextInput::make('min_amount')
@@ -274,70 +277,70 @@ class ApplicationResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                
+
                 Action::make('generate_pdf')
                     ->label('Generate PDF')
                     ->icon('heroicon-o-document')
                     ->color('success')
                     ->action(function (Model $record) {
                         try {
-                            $pdfGenerator = new PDFGeneratorService();
+                            $pdfGenerator = new PDFGeneratorService;
                             $pdfPath = $pdfGenerator->generateApplicationPDF($record);
-                            
+
                             Notification::make()
                                 ->title('PDF Generated Successfully')
                                 ->success()
                                 ->send();
-                                
+
                             return redirect()->route('application.pdf.view', $record->session_id);
                         } catch (\Exception $e) {
-                            Log::error('PDF Generation failed: ' . $e->getMessage(), [
+                            Log::error('PDF Generation failed: '.$e->getMessage(), [
                                 'session_id' => $record->session_id,
                                 'exception' => $e,
                             ]);
-                            
+
                             Notification::make()
                                 ->title('PDF Generation Failed')
-                                ->body('Error: ' . $e->getMessage())
+                                ->body('Error: '.$e->getMessage())
                                 ->danger()
                                 ->send();
                         }
                     }),
-                    
+
                 Action::make('download_pdf')
                     ->label('Download PDF')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('primary')
                     ->action(function (Model $record) {
                         try {
-                            $pdfGenerator = new PDFGeneratorService();
+                            $pdfGenerator = new PDFGeneratorService;
                             $pdfPath = $pdfGenerator->generateApplicationPDF($record);
-                            
+
                             return response()->download(
                                 Storage::disk('public')->path($pdfPath),
                                 basename($pdfPath)
                             );
                         } catch (\Exception $e) {
-                            Log::error('PDF Download failed: ' . $e->getMessage(), [
+                            Log::error('PDF Download failed: '.$e->getMessage(), [
                                 'session_id' => $record->session_id,
                                 'exception' => $e,
                             ]);
-                            
+
                             Notification::make()
                                 ->title('PDF Download Failed')
-                                ->body('Error: ' . $e->getMessage())
+                                ->body('Error: '.$e->getMessage())
                                 ->danger()
                                 ->send();
                         }
                     }),
-                    
+
                 Action::make('view_pdf')
                     ->label('View PDF')
                     ->icon('heroicon-o-eye')
                     ->color('info')
                     ->url(fn (Model $record) => route('application.pdf.view', $record->session_id))
                     ->openUrlInNewTab(),
-                    
+
                 Action::make('view_status_history')
                     ->label('Status History')
                     ->icon('heroicon-o-clock')
@@ -347,14 +350,14 @@ class ApplicationResource extends Resource
                         $transitions = $record->transitions()
                             ->orderBy('created_at', 'desc')
                             ->get();
-                            
+
                         return view('filament.resources.application-resource.modals.status-history', [
                             'transitions' => $transitions,
-                            'record' => $record
+                            'record' => $record,
                         ]);
                     })
                     ->modalWidth('4xl'),
-                    
+
                 Action::make('update_status')
                     ->label('Update Status')
                     ->icon('heroicon-o-arrow-path')
@@ -380,13 +383,13 @@ class ApplicationResource extends Resource
                     ->action(function (array $data, Model $record) {
                         $oldStatus = $record->current_step;
                         $newStatus = $data['status'];
-                        
+
                         // Update the application status
                         $record->current_step = $newStatus;
                         $record->status_updated_at = now();
                         $record->status_updated_by = auth()->id();
                         $record->save();
-                        
+
                         // Create a state transition record with audit information
                         $record->transitions()->create([
                             'from_step' => $oldStatus,
@@ -403,13 +406,13 @@ class ApplicationResource extends Resource
                             ],
                             'created_at' => now(),
                         ]);
-                        
+
                         // Send notification to applicant if requested
                         if ($data['send_notification'] ?? true) {
-                            $notificationService = new NotificationService();
+                            $notificationService = new NotificationService;
                             $notificationService->sendStatusUpdateNotification($record, $oldStatus, $newStatus);
                         }
-                        
+
                         // Log the status change with comprehensive audit information
                         Log::info('Application status updated by admin', [
                             'session_id' => $record->session_id,
@@ -425,7 +428,7 @@ class ApplicationResource extends Resource
                             'user_agent' => request()->userAgent(),
                             'timestamp' => now()->toIso8601String(),
                         ]);
-                        
+
                         Notification::make()
                             ->title('Status Updated Successfully')
                             ->body("Application status changed from {$oldStatus} to {$newStatus}")
@@ -436,55 +439,55 @@ class ApplicationResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                    
+
                     Tables\Actions\BulkAction::make('generate_pdfs')
                         ->label('Generate PDFs')
                         ->icon('heroicon-o-document')
                         ->action(function ($records) {
                             $sessionIds = $records->pluck('session_id')->toArray();
                             $count = count($sessionIds);
-                            
+
                             try {
-                                $pdfGenerator = new PDFGeneratorService();
+                                $pdfGenerator = new PDFGeneratorService;
                                 $generatedPaths = $pdfGenerator->generateBatchPDFs($sessionIds);
-                                
+
                                 Notification::make()
                                     ->title("Generated {$count} PDFs Successfully")
                                     ->success()
                                     ->send();
-                                    
+
                                 // Return the first PDF for viewing
-                                if (!empty($generatedPaths)) {
+                                if (! empty($generatedPaths)) {
                                     return redirect()->route('application.pdf.view', $sessionIds[0]);
                                 }
                             } catch (\Exception $e) {
-                                Log::error('Bulk PDF Generation failed: ' . $e->getMessage(), [
+                                Log::error('Bulk PDF Generation failed: '.$e->getMessage(), [
                                     'session_ids' => $sessionIds,
                                     'exception' => $e,
                                 ]);
-                                
+
                                 Notification::make()
                                     ->title('Bulk PDF Generation Failed')
-                                    ->body('Error: ' . $e->getMessage())
+                                    ->body('Error: '.$e->getMessage())
                                     ->danger()
                                     ->send();
                             }
                         })
                         ->deselectRecordsAfterCompletion(),
-                    
+
                     Tables\Actions\BulkAction::make('download_pdfs')
                         ->label('Download PDFs')
                         ->icon('heroicon-o-arrow-down-tray')
                         ->action(function ($records) {
                             $sessionIds = $records->pluck('session_id')->toArray();
-                            
+
                             // This would trigger batch PDF download
                             return redirect()->route('application.pdf.batch', [
-                                'session_ids' => $sessionIds
+                                'session_ids' => $sessionIds,
                             ]);
                         })
                         ->deselectRecordsAfterCompletion(),
-                        
+
                     Tables\Actions\BulkAction::make('update_status_bulk')
                         ->label('Update Status')
                         ->icon('heroicon-o-arrow-path')
@@ -509,18 +512,18 @@ class ApplicationResource extends Resource
                         ->action(function (array $data, $records) {
                             $newStatus = $data['status'];
                             $count = $records->count();
-                            $notificationService = new NotificationService();
+                            $notificationService = new NotificationService;
                             $applicationUpdates = [];
-                            
+
                             foreach ($records as $record) {
                                 $oldStatus = $record->current_step;
-                                
+
                                 // Update the application status
                                 $record->current_step = $newStatus;
                                 $record->status_updated_at = now();
                                 $record->status_updated_by = auth()->id();
                                 $record->save();
-                                
+
                                 // Create a state transition record with audit information
                                 $record->transitions()->create([
                                     'from_step' => $oldStatus,
@@ -539,7 +542,7 @@ class ApplicationResource extends Resource
                                     ],
                                     'created_at' => now(),
                                 ]);
-                                
+
                                 // Collect for batch notifications
                                 if ($data['send_notifications'] ?? true) {
                                     $applicationUpdates[] = [
@@ -549,19 +552,19 @@ class ApplicationResource extends Resource
                                     ];
                                 }
                             }
-                            
+
                             // Send batch notifications
-                            if (!empty($applicationUpdates)) {
+                            if (! empty($applicationUpdates)) {
                                 $notificationResults = $notificationService->sendBatchStatusNotifications($applicationUpdates);
-                                $successCount = count(array_filter($notificationResults, fn($r) => $r['success']));
-                                
+                                $successCount = count(array_filter($notificationResults, fn ($r) => $r['success']));
+
                                 Log::info('Bulk status notifications sent', [
                                     'total_applications' => count($applicationUpdates),
                                     'successful_notifications' => $successCount,
                                     'failed_notifications' => count($applicationUpdates) - $successCount,
                                 ]);
                             }
-                            
+
                             // Log the bulk status change with comprehensive audit information
                             Log::info('Bulk application status updated by admin', [
                                 'count' => $count,
@@ -576,7 +579,7 @@ class ApplicationResource extends Resource
                                 'timestamp' => now()->toIso8601String(),
                                 'session_ids' => $records->pluck('session_id')->toArray(),
                             ]);
-                            
+
                             Notification::make()
                                 ->title("Updated Status for {$count} Applications")
                                 ->body("All selected applications have been updated to {$newStatus}")
@@ -688,14 +691,14 @@ class ApplicationResource extends Resource
             ])
             ->defaultSort('created_at', 'desc');
     }
-    
+
     public static function getRelations(): array
     {
         return [
             //
         ];
     }
-    
+
     public static function getPages(): array
     {
         return [
@@ -703,18 +706,18 @@ class ApplicationResource extends Resource
             'view' => Pages\ViewApplication::route('/{record}'),
         ];
     }
-    
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery();
     }
-    
+
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::whereDate('created_at', today())
             ->count();
     }
-    
+
     public static function getWidgets(): array
     {
         return [

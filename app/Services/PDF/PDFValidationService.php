@@ -22,8 +22,9 @@ class PDFValidationService
         $errors = [];
 
         // Check if application state exists and is valid
-        if (!$applicationState) {
+        if (! $applicationState) {
             $errors[] = 'Application state not found';
+
             return $errors;
         }
 
@@ -39,7 +40,7 @@ class PDFValidationService
 
         // Check if application is in a valid state for PDF generation
         $validStates = ['completed', 'in_review', 'approved'];
-        if (!in_array($applicationState->current_step, $validStates)) {
+        if (! in_array($applicationState->current_step, $validStates)) {
             $errors[] = "Application is not in a valid state for PDF generation. Current state: {$applicationState->current_step}";
         }
 
@@ -61,6 +62,7 @@ class PDFValidationService
         // Check if form responses exist
         if (empty($formData['formResponses'])) {
             $errors[] = 'Form responses are missing';
+
             return $errors;
         }
 
@@ -93,23 +95,23 @@ class PDFValidationService
         $requiredFieldsMap = [
             'account_holder_loan_application.json' => [
                 'firstName', 'lastName', 'nationalIdNumber', 'mobile', 'emailAddress',
-                'residentialAddress', 'dateOfBirth', 'maritalStatus'
+                'residentialAddress', 'dateOfBirth', 'maritalStatus',
             ],
             'ssb_account_opening_form.json' => [
                 'firstName', 'surname', 'nationalIdNumber', 'mobile', 'emailAddress',
-                'residentialAddress', 'dateOfBirth', 'maritalStatus'
+                'residentialAddress', 'dateOfBirth', 'maritalStatus',
             ],
             'individual_account_opening.json' => [
                 'firstName', 'surname', 'nationalIdNumber', 'mobile', 'emailAddress',
-                'residentialAddress', 'dateOfBirth', 'maritalStatus'
+                'residentialAddress', 'dateOfBirth', 'maritalStatus',
             ],
             'smes_business_account_opening.json' => [
                 'firstName', 'surname', 'businessName', 'nationalIdNumber', 'mobile',
-                'emailAddress', 'businessAddress', 'dateOfBirth'
+                'emailAddress', 'businessAddress', 'dateOfBirth',
             ],
             'pensioners_loan_account.json' => [
                 'firstName', 'lastName', 'nationalIdNumber', 'mobile', 'emailAddress',
-                'residentialAddress', 'dateOfBirth', 'pensionNumber'
+                'residentialAddress', 'dateOfBirth', 'pensionNumber',
             ],
         ];
 
@@ -124,33 +126,33 @@ class PDFValidationService
         $errors = [];
 
         // Email validation
-        if (isset($formResponses['emailAddress']) && !empty($formResponses['emailAddress'])) {
-            if (!filter_var($formResponses['emailAddress'], FILTER_VALIDATE_EMAIL)) {
+        if (isset($formResponses['emailAddress']) && ! empty($formResponses['emailAddress'])) {
+            if (! filter_var($formResponses['emailAddress'], FILTER_VALIDATE_EMAIL)) {
                 $errors[] = 'Invalid email address format';
             }
         }
 
         // Mobile number validation
-        if (isset($formResponses['mobile']) && !empty($formResponses['mobile'])) {
-            if (!preg_match('/^\+?[1-9]\d{1,14}$/', $formResponses['mobile'])) {
+        if (isset($formResponses['mobile']) && ! empty($formResponses['mobile'])) {
+            if (! preg_match('/^\+?[1-9]\d{1,14}$/', $formResponses['mobile'])) {
                 $errors[] = 'Invalid mobile number format';
             }
         }
 
         // National ID validation (basic format check)
-        if (isset($formResponses['nationalIdNumber']) && !empty($formResponses['nationalIdNumber'])) {
-            if (!preg_match('/^[a-zA-Z0-9-]{5,20}$/', $formResponses['nationalIdNumber'])) {
+        if (isset($formResponses['nationalIdNumber']) && ! empty($formResponses['nationalIdNumber'])) {
+            if (! preg_match('/^[a-zA-Z0-9-]{5,20}$/', $formResponses['nationalIdNumber'])) {
                 $errors[] = 'Invalid national ID number format';
             }
         }
 
         // Date of birth validation
-        if (isset($formResponses['dateOfBirth']) && !empty($formResponses['dateOfBirth'])) {
+        if (isset($formResponses['dateOfBirth']) && ! empty($formResponses['dateOfBirth'])) {
             try {
                 $dob = new \DateTime($formResponses['dateOfBirth']);
-                $now = new \DateTime();
+                $now = new \DateTime;
                 $age = $now->diff($dob)->y;
-                
+
                 if ($age < 18) {
                     $errors[] = 'Applicant must be at least 18 years old';
                 }
@@ -163,8 +165,8 @@ class PDFValidationService
         }
 
         // Salary validation (if present)
-        if (isset($formResponses['salary']) && !empty($formResponses['salary'])) {
-            if (!is_numeric($formResponses['salary']) || (float)$formResponses['salary'] < 0) {
+        if (isset($formResponses['salary']) && ! empty($formResponses['salary'])) {
+            if (! is_numeric($formResponses['salary']) || (float) $formResponses['salary'] < 0) {
                 $errors[] = 'Invalid salary amount';
             }
         }
@@ -182,32 +184,32 @@ class PDFValidationService
         // Loan amount validation
         if (isset($formData['amount'])) {
             $amount = (float) $formData['amount'];
-            
+
             if ($amount <= 0) {
                 $errors[] = 'Loan amount must be greater than zero';
             }
-            
+
             // Maximum loan amount check
             $maxLoanAmount = 1000000; // $1M
             if ($amount > $maxLoanAmount) {
-                $errors[] = "Loan amount cannot exceed $" . number_format($maxLoanAmount);
+                $errors[] = 'Loan amount cannot exceed $'.number_format($maxLoanAmount);
             }
-            
+
             // Minimum loan amount check
             $minLoanAmount = 100;
             if ($amount < $minLoanAmount) {
-                $errors[] = "Loan amount must be at least $" . number_format($minLoanAmount);
+                $errors[] = 'Loan amount must be at least $'.number_format($minLoanAmount);
             }
         }
 
         // Credit term validation
         if (isset($formData['creditTerm'])) {
             $term = (int) $formData['creditTerm'];
-            
+
             if ($term <= 0) {
                 $errors[] = 'Credit term must be greater than zero';
             }
-            
+
             if ($term > 360) { // 30 years max
                 $errors[] = 'Credit term cannot exceed 360 months';
             }
@@ -216,11 +218,11 @@ class PDFValidationService
         // Interest rate validation
         if (isset($formData['interestRate'])) {
             $rate = (float) str_replace('%', '', $formData['interestRate']);
-            
+
             if ($rate <= 0) {
                 $errors[] = 'Interest rate must be greater than zero';
             }
-            
+
             if ($rate > 50) { // 50% max
                 $errors[] = 'Interest rate cannot exceed 50%';
             }
@@ -248,14 +250,14 @@ class PDFValidationService
         }
 
         // Business registration number validation
-        if (isset($formResponses['businessRegistrationNumber']) && !empty($formResponses['businessRegistrationNumber'])) {
-            if (!preg_match('/^[a-zA-Z0-9\/\-]{5,20}$/', $formResponses['businessRegistrationNumber'])) {
+        if (isset($formResponses['businessRegistrationNumber']) && ! empty($formResponses['businessRegistrationNumber'])) {
+            if (! preg_match('/^[a-zA-Z0-9\/\-]{5,20}$/', $formResponses['businessRegistrationNumber'])) {
                 $errors[] = 'Invalid business registration number format';
             }
         }
 
         // Annual turnover validation
-        if (isset($formResponses['annualTurnover']) && !empty($formResponses['annualTurnover'])) {
+        if (isset($formResponses['annualTurnover']) && ! empty($formResponses['annualTurnover'])) {
             $turnover = (float) $formResponses['annualTurnover'];
             if ($turnover < 0) {
                 $errors[] = 'Annual turnover cannot be negative';
@@ -273,7 +275,7 @@ class PDFValidationService
         $errors = [];
 
         // Check if DomPDF is available
-        if (!class_exists('\Barryvdh\DomPDF\Facade\Pdf')) {
+        if (! class_exists('\Barryvdh\DomPDF\Facade\Pdf')) {
             $errors[] = 'DomPDF package is not available';
         }
 
@@ -293,7 +295,7 @@ class PDFValidationService
         }
 
         // Check if storage is writable
-        if (!is_writable(storage_path('app/public'))) {
+        if (! is_writable(storage_path('app/public'))) {
             $errors[] = 'Storage directory is not writable';
         }
 

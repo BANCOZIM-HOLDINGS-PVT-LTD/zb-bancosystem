@@ -27,11 +27,13 @@ export interface CashPurchaseData {
     };
     delivery?: {
         type: 'swift' | 'gain_outlet';
-        depot: string;
+        depot?: string;
         depotName?: string;
         address?: string;
         city?: string;
         region?: string;
+        includesMESystem?: boolean;
+        includesTraining?: boolean;
     };
     customer?: {
         nationalId: string;

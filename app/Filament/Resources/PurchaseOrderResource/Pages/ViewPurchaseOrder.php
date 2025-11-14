@@ -20,7 +20,7 @@ class ViewPurchaseOrder extends ViewRecord
                 ->color('success')
                 ->icon('heroicon-o-check-circle')
                 ->visible(fn (): bool => $this->record->status === 'pending'),
-            
+
             Actions\Action::make('mark_ordered')
                 ->label('Mark as Ordered')
                 ->action(fn () => $this->record->markAsOrdered())
@@ -28,7 +28,7 @@ class ViewPurchaseOrder extends ViewRecord
                 ->color('info')
                 ->icon('heroicon-o-truck')
                 ->visible(fn (): bool => $this->record->status === 'approved'),
-            
+
             Actions\Action::make('mark_received')
                 ->label('Mark as Received')
                 ->action(fn () => $this->record->markAsReceived())
@@ -36,12 +36,12 @@ class ViewPurchaseOrder extends ViewRecord
                 ->color('success')
                 ->icon('heroicon-o-inbox-in')
                 ->visible(fn (): bool => $this->record->status === 'ordered'),
-            
+
             Actions\Action::make('print')
                 ->label('Print PO')
                 ->icon('heroicon-o-printer')
                 ->color('gray')
-                ->action(fn () => null) // Will implement PDF generation later
+                ->action(fn () => null), // Will implement PDF generation later
         ];
     }
 }

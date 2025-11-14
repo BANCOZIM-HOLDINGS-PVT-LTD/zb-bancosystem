@@ -1,7 +1,8 @@
 <?php
+
 // Quick SSB PDF Performance Test
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__.'/vendor/autoload.php';
 $app = require_once __DIR__.'/bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
@@ -22,9 +23,9 @@ $formData = [
         'employerName' => 'Test Employer',
         'loanAmount' => '1200.00',
         'loanTenure' => '12',
-        'spouseDetails' => []
+        'spouseDetails' => [],
     ],
-    'monthlyPayment' => '110.00'
+    'monthlyPayment' => '110.00',
 ];
 
 echo "Starting PDF generation...\n";
@@ -48,7 +49,7 @@ try {
 
     echo "✓ PDF generated successfully!\n";
     echo "  Generation time: {$duration} seconds\n";
-    echo "  PDF size: " . number_format(strlen($pdfContent)) . " bytes\n";
+    echo '  PDF size: '.number_format(strlen($pdfContent))." bytes\n";
 
     // Save test PDF
     $testPath = storage_path('app/ssb_performance_test.pdf');
@@ -72,8 +73,7 @@ try {
     $duration = round($endTime - $startTime, 2);
 
     echo "✗ ERROR after {$duration} seconds:\n";
-    echo "  " . $e->getMessage() . "\n";
-    echo "\n  File: " . $e->getFile() . ":" . $e->getLine() . "\n";
+    echo '  '.$e->getMessage()."\n";
+    echo "\n  File: ".$e->getFile().':'.$e->getLine()."\n";
     exit(1);
 }
-

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -12,9 +12,6 @@ class ClientErrorController extends Controller
 {
     /**
      * Log client-side errors
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function logError(Request $request): JsonResponse
     {
@@ -125,10 +122,10 @@ class ClientErrorController extends Controller
             // - Bugsnag
             // - Rollbar
             // - Custom monitoring endpoint
-            
+
             // Example for a custom monitoring endpoint:
             // Http::post(config('monitoring.external_endpoint'), $errorData);
-            
+
             Log::info('Error sent to external monitoring', [
                 'error_message' => $errorData['message'],
                 'url' => $errorData['url'],

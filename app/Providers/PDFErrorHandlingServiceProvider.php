@@ -5,9 +5,8 @@ namespace App\Providers;
 use App\Exceptions\PDF\PDFException;
 use App\Http\Middleware\PDFErrorHandlingMiddleware;
 use App\Services\PDFLoggingService;
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
 
 class PDFErrorHandlingServiceProvider extends ServiceProvider
 {
@@ -29,11 +28,11 @@ class PDFErrorHandlingServiceProvider extends ServiceProvider
     {
         // Register the middleware for PDF-related routes
         $this->registerPDFRouteMiddleware();
-        
+
         // Register global error handlers for PDF exceptions
         $this->registerPDFExceptionHandlers();
     }
-    
+
     /**
      * Register the PDF route middleware
      */
@@ -41,13 +40,13 @@ class PDFErrorHandlingServiceProvider extends ServiceProvider
     {
         // Register the middleware with a name for use in route definitions
         Route::aliasMiddleware('pdf.error-handling', PDFErrorHandlingMiddleware::class);
-        
+
         // Apply the middleware to PDF-related route groups
         Route::middlewareGroup('pdf', [
             'pdf.error-handling',
         ]);
     }
-    
+
     /**
      * Register global exception handlers for PDF exceptions
      */
@@ -57,7 +56,7 @@ class PDFErrorHandlingServiceProvider extends ServiceProvider
         $this->app->make(\Illuminate\Contracts\Debug\ExceptionHandler::class)
             ->renderable(function (PDFException $e, $request) {
                 $logger = $this->app->make(PDFLoggingService::class);
-                
+
                 // Log the exception
                 $logger->logError('PDF exception caught by global handler', [
                     'error_code' => $e->getErrorCode(),
@@ -66,7 +65,7 @@ class PDFErrorHandlingServiceProvider extends ServiceProvider
                     'request_method' => $request->method(),
                     'user_id' => $request->user() ? $request->user()->id : null,
                 ], $e);
-                
+
                 // Return JSON response for API requests
                 if ($request->expectsJson() || $request->is('api/*')) {
                     return response()->json(
@@ -74,7 +73,7 @@ class PDFErrorHandlingServiceProvider extends ServiceProvider
                         $this->getPDFExceptionStatusCode($e)
                     );
                 }
-                
+
                 // For web requests, if it's an AJAX request, return JSON
                 if ($request->ajax()) {
                     return response()->json(
@@ -82,29 +81,29 @@ class PDFErrorHandlingServiceProvider extends ServiceProvider
                         $this->getPDFExceptionStatusCode($e)
                     );
                 }
-                
+
                 // For regular web requests, redirect with error message
                 return redirect()->back()
                     ->withInput()
                     ->withErrors([
                         'pdf_error' => $e->getMessage(),
                         'pdf_error_code' => $e->getErrorCode(),
-                        'pdf_error_details' => json_encode($e->getContext())
+                        'pdf_error_details' => json_encode($e->getContext()),
                     ]);
             });
     }
-    
+
     /**
      * Get appropriate HTTP status code for PDF exceptions
      *
-     * @param PDFException $e The PDF exception
+     * @param  PDFException  $e  The PDF exception
      * @return int HTTP status code
      */
     private function getPDFExceptionStatusCode(PDFException $e): int
     {
         $errorCode = $e->getErrorCode();
-        
-        return match($errorCode) {
+
+        return match ($errorCode) {
             'PDF_INCOMPLETE_DATA', 'VALIDATION_FAILED', 'APPLICATION_INCOMPLETE' => 400,
             'APPLICATION_NOT_FOUND' => 404,
             'PDF_STORAGE_FAILED', 'PDF_GENERATION_FAILED' => 500,

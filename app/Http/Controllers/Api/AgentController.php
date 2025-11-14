@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AgentController extends Controller
 {
@@ -15,34 +15,34 @@ class AgentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Agent::active();
-        
+
         // Filter by type if provided
         if ($request->has('type')) {
             $query->ofType($request->type);
         }
-        
+
         // Filter by region if provided
         if ($request->has('region')) {
             $query->inRegion($request->region);
         }
-        
+
         // Search functionality
         if ($request->has('search')) {
             $query->search($request->search);
         }
-        
+
         $agents = $query->select([
-            'id', 
-            'agent_code', 
-            'first_name', 
-            'last_name', 
-            'email', 
-            'phone', 
-            'type', 
-            'region', 
-            'commission_rate'
+            'id',
+            'agent_code',
+            'first_name',
+            'last_name',
+            'email',
+            'phone',
+            'type',
+            'region',
+            'commission_rate',
         ])->get();
-        
+
         return response()->json([
             'success' => true,
             'data' => $agents->map(function ($agent) {
@@ -57,10 +57,10 @@ class AgentController extends Controller
                     'region' => $agent->region,
                     'commission_rate' => $agent->commission_rate,
                 ];
-            })
+            }),
         ]);
     }
-    
+
     /**
      * Get agent by code
      */
@@ -69,14 +69,14 @@ class AgentController extends Controller
         $agent = Agent::where('agent_code', $code)
             ->active()
             ->first();
-            
-        if (!$agent) {
+
+        if (! $agent) {
             return response()->json([
                 'success' => false,
-                'message' => 'Agent not found'
+                'message' => 'Agent not found',
             ], 404);
         }
-        
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -89,19 +89,19 @@ class AgentController extends Controller
                 'type' => $agent->type,
                 'region' => $agent->region,
                 'commission_rate' => $agent->commission_rate,
-            ]
+            ],
         ]);
     }
-    
+
     /**
      * Validate referral code
      */
     public function validateReferral(Request $request): JsonResponse
     {
         $request->validate([
-            'referral_code' => 'required|string'
+            'referral_code' => 'required|string',
         ]);
-        
+
         $referralLink = \App\Models\AgentReferralLink::where('code', $request->referral_code)
             ->where('is_active', true)
             ->where(function ($query) {
@@ -110,17 +110,17 @@ class AgentController extends Controller
             })
             ->with('agent:id,agent_code,first_name,last_name,type')
             ->first();
-            
-        if (!$referralLink) {
+
+        if (! $referralLink) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid or expired referral code'
+                'message' => 'Invalid or expired referral code',
             ], 404);
         }
-        
+
         // Increment click count
         $referralLink->increment('click_count');
-        
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -131,10 +131,10 @@ class AgentController extends Controller
                     'type' => $referralLink->agent->type,
                 ],
                 'campaign' => $referralLink->campaign_name,
-            ]
+            ],
         ]);
     }
-    
+
     /**
      * Get agent types
      */
@@ -146,7 +146,7 @@ class AgentController extends Controller
                 ['value' => 'field', 'label' => 'Field Agent'],
                 ['value' => 'online', 'label' => 'Online Agent'],
                 ['value' => 'direct', 'label' => 'Direct Agent'],
-            ]
+            ],
         ]);
     }
 }

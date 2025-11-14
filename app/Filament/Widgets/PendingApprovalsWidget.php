@@ -4,19 +4,18 @@ namespace App\Filament\Widgets;
 
 use App\Models\ApplicationState;
 use App\Services\NotificationService;
+use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 
 class PendingApprovalsWidget extends BaseWidget
 {
     protected static ?int $sort = 3;
-    
-    protected int | string | array $columnSpan = 'full';
-    
+
+    protected int|string|array $columnSpan = 'full';
+
     public function table(Table $table): Table
     {
         return $table
@@ -30,48 +29,59 @@ class PendingApprovalsWidget extends BaseWidget
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label('App #')
-                    ->formatStateUsing(fn ($state) => 'ZB' . date('Y') . str_pad($state, 6, '0', STR_PAD_LEFT)),
-                    
+                    ->formatStateUsing(fn ($state) => 'ZB'.date('Y').str_pad($state, 6, '0', STR_PAD_LEFT)),
+
                 Tables\Columns\TextColumn::make('reference_code')
                     ->label('Ref Code')
                     ->searchable()
                     ->copyable(),
-                    
+
                 Tables\Columns\TextColumn::make('applicant_name')
                     ->label('Applicant')
                     ->getStateUsing(function ($record) {
                         $data = $record->form_data['formResponses'] ?? [];
                         $firstName = $data['firstName'] ?? '';
                         $lastName = $data['lastName'] ?? '';
-                        return trim($firstName . ' ' . $lastName) ?: 'N/A';
+
+                        return trim($firstName.' '.$lastName) ?: 'N/A';
                     }),
-                    
+
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Amount')
-                    ->getStateUsing(fn ($record) => '$' . number_format($record->form_data['finalPrice'] ?? 0)),
-                    
+                    ->getStateUsing(fn ($record) => '$'.number_format($record->form_data['finalPrice'] ?? 0)),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Submitted')
                     ->dateTime('M j, Y g:i A'),
-                    
+
                 Tables\Columns\TextColumn::make('waiting_time')
                     ->label('Waiting')
                     ->getStateUsing(fn ($record) => $record->created_at->diffForHumans())
                     ->color(function ($record) {
                         $hoursWaiting = $record->created_at->diffInHours(now());
-                        if ($hoursWaiting > 72) return 'danger';
-                        if ($hoursWaiting > 24) return 'warning';
+                        if ($hoursWaiting > 72) {
+                            return 'danger';
+                        }
+                        if ($hoursWaiting > 24) {
+                            return 'warning';
+                        }
+
                         return 'success';
                     }),
-                    
+
                 Tables\Columns\BadgeColumn::make('priority')
                     ->label('Priority')
                     ->getStateUsing(function ($record) {
                         $hoursWaiting = $record->created_at->diffInHours(now());
                         $amount = $record->form_data['finalPrice'] ?? 0;
-                        
-                        if ($hoursWaiting > 72 || $amount > 50000) return 'High';
-                        if ($hoursWaiting > 24 || $amount > 20000) return 'Medium';
+
+                        if ($hoursWaiting > 72 || $amount > 50000) {
+                            return 'High';
+                        }
+                        if ($hoursWaiting > 24 || $amount > 20000) {
+                            return 'Medium';
+                        }
+
                         return 'Low';
                     })
                     ->colors([
@@ -84,7 +94,7 @@ class PendingApprovalsWidget extends BaseWidget
                 Tables\Actions\Action::make('view')
                     ->url(fn (ApplicationState $record): string => route('filament.admin.resources.applications.view', $record))
                     ->icon('heroicon-m-eye'),
-                    
+
                 Tables\Actions\Action::make('approve')
                     ->icon('heroicon-m-check-circle')
                     ->color('success')
@@ -97,7 +107,7 @@ class PendingApprovalsWidget extends BaseWidget
                         $record->status_updated_at = now();
                         $record->status_updated_by = auth()->id();
                         $record->save();
-                        
+
                         // Create a state transition record with audit information
                         $record->transitions()->create([
                             'from_step' => $oldStatus,
@@ -113,11 +123,11 @@ class PendingApprovalsWidget extends BaseWidget
                             ],
                             'created_at' => now(),
                         ]);
-                        
+
                         // Send notification to applicant
-                        $notificationService = new NotificationService();
+                        $notificationService = new NotificationService;
                         $notificationService->sendStatusUpdateNotification($record, $oldStatus, 'approved');
-                        
+
                         // Log the approval
                         Log::info('Application approved from widget', [
                             'session_id' => $record->session_id,
@@ -125,16 +135,16 @@ class PendingApprovalsWidget extends BaseWidget
                             'admin_id' => auth()->id(),
                             'admin_name' => auth()->user()->name ?? 'Unknown Admin',
                         ]);
-                        
+
                         Notification::make()
                             ->title('Application Approved')
                             ->body('Application has been approved and applicant notified')
                             ->success()
                             ->send();
-                        
+
                         $this->refreshTable();
                     }),
-                    
+
                 Tables\Actions\Action::make('reject')
                     ->icon('heroicon-m-x-circle')
                     ->color('danger')
@@ -153,7 +163,7 @@ class PendingApprovalsWidget extends BaseWidget
                         $record->status_updated_at = now();
                         $record->status_updated_by = auth()->id();
                         $record->save();
-                        
+
                         // Create a state transition record with audit information
                         $record->transitions()->create([
                             'from_step' => $oldStatus,
@@ -170,11 +180,11 @@ class PendingApprovalsWidget extends BaseWidget
                             ],
                             'created_at' => now(),
                         ]);
-                        
+
                         // Send notification to applicant
-                        $notificationService = new NotificationService();
+                        $notificationService = new NotificationService;
                         $notificationService->sendStatusUpdateNotification($record, $oldStatus, 'rejected');
-                        
+
                         // Log the rejection
                         Log::info('Application rejected from widget', [
                             'session_id' => $record->session_id,
@@ -183,16 +193,16 @@ class PendingApprovalsWidget extends BaseWidget
                             'admin_name' => auth()->user()->name ?? 'Unknown Admin',
                             'rejection_reason' => $data['rejection_reason'],
                         ]);
-                        
+
                         Notification::make()
                             ->title('Application Rejected')
                             ->body('Application has been rejected and applicant notified')
                             ->success()
                             ->send();
-                        
+
                         $this->refreshTable();
                     }),
-                    
+
                 Tables\Actions\Action::make('request_documents')
                     ->icon('heroicon-m-document-plus')
                     ->color('warning')
@@ -208,7 +218,7 @@ class PendingApprovalsWidget extends BaseWidget
                         $record->status_updated_at = now();
                         $record->status_updated_by = auth()->id();
                         $record->save();
-                        
+
                         // Create a state transition record
                         $record->transitions()->create([
                             'from_step' => $oldStatus,
@@ -225,17 +235,17 @@ class PendingApprovalsWidget extends BaseWidget
                             ],
                             'created_at' => now(),
                         ]);
-                        
+
                         // Send notification to applicant
-                        $notificationService = new NotificationService();
+                        $notificationService = new NotificationService;
                         $notificationService->sendStatusUpdateNotification($record, $oldStatus, 'pending_documents');
-                        
+
                         Notification::make()
                             ->title('Documents Requested')
                             ->body('Applicant has been notified about required documents')
                             ->success()
                             ->send();
-                        
+
                         $this->refreshTable();
                     }),
             ])

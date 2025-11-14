@@ -5,10 +5,10 @@ namespace App\Filament\Resources\ApplicationResource\Pages;
 use App\Filament\Resources\ApplicationResource;
 use App\Services\PDFGeneratorService;
 use Filament\Actions;
-use Filament\Resources\Pages\ViewRecord;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Storage;
+use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ViewApplication extends ViewRecord
 {
@@ -23,63 +23,63 @@ class ViewApplication extends ViewRecord
                 ->color('success')
                 ->action(function () {
                     try {
-                        $pdfGenerator = new PDFGeneratorService();
+                        $pdfGenerator = new PDFGeneratorService;
                         $pdfPath = $pdfGenerator->generateApplicationPDF($this->record);
-                        
+
                         Notification::make()
                             ->title('PDF Generated Successfully')
                             ->success()
                             ->send();
-                            
+
                         return redirect()->route('application.pdf.view', $this->record->session_id);
                     } catch (\Exception $e) {
-                        Log::error('PDF Generation failed: ' . $e->getMessage(), [
+                        Log::error('PDF Generation failed: '.$e->getMessage(), [
                             'session_id' => $this->record->session_id,
                             'exception' => $e,
                         ]);
-                        
+
                         Notification::make()
                             ->title('PDF Generation Failed')
-                            ->body('Error: ' . $e->getMessage())
+                            ->body('Error: '.$e->getMessage())
                             ->danger()
                             ->send();
                     }
                 }),
-                
+
             Actions\Action::make('download_pdf')
                 ->label('Download PDF')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('primary')
                 ->action(function () {
                     try {
-                        $pdfGenerator = new PDFGeneratorService();
+                        $pdfGenerator = new PDFGeneratorService;
                         $pdfPath = $pdfGenerator->generateApplicationPDF($this->record);
-                        
+
                         return response()->download(
                             Storage::disk('public')->path($pdfPath),
                             basename($pdfPath)
                         );
                     } catch (\Exception $e) {
-                        Log::error('PDF Download failed: ' . $e->getMessage(), [
+                        Log::error('PDF Download failed: '.$e->getMessage(), [
                             'session_id' => $this->record->session_id,
                             'exception' => $e,
                         ]);
-                        
+
                         Notification::make()
                             ->title('PDF Download Failed')
-                            ->body('Error: ' . $e->getMessage())
+                            ->body('Error: '.$e->getMessage())
                             ->danger()
                             ->send();
                     }
                 }),
-                
+
             Actions\Action::make('view_pdf')
                 ->label('View PDF')
                 ->icon('heroicon-o-eye')
                 ->color('info')
                 ->url(fn () => route('application.pdf.view', $this->record->session_id))
                 ->openUrlInNewTab(),
-                
+
             Actions\Action::make('update_status')
                 ->label('Update Status')
                 ->icon('heroicon-o-arrow-path')
@@ -105,11 +105,11 @@ class ViewApplication extends ViewRecord
                 ->action(function (array $data) {
                     $oldStatus = $this->record->current_step;
                     $newStatus = $data['status'];
-                    
+
                     // Update the application status
                     $this->record->current_step = $newStatus;
                     $this->record->save();
-                    
+
                     // Create a state transition record
                     $this->record->transitions()->create([
                         'from_step' => $oldStatus,
@@ -122,7 +122,7 @@ class ViewApplication extends ViewRecord
                         ],
                         'created_at' => now(),
                     ]);
-                    
+
                     // Log the status change
                     Log::info('Application status updated', [
                         'session_id' => $this->record->session_id,
@@ -130,7 +130,7 @@ class ViewApplication extends ViewRecord
                         'to_status' => $newStatus,
                         'admin_id' => auth()->id(),
                     ]);
-                    
+
                     // Handle notification to applicant if selected
                     if ($data['notify_applicant'] ?? false) {
                         // This would be implemented in a real system to send SMS, email, or WhatsApp
@@ -139,15 +139,15 @@ class ViewApplication extends ViewRecord
                             'new_status' => $newStatus,
                         ]);
                     }
-                    
+
                     Notification::make()
                         ->title('Status Updated Successfully')
                         ->success()
                         ->send();
-                        
+
                     $this->redirect($this->getResource()::getUrl('view', ['record' => $this->record]));
                 }),
-                
+
             Actions\Action::make('send_reminder')
                 ->label('Send Reminder')
                 ->icon('heroicon-o-bell')
@@ -182,7 +182,7 @@ class ViewApplication extends ViewRecord
                         'reminder_type' => $data['reminder_type'],
                         'channel' => $data['channel'],
                     ]);
-                    
+
                     Notification::make()
                         ->title('Reminder Sent Successfully')
                         ->success()
@@ -190,14 +190,14 @@ class ViewApplication extends ViewRecord
                 }),
         ];
     }
-    
+
     protected function getHeaderWidgets(): array
     {
         return [
             ViewApplication\ApplicationStatusWidget::class,
         ];
     }
-    
+
     protected function getFooterWidgets(): array
     {
         return [

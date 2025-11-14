@@ -20,7 +20,7 @@ class RepaymentTerm extends Model
      */
     public function getFormattedTermAttribute(): string
     {
-        return $this->months . ' months';
+        return $this->months.' months';
     }
 
     /**
@@ -28,7 +28,7 @@ class RepaymentTerm extends Model
      */
     public function getFormattedInterestRateAttribute(): string
     {
-        return $this->interest_rate . '%';
+        return $this->interest_rate.'%';
     }
 
     /**
@@ -36,7 +36,7 @@ class RepaymentTerm extends Model
      */
     public function getDisplayNameAttribute(): string
     {
-        return $this->formatted_term . ' at ' . $this->formatted_interest_rate;
+        return $this->formatted_term.' at '.$this->formatted_interest_rate;
     }
 
     /**
@@ -51,7 +51,7 @@ class RepaymentTerm extends Model
             return $principal / $numPayments;
         }
 
-        return $principal * ($monthlyRate * pow(1 + $monthlyRate, $numPayments)) / 
+        return $principal * ($monthlyRate * pow(1 + $monthlyRate, $numPayments)) /
                (pow(1 + $monthlyRate, $numPayments) - 1);
     }
 

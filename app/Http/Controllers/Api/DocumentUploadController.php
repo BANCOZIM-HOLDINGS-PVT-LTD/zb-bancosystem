@@ -6,23 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\DocumentUploadRequest;
 use App\Services\DocumentValidationService;
 use App\Services\PDFLoggingService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class DocumentUploadController extends Controller
 {
     protected $documentValidationService;
+
     protected $pdfLoggingService;
 
     /**
      * Constructor
-     *
-     * @param DocumentValidationService $documentValidationService
-     * @param PDFLoggingService $pdfLoggingService
      */
     public function __construct(
         DocumentValidationService $documentValidationService,
@@ -34,9 +31,6 @@ class DocumentUploadController extends Controller
 
     /**
      * Upload a document
-     *
-     * @param DocumentUploadRequest $request
-     * @return JsonResponse
      */
     public function upload(DocumentUploadRequest $request): JsonResponse
     {
@@ -56,7 +50,7 @@ class DocumentUploadController extends Controller
             ]);
 
             // If validation fails, return errors
-            if (!$validationResult['isValid']) {
+            if (! $validationResult['isValid']) {
                 return response()->json([
                     'success' => false,
                     'errors' => $validationResult['errors'],
@@ -102,7 +96,6 @@ class DocumentUploadController extends Controller
     /**
      * Validate a document without uploading
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function validate(Request $request)
@@ -148,7 +141,6 @@ class DocumentUploadController extends Controller
     /**
      * Get document metadata
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getMetadata(Request $request)
@@ -169,7 +161,7 @@ class DocumentUploadController extends Controller
             $path = $request->input('path');
 
             // Check if file exists
-            if (!Storage::disk('public')->exists($path)) {
+            if (! Storage::disk('public')->exists($path)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Document not found',
@@ -190,7 +182,7 @@ class DocumentUploadController extends Controller
             $mimeType = Storage::disk('public')->mimeType($path);
             if (strpos($mimeType, 'image/') === 0) {
                 // Get image dimensions
-                list($width, $height) = getimagesize($file);
+                [$width, $height] = getimagesize($file);
                 $metadata['dimensions'] = [
                     'width' => $width,
                     'height' => $height,
@@ -223,7 +215,6 @@ class DocumentUploadController extends Controller
     /**
      * Delete a document
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function delete(Request $request)
@@ -244,7 +235,7 @@ class DocumentUploadController extends Controller
             $path = $request->input('path');
 
             // Check if file exists
-            if (!Storage::disk('public')->exists($path)) {
+            if (! Storage::disk('public')->exists($path)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Document not found',
@@ -276,11 +267,10 @@ class DocumentUploadController extends Controller
             ], 500);
         }
     }
-    
+
     /**
      * Batch upload documents
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function batchUpload(Request $request)
@@ -304,15 +294,15 @@ class DocumentUploadController extends Controller
             $files = $request->file('files');
             $documentType = $request->input('documentType');
             $sessionId = $request->input('sessionId');
-            
+
             $results = [];
             $hasErrors = false;
-            
+
             foreach ($files as $file) {
                 // Validate document
                 $validationResult = $this->documentValidationService->validateDocument($file);
-                
-                if (!$validationResult['isValid']) {
+
+                if (! $validationResult['isValid']) {
                     $results[] = [
                         'filename' => $file->getClientOriginalName(),
                         'success' => false,
@@ -320,12 +310,13 @@ class DocumentUploadController extends Controller
                         'metadata' => $validationResult['metadata'],
                     ];
                     $hasErrors = true;
+
                     continue;
                 }
-                
+
                 // Store document
                 $storeResult = $this->documentValidationService->storeDocument($file, $documentType, $sessionId);
-                
+
                 // Log successful upload
                 $this->pdfLoggingService->logInfo('Document uploaded successfully (batch)', [
                     'documentType' => $documentType,
@@ -333,7 +324,7 @@ class DocumentUploadController extends Controller
                     'filename' => $file->getClientOriginalName(),
                     'path' => $storeResult['path'],
                 ]);
-                
+
                 $results[] = [
                     'filename' => $file->getClientOriginalName(),
                     'success' => true,
@@ -342,9 +333,9 @@ class DocumentUploadController extends Controller
                     'metadata' => $storeResult['metadata'],
                 ];
             }
-            
+
             return response()->json([
-                'success' => !$hasErrors,
+                'success' => ! $hasErrors,
                 'message' => $hasErrors ? 'Some files failed to upload' : 'All files uploaded successfully',
                 'results' => $results,
             ]);
@@ -363,11 +354,10 @@ class DocumentUploadController extends Controller
             ], 500);
         }
     }
-    
+
     /**
      * Verify document integrity
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function verifyIntegrity(Request $request)
@@ -390,7 +380,7 @@ class DocumentUploadController extends Controller
             $providedHash = $request->input('hash');
 
             // Check if file exists
-            if (!Storage::disk('public')->exists($path)) {
+            if (! Storage::disk('public')->exists($path)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Document not found',
@@ -401,10 +391,10 @@ class DocumentUploadController extends Controller
             // Calculate hash of the stored file
             $filePath = Storage::disk('public')->path($path);
             $calculatedHash = hash_file('sha256', $filePath);
-            
+
             // Compare hashes
             $verified = hash_equals($calculatedHash, $providedHash);
-            
+
             // Log verification attempt
             $this->pdfLoggingService->logInfo('Document integrity verification', [
                 'path' => $path,

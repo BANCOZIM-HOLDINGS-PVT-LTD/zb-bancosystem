@@ -17,7 +17,7 @@ class EditPurchaseOrder extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
-    
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
         // Recalculate totals
@@ -29,7 +29,7 @@ class EditPurchaseOrder extends EditRecord
             $data['subtotal'] = $subtotal;
             $data['total_amount'] = $subtotal + ($data['tax_amount'] ?? 0) + ($data['shipping_cost'] ?? 0);
         }
-        
+
         return $data;
     }
 }

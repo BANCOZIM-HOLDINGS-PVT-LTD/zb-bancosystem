@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApplicationState;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -25,7 +24,7 @@ class WelcomeController extends Controller
             $query = ApplicationState::query();
 
             if ($user->email || $user->phone || $user->national_id) {
-                $query->where(function($subQuery) use ($user) {
+                $query->where(function ($subQuery) use ($user) {
                     if ($user->email) {
                         $subQuery->where('user_identifier', $user->email);
                     }

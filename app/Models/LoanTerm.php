@@ -58,32 +58,44 @@ class LoanTerm extends Model
      * Interest types
      */
     const INTEREST_SIMPLE = 'simple';
+
     const INTEREST_COMPOUND = 'compound';
+
     const INTEREST_FLAT = 'flat';
+
     const INTEREST_REDUCING = 'reducing';
+
     const INTEREST_CUSTOM = 'custom';
 
     /**
      * Calculation methods
      */
     const CALC_STANDARD = 'standard';
+
     const CALC_CUSTOM_FORMULA = 'custom_formula';
+
     const CALC_TIERED = 'tiered';
+
     const CALC_PERCENTAGE_OF_INCOME = 'percentage_of_income';
 
     /**
      * Payment frequencies
      */
     const FREQ_WEEKLY = 'weekly';
+
     const FREQ_BIWEEKLY = 'biweekly';
+
     const FREQ_MONTHLY = 'monthly';
+
     const FREQ_QUARTERLY = 'quarterly';
+
     const FREQ_ANNUALLY = 'annually';
 
     /**
      * Processing fee types
      */
     const FEE_FIXED = 'fixed';
+
     const FEE_PERCENTAGE = 'percentage';
 
     /**
@@ -134,10 +146,12 @@ class LoanTerm extends Model
         switch ($this->interest_type) {
             case self::INTEREST_SIMPLE:
                 $totalInterest = $loanAmount * ($this->interest_rate / 100) * ($this->duration_months / 12);
+
                 return ($loanAmount + $totalInterest) / $this->duration_months;
 
             case self::INTEREST_FLAT:
                 $monthlyInterest = $loanAmount * ($this->interest_rate / 100) / 12;
+
                 return ($loanAmount / $this->duration_months) + $monthlyInterest;
 
             case self::INTEREST_REDUCING:
@@ -146,7 +160,8 @@ class LoanTerm extends Model
                 if ($monthlyRate == 0) {
                     return $loanAmount / $numPayments;
                 }
-                return $loanAmount * ($monthlyRate * pow(1 + $monthlyRate, $numPayments)) / 
+
+                return $loanAmount * ($monthlyRate * pow(1 + $monthlyRate, $numPayments)) /
                        (pow(1 + $monthlyRate, $numPayments) - 1);
 
             default:
@@ -175,7 +190,7 @@ class LoanTerm extends Model
 
         // Simple variable replacement (in production, use a proper expression evaluator)
         foreach ($variables as $var => $value) {
-            $formula = str_replace('{' . $var . '}', $value, $formula);
+            $formula = str_replace('{'.$var.'}', $value, $formula);
         }
 
         // For safety, only allow basic math operations
@@ -196,12 +211,13 @@ class LoanTerm extends Model
     private function calculateTieredPayment(float $loanAmount): float
     {
         $tiers = $this->metadata['tiers'] ?? [];
-        
+
         foreach ($tiers as $tier) {
             if ($loanAmount >= $tier['min_amount'] && $loanAmount <= $tier['max_amount']) {
                 $tierRate = $tier['interest_rate'] ?? $this->interest_rate;
                 $tempTerm = clone $this;
                 $tempTerm->interest_rate = $tierRate;
+
                 return $tempTerm->calculateStandardPayment($loanAmount);
             }
         }
@@ -216,7 +232,7 @@ class LoanTerm extends Model
     {
         $incomePercentage = $this->metadata['income_percentage'] ?? 30;
         $estimatedIncome = $this->metadata['estimated_monthly_income'] ?? 1000;
-        
+
         return ($estimatedIncome * $incomePercentage) / 100;
     }
 
@@ -227,12 +243,12 @@ class LoanTerm extends Model
     {
         $monthlyPayment = $this->calculateMonthlyPayment($loanAmount);
         $totalPayments = $monthlyPayment * $this->duration_months;
-        
-        $processingFee = $this->processing_fee_type === self::FEE_PERCENTAGE 
+
+        $processingFee = $this->processing_fee_type === self::FEE_PERCENTAGE
             ? ($loanAmount * $this->processing_fee / 100)
             : $this->processing_fee;
-        
-        $insuranceCost = $this->insurance_required 
+
+        $insuranceCost = $this->insurance_required
             ? ($loanAmount * $this->insurance_rate / 100)
             : 0;
 
@@ -254,9 +270,9 @@ class LoanTerm extends Model
     /**
      * Generate payment schedule
      */
-    public function generatePaymentSchedule(float $loanAmount, \DateTime $startDate = null): array
+    public function generatePaymentSchedule(float $loanAmount, ?\DateTime $startDate = null): array
     {
-        $startDate = $startDate ?: new \DateTime();
+        $startDate = $startDate ?: new \DateTime;
         $monthlyPayment = $this->calculateMonthlyPayment($loanAmount);
         $balance = $loanAmount;
         $schedule = [];
@@ -287,12 +303,12 @@ class LoanTerm extends Model
      */
     public function getIsActiveNowAttribute(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
         $now = now();
-        
+
         if ($this->effective_date && $now < $this->effective_date) {
             return false;
         }
@@ -327,11 +343,11 @@ class LoanTerm extends Model
         return $query->where('is_active', true)
             ->where(function ($q) {
                 $q->whereNull('effective_date')
-                  ->orWhere('effective_date', '<=', now());
+                    ->orWhere('effective_date', '<=', now());
             })
             ->where(function ($q) {
                 $q->whereNull('expiry_date')
-                  ->orWhere('expiry_date', '>', now());
+                    ->orWhere('expiry_date', '>', now());
             });
     }
 

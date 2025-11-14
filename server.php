@@ -6,7 +6,6 @@
  * This file serves as the entry point for the built-in PHP development server.
  * It handles routing and serves static files when available.
  */
-
 $uri = urldecode(
     parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? ''
 );

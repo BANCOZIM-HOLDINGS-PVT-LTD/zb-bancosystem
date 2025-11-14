@@ -36,14 +36,23 @@ class InventoryMovement extends Model
      * Movement types
      */
     const TYPE_ADDITION = 'addition';
+
     const TYPE_REMOVAL = 'removal';
+
     const TYPE_RESERVATION = 'reservation';
+
     const TYPE_RELEASE = 'release';
+
     const TYPE_SALE = 'sale';
+
     const TYPE_RETURN = 'return';
+
     const TYPE_ADJUSTMENT = 'adjustment';
+
     const TYPE_TRANSFER = 'transfer';
+
     const TYPE_DAMAGE = 'damage';
+
     const TYPE_EXPIRED = 'expired';
 
     /**
@@ -143,7 +152,8 @@ class InventoryMovement extends Model
     public function getFormattedQuantityAttribute(): string
     {
         $sign = $this->increases_stock ? '+' : '-';
-        return $sign . abs($this->quantity);
+
+        return $sign.abs($this->quantity);
     }
 
     /**
@@ -208,7 +218,7 @@ class InventoryMovement extends Model
                 $inventory = ProductInventory::find($movement->product_inventory_id);
                 if ($inventory) {
                     $movement->previous_quantity = $inventory->stock_quantity;
-                    
+
                     // Calculate new quantity based on movement type
                     if ($movement->increases_stock) {
                         $movement->new_quantity = $inventory->stock_quantity + abs($movement->quantity);

@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Carbon\Carbon;
 
 class ProductInventory extends Model
 {
@@ -102,7 +101,7 @@ class ProductInventory extends Model
      */
     public function getStockStatusAttribute(): string
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return 'inactive';
         }
 
@@ -158,7 +157,7 @@ class ProductInventory extends Model
         }
 
         $this->increment('reserved_quantity', $quantity);
-        
+
         // Log the movement
         $this->movements()->create([
             'type' => 'reservation',
@@ -181,7 +180,7 @@ class ProductInventory extends Model
         }
 
         $this->decrement('reserved_quantity', $quantity);
-        
+
         // Log the movement
         $this->movements()->create([
             'type' => 'release',
@@ -200,7 +199,7 @@ class ProductInventory extends Model
     public function addStock(int $quantity, string $reason = 'manual_adjustment'): void
     {
         $this->increment('stock_quantity', $quantity);
-        
+
         // Log the movement
         $this->movements()->create([
             'type' => 'addition',
@@ -221,7 +220,7 @@ class ProductInventory extends Model
         }
 
         $this->decrement('stock_quantity', $quantity);
-        
+
         // Log the movement
         $this->movements()->create([
             'type' => 'removal',
@@ -283,11 +282,11 @@ class ProductInventory extends Model
             ->whereRaw('(stock_quantity - reserved_quantity) > 0')
             ->where(function ($q) {
                 $q->whereNull('availability_date')
-                  ->orWhere('availability_date', '<=', now());
+                    ->orWhere('availability_date', '<=', now());
             })
             ->where(function ($q) {
                 $q->whereNull('discontinue_date')
-                  ->orWhere('discontinue_date', '>', now());
+                    ->orWhere('discontinue_date', '>', now());
             });
     }
 }

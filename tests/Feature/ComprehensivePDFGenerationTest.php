@@ -2,25 +2,25 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\ApplicationState;
-use App\Services\PDFGeneratorService;
 use App\Services\PDF\PDFTemplateService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Storage;
+use App\Services\PDFGeneratorService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class ComprehensivePDFGenerationTest extends TestCase
 {
     use RefreshDatabase;
 
     protected PDFGeneratorService $pdfGenerator;
+
     protected PDFTemplateService $templateService;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->templateService = new PDFTemplateService();
+        $this->templateService = new PDFTemplateService;
     }
 
     /**
@@ -31,13 +31,13 @@ class ComprehensivePDFGenerationTest extends TestCase
         // Templates that use $formResponses structure
         $formResponsesTemplates = [
             'forms.ssb_form_pdf',
-            'forms.zb_account_opening_pdf'
+            'forms.zb_account_opening_pdf',
         ];
 
         // Templates that use direct variables
         $directVariableTemplates = [
             'forms.account_holders_pdf',
-            'forms.sme_business_pdf'
+            'forms.sme_business_pdf',
         ];
 
         if (in_array($template, $formResponsesTemplates)) {
@@ -76,7 +76,7 @@ class ComprehensivePDFGenerationTest extends TestCase
             'deliveryStatus' => 'Future',
             'province' => 'Harare',
             'agent' => 'Test Agent',
-            'team' => 'Team A'
+            'team' => 'Team A',
         ];
 
         // Test template detection
@@ -85,7 +85,7 @@ class ComprehensivePDFGenerationTest extends TestCase
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
-            'form_data' => $formData
+            'form_data' => $formData,
         ]);
 
         $template = $this->templateService->detectFormType($applicationState);
@@ -97,14 +97,14 @@ class ComprehensivePDFGenerationTest extends TestCase
             $templateData = $this->prepareTemplateData($template, $formData);
             $pdf = Pdf::loadView($template, $templateData);
             $this->assertNotNull($pdf);
-            
+
             // Test that PDF content is generated
             $pdfContent = $pdf->output();
             $this->assertNotEmpty($pdfContent);
             $this->assertStringContainsString('%PDF', $pdfContent); // PDF header
-            
+
         } catch (\Exception $e) {
-            $this->fail("SSB PDF generation failed: " . $e->getMessage());
+            $this->fail('SSB PDF generation failed: '.$e->getMessage());
         }
     }
 
@@ -145,8 +145,8 @@ class ComprehensivePDFGenerationTest extends TestCase
                 'surname' => 'Smith',
                 'nationalIdNumber' => '63-654321-B-02',
                 'cellNumber' => '+263773456789',
-                'emailAddress' => 'david@techsolutions.co.zw'
-            ]
+                'emailAddress' => 'david@techsolutions.co.zw',
+            ],
         ];
 
         $applicationState = new ApplicationState([
@@ -154,7 +154,7 @@ class ComprehensivePDFGenerationTest extends TestCase
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
-            'form_data' => $formData
+            'form_data' => $formData,
         ]);
 
         // Test template detection
@@ -167,13 +167,13 @@ class ComprehensivePDFGenerationTest extends TestCase
             $templateData = $this->prepareTemplateData($template, $formData);
             $pdf = Pdf::loadView($template, $templateData);
             $this->assertNotNull($pdf);
-            
+
             $pdfContent = $pdf->output();
             $this->assertNotEmpty($pdfContent);
             $this->assertStringContainsString('%PDF', $pdfContent);
-            
+
         } catch (\Exception $e) {
-            $this->fail("SME Business PDF generation failed: " . $e->getMessage());
+            $this->fail('SME Business PDF generation failed: '.$e->getMessage());
         }
     }
 
@@ -209,8 +209,8 @@ class ComprehensivePDFGenerationTest extends TestCase
             'supportingDocs' => [
                 'passportPhotos' => true,
                 'proofOfResidence' => true,
-                'nationalId' => true
-            ]
+                'nationalId' => true,
+            ],
         ];
 
         $applicationState = new ApplicationState([
@@ -218,7 +218,7 @@ class ComprehensivePDFGenerationTest extends TestCase
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
-            'form_data' => $formData
+            'form_data' => $formData,
         ]);
 
         // Test template detection
@@ -231,13 +231,13 @@ class ComprehensivePDFGenerationTest extends TestCase
             $templateData = $this->prepareTemplateData($template, $formData);
             $pdf = Pdf::loadView($template, $templateData);
             $this->assertNotNull($pdf);
-            
+
             $pdfContent = $pdf->output();
             $this->assertNotEmpty($pdfContent);
             $this->assertStringContainsString('%PDF', $pdfContent);
-            
+
         } catch (\Exception $e) {
-            $this->fail("ZB Account Opening PDF generation failed: " . $e->getMessage());
+            $this->fail('ZB Account Opening PDF generation failed: '.$e->getMessage());
         }
     }
 
@@ -271,7 +271,7 @@ class ComprehensivePDFGenerationTest extends TestCase
             'deliveryStatus' => 'Future',
             'province' => 'Harare',
             'agent' => 'Test Agent 2',
-            'team' => 'Team B'
+            'team' => 'Team B',
         ];
 
         $applicationState = new ApplicationState([
@@ -279,7 +279,7 @@ class ComprehensivePDFGenerationTest extends TestCase
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
-            'form_data' => $formData
+            'form_data' => $formData,
         ]);
 
         // Test template detection
@@ -292,13 +292,13 @@ class ComprehensivePDFGenerationTest extends TestCase
             $templateData = $this->prepareTemplateData($template, $formData);
             $pdf = Pdf::loadView($template, $templateData);
             $this->assertNotNull($pdf);
-            
+
             $pdfContent = $pdf->output();
             $this->assertNotEmpty($pdfContent);
             $this->assertStringContainsString('%PDF', $pdfContent);
-            
+
         } catch (\Exception $e) {
-            $this->fail("Account Holders PDF generation failed: " . $e->getMessage());
+            $this->fail('Account Holders PDF generation failed: '.$e->getMessage());
         }
     }
 
@@ -311,7 +311,7 @@ class ComprehensivePDFGenerationTest extends TestCase
             'formType' => 'sme_business',
             'businessName' => 'Registration Test Company',
             'businessRegistration' => 'TEST/2024/999999',
-            'registeredName' => 'Registration Test Company (Private) Limited'
+            'registeredName' => 'Registration Test Company (Private) Limited',
         ];
 
         $applicationState = new ApplicationState([
@@ -319,7 +319,7 @@ class ComprehensivePDFGenerationTest extends TestCase
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
-            'form_data' => $formData
+            'form_data' => $formData,
         ]);
 
         // Verify form data contains business registration
@@ -340,7 +340,7 @@ class ComprehensivePDFGenerationTest extends TestCase
             'formType' => 'zb_account_opening',
             'accountType' => 'current',
             'initialDeposit' => '250.00',
-            'accountCurrency' => 'USD'
+            'accountCurrency' => 'USD',
         ];
 
         $applicationState = new ApplicationState([
@@ -348,7 +348,7 @@ class ComprehensivePDFGenerationTest extends TestCase
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
-            'form_data' => $formData
+            'form_data' => $formData,
         ]);
 
         // Verify form data contains account fields
@@ -377,7 +377,7 @@ class ComprehensivePDFGenerationTest extends TestCase
             'employmentStatus' => 'Permanent',
             'loanTenure' => '12',
             'monthlyPayment' => '100.00',
-            'loanAmount' => '1200.00'
+            'loanAmount' => '1200.00',
         ];
 
         $applicationState = new ApplicationState([
@@ -385,7 +385,7 @@ class ComprehensivePDFGenerationTest extends TestCase
             'channel' => 'web',
             'user_identifier' => 'test@example.com',
             'current_step' => 'completed',
-            'form_data' => $minimalFormData
+            'form_data' => $minimalFormData,
         ]);
 
         $template = $this->templateService->detectFormType($applicationState);
@@ -396,12 +396,12 @@ class ComprehensivePDFGenerationTest extends TestCase
             $templateData = $this->prepareTemplateData($template, $minimalFormData);
             $pdf = Pdf::loadView($template, $templateData);
             $this->assertNotNull($pdf);
-            
+
             $pdfContent = $pdf->output();
             $this->assertNotEmpty($pdfContent);
-            
+
         } catch (\Exception $e) {
-            $this->fail("PDF generation with minimal data failed: " . $e->getMessage());
+            $this->fail('PDF generation with minimal data failed: '.$e->getMessage());
         }
     }
 
@@ -414,11 +414,11 @@ class ComprehensivePDFGenerationTest extends TestCase
             'forms.ssb_form_pdf',
             'forms.sme_business_pdf',
             'forms.zb_account_opening_pdf',
-            'forms.account_holders_pdf'
+            'forms.account_holders_pdf',
         ];
 
         foreach ($templates as $template) {
-            $templatePath = resource_path('views/' . str_replace('.', '/', $template) . '.blade.php');
+            $templatePath = resource_path('views/'.str_replace('.', '/', $template).'.blade.php');
             $this->assertFileExists($templatePath, "Template file missing: {$templatePath}");
         }
     }
@@ -438,7 +438,7 @@ class ComprehensivePDFGenerationTest extends TestCase
             'periodAtAddress' => 'More than 5 years',
             'loanTenure' => '12',
             'monthlyPayment' => '100.00',
-            'loanAmount' => '1200.00'
+            'loanAmount' => '1200.00',
         ];
 
         $template = 'forms.account_holders_pdf';
@@ -447,13 +447,13 @@ class ComprehensivePDFGenerationTest extends TestCase
             $templateData = $this->prepareTemplateData($template, $formData);
             $pdf = Pdf::loadView($template, $templateData);
             $this->assertNotNull($pdf);
-            
+
             // PDF should generate without errors
             $pdfContent = $pdf->output();
             $this->assertNotEmpty($pdfContent);
-            
+
         } catch (\Exception $e) {
-            $this->fail("Checkbox styling PDF generation failed: " . $e->getMessage());
+            $this->fail('Checkbox styling PDF generation failed: '.$e->getMessage());
         }
     }
 }

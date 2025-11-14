@@ -11,9 +11,7 @@ class ContentSecurityPolicyMiddleware
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -40,8 +38,8 @@ class ContentSecurityPolicyMiddleware
     private function shouldApplyCSP(Response $response): bool
     {
         $contentType = $response->headers->get('Content-Type', '');
-        
-        return str_contains($contentType, 'text/html') || 
+
+        return str_contains($contentType, 'text/html') ||
                empty($contentType); // Default for HTML responses
     }
 
@@ -65,7 +63,7 @@ class ContentSecurityPolicyMiddleware
                 "base-uri 'self'",
                 "form-action 'self'",
                 "frame-ancestors 'none'",
-                "upgrade-insecure-requests",
+                'upgrade-insecure-requests',
             ];
         } else {
             // Development mode - more permissive for Vite

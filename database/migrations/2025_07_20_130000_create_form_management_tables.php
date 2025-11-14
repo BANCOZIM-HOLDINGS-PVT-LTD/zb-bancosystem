@@ -32,7 +32,7 @@ return new class extends Migration
             $table->timestamp('published_at')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();
-            
+
             $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('updated_by')->references('id')->on('users')->onDelete('set null');
             $table->index(['status', 'type']);
@@ -58,7 +58,7 @@ return new class extends Migration
             $table->json('workflow_state')->nullable(); // Current workflow position
             $table->json('metadata')->nullable();
             $table->timestamps();
-            
+
             $table->foreign('form_template_id')->references('id')->on('form_templates')->onDelete('cascade');
             $table->foreign('agent_id')->references('id')->on('agents')->onDelete('set null');
             $table->foreign('assigned_to')->references('id')->on('users')->onDelete('set null');
@@ -73,8 +73,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug')->unique();
             $table->enum('type', [
-                'text', 'email', 'phone', 'number', 'textarea', 'select', 'radio', 
-                'checkbox', 'date', 'file', 'signature', 'address', 'currency'
+                'text', 'email', 'phone', 'number', 'textarea', 'select', 'radio',
+                'checkbox', 'date', 'file', 'signature', 'address', 'currency',
             ]);
             $table->text('label');
             $table->text('placeholder')->nullable();
@@ -87,7 +87,7 @@ return new class extends Migration
             $table->unsignedBigInteger('created_by');
             $table->json('metadata')->nullable();
             $table->timestamps();
-            
+
             $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
             $table->index(['type', 'is_active']);
             $table->index('slug');
@@ -111,7 +111,7 @@ return new class extends Migration
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();
-            
+
             $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('updated_by')->references('id')->on('users')->onDelete('set null');
             $table->index(['status', 'type']);
@@ -135,7 +135,7 @@ return new class extends Migration
             $table->timestamp('generated_at');
             $table->json('metadata')->nullable();
             $table->timestamps();
-            
+
             $table->foreign('document_template_id')->references('id')->on('document_templates')->onDelete('cascade');
             $table->foreign('form_submission_id')->references('id')->on('form_submissions')->onDelete('set null');
             $table->foreign('generated_by')->references('id')->on('users')->onDelete('cascade');
@@ -157,7 +157,7 @@ return new class extends Migration
             $table->timestamp('completed_at')->nullable();
             $table->integer('sort_order')->default(0);
             $table->timestamps();
-            
+
             $table->foreign('form_submission_id')->references('id')->on('form_submissions')->onDelete('cascade');
             $table->foreign('assigned_to')->references('id')->on('users')->onDelete('set null');
             $table->index(['form_submission_id', 'sort_order']);
@@ -179,7 +179,7 @@ return new class extends Migration
             $table->json('field_analytics')->nullable(); // Field-specific metrics
             $table->json('metadata')->nullable();
             $table->timestamps();
-            
+
             $table->foreign('form_template_id')->references('id')->on('form_templates')->onDelete('cascade');
             $table->unique(['form_template_id', 'date']);
             $table->index(['date', 'form_template_id']);

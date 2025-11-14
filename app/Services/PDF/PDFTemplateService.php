@@ -29,25 +29,25 @@ class PDFTemplateService
     public function detectFormType(ApplicationState $applicationState): string
     {
         $formData = $applicationState->form_data ?? [];
-        
+
         // Check metadata first
         if (isset($formData['formType'])) {
             return $this->getTemplateForFormType($formData['formType']);
         }
-        
+
         // Check for specific form indicators
         if (isset($formData['responsibleMinistry'])) {
             return 'forms.ssb_form_pdf';
         }
-        
+
         if (isset($formData['businessName']) || isset($formData['registeredName']) || isset($formData['businessRegistration'])) {
             return 'forms.sme_business_pdf';
         }
-        
+
         if (isset($formData['accountType']) || isset($formData['accountCurrency'])) {
             return 'forms.zb_account_opening_pdf';
         }
-        
+
         // Default to account holders
         return 'forms.account_holders_pdf';
     }
@@ -113,8 +113,8 @@ class PDFTemplateService
 
             $pdfData['loanAmount'] = number_format($amount, 2);
             $pdfData['loanTerm'] = $term;
-            $pdfData['interestRate'] = $interestRate . '%';
-            
+            $pdfData['interestRate'] = $interestRate.'%';
+
             // Calculate monthly payment
             if ($amount > 0 && $term > 0 && $interestRate > 0) {
                 $monthlyRate = $interestRate / 100 / 12;
@@ -210,12 +210,12 @@ class PDFTemplateService
         }
 
         // Validate specific field formats
-        if (isset($data['emailAddress']) && !filter_var($data['emailAddress'], FILTER_VALIDATE_EMAIL)) {
-            $errors[] = "Invalid email address format";
+        if (isset($data['emailAddress']) && ! filter_var($data['emailAddress'], FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'Invalid email address format';
         }
 
-        if (isset($data['mobile']) && !preg_match('/^\+?[1-9]\d{1,14}$/', $data['mobile'])) {
-            $errors[] = "Invalid mobile number format";
+        if (isset($data['mobile']) && ! preg_match('/^\+?[1-9]\d{1,14}$/', $data['mobile'])) {
+            $errors[] = 'Invalid mobile number format';
         }
 
         return $errors;
@@ -228,19 +228,19 @@ class PDFTemplateService
     {
         $requiredFieldsMap = [
             'account_holder_loan_application.json' => [
-                'firstName', 'lastName', 'nationalIdNumber', 'mobile'
+                'firstName', 'lastName', 'nationalIdNumber', 'mobile',
             ],
             'ssb_account_opening_form.json' => [
-                'firstName', 'surname', 'nationalIdNumber', 'mobile'
+                'firstName', 'surname', 'nationalIdNumber', 'mobile',
             ],
             'individual_account_opening.json' => [
-                'firstName', 'surname', 'nationalIdNumber', 'mobile'
+                'firstName', 'surname', 'nationalIdNumber', 'mobile',
             ],
             'smes_business_account_opening.json' => [
-                'firstName', 'surname', 'businessName', 'nationalIdNumber', 'mobile'
+                'firstName', 'surname', 'businessName', 'nationalIdNumber', 'mobile',
             ],
             'pensioners_loan_account.json' => [
-                'firstName', 'lastName', 'nationalIdNumber', 'mobile'
+                'firstName', 'lastName', 'nationalIdNumber', 'mobile',
             ],
         ];
 

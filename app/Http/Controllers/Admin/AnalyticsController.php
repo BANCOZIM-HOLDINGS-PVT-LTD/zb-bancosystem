@@ -6,9 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\ApplicationState;
 use App\Repositories\ApplicationStateRepository;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -27,7 +26,7 @@ class AnalyticsController extends Controller
     public function index(Request $request): Response
     {
         $dateRange = $this->getDateRange($request);
-        
+
         return Inertia::render('Admin/Analytics/Index', [
             'overview' => $this->getOverviewMetrics($dateRange),
             'channelPerformance' => $this->getChannelPerformance($dateRange),
@@ -72,7 +71,7 @@ class AnalyticsController extends Controller
         ]);
 
         $dateRange = $this->getDateRange($request);
-        
+
         switch ($request->type) {
             case 'overview':
                 return $this->exportOverview($dateRange, $request->format);
@@ -144,17 +143,17 @@ class AnalyticsController extends Controller
             $count = ApplicationState::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
                 ->where(function ($query) use ($step) {
                     $query->where('current_step', $step)
-                          ->orWhere(function ($q) use ($step) {
-                              // Include users who have passed this step
-                              $stepOrder = ['language' => 1, 'intent' => 2, 'employer' => 3, 'account_check' => 4, 'form' => 5, 'documents' => 6, 'completed' => 7];
-                              $currentStepOrder = $stepOrder[$step] ?? 0;
-                              
-                              foreach ($stepOrder as $s => $order) {
-                                  if ($order > $currentStepOrder) {
-                                      $q->orWhere('current_step', $s);
-                                  }
-                              }
-                          });
+                        ->orWhere(function ($q) use ($step) {
+                            // Include users who have passed this step
+                            $stepOrder = ['language' => 1, 'intent' => 2, 'employer' => 3, 'account_check' => 4, 'form' => 5, 'documents' => 6, 'completed' => 7];
+                            $currentStepOrder = $stepOrder[$step] ?? 0;
+
+                            foreach ($stepOrder as $s => $order) {
+                                if ($order > $currentStepOrder) {
+                                    $q->orWhere('current_step', $s);
+                                }
+                            }
+                        });
                 })
                 ->count();
 
@@ -233,7 +232,7 @@ class AnalyticsController extends Controller
     {
         $total = $query->count();
         $completed = $query->where('current_step', 'completed')->count();
-        
+
         return $total > 0 ? round(($completed / $total) * 100, 2) : 0;
     }
 
@@ -264,7 +263,7 @@ class AnalyticsController extends Controller
     {
         $total = $query->count();
         $bounced = $query->where('current_step', 'language')->count();
-        
+
         return $total > 0 ? round(($bounced / $total) * 100, 2) : 0;
     }
 

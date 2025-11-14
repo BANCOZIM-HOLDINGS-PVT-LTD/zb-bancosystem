@@ -1,11 +1,11 @@
 <?php
 
+use App\Http\Controllers\ApplicationPDFController;
+use App\Http\Controllers\ApplicationWizardController;
+use App\Http\Controllers\PdfController;
+use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\PdfController;
-use App\Http\Controllers\ApplicationWizardController;
-use App\Http\Controllers\ApplicationPDFController;
-use App\Http\Controllers\WelcomeController;
 
 // Health check endpoint for Fly.io
 Route::get('/health', function () {
@@ -52,7 +52,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
-    
+
     // PDF Management Routes
     Route::prefix('admin/pdf')->name('admin.pdf.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\PDFManagementController::class, 'index'])->name('index');
@@ -63,7 +63,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/cleanup', [\App\Http\Controllers\Admin\PDFManagementController::class, 'cleanup'])->name('cleanup');
         Route::post('/regenerate/{sessionId}', [\App\Http\Controllers\Admin\PDFManagementController::class, 'regenerate'])->name('regenerate');
     });
-    
+
     // Admin routes (Filament handles /admin routes)
     /*
     Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(function () {
@@ -81,43 +81,43 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
         */
 
-        // Analytics & Reports (TODO: Implement controllers)
-        /*
-        Route::prefix('analytics')->name('analytics.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('index');
-            Route::get('/export', [\App\Http\Controllers\Admin\AnalyticsController::class, 'export'])->name('export');
-            Route::get('/channel-performance', [\App\Http\Controllers\Admin\AnalyticsController::class, 'channelPerformance'])->name('channel-performance');
-            Route::get('/conversion-funnel', [\App\Http\Controllers\Admin\AnalyticsController::class, 'conversionFunnel'])->name('conversion-funnel');
-        });
-        */
+    // Analytics & Reports (TODO: Implement controllers)
+    /*
+    Route::prefix('analytics')->name('analytics.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('index');
+        Route::get('/export', [\App\Http\Controllers\Admin\AnalyticsController::class, 'export'])->name('export');
+        Route::get('/channel-performance', [\App\Http\Controllers\Admin\AnalyticsController::class, 'channelPerformance'])->name('channel-performance');
+        Route::get('/conversion-funnel', [\App\Http\Controllers\Admin\AnalyticsController::class, 'conversionFunnel'])->name('conversion-funnel');
+    });
+    */
 
-        // System Management (TODO: Implement controllers)
-        /*
-        Route::prefix('system')->name('system.')->group(function () {
-            Route::get('/health', [\App\Http\Controllers\Admin\SystemController::class, 'health'])->name('health');
-            Route::get('/logs', [\App\Http\Controllers\Admin\SystemController::class, 'logs'])->name('logs');
-            Route::post('/cache/clear', [\App\Http\Controllers\Admin\SystemController::class, 'clearCache'])->name('clear-cache');
-            Route::get('/queue/status', [\App\Http\Controllers\Admin\SystemController::class, 'queueStatus'])->name('queue-status');
-            Route::post('/maintenance', [\App\Http\Controllers\Admin\SystemController::class, 'toggleMaintenance'])->name('maintenance');
-        });
+    // System Management (TODO: Implement controllers)
+    /*
+    Route::prefix('system')->name('system.')->group(function () {
+        Route::get('/health', [\App\Http\Controllers\Admin\SystemController::class, 'health'])->name('health');
+        Route::get('/logs', [\App\Http\Controllers\Admin\SystemController::class, 'logs'])->name('logs');
+        Route::post('/cache/clear', [\App\Http\Controllers\Admin\SystemController::class, 'clearCache'])->name('clear-cache');
+        Route::get('/queue/status', [\App\Http\Controllers\Admin\SystemController::class, 'queueStatus'])->name('queue-status');
+        Route::post('/maintenance', [\App\Http\Controllers\Admin\SystemController::class, 'toggleMaintenance'])->name('maintenance');
+    });
 
-        // User Management (TODO: Implement controllers)
-        Route::prefix('users')->name('users.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('index');
-            Route::post('/', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('store');
-            Route::get('/{user}', [\App\Http\Controllers\Admin\UserController::class, 'show'])->name('show');
-            Route::put('/{user}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('update');
-            Route::delete('/{user}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('destroy');
-        });
+    // User Management (TODO: Implement controllers)
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('store');
+        Route::get('/{user}', [\App\Http\Controllers\Admin\UserController::class, 'show'])->name('show');
+        Route::put('/{user}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('update');
+        Route::delete('/{user}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('destroy');
+    });
 
-        // Settings (TODO: Implement controllers)
-        Route::prefix('settings')->name('settings.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('index');
-            Route::put('/general', [\App\Http\Controllers\Admin\SettingsController::class, 'updateGeneral'])->name('update-general');
-            Route::put('/notifications', [\App\Http\Controllers\Admin\SettingsController::class, 'updateNotifications'])->name('update-notifications');
-            Route::put('/security', [\App\Http\Controllers\Admin\SettingsController::class, 'updateSecurity'])->name('update-security');
-        });
-        */
+    // Settings (TODO: Implement controllers)
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('index');
+        Route::put('/general', [\App\Http\Controllers\Admin\SettingsController::class, 'updateGeneral'])->name('update-general');
+        Route::put('/notifications', [\App\Http\Controllers\Admin\SettingsController::class, 'updateNotifications'])->name('update-notifications');
+        Route::put('/security', [\App\Http\Controllers\Admin\SettingsController::class, 'updateSecurity'])->name('update-security');
+    });
+    */
 });
 
 require __DIR__.'/settings.php';

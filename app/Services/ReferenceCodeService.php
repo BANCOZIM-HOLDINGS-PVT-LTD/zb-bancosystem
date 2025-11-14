@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\ApplicationState;
-use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class ReferenceCodeService
 {
@@ -16,7 +16,7 @@ class ReferenceCodeService
     /**
      * Constructor
      */
-    public function __construct(NotificationService $notificationService = null)
+    public function __construct(?NotificationService $notificationService = null)
     {
         $this->notificationService = $notificationService;
     }
@@ -24,9 +24,10 @@ class ReferenceCodeService
     /**
      * Generate a reference code using the applicant's national ID number
      *
-     * @param string $sessionId The session ID to associate with the reference code
-     * @param string|null $nationalId The national ID number (optional, will be extracted from session if not provided)
+     * @param  string  $sessionId  The session ID to associate with the reference code
+     * @param  string|null  $nationalId  The national ID number (optional, will be extracted from session if not provided)
      * @return string The national ID as the reference code
+     *
      * @throws \Exception If national ID is not found or already exists
      */
     public function generateReferenceCode(string $sessionId, ?string $nationalId = null): string
@@ -34,13 +35,13 @@ class ReferenceCodeService
         // Get the application state
         $state = ApplicationState::where('session_id', $sessionId)->first();
 
-        if (!$state) {
+        if (! $state) {
             Log::error("Application state not found for session {$sessionId}");
             throw new \Exception("Application state not found for session {$sessionId}");
         }
 
         // If national ID not provided, try to extract from form data
-        if (!$nationalId) {
+        if (! $nationalId) {
             $formData = $state->form_data ?? [];
             $formResponses = $formData['formResponses'] ?? [];
 
@@ -51,9 +52,9 @@ class ReferenceCodeService
                        ?? null;
         }
 
-        if (!$nationalId) {
+        if (! $nationalId) {
             Log::error("National ID not found in application data for session {$sessionId}");
-            throw new \Exception("National ID is required to generate a reference code. Please ensure your ID number is provided in the application.");
+            throw new \Exception('National ID is required to generate a reference code. Please ensure your ID number is provided in the application.');
         }
 
         // Sanitize and format the national ID
@@ -69,13 +70,13 @@ class ReferenceCodeService
 
         if ($existingApplication) {
             Log::error("National ID {$code} is already associated with another application");
-            throw new \Exception("This national ID number is already associated with an existing application. Each ID can only be used for one application.");
+            throw new \Exception('This national ID number is already associated with an existing application. Each ID can only be used for one application.');
         }
 
         // Store the reference code with the application state
         $updatedState = $this->storeReferenceCode($sessionId, $code);
 
-        if (!$updatedState) {
+        if (! $updatedState) {
             Log::error("Failed to store reference code {$code} for session {$sessionId}");
             throw new \Exception("Failed to store reference code for session {$sessionId}");
         }
@@ -86,13 +87,14 @@ class ReferenceCodeService
         }
 
         Log::info("Generated reference code (National ID) {$code} for session {$sessionId}");
+
         return $code;
     }
 
     /**
      * Check if a reference code already exists
      *
-     * @param string $code The reference code to check
+     * @param  string  $code  The reference code to check
      * @return bool True if the code exists, false otherwise
      */
     public function referenceCodeExists(string $code): bool
@@ -103,8 +105,8 @@ class ReferenceCodeService
     /**
      * Store a reference code with an application state
      *
-     * @param string $sessionId The session ID of the application state
-     * @param string $code The reference code to store
+     * @param  string  $sessionId  The session ID of the application state
+     * @param  string  $code  The reference code to store
      * @return ApplicationState|null The updated application state or null if not found
      */
     public function storeReferenceCode(string $sessionId, string $code): ?ApplicationState
@@ -127,15 +129,15 @@ class ReferenceCodeService
     /**
      * Get an application state by reference code
      *
-     * @param string $code The reference code to look up
+     * @param  string  $code  The reference code to look up
      * @return ApplicationState|null The application state or null if not found
      */
     public function getStateByReferenceCode(string $code): ?ApplicationState
     {
         return ApplicationState::where('reference_code', $code)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereNull('reference_code_expires_at')
-                      ->orWhere('reference_code_expires_at', '>', Carbon::now());
+                    ->orWhere('reference_code_expires_at', '>', Carbon::now());
             })
             ->first();
     }
@@ -143,7 +145,7 @@ class ReferenceCodeService
     /**
      * Validate a reference code
      *
-     * @param string $code The reference code to validate
+     * @param  string  $code  The reference code to validate
      * @return bool True if the code is valid, false otherwise
      */
     public function validateReferenceCode(string $code): bool
@@ -154,8 +156,8 @@ class ReferenceCodeService
     /**
      * Extend the expiration time of a reference code
      *
-     * @param string $code The reference code to extend
-     * @param int $days The number of days to extend the expiration by
+     * @param  string  $code  The reference code to extend
+     * @param  int  $days  The number of days to extend the expiration by
      * @return bool True if the code was extended, false otherwise
      */
     public function extendReferenceCode(string $code, int $days = 30): bool
@@ -167,6 +169,7 @@ class ReferenceCodeService
                 'reference_code_expires_at' => Carbon::now()->addDays($days),
             ]);
             Log::info("Extended reference code {$code} expiration by {$days} days");
+
             return true;
         }
 
@@ -176,14 +179,14 @@ class ReferenceCodeService
     /**
      * Get application status by reference code
      *
-     * @param string $code The reference code to look up
+     * @param  string  $code  The reference code to look up
      * @return array|null The application status or null if not found
      */
     public function getApplicationStatusByReferenceCode(string $code): ?array
     {
         $state = $this->getStateByReferenceCode($code);
 
-        if (!$state) {
+        if (! $state) {
             return null;
         }
 
@@ -199,4 +202,3 @@ class ReferenceCodeService
         ];
     }
 }
-

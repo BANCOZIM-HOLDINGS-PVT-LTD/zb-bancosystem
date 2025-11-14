@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('application_states', function (Blueprint $table) {
             $table->softDeletes();
-            
+
             // Add additional indexes for better performance
             $table->index('deleted_at');
             $table->index(['current_step', 'deleted_at']);

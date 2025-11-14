@@ -4,8 +4,8 @@ namespace Tests\Unit\Services\PDF;
 
 use App\Models\ApplicationState;
 use App\Services\PDF\PDFTemplateService;
-use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class PDFTemplateServiceTest extends TestCase
 {
@@ -16,7 +16,7 @@ class PDFTemplateServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new PDFTemplateService();
+        $this->service = new PDFTemplateService;
     }
 
     public function test_determines_correct_template_for_ssb_employer()
@@ -25,7 +25,7 @@ class PDFTemplateServiceTest extends TestCase
             'form_data' => [
                 'employer' => 'goz-ssb',
                 'hasAccount' => false,
-            ]
+            ],
         ]);
 
         $template = $this->service->determineTemplate($applicationState);
@@ -39,7 +39,7 @@ class PDFTemplateServiceTest extends TestCase
             'form_data' => [
                 'employer' => 'entrepreneur',
                 'hasAccount' => false,
-            ]
+            ],
         ]);
 
         $template = $this->service->determineTemplate($applicationState);
@@ -53,7 +53,7 @@ class PDFTemplateServiceTest extends TestCase
             'form_data' => [
                 'employer' => 'large-corporate',
                 'hasAccount' => true,
-            ]
+            ],
         ]);
 
         $template = $this->service->determineTemplate($applicationState);
@@ -67,7 +67,7 @@ class PDFTemplateServiceTest extends TestCase
             'form_data' => [
                 'employer' => 'large-corporate',
                 'hasAccount' => false,
-            ]
+            ],
         ]);
 
         $template = $this->service->determineTemplate($applicationState);
@@ -87,7 +87,7 @@ class PDFTemplateServiceTest extends TestCase
                 ],
                 'employer' => 'large-corporate',
                 'hasAccount' => true,
-            ]
+            ],
         ]);
 
         $data = $this->service->prepareTemplateData($applicationState);
@@ -111,7 +111,7 @@ class PDFTemplateServiceTest extends TestCase
                     'monthlyPayment' => 1500.50,
                     'netSalary' => 3000,
                 ],
-            ]
+            ],
         ]);
 
         $data = $this->service->prepareTemplateData($applicationState);
@@ -129,7 +129,7 @@ class PDFTemplateServiceTest extends TestCase
                     'dateOfBirth' => '1990-05-15',
                     'employmentStartDate' => '2020-01-01',
                 ],
-            ]
+            ],
         ]);
 
         $data = $this->service->prepareTemplateData($applicationState);
@@ -141,7 +141,7 @@ class PDFTemplateServiceTest extends TestCase
     public function test_handles_missing_form_data_gracefully()
     {
         $applicationState = ApplicationState::factory()->create([
-            'form_data' => []
+            'form_data' => [],
         ]);
 
         $data = $this->service->prepareTemplateData($applicationState);
@@ -170,7 +170,7 @@ class PDFTemplateServiceTest extends TestCase
             'form_data' => [
                 'employer' => 'goz-ssb',
                 'employerCategory' => 'government',
-            ]
+            ],
         ]);
 
         $data = $this->service->prepareTemplateData($applicationState);
@@ -191,7 +191,7 @@ class PDFTemplateServiceTest extends TestCase
                     'loanTenure' => 24,
                     'interestRate' => 12,
                 ],
-            ]
+            ],
         ]);
 
         $data = $this->service->prepareTemplateData($applicationState);
@@ -218,11 +218,11 @@ class PDFTemplateServiceTest extends TestCase
                                 'path' => 'documents/id_front.jpg',
                                 'type' => 'image/jpeg',
                                 'size' => 1024000,
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ]);
 
         $data = $this->service->prepareTemplateData($applicationState);
@@ -241,8 +241,8 @@ class PDFTemplateServiceTest extends TestCase
                 'formResponses' => [
                     'firstName' => 'John',
                     'lastName' => 'Doe',
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $isValid = $this->service->validateTemplateData($applicationState);
@@ -253,7 +253,7 @@ class PDFTemplateServiceTest extends TestCase
     public function test_validation_fails_for_missing_required_data()
     {
         $applicationState = ApplicationState::factory()->create([
-            'form_data' => []
+            'form_data' => [],
         ]);
 
         $isValid = $this->service->validateTemplateData($applicationState);

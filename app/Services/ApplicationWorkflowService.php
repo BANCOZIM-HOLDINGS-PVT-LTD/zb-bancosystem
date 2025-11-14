@@ -2,18 +2,16 @@
 
 namespace App\Services;
 
-use App\Models\ApplicationState;
 use App\Models\Agent;
+use App\Models\ApplicationState;
 use App\Models\Commission;
-use App\Services\NotificationService;
-use App\Services\PDFGeneratorService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class ApplicationWorkflowService
 {
     protected NotificationService $notificationService;
+
     protected PDFGeneratorService $pdfService;
 
     public function __construct(
@@ -31,7 +29,7 @@ class ApplicationWorkflowService
     {
         return DB::transaction(function () use ($application, $options) {
             $oldStatus = $application->current_step;
-            
+
             // Update application status
             $application->update([
                 'current_step' => 'approved',
@@ -48,7 +46,7 @@ class ApplicationWorkflowService
             ]);
 
             // Generate PDF if not already generated
-            if (!$application->pdf_path) {
+            if (! $application->pdf_path) {
                 $this->generateApplicationPDF($application);
             }
 
@@ -77,7 +75,7 @@ class ApplicationWorkflowService
     {
         return DB::transaction(function () use ($application, $reason, $options) {
             $oldStatus = $application->current_step;
-            
+
             // Update application status
             $application->update([
                 'current_step' => 'rejected',
@@ -117,7 +115,7 @@ class ApplicationWorkflowService
     {
         return DB::transaction(function () use ($application, $documentRequests) {
             $oldStatus = $application->current_step;
-            
+
             // Update application status
             $application->update([
                 'current_step' => 'pending_documents',
@@ -198,7 +196,7 @@ class ApplicationWorkflowService
         foreach ($applicationIds as $id) {
             try {
                 $application = ApplicationState::findOrFail($id);
-                
+
                 switch ($action) {
                     case 'approve':
                         $this->approveApplication($application, $options);
@@ -212,14 +210,14 @@ class ApplicationWorkflowService
                     default:
                         throw new \InvalidArgumentException("Unknown action: {$action}");
                 }
-                
+
                 $results['success'][] = $id;
             } catch (\Exception $e) {
                 $results['failed'][] = [
                     'id' => $id,
                     'error' => $e->getMessage(),
                 ];
-                
+
                 Log::error('Bulk application processing failed', [
                     'application_id' => $id,
                     'action' => $action,
@@ -271,12 +269,12 @@ class ApplicationWorkflowService
     {
         // Check if application has agent referral
         $agentId = $application->form_data['agentId'] ?? null;
-        if (!$agentId) {
+        if (! $agentId) {
             return;
         }
 
         $agent = Agent::find($agentId);
-        if (!$agent || !$agent->isActive()) {
+        if (! $agent || ! $agent->isActive()) {
             return;
         }
 
@@ -326,19 +324,37 @@ class ApplicationWorkflowService
 
     private function getScoreGrade(int $score): string
     {
-        if ($score >= 80) return 'A';
-        if ($score >= 70) return 'B';
-        if ($score >= 60) return 'C';
-        if ($score >= 50) return 'D';
+        if ($score >= 80) {
+            return 'A';
+        }
+        if ($score >= 70) {
+            return 'B';
+        }
+        if ($score >= 60) {
+            return 'C';
+        }
+        if ($score >= 50) {
+            return 'D';
+        }
+
         return 'F';
     }
 
     private function getScoreRecommendation(int $score): string
     {
-        if ($score >= 80) return 'Highly recommended for approval';
-        if ($score >= 70) return 'Recommended for approval';
-        if ($score >= 60) return 'Consider for approval with conditions';
-        if ($score >= 50) return 'Requires careful review';
+        if ($score >= 80) {
+            return 'Highly recommended for approval';
+        }
+        if ($score >= 70) {
+            return 'Recommended for approval';
+        }
+        if ($score >= 60) {
+            return 'Consider for approval with conditions';
+        }
+        if ($score >= 50) {
+            return 'Requires careful review';
+        }
+
         return 'Not recommended for approval';
     }
 }

@@ -2,12 +2,12 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Log;
-use App\Contracts\PDFGeneratorInterface;
 use App\Contracts\ApplicationStateRepositoryInterface;
-use App\Services\PDFGeneratorService;
+use App\Contracts\PDFGeneratorInterface;
 use App\Repositories\ApplicationStateRepository;
+use App\Services\PDFGeneratorService;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -42,8 +42,8 @@ class AppServiceProvider extends ServiceProvider
     {
         // APP_KEY is always required
         if (empty(env('APP_KEY'))) {
-            Log::emergency("Missing required environment variable: APP_KEY");
-            throw new \RuntimeException("Missing required environment variable: APP_KEY");
+            Log::emergency('Missing required environment variable: APP_KEY');
+            throw new \RuntimeException('Missing required environment variable: APP_KEY');
         }
 
         // DB_PASSWORD and REDIS_PASSWORD are optional for SQLite/local Redis
@@ -78,11 +78,11 @@ class AppServiceProvider extends ServiceProvider
             }
 
             // Validate format
-            if ($twilioSid && !str_starts_with($twilioSid, 'AC')) {
+            if ($twilioSid && ! str_starts_with($twilioSid, 'AC')) {
                 Log::warning('TWILIO_ACCOUNT_SID should start with "AC"');
             }
 
-            if ($twilioFrom && !str_starts_with($twilioFrom, 'whatsapp:+')) {
+            if ($twilioFrom && ! str_starts_with($twilioFrom, 'whatsapp:+')) {
                 Log::warning('TWILIO_WHATSAPP_FROM should start with "whatsapp:+"');
             }
 
@@ -90,7 +90,7 @@ class AppServiceProvider extends ServiceProvider
             $placeholderValues = [
                 'your_twilio_account_sid_here',
                 'your_twilio_auth_token_here',
-                'whatsapp:+your_whatsapp_number_here'
+                'whatsapp:+your_whatsapp_number_here',
             ];
 
             if (in_array($twilioSid, $placeholderValues) ||

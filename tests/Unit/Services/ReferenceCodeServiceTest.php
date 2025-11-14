@@ -17,7 +17,7 @@ class ReferenceCodeServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->referenceCodeService = new ReferenceCodeService();
+        $this->referenceCodeService = new ReferenceCodeService;
     }
 
     /** @test */
@@ -38,7 +38,7 @@ class ReferenceCodeServiceTest extends TestCase
 
         // Assert the reference code is 6 characters long
         $this->assertEquals(6, strlen($referenceCode));
-        
+
         // Assert the reference code is alphanumeric
         $this->assertMatchesRegularExpression('/^[A-Z0-9]{6}$/', $referenceCode);
 
@@ -47,7 +47,7 @@ class ReferenceCodeServiceTest extends TestCase
 
         // Assert the reference code was stored in the application state
         $this->assertEquals($referenceCode, $applicationState->reference_code);
-        
+
         // Assert the reference code expiration date was set
         $this->assertNotNull($applicationState->reference_code_expires_at);
     }
@@ -69,15 +69,15 @@ class ReferenceCodeServiceTest extends TestCase
 
         // Assert the reference code is valid
         $this->assertTrue($this->referenceCodeService->validateReferenceCode('ABC123'));
-        
+
         // Assert an invalid reference code is not valid
         $this->assertFalse($this->referenceCodeService->validateReferenceCode('XYZ789'));
-        
+
         // Assert an expired reference code is not valid
         $applicationState->update([
             'reference_code_expires_at' => Carbon::now()->subDays(1),
         ]);
-        
+
         $this->assertFalse($this->referenceCodeService->validateReferenceCode('ABC123'));
     }
 
@@ -102,15 +102,15 @@ class ReferenceCodeServiceTest extends TestCase
         // Assert the correct application state was retrieved
         $this->assertNotNull($retrievedState);
         $this->assertEquals('test-session-id', $retrievedState->session_id);
-        
+
         // Assert an invalid reference code returns null
         $this->assertNull($this->referenceCodeService->getStateByReferenceCode('XYZ789'));
-        
+
         // Assert an expired reference code returns null
         $applicationState->update([
             'reference_code_expires_at' => Carbon::now()->subDays(1),
         ]);
-        
+
         $this->assertNull($this->referenceCodeService->getStateByReferenceCode('ABC123'));
     }
 
@@ -143,7 +143,7 @@ class ReferenceCodeServiceTest extends TestCase
 
         // Assert the expiration date was extended
         $this->assertTrue(Carbon::parse($applicationState->reference_code_expires_at)->gt($originalExpiration));
-        
+
         // Assert extending a non-existent reference code returns false
         $this->assertFalse($this->referenceCodeService->extendReferenceCode('XYZ789'));
     }

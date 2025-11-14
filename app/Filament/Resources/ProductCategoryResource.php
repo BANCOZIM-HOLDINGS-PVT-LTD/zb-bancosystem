@@ -86,7 +86,8 @@ class ProductCategoryResource extends Resource
                         if ($range['min'] == 0 && $range['max'] == 0) {
                             return 'No products';
                         }
-                        return '$' . number_format($range['min'], 2) . ' - $' . number_format($range['max'], 2);
+
+                        return '$'.number_format($range['min'], 2).' - $'.number_format($range['max'], 2);
                     })
                     ->sortable(false),
 

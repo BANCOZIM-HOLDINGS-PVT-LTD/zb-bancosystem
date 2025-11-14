@@ -46,7 +46,7 @@ class AgentReferralLink extends Model
      */
     public function getIsUsableAttribute(): bool
     {
-        return $this->is_active && !$this->is_expired;
+        return $this->is_active && ! $this->is_expired;
     }
 
     /**
@@ -54,8 +54,8 @@ class AgentReferralLink extends Model
      */
     public function getConversionRateAttribute(): float
     {
-        return $this->click_count > 0 
-            ? round(($this->conversion_count / $this->click_count) * 100, 2) 
+        return $this->click_count > 0
+            ? round(($this->conversion_count / $this->click_count) * 100, 2)
             : 0;
     }
 
@@ -65,7 +65,7 @@ class AgentReferralLink extends Model
     public function recordClick(): void
     {
         $this->increment('click_count');
-        
+
         $metadata = $this->metadata ?? [];
         $metadata['last_clicked_at'] = now()->toISOString();
         $this->update(['metadata' => $metadata]);
@@ -77,7 +77,7 @@ class AgentReferralLink extends Model
     public function recordConversion(): void
     {
         $this->increment('conversion_count');
-        
+
         $metadata = $this->metadata ?? [];
         $metadata['last_conversion_at'] = now()->toISOString();
         $this->update(['metadata' => $metadata]);
@@ -98,7 +98,7 @@ class AgentReferralLink extends Model
     {
         return $query->where(function ($q) {
             $q->whereNull('expires_at')
-              ->orWhere('expires_at', '>', now());
+                ->orWhere('expires_at', '>', now());
         });
     }
 

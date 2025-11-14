@@ -6,14 +6,13 @@ use App\Models\ApplicationState;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Illuminate\Database\Eloquent\Builder;
 
 class RecentApplicationsWidget extends BaseWidget
 {
     protected static ?int $sort = 2;
-    
-    protected int | string | array $columnSpan = 'full';
-    
+
+    protected int|string|array $columnSpan = 'full';
+
     public function table(Table $table): Table
     {
         return $table
@@ -27,27 +26,28 @@ class RecentApplicationsWidget extends BaseWidget
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label('App #')
-                    ->formatStateUsing(fn ($state) => 'ZB' . date('Y') . str_pad($state, 6, '0', STR_PAD_LEFT)),
-                    
+                    ->formatStateUsing(fn ($state) => 'ZB'.date('Y').str_pad($state, 6, '0', STR_PAD_LEFT)),
+
                 Tables\Columns\TextColumn::make('reference_code')
                     ->label('Ref Code')
                     ->searchable()
                     ->copyable(),
-                    
+
                 Tables\Columns\TextColumn::make('applicant_name')
                     ->label('Applicant')
                     ->getStateUsing(function ($record) {
                         $data = $record->form_data['formResponses'] ?? [];
                         $firstName = $data['firstName'] ?? '';
                         $lastName = $data['lastName'] ?? '';
-                        return trim($firstName . ' ' . $lastName) ?: 'N/A';
+
+                        return trim($firstName.' '.$lastName) ?: 'N/A';
                     }),
-                    
+
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Amount')
-                    ->getStateUsing(fn ($record) => '$' . number_format($record->form_data['finalPrice'] ?? 0))
+                    ->getStateUsing(fn ($record) => '$'.number_format($record->form_data['finalPrice'] ?? 0))
                     ->sortable(),
-                    
+
                 Tables\Columns\BadgeColumn::make('channel')
                     ->colors([
                         'primary' => 'web',
@@ -55,7 +55,7 @@ class RecentApplicationsWidget extends BaseWidget
                         'warning' => 'ussd',
                         'danger' => 'mobile_app',
                     ]),
-                    
+
                 Tables\Columns\BadgeColumn::make('current_step')
                     ->label('Status')
                     ->colors([
@@ -64,12 +64,12 @@ class RecentApplicationsWidget extends BaseWidget
                         'danger' => fn ($state): bool => $state === 'rejected',
                         'gray' => fn ($state): bool => in_array($state, ['language', 'intent', 'employer', 'form', 'product', 'business']),
                     ]),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Submitted')
                     ->dateTime('M j, Y g:i A')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('time_ago')
                     ->label('Time Ago')
                     ->getStateUsing(fn ($record) => $record->created_at->diffForHumans())

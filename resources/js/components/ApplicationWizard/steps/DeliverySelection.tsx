@@ -300,7 +300,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                     className={`p-4 border-2 rounded-lg text-left transition-all ${
                                         selectedAgent === 'Swift'
                                             ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                            : isSwiftDisabled || (!deliveryAgentInfo.isEditable && selectedAgent !== 'Swift')
+                                            : isSwiftDisabled || (!deliveryAgentInfo.isEditable && selectedAgent === 'Gain Outlet')
                                             ? 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed'
                                             : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400'
                                     }`}
@@ -327,7 +327,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                     className={`p-4 border-2 rounded-lg text-left transition-all ${
                                         selectedAgent === 'Gain Outlet'
                                             ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                            : isGainDisabled || (!deliveryAgentInfo.isEditable && selectedAgent !== 'Gain Outlet')
+                                            : isGainDisabled || (!deliveryAgentInfo.isEditable && selectedAgent === 'Swift')
                                             ? 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed'
                                             : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400'
                                     }`}

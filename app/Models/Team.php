@@ -9,7 +9,6 @@ use Illuminate\Support\Str;
 
 class Team extends Model
 {
-
     protected $fillable = [
         'name',
         'code',
@@ -31,7 +30,7 @@ class Team extends Model
 
         static::creating(function ($team) {
             if (empty($team->code)) {
-                $team->code = 'TEAM' . strtoupper(Str::random(4));
+                $team->code = 'TEAM'.strtoupper(Str::random(4));
             }
         });
     }
@@ -92,7 +91,7 @@ class Team extends Model
     public function getPerformanceMetricsAttribute(): array
     {
         $agents = $this->activeAgents;
-        
+
         return [
             'total_applications' => $agents->sum('total_applications'),
             'approved_applications' => $agents->sum('approved_applications'),
@@ -117,7 +116,7 @@ class Team extends Model
     {
         return $query->where(function ($q) use ($search) {
             $q->where('name', 'like', "%{$search}%")
-              ->orWhere('code', 'like', "%{$search}%");
+                ->orWhere('code', 'like', "%{$search}%");
         });
     }
 }

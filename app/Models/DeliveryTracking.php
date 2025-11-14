@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class DeliveryTracking extends Model
 {
@@ -97,7 +97,7 @@ class DeliveryTracking extends Model
      */
     public function getStatusColorAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'gray',
             'processing' => 'blue',
             'dispatched' => 'indigo',
@@ -115,7 +115,7 @@ class DeliveryTracking extends Model
      */
     public function getStatusLabelAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'Pending',
             'processing' => 'Processing',
             'dispatched' => 'Dispatched',

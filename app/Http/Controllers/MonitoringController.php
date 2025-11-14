@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use App\Services\SystemMonitoringService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class MonitoringController extends Controller
 {
@@ -21,10 +21,10 @@ class MonitoringController extends Controller
     public function getSystemHealth(): JsonResponse
     {
         $health = $this->monitoringService->getSystemHealth();
-        
+
         return response()->json([
             'success' => true,
-            'data' => $health
+            'data' => $health,
         ]);
     }
 
@@ -35,10 +35,10 @@ class MonitoringController extends Controller
     {
         $days = $request->input('days', 7);
         $analytics = $this->monitoringService->getUsageAnalytics($days);
-        
+
         return response()->json([
             'success' => true,
-            'data' => $analytics
+            'data' => $analytics,
         ]);
     }
 
@@ -49,10 +49,10 @@ class MonitoringController extends Controller
     {
         $limit = $request->input('limit', 20);
         $alerts = $this->monitoringService->getRecentAlerts($limit);
-        
+
         return response()->json([
             'success' => true,
-            'data' => $alerts
+            'data' => $alerts,
         ]);
     }
 
@@ -71,8 +71,8 @@ class MonitoringController extends Controller
                 'health' => $health,
                 'analytics' => $analytics,
                 'alerts' => $alerts,
-                'timestamp' => now()->toIso8601String()
-            ]
+                'timestamp' => now()->toIso8601String(),
+            ],
         ]);
     }
 
@@ -82,14 +82,14 @@ class MonitoringController extends Controller
     public function triggerHealthCheck(): JsonResponse
     {
         $health = $this->monitoringService->getSystemHealth();
-        
+
         // Log the manual health check
         \Log::info('Manual system health check triggered', $health);
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Health check completed',
-            'data' => $health
+            'data' => $health,
         ]);
     }
 
@@ -99,10 +99,10 @@ class MonitoringController extends Controller
     public function cleanupOldData(): JsonResponse
     {
         $this->monitoringService->cleanupOldData();
-        
+
         return response()->json([
             'success' => true,
-            'message' => 'Old monitoring data cleaned up successfully'
+            'message' => 'Old monitoring data cleaned up successfully',
         ]);
     }
 }

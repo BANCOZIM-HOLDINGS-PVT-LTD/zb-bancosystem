@@ -26,7 +26,7 @@ class ProductCatalogService
                                     ['name' => '2 Ha', 'multiplier' => 2],
                                     ['name' => '3 Ha', 'multiplier' => 3],
                                     ['name' => '5 Ha', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Maize',
@@ -36,7 +36,7 @@ class ProductCatalogService
                                     ['name' => '2 Ha', 'multiplier' => 2],
                                     ['name' => '3 Ha', 'multiplier' => 3],
                                     ['name' => '5 Ha', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Potato',
@@ -46,7 +46,7 @@ class ProductCatalogService
                                     ['name' => '2 Ha', 'multiplier' => 2],
                                     ['name' => '3 Ha', 'multiplier' => 3],
                                     ['name' => '5 Ha', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Soya Beans',
@@ -56,7 +56,7 @@ class ProductCatalogService
                                     ['name' => '2 Ha', 'multiplier' => 2],
                                     ['name' => '3 Ha', 'multiplier' => 3],
                                     ['name' => '5 Ha', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Sugar Beans',
@@ -66,7 +66,7 @@ class ProductCatalogService
                                     ['name' => '2 Ha', 'multiplier' => 2],
                                     ['name' => '3 Ha', 'multiplier' => 3],
                                     ['name' => '5 Ha', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Sunflower',
@@ -76,7 +76,7 @@ class ProductCatalogService
                                     ['name' => '2 Ha', 'multiplier' => 2],
                                     ['name' => '3 Ha', 'multiplier' => 3],
                                     ['name' => '5 Ha', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Sweet Potato',
@@ -86,11 +86,11 @@ class ProductCatalogService
                                     ['name' => '2 Ha', 'multiplier' => 2],
                                     ['name' => '3 Ha', 'multiplier' => 3],
                                     ['name' => '5 Ha', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ],
             [
                 'id' => 'animal-husbandry',
@@ -108,7 +108,7 @@ class ProductCatalogService
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
                                     ['name' => 'Commercial', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Bee keeping',
@@ -118,7 +118,7 @@ class ProductCatalogService
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
                                     ['name' => 'Commercial', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Cattle Services',
@@ -128,7 +128,7 @@ class ProductCatalogService
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
                                     ['name' => 'Commercial', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Chickens Layers',
@@ -138,7 +138,7 @@ class ProductCatalogService
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
                                     ['name' => 'Commercial', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Chickens Rearing',
@@ -148,7 +148,7 @@ class ProductCatalogService
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
                                     ['name' => 'Commercial', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Goat Rearing',
@@ -158,7 +158,7 @@ class ProductCatalogService
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
                                     ['name' => 'Commercial', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Fish Farming',
@@ -168,7 +168,7 @@ class ProductCatalogService
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
                                     ['name' => 'Commercial', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Rabbits',
@@ -178,7 +178,7 @@ class ProductCatalogService
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
                                     ['name' => 'Commercial', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Piggery',
@@ -188,11 +188,11 @@ class ProductCatalogService
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
                                     ['name' => 'Commercial', 'multiplier' => 5],
-                                ]
+                                ],
                             ],
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ],
             [
                 'id' => 'catering',
@@ -209,7 +209,7 @@ class ProductCatalogService
                                     ['name' => 'Small', 'multiplier' => 1],
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Baking - Cakes & confectionery',
@@ -218,7 +218,7 @@ class ProductCatalogService
                                     ['name' => 'Small', 'multiplier' => 1],
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Chip Fryer',
@@ -227,7 +227,7 @@ class ProductCatalogService
                                     ['name' => 'Small', 'multiplier' => 1],
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Canteen',
@@ -236,7 +236,7 @@ class ProductCatalogService
                                     ['name' => 'Small', 'multiplier' => 1],
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Mobile food kiosk',
@@ -245,7 +245,7 @@ class ProductCatalogService
                                     ['name' => 'Small', 'multiplier' => 1],
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
-                                ]
+                                ],
                             ],
                             [
                                 'name' => 'Outside catering',
@@ -254,17 +254,17 @@ class ProductCatalogService
                                     ['name' => 'Small', 'multiplier' => 1],
                                     ['name' => 'Medium', 'multiplier' => 2],
                                     ['name' => 'Large', 'multiplier' => 3],
-                                ]
+                                ],
                             ],
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ],
             // Additional categories would continue here...
             // For brevity, I'll include the essential ones and add a method to get the rest
         ];
     }
-    
+
     /**
      * Get paginated categories for WhatsApp display
      */
@@ -274,16 +274,16 @@ class ProductCatalogService
         $total = count($categories);
         $offset = ($page - 1) * $perPage;
         $paginatedCategories = array_slice($categories, $offset, $perPage);
-        
+
         return [
             'categories' => $paginatedCategories,
             'currentPage' => $page,
             'totalPages' => ceil($total / $perPage),
             'totalCategories' => $total,
-            'hasMore' => $page < ceil($total / $perPage)
+            'hasMore' => $page < ceil($total / $perPage),
         ];
     }
-    
+
     /**
      * Get all category names for quick lookup
      */
@@ -293,7 +293,7 @@ class ProductCatalogService
             'Agriculture', 'Animal Husbandry', 'Catering', 'Construction', 'Entertainment',
             'Events Hire', 'Hair & Grooming', 'Home Industry Manufacturing', 'Farming Machinery',
             'Food Processing', 'Meat Processing', 'Mining', 'Printing', 'Professional Services Equipment',
-            'Retail Shop', 'Tailoring', 'Trade Services', 'Vehicle', 'Vocation', 'Wedding Attire Hire'
+            'Retail Shop', 'Tailoring', 'Trade Services', 'Vehicle', 'Vocation', 'Wedding Attire Hire',
         ];
     }
 }

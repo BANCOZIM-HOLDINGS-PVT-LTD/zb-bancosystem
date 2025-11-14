@@ -4,15 +4,14 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\CommissionResource\Pages;
 use App\Models\Commission;
-use App\Models\Agent;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
-use Filament\Notifications\Notification;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 class CommissionResource extends Resource
@@ -260,7 +259,7 @@ class CommissionResource extends Resource
                     ->visible(fn (Commission $record) => $record->status === 'pending')
                     ->action(function (Commission $record): void {
                         $record->update(['status' => 'approved']);
-                        
+
                         Notification::make()
                             ->title('Commission approved')
                             ->success()
@@ -288,7 +287,7 @@ class CommissionResource extends Resource
                             'payment_method' => $data['payment_method'],
                             'payment_reference' => $data['payment_reference'] ?? null,
                         ]);
-                        
+
                         Notification::make()
                             ->title('Commission marked as paid')
                             ->success()
@@ -309,7 +308,7 @@ class CommissionResource extends Resource
                                     $record->update(['status' => 'approved']);
                                 }
                             });
-                            
+
                             Notification::make()
                                 ->title('Commissions approved')
                                 ->success()

@@ -92,14 +92,14 @@ XMP;
         try {
             $domPdf = $pdf->getDomPDF();
             $canvas = $domPdf->get_canvas();
-            
+
             // Set basic PDF info
             $this->setBasicPdfInfo($canvas, $applicationState, $pdfData);
-            
+
             // Add XMP metadata
             $xmpMetadata = $this->generateXMPMetadata($applicationState, $pdfData);
             $this->addXMPMetadata($canvas, $xmpMetadata);
-            
+
             $this->logger->logInfo('PDF metadata applied', [
                 'session_id' => $applicationState->session_id,
                 'reference_code' => $applicationState->reference_code,
@@ -120,7 +120,7 @@ XMP;
     {
         $referenceCode = $applicationState->reference_code ?? 'DRAFT';
         $applicantName = $this->getApplicantName($pdfData);
-        
+
         $info = [
             'Title' => "Bancozim Application - {$referenceCode}",
             'Author' => 'Bancozim Loan System',
@@ -128,8 +128,8 @@ XMP;
             'Keywords' => "loan, application, banking, {$referenceCode}",
             'Creator' => 'Bancozim PDF Generator v1.0',
             'Producer' => 'Bancozim Loan System',
-            'CreationDate' => 'D:' . now()->format('YmdHis') . '+00\'00\'',
-            'ModDate' => 'D:' . now()->format('YmdHis') . '+00\'00\'',
+            'CreationDate' => 'D:'.now()->format('YmdHis').'+00\'00\'',
+            'ModDate' => 'D:'.now()->format('YmdHis').'+00\'00\'',
         ];
 
         foreach ($info as $key => $value) {
@@ -154,9 +154,9 @@ XMP;
     {
         $firstName = $pdfData['firstName'] ?? $pdfData['first_name'] ?? '';
         $lastName = $pdfData['lastName'] ?? $pdfData['surname'] ?? $pdfData['last_name'] ?? '';
-        
-        $fullName = trim($firstName . ' ' . $lastName);
-        
+
+        $fullName = trim($firstName.' '.$lastName);
+
         return $fullName ?: 'Unknown Applicant';
     }
 
@@ -206,12 +206,13 @@ XMP;
                         }
                     }
                 }
+
                 return 'installed';
             }
         } catch (\Exception $e) {
             // Ignore
         }
-        
+
         return 'unknown';
     }
 
@@ -240,7 +241,7 @@ XMP;
             // Extract PDF metadata using a PDF parser
             // Note: This would require a PDF parsing library like TCPDF or similar
             // For now, we'll return basic file info
-            
+
         } catch (\Exception $e) {
             $this->logger->logWarning('Failed to extract PDF metadata', [
                 'path' => $pdfPath,
@@ -257,7 +258,7 @@ XMP;
     public function validateMetadata(array $metadata): array
     {
         $errors = [];
-        
+
         $requiredFields = [
             'session_id',
             'reference_code',

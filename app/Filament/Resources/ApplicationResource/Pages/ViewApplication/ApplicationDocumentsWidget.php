@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class ApplicationDocumentsWidget extends Widget
 {
     protected static string $view = 'filament.resources.application-resource.pages.view-application.widgets.application-documents-widget';
-    
+
     public ?Model $record = null;
-    
-    protected int | string | array $columnSpan = 'full';
+
+    protected int|string|array $columnSpan = 'full';
 }

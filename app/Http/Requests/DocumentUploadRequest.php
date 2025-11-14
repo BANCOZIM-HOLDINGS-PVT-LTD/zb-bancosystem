@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Services\ZimbabweanIDValidator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Services\ZimbabweanIDValidator;
 
 class DocumentUploadRequest extends FormRequest
 {
@@ -25,12 +25,12 @@ class DocumentUploadRequest extends FormRequest
     {
         $maxFileSize = (int) env('MAX_FILE_SIZE', 10240); // KB
         $allowedTypes = explode(',', env('ALLOWED_FILE_TYPES', 'pdf,jpg,jpeg,png'));
-        
+
         return [
             'file' => [
                 'required',
                 'file',
-                "mimes:" . implode(',', $allowedTypes),
+                'mimes:'.implode(',', $allowedTypes),
                 "max:{$maxFileSize}",
                 function ($attribute, $value, $fail) {
                     // Additional file validation
@@ -38,9 +38,9 @@ class DocumentUploadRequest extends FormRequest
                         // Check file size in bytes (additional check)
                         $maxBytes = (int) env('MAX_FILE_SIZE', 10240) * 1024;
                         if ($value->getSize() > $maxBytes) {
-                            $fail("The {$attribute} must not be larger than " . ($maxBytes / 1024 / 1024) . "MB.");
+                            $fail("The {$attribute} must not be larger than ".($maxBytes / 1024 / 1024).'MB.');
                         }
-                        
+
                         // Check for suspicious file content
                         $this->validateFileContent($value, $fail);
                     }
@@ -59,7 +59,7 @@ class DocumentUploadRequest extends FormRequest
                     'employment_letter',
                     'selfie',
                     'signature',
-                    'other'
+                    'other',
                 ]),
             ],
             'session_id' => [
@@ -79,9 +79,9 @@ class DocumentUploadRequest extends FormRequest
                 'string',
                 function ($attribute, $value, $fail) {
                     // Only validate if document type is national_id and value is provided
-                    if ($this->document_type === 'national_id' && !empty($value)) {
+                    if ($this->document_type === 'national_id' && ! empty($value)) {
                         $validation = ZimbabweanIDValidator::validate($value);
-                        if (!$validation['valid']) {
+                        if (! $validation['valid']) {
                             $fail($validation['message']);
                         }
                     }
@@ -98,7 +98,7 @@ class DocumentUploadRequest extends FormRequest
         return [
             'file.required' => 'Please select a file to upload.',
             'file.mimes' => 'Only PDF, JPG, JPEG, and PNG files are allowed.',
-            'file.max' => 'File size must not exceed ' . (env('MAX_FILE_SIZE', 10240) / 1024) . 'MB.',
+            'file.max' => 'File size must not exceed '.(env('MAX_FILE_SIZE', 10240) / 1024).'MB.',
             'document_type.required' => 'Please specify the document type.',
             'document_type.in' => 'Invalid document type selected.',
             'session_id.required' => 'Session ID is required.',
@@ -125,21 +125,22 @@ class DocumentUploadRequest extends FormRequest
     {
         $filePath = $file->getRealPath();
         $mimeType = $file->getMimeType();
-        
+
         // Read first few bytes to check for malicious content
         $handle = fopen($filePath, 'rb');
         if ($handle) {
             $header = fread($handle, 1024);
             fclose($handle);
-            
+
             // Check for script tags in any file type
-            if (stripos($header, '<script') !== false || 
+            if (stripos($header, '<script') !== false ||
                 stripos($header, '<?php') !== false ||
                 stripos($header, '<%') !== false) {
                 $fail('File contains potentially malicious content.');
+
                 return;
             }
-            
+
             // Validate file signatures
             $this->validateFileSignature($header, $mimeType, $fail);
         }
@@ -153,10 +154,10 @@ class DocumentUploadRequest extends FormRequest
         $signatures = [
             'image/jpeg' => ["\xFF\xD8\xFF"],
             'image/png' => ["\x89\x50\x4E\x47"],
-            'application/pdf' => ["%PDF-"],
+            'application/pdf' => ['%PDF-'],
         ];
 
-        if (!$mimeType || !isset($signatures[$mimeType])) {
+        if (! $mimeType || ! isset($signatures[$mimeType])) {
             return; // Skip validation for unknown types
         }
 
@@ -168,7 +169,7 @@ class DocumentUploadRequest extends FormRequest
             }
         }
 
-        if (!$validSignature) {
+        if (! $validSignature) {
             $fail('File signature does not match the declared file type.');
         }
     }
@@ -181,10 +182,10 @@ class DocumentUploadRequest extends FormRequest
         if ($input === null) {
             return null;
         }
-        
+
         // Remove null bytes and control characters
         $sanitized = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $input);
-        
+
         // Trim whitespace
         return trim($sanitized);
     }

@@ -32,25 +32,25 @@ class StateControllerTest extends TestCase
                 'formResponses' => [
                     'firstName' => 'John',
                     'lastName' => 'Doe',
-                ]
+                ],
             ],
             'metadata' => [
                 'ip_address' => '127.0.0.1',
                 'user_agent' => 'Test Browser',
-            ]
+            ],
         ];
 
         $response = $this->postJson('/api/states/save', $data);
 
         $response->assertStatus(200)
-                ->assertJson([
-                    'success' => true,
-                ])
-                ->assertJsonStructure([
-                    'success',
-                    'state_id',
-                    'expires_at',
-                ]);
+            ->assertJson([
+                'success' => true,
+            ])
+            ->assertJsonStructure([
+                'success',
+                'state_id',
+                'expires_at',
+            ]);
 
         $this->assertDatabaseHas('application_states', [
             'session_id' => 'test-session-123',
@@ -69,8 +69,8 @@ class StateControllerTest extends TestCase
                 'formResponses' => [
                     'firstName' => 'John',
                     'lastName' => 'Doe',
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $response = $this->postJson('/api/states/retrieve', [
@@ -79,20 +79,20 @@ class StateControllerTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                ->assertJson([
-                    'success' => true,
-                    'session_id' => $applicationState->session_id,
-                    'current_step' => 'form',
-                    'can_resume' => true,
-                ])
-                ->assertJsonStructure([
-                    'success',
-                    'session_id',
-                    'current_step',
-                    'form_data',
-                    'can_resume',
-                    'expires_in',
-                ]);
+            ->assertJson([
+                'success' => true,
+                'session_id' => $applicationState->session_id,
+                'current_step' => 'form',
+                'can_resume' => true,
+            ])
+            ->assertJsonStructure([
+                'success',
+                'session_id',
+                'current_step',
+                'form_data',
+                'can_resume',
+                'expires_in',
+            ]);
     }
 
     public function test_retrieve_returns_404_when_no_state_found()
@@ -103,10 +103,10 @@ class StateControllerTest extends TestCase
         ]);
 
         $response->assertStatus(404)
-                ->assertJson([
-                    'success' => false,
-                    'message' => 'No active state found',
-                ]);
+            ->assertJson([
+                'success' => false,
+                'message' => 'No active state found',
+            ]);
     }
 
     public function test_save_state_validation_fails_with_invalid_data()
@@ -118,12 +118,12 @@ class StateControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-                ->assertJsonValidationErrors([
-                    'session_id',
-                    'channel',
-                    'user_identifier',
-                    'current_step',
-                ]);
+            ->assertJsonValidationErrors([
+                'session_id',
+                'channel',
+                'user_identifier',
+                'current_step',
+            ]);
     }
 
     public function test_retrieve_state_validation_fails_with_invalid_data()
@@ -134,10 +134,10 @@ class StateControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-                ->assertJsonValidationErrors([
-                    'user',
-                    'channel',
-                ]);
+            ->assertJsonValidationErrors([
+                'user',
+                'channel',
+            ]);
     }
 
     public function test_can_create_final_application()
@@ -152,8 +152,8 @@ class StateControllerTest extends TestCase
                     'emailAddress' => 'john.doe@example.com',
                     'mobile' => '+263771234567',
                     'nationalIdNumber' => '12-345678-A-12',
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $response = $this->postJson('/api/states/create-application', [
@@ -161,15 +161,15 @@ class StateControllerTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                ->assertJson([
-                    'success' => true,
-                ])
-                ->assertJsonStructure([
-                    'success',
-                    'application_id',
-                    'reference_code',
-                    'created_at',
-                ]);
+            ->assertJson([
+                'success' => true,
+            ])
+            ->assertJsonStructure([
+                'success',
+                'application_id',
+                'reference_code',
+                'created_at',
+            ]);
     }
 
     public function test_create_application_fails_for_incomplete_state()
@@ -179,8 +179,8 @@ class StateControllerTest extends TestCase
             'form_data' => [
                 'formResponses' => [
                     'firstName' => 'John',
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $response = $this->postJson('/api/states/create-application', [
@@ -188,9 +188,9 @@ class StateControllerTest extends TestCase
         ]);
 
         $response->assertStatus(400)
-                ->assertJson([
-                    'success' => false,
-                ]);
+            ->assertJson([
+                'success' => false,
+            ]);
     }
 
     public function test_state_caching_works_correctly()
@@ -204,8 +204,8 @@ class StateControllerTest extends TestCase
                 'formResponses' => [
                     'firstName' => 'John',
                     'lastName' => 'Doe',
-                ]
-            ]
+                ],
+            ],
         ];
 
         // Save state (should cache it)
@@ -218,13 +218,13 @@ class StateControllerTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                ->assertJson([
-                    'success' => true,
-                    'session_id' => 'cached-session-123',
-                ]);
+            ->assertJson([
+                'success' => true,
+                'session_id' => 'cached-session-123',
+            ]);
 
         // Verify cache was used by checking cache directly
-        $cacheKey = "application_state:cached-user@example.com:web";
+        $cacheKey = 'application_state:cached-user@example.com:web';
         $this->assertNotNull(Cache::get($cacheKey));
     }
 
@@ -236,8 +236,8 @@ class StateControllerTest extends TestCase
             'form_data' => [
                 'formResponses' => [
                     'firstName' => 'John',
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $updateData = [
@@ -250,8 +250,8 @@ class StateControllerTest extends TestCase
                     'firstName' => 'John',
                     'lastName' => 'Doe',
                     'emailAddress' => 'john.doe@example.com',
-                ]
-            ]
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/states/save', $updateData);
@@ -277,7 +277,7 @@ class StateControllerTest extends TestCase
             'channel' => $applicationState->channel,
             'user_identifier' => $applicationState->user_identifier,
             'current_step' => 'documents',
-            'form_data' => ['field1' => 'value1']
+            'form_data' => ['field1' => 'value1'],
         ];
 
         $updateData2 = [
@@ -285,7 +285,7 @@ class StateControllerTest extends TestCase
             'channel' => $applicationState->channel,
             'user_identifier' => $applicationState->user_identifier,
             'current_step' => 'summary',
-            'form_data' => ['field2' => 'value2']
+            'form_data' => ['field2' => 'value2'],
         ];
 
         // Both requests should succeed
@@ -314,10 +314,10 @@ class StateControllerTest extends TestCase
         ]);
 
         $response->assertStatus(404)
-                ->assertJson([
-                    'success' => false,
-                    'message' => 'No active state found',
-                ]);
+            ->assertJson([
+                'success' => false,
+                'message' => 'No active state found',
+            ]);
     }
 
     public function test_rate_limiting_works()
@@ -327,7 +327,7 @@ class StateControllerTest extends TestCase
             'channel' => 'web',
             'user_identifier' => 'rate-limit-user@example.com',
             'current_step' => 'form',
-            'form_data' => []
+            'form_data' => [],
         ];
 
         // Make requests up to the rate limit
@@ -384,9 +384,9 @@ class StateControllerTest extends TestCase
         ]);
 
         $webResponse->assertStatus(200)
-                   ->assertJson(['current_step' => 'form']);
+            ->assertJson(['current_step' => 'form']);
 
         $whatsappResponse->assertStatus(200)
-                        ->assertJson(['current_step' => 'documents']);
+            ->assertJson(['current_step' => 'documents']);
     }
 }

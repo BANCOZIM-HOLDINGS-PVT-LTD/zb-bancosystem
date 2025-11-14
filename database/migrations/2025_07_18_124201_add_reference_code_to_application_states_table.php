@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('application_states', function (Blueprint $table) {
             $table->string('reference_code', 6)->nullable()->unique()->after('expires_at');
             $table->timestamp('reference_code_expires_at')->nullable()->after('reference_code');
-            
+
             $table->index('reference_code');
         });
     }

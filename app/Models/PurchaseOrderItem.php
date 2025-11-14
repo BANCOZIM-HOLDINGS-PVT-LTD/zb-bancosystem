@@ -16,27 +16,27 @@ class PurchaseOrderItem extends Model
         'unit_price',
         'total_price',
         'status',
-        'notes'
+        'notes',
     ];
-    
+
     protected $casts = [
         'quantity_ordered' => 'integer',
         'quantity_received' => 'integer',
         'unit_price' => 'decimal:2',
         'total_price' => 'decimal:2',
     ];
-    
+
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($item) {
             // Calculate total price if not set
             if (empty($item->total_price)) {
                 $item->total_price = $item->unit_price * $item->quantity_ordered;
             }
         });
-        
+
         static::updating(function ($item) {
             // Update status based on quantities
             if ($item->quantity_received === 0) {
@@ -48,7 +48,7 @@ class PurchaseOrderItem extends Model
             }
         });
     }
-    
+
     /**
      * Get the purchase order
      */
@@ -56,7 +56,7 @@ class PurchaseOrderItem extends Model
     {
         return $this->belongsTo(PurchaseOrder::class);
     }
-    
+
     /**
      * Get the product
      */
@@ -64,7 +64,7 @@ class PurchaseOrderItem extends Model
     {
         return $this->belongsTo(Product::class);
     }
-    
+
     /**
      * Get the application
      */
@@ -72,7 +72,7 @@ class PurchaseOrderItem extends Model
     {
         return $this->belongsTo(ApplicationState::class, 'application_id');
     }
-    
+
     /**
      * Get remaining quantity
      */
@@ -80,7 +80,7 @@ class PurchaseOrderItem extends Model
     {
         return $this->quantity_ordered - $this->quantity_received;
     }
-    
+
     /**
      * Get fulfillment percentage
      */
@@ -89,22 +89,22 @@ class PurchaseOrderItem extends Model
         if ($this->quantity_ordered === 0) {
             return 0;
         }
-        
+
         return round(($this->quantity_received / $this->quantity_ordered) * 100, 2);
     }
-    
+
     /**
      * Mark as received
      */
-    public function markAsReceived(int $quantity = null): void
+    public function markAsReceived(?int $quantity = null): void
     {
         $quantity = $quantity ?? $this->quantity_ordered;
-        
+
         $this->update([
             'quantity_received' => $quantity,
-            'status' => $quantity >= $this->quantity_ordered ? 'received' : 'partial'
+            'status' => $quantity >= $this->quantity_ordered ? 'received' : 'partial',
         ]);
-        
+
         // Update inventory if needed
         if ($this->product) {
             // Create inventory movement
@@ -114,20 +114,20 @@ class PurchaseOrderItem extends Model
                 'quantity' => $quantity,
                 'reference_type' => 'purchase_order',
                 'reference_id' => $this->purchase_order_id,
-                'notes' => 'Received from PO: ' . $this->purchaseOrder->po_number,
+                'notes' => 'Received from PO: '.$this->purchaseOrder->po_number,
             ]);
-            
+
             // Update product inventory
             $inventory = ProductInventory::firstOrCreate(
                 ['product_id' => $this->product_id],
                 ['quantity_on_hand' => 0, 'quantity_available' => 0]
             );
-            
+
             $inventory->increment('quantity_on_hand', $quantity);
             $inventory->increment('quantity_available', $quantity);
         }
     }
-    
+
     /**
      * Check if fully received
      */
@@ -135,7 +135,7 @@ class PurchaseOrderItem extends Model
     {
         return $this->quantity_received >= $this->quantity_ordered;
     }
-    
+
     /**
      * Check if partially received
      */

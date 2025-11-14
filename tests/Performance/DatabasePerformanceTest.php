@@ -19,7 +19,7 @@ class DatabasePerformanceTest extends TestCase
     {
         parent::setUp();
         $this->repository = app(ApplicationStateRepository::class);
-        
+
         // Create test data
         $this->seedTestData();
     }
@@ -41,8 +41,8 @@ class DatabasePerformanceTest extends TestCase
         $duration = $endTime - $startTime;
 
         // Performance assertions
-        $this->assertLessThan(0.5, $duration, 'Query took too long: ' . $duration . 's');
-        $this->assertLessThan(5, $queryCount, 'Too many queries executed: ' . $queryCount);
+        $this->assertLessThan(0.5, $duration, 'Query took too long: '.$duration.'s');
+        $this->assertLessThan(5, $queryCount, 'Too many queries executed: '.$queryCount);
     }
 
     public function test_json_field_queries_are_optimized()
@@ -65,8 +65,8 @@ class DatabasePerformanceTest extends TestCase
         $duration = $endTime - $startTime;
 
         // Performance assertions
-        $this->assertLessThan(1.0, $duration, 'JSON queries took too long: ' . $duration . 's');
-        $this->assertLessThan(10, $queryCount, 'Too many queries for JSON operations: ' . $queryCount);
+        $this->assertLessThan(1.0, $duration, 'JSON queries took too long: '.$duration.'s');
+        $this->assertLessThan(10, $queryCount, 'Too many queries for JSON operations: '.$queryCount);
     }
 
     public function test_pagination_performance()
@@ -89,8 +89,8 @@ class DatabasePerformanceTest extends TestCase
         $duration = $endTime - $startTime;
 
         // Performance assertions
-        $this->assertLessThan(0.3, $duration, 'Pagination took too long: ' . $duration . 's');
-        $this->assertLessThan(6, $queryCount, 'Too many queries for pagination: ' . $queryCount);
+        $this->assertLessThan(0.3, $duration, 'Pagination took too long: '.$duration.'s');
+        $this->assertLessThan(6, $queryCount, 'Too many queries for pagination: '.$queryCount);
     }
 
     public function test_complex_filter_performance()
@@ -120,8 +120,8 @@ class DatabasePerformanceTest extends TestCase
         $duration = $endTime - $startTime;
 
         // Performance assertions
-        $this->assertLessThan(1.0, $duration, 'Complex filtering took too long: ' . $duration . 's');
-        $this->assertLessThan(8, $queryCount, 'Too many queries for complex filtering: ' . $queryCount);
+        $this->assertLessThan(1.0, $duration, 'Complex filtering took too long: '.$duration.'s');
+        $this->assertLessThan(8, $queryCount, 'Too many queries for complex filtering: '.$queryCount);
     }
 
     public function test_search_performance()
@@ -135,7 +135,7 @@ class DatabasePerformanceTest extends TestCase
 
         // Test search functionality
         $searchResults = $this->repository->getPaginatedOptimized([
-            'search' => 'John'
+            'search' => 'John',
         ], 10);
 
         $this->assertInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class, $searchResults);
@@ -144,8 +144,8 @@ class DatabasePerformanceTest extends TestCase
         $duration = $endTime - $startTime;
 
         // Performance assertions
-        $this->assertLessThan(0.8, $duration, 'Search took too long: ' . $duration . 's');
-        $this->assertLessThan(6, $queryCount, 'Too many queries for search: ' . $queryCount);
+        $this->assertLessThan(0.8, $duration, 'Search took too long: '.$duration.'s');
+        $this->assertLessThan(6, $queryCount, 'Too many queries for search: '.$queryCount);
     }
 
     public function test_bulk_operations_performance()
@@ -156,9 +156,9 @@ class DatabasePerformanceTest extends TestCase
         $bulkData = [];
         for ($i = 0; $i < 100; $i++) {
             $bulkData[] = [
-                'session_id' => 'bulk-session-' . $i,
+                'session_id' => 'bulk-session-'.$i,
                 'channel' => 'web',
-                'user_identifier' => 'bulk-user-' . $i . '@example.com',
+                'user_identifier' => 'bulk-user-'.$i.'@example.com',
                 'current_step' => 'form',
                 'form_data' => json_encode(['test' => 'data']),
                 'expires_at' => now()->addHours(24),
@@ -173,7 +173,7 @@ class DatabasePerformanceTest extends TestCase
         $duration = $endTime - $startTime;
 
         // Performance assertions
-        $this->assertLessThan(2.0, $duration, 'Bulk insert took too long: ' . $duration . 's');
+        $this->assertLessThan(2.0, $duration, 'Bulk insert took too long: '.$duration.'s');
     }
 
     public function test_concurrent_access_performance()
@@ -204,7 +204,7 @@ class DatabasePerformanceTest extends TestCase
         }
 
         // Performance assertions
-        $this->assertLessThan(3.0, $duration, 'Concurrent operations took too long: ' . $duration . 's');
+        $this->assertLessThan(3.0, $duration, 'Concurrent operations took too long: '.$duration.'s');
     }
 
     public function test_memory_usage_during_large_queries()
@@ -226,18 +226,18 @@ class DatabasePerformanceTest extends TestCase
 
         // Memory assertions
         $this->assertGreaterThan(0, $processedCount);
-        $this->assertLessThan(50 * 1024 * 1024, $memoryUsed, 'Memory usage too high: ' . ($memoryUsed / 1024 / 1024) . 'MB');
+        $this->assertLessThan(50 * 1024 * 1024, $memoryUsed, 'Memory usage too high: '.($memoryUsed / 1024 / 1024).'MB');
     }
 
     public function test_index_effectiveness()
     {
         // Test that indexes are being used
         $query = ApplicationState::where('channel', 'web')
-                                ->where('current_step', 'completed')
-                                ->where('created_at', '>=', now()->subDays(7));
+            ->where('current_step', 'completed')
+            ->where('created_at', '>=', now()->subDays(7));
 
-        $explainResult = DB::select('EXPLAIN ' . $query->toSql(), $query->getBindings());
-        
+        $explainResult = DB::select('EXPLAIN '.$query->toSql(), $query->getBindings());
+
         // Verify index usage (this is database-specific)
         if (config('database.default') === 'mysql') {
             $this->assertStringContainsString('index', strtolower(json_encode($explainResult)));
@@ -264,7 +264,7 @@ class DatabasePerformanceTest extends TestCase
         $duration = $endTime - $startTime;
 
         // Performance assertions
-        $this->assertLessThan(0.5, $duration, 'Optimized JSON query took too long: ' . $duration . 's');
+        $this->assertLessThan(0.5, $duration, 'Optimized JSON query took too long: '.$duration.'s');
         $this->assertEquals(1, $queryCount, 'Should execute exactly one query');
     }
 
@@ -284,7 +284,7 @@ class DatabasePerformanceTest extends TestCase
         $this->assertEquals($result1->count(), $result2->count());
 
         // Cache should improve performance significantly
-        $this->assertLessThan($durationWithoutCache * 0.5, $durationWithCache, 
+        $this->assertLessThan($durationWithoutCache * 0.5, $durationWithCache,
             'Cache did not improve performance significantly');
     }
 
@@ -304,12 +304,12 @@ class DatabasePerformanceTest extends TestCase
                 'form_data' => [
                     'employer' => $employers[array_rand($employers)],
                     'formResponses' => [
-                        'firstName' => 'John' . $i,
-                        'lastName' => 'Doe' . $i,
-                        'emailAddress' => 'test' . $i . '@example.com',
-                        'mobile' => '+26377' . str_pad($i, 7, '0', STR_PAD_LEFT),
+                        'firstName' => 'John'.$i,
+                        'lastName' => 'Doe'.$i,
+                        'emailAddress' => 'test'.$i.'@example.com',
+                        'mobile' => '+26377'.str_pad($i, 7, '0', STR_PAD_LEFT),
                         'loanAmount' => rand(1000, 100000),
-                    ]
+                    ],
                 ],
                 'created_at' => now()->subDays(rand(0, 30)),
             ]);

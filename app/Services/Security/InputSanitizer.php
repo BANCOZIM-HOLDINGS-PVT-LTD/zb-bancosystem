@@ -19,16 +19,16 @@ class InputSanitizer
         '/onerror\s*=/i',
         '/onclick\s*=/i',
         '/onmouseover\s*=/i',
-        
+
         // SQL injection patterns
         '/(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b)/i',
         '/(\b(OR|AND)\s+\d+\s*=\s*\d+)/i',
         '/(\b(OR|AND)\s+[\'"]?\w+[\'"]?\s*=\s*[\'"]?\w+[\'"]?)/i',
-        
+
         // Command injection patterns
         '/(\||&|;|`|\$\(|\${)/i',
         '/\b(eval|exec|system|shell_exec|passthru|proc_open)\s*\(/i',
-        
+
         // Path traversal patterns
         '/\.\.[\/\\]/i',
         '/\.(exe|bat|cmd|com|pif|scr|vbs|js)$/i',
@@ -163,7 +163,7 @@ class InputSanitizer
         if (strlen($filename) > 255) {
             $extension = pathinfo($filename, PATHINFO_EXTENSION);
             $name = substr(pathinfo($filename, PATHINFO_FILENAME), 0, 250 - strlen($extension));
-            $filename = $name . '.' . $extension;
+            $filename = $name.'.'.$extension;
         }
 
         return $filename;
@@ -185,8 +185,8 @@ class InputSanitizer
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         ];
 
-        if (!in_array($mimeType, $allowedTypes)) {
-            throw new \InvalidArgumentException('Invalid file type: ' . $mimeType);
+        if (! in_array($mimeType, $allowedTypes)) {
+            throw new \InvalidArgumentException('Invalid file type: '.$mimeType);
         }
 
         return $mimeType;
@@ -200,7 +200,7 @@ class InputSanitizer
         $maxSize = 5 * 1024 * 1024; // 5MB
 
         if ($size > $maxSize) {
-            throw new \InvalidArgumentException('File size too large: ' . $size . ' bytes');
+            throw new \InvalidArgumentException('File size too large: '.$size.' bytes');
         }
 
         return $size;
@@ -214,7 +214,7 @@ class InputSanitizer
         $data = json_decode($json, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \InvalidArgumentException('Invalid JSON: ' . json_last_error_msg());
+            throw new \InvalidArgumentException('Invalid JSON: '.json_last_error_msg());
         }
 
         $sanitized = $this->sanitize($data);
@@ -229,8 +229,8 @@ class InputSanitizer
     {
         $email = filter_var($email, FILTER_SANITIZE_EMAIL);
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw new \InvalidArgumentException('Invalid email address: ' . $email);
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new \InvalidArgumentException('Invalid email address: '.$email);
         }
 
         return strtolower($email);
@@ -245,8 +245,8 @@ class InputSanitizer
         $phone = preg_replace('/[^\d+]/', '', $phone);
 
         // Validate format (basic international format)
-        if (!preg_match('/^\+?[1-9]\d{1,14}$/', $phone)) {
-            throw new \InvalidArgumentException('Invalid phone number format: ' . $phone);
+        if (! preg_match('/^\+?[1-9]\d{1,14}$/', $phone)) {
+            throw new \InvalidArgumentException('Invalid phone number format: '.$phone);
         }
 
         return $phone;
@@ -259,14 +259,14 @@ class InputSanitizer
     {
         $url = filter_var($url, FILTER_SANITIZE_URL);
 
-        if (!filter_var($url, FILTER_VALIDATE_URL)) {
-            throw new \InvalidArgumentException('Invalid URL: ' . $url);
+        if (! filter_var($url, FILTER_VALIDATE_URL)) {
+            throw new \InvalidArgumentException('Invalid URL: '.$url);
         }
 
         // Only allow HTTP and HTTPS
         $scheme = parse_url($url, PHP_URL_SCHEME);
-        if (!in_array($scheme, ['http', 'https'])) {
-            throw new \InvalidArgumentException('Invalid URL scheme: ' . $scheme);
+        if (! in_array($scheme, ['http', 'https'])) {
+            throw new \InvalidArgumentException('Invalid URL scheme: '.$scheme);
         }
 
         return $url;
@@ -304,7 +304,7 @@ class InputSanitizer
         $report['sanitized_length'] = strlen($sanitized);
         $report['is_safe'] = $original === $sanitized;
 
-        if (!$report['is_safe']) {
+        if (! $report['is_safe']) {
             foreach (self::DANGEROUS_PATTERNS as $pattern) {
                 if (preg_match($pattern, $original)) {
                     $report['threats_detected'][] = $pattern;

@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\ApplicationState;
 use App\Repositories\ApplicationStateRepository;
 use App\Services\PDFGeneratorService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,6 +15,7 @@ use Inertia\Response;
 class ApplicationManagementController extends Controller
 {
     private ApplicationStateRepository $repository;
+
     private PDFGeneratorService $pdfGenerator;
 
     public function __construct(ApplicationStateRepository $repository, PDFGeneratorService $pdfGenerator)
@@ -29,8 +30,8 @@ class ApplicationManagementController extends Controller
     public function index(Request $request): Response
     {
         $filters = $request->only([
-            'search', 'channel', 'status', 'date_from', 'date_to', 
-            'employer', 'form_id', 'current_step'
+            'search', 'channel', 'status', 'date_from', 'date_to',
+            'employer', 'form_id', 'current_step',
         ]);
 
         $applications = $this->repository->getPaginatedOptimized($filters, 20);
@@ -39,14 +40,14 @@ class ApplicationManagementController extends Controller
         $applications->getCollection()->transform(function ($app) {
             $formData = $app->form_data ?? [];
             $formResponses = $formData['formResponses'] ?? [];
-            
+
             return [
                 'id' => $app->id,
                 'session_id' => $app->session_id,
                 'channel' => $app->channel,
                 'current_step' => $app->current_step,
                 'user_identifier' => $app->user_identifier,
-                'applicant_name' => trim(($formResponses['firstName'] ?? '') . ' ' . ($formResponses['lastName'] ?? '')),
+                'applicant_name' => trim(($formResponses['firstName'] ?? '').' '.($formResponses['lastName'] ?? '')),
                 'email' => $formResponses['emailAddress'] ?? null,
                 'mobile' => $formResponses['mobile'] ?? null,
                 'employer' => $formData['employer'] ?? null,
@@ -73,8 +74,8 @@ class ApplicationManagementController extends Controller
     public function show(string $sessionId): Response
     {
         $application = $this->repository->findBySessionId($sessionId);
-        
-        if (!$application) {
+
+        if (! $application) {
             abort(404, 'Application not found');
         }
 
@@ -100,8 +101,8 @@ class ApplicationManagementController extends Controller
         ]);
 
         $application = $this->repository->findBySessionId($sessionId);
-        
-        if (!$application) {
+
+        if (! $application) {
             return response()->json(['error' => 'Application not found'], 404);
         }
 
@@ -154,15 +155,15 @@ class ApplicationManagementController extends Controller
         ]);
 
         $application = $this->repository->findBySessionId($sessionId);
-        
-        if (!$application) {
+
+        if (! $application) {
             return response()->json(['error' => 'Application not found'], 404);
         }
 
         try {
             $this->addApplicationNote(
-                $application, 
-                $request->note, 
+                $application,
+                $request->note,
                 $request->type ?? 'general'
             );
 
@@ -184,8 +185,8 @@ class ApplicationManagementController extends Controller
     public function downloadPdf(string $sessionId)
     {
         $application = $this->repository->findBySessionId($sessionId);
-        
-        if (!$application) {
+
+        if (! $application) {
             abort(404, 'Application not found');
         }
 
@@ -196,7 +197,7 @@ class ApplicationManagementController extends Controller
             ]);
 
             return response()->download(
-                storage_path('app/public/' . $pdfResult['file_path']),
+                storage_path('app/public/'.$pdfResult['file_path']),
                 "application_{$sessionId}.pdf"
             );
 
@@ -223,11 +224,11 @@ class ApplicationManagementController extends Controller
 
         try {
             $count = 0;
-            
+
             foreach ($request->session_ids as $sessionId) {
                 $application = $this->repository->findBySessionId($sessionId);
-                
-                if (!$application) {
+
+                if (! $application) {
                     continue;
                 }
 
@@ -308,6 +309,7 @@ class ApplicationManagementController extends Controller
     private function determineApplicationStatus(ApplicationState $application): string
     {
         $metadata = $application->metadata ?? [];
+
         return $metadata['admin_status'] ?? 'pending';
     }
 
@@ -317,6 +319,7 @@ class ApplicationManagementController extends Controller
     private function getApplicationNotes(ApplicationState $application): array
     {
         $metadata = $application->metadata ?? [];
+
         return $metadata['notes'] ?? [];
     }
 

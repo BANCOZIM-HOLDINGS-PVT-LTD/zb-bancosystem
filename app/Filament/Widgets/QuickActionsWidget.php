@@ -2,23 +2,21 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\ApplicationState;
 use App\Models\Agent;
-use App\Models\Product;
+use App\Models\ApplicationState;
 use App\Models\Commission;
-use Filament\Widgets\Widget;
-use Filament\Actions\Action;
-use Filament\Actions\ActionGroup;
+use App\Models\Product;
 use Filament\Notifications\Notification;
+use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Cache;
 
 class QuickActionsWidget extends Widget
 {
     protected static string $view = 'filament.widgets.quick-actions';
-    
+
     protected static ?int $sort = 1;
-    
-    protected int | string | array $columnSpan = 'full';
+
+    protected int|string|array $columnSpan = 'full';
 
     public function getViewData(): array
     {
@@ -95,6 +93,7 @@ class QuickActionsWidget extends Widget
         // Simple health check
         try {
             \DB::connection()->getPdo();
+
             return 'success';
         } catch (\Exception $e) {
             return 'danger';
@@ -105,7 +104,7 @@ class QuickActionsWidget extends Widget
     {
         // Clear health check cache
         Cache::forget('system_health');
-        
+
         Notification::make()
             ->title('System Health Refreshed')
             ->body('System health status has been updated')

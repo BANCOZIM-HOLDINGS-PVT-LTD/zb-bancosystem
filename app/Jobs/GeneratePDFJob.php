@@ -10,16 +10,19 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class GeneratePDFJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public ApplicationState $applicationState;
+
     public array $options;
+
     public string $notificationChannel;
+
     public ?string $callbackUrl;
 
     /**
@@ -45,7 +48,7 @@ class GeneratePDFJob implements ShouldQueue
         $this->options = $options;
         $this->notificationChannel = $notificationChannel;
         $this->callbackUrl = $callbackUrl;
-        
+
         // Set queue based on priority
         $this->onQueue($this->determineQueue());
     }
@@ -56,11 +59,11 @@ class GeneratePDFJob implements ShouldQueue
     public function handle(PDFGeneratorService $pdfGenerator, PerformanceMonitor $monitor): void
     {
         $sessionId = $this->applicationState->session_id;
-        
+
         try {
             // Set job status to processing
             $this->updateJobStatus('processing');
-            
+
             Log::info('Starting PDF generation job', [
                 'session_id' => $sessionId,
                 'job_id' => $this->job->getJobId(),
@@ -103,7 +106,7 @@ class GeneratePDFJob implements ShouldQueue
     public function failed(\Throwable $exception): void
     {
         $sessionId = $this->applicationState->session_id;
-        
+
         Log::error('PDF generation job failed', [
             'session_id' => $sessionId,
             'job_id' => $this->job?->getJobId(),
@@ -139,7 +142,7 @@ class GeneratePDFJob implements ShouldQueue
     private function handleJobFailure(\Exception $e): void
     {
         $sessionId = $this->applicationState->session_id;
-        
+
         Log::error('PDF generation job encountered an error', [
             'session_id' => $sessionId,
             'job_id' => $this->job->getJobId(),
@@ -171,7 +174,7 @@ class GeneratePDFJob implements ShouldQueue
     private function updateJobStatus(string $status, array $data = []): void
     {
         $cacheKey = "pdf_job_status:{$this->applicationState->session_id}";
-        
+
         $statusData = [
             'status' => $status,
             'session_id' => $this->applicationState->session_id,
@@ -285,7 +288,7 @@ class GeneratePDFJob implements ShouldQueue
             $response = \Illuminate\Support\Facades\Http::timeout(30)
                 ->post($this->callbackUrl, $payload);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::warning('Webhook call failed', [
                     'url' => $this->callbackUrl,
                     'status' => $response->status(),
@@ -327,9 +330,9 @@ class GeneratePDFJob implements ShouldQueue
     {
         return [
             'pdf-generation',
-            'session:' . $this->applicationState->session_id,
-            'channel:' . $this->applicationState->channel,
-            'step:' . $this->applicationState->current_step,
+            'session:'.$this->applicationState->session_id,
+            'channel:'.$this->applicationState->channel,
+            'step:'.$this->applicationState->current_step,
         ];
     }
 }

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class StateTransition extends Model
 {
     public $timestamps = false;
-    
+
     protected $fillable = [
         'state_id',
         'from_step',
@@ -16,11 +16,11 @@ class StateTransition extends Model
         'channel',
         'transition_data',
     ];
-    
+
     protected $casts = [
         'transition_data' => 'array',
     ];
-    
+
     public function applicationState(): BelongsTo
     {
         return $this->belongsTo(ApplicationState::class, 'state_id');

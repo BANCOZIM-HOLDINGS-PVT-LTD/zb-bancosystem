@@ -9,17 +9,18 @@ use Illuminate\Support\Facades\Log;
 class ApplicationCacheManager
 {
     private const CACHE_TTL = 3600; // 1 hour default
+
     private const CACHE_PREFIX = 'bancozim:';
 
     /**
      * Cache application state
      */
-    public function cacheApplicationState(ApplicationState $applicationState, int $ttl = null): void
+    public function cacheApplicationState(ApplicationState $applicationState, ?int $ttl = null): void
     {
         $ttl = $ttl ?? self::CACHE_TTL;
-        
+
         $cacheKey = $this->getApplicationStateKey($applicationState->session_id);
-        
+
         $cacheData = [
             'id' => $applicationState->id,
             'session_id' => $applicationState->session_id,
@@ -37,11 +38,11 @@ class ApplicationCacheManager
         ];
 
         Cache::put($cacheKey, $cacheData, $ttl);
-        
+
         // Also cache by user identifier for quick lookups
         $userKey = $this->getUserApplicationKey($applicationState->user_identifier, $applicationState->channel);
         Cache::put($userKey, $applicationState->session_id, $ttl);
-        
+
         Log::debug('Application state cached', [
             'session_id' => $applicationState->session_id,
             'cache_key' => $cacheKey,
@@ -56,14 +57,14 @@ class ApplicationCacheManager
     {
         $cacheKey = $this->getApplicationStateKey($sessionId);
         $cached = Cache::get($cacheKey);
-        
+
         if ($cached) {
             Log::debug('Application state cache hit', [
                 'session_id' => $sessionId,
                 'cache_key' => $cacheKey,
             ]);
         }
-        
+
         return $cached;
     }
 
@@ -73,6 +74,7 @@ class ApplicationCacheManager
     public function getSessionIdByUser(string $userIdentifier, string $channel): ?string
     {
         $userKey = $this->getUserApplicationKey($userIdentifier, $channel);
+
         return Cache::get($userKey);
     }
 
@@ -83,7 +85,7 @@ class ApplicationCacheManager
     {
         $cacheKey = $this->getApplicationStateKey($sessionId);
         Cache::forget($cacheKey);
-        
+
         Log::debug('Application state cache invalidated', [
             'session_id' => $sessionId,
             'cache_key' => $cacheKey,
@@ -97,7 +99,7 @@ class ApplicationCacheManager
     {
         $userKey = $this->getUserApplicationKey($userIdentifier, $channel);
         Cache::forget($userKey);
-        
+
         Log::debug('User application cache invalidated', [
             'user_identifier' => $userIdentifier,
             'channel' => $channel,
@@ -112,7 +114,7 @@ class ApplicationCacheManager
     {
         $cacheKey = $this->getFormConfigKey($formId);
         Cache::put($cacheKey, $config, $ttl);
-        
+
         Log::debug('Form configuration cached', [
             'form_id' => $formId,
             'cache_key' => $cacheKey,
@@ -126,6 +128,7 @@ class ApplicationCacheManager
     public function getCachedFormConfig(string $formId): ?array
     {
         $cacheKey = $this->getFormConfigKey($formId);
+
         return Cache::get($cacheKey);
     }
 
@@ -136,7 +139,7 @@ class ApplicationCacheManager
     {
         $cacheKey = $this->getBusinessProductsKey();
         Cache::put($cacheKey, $products, $ttl);
-        
+
         Log::debug('Business products cached', [
             'cache_key' => $cacheKey,
             'count' => count($products),
@@ -150,6 +153,7 @@ class ApplicationCacheManager
     public function getCachedBusinessProducts(): ?array
     {
         $cacheKey = $this->getBusinessProductsKey();
+
         return Cache::get($cacheKey);
     }
 
@@ -160,7 +164,7 @@ class ApplicationCacheManager
     {
         $cacheKey = $this->getStatisticsKey();
         Cache::put($cacheKey, $statistics, $ttl);
-        
+
         Log::debug('Statistics cached', [
             'cache_key' => $cacheKey,
             'ttl' => $ttl,
@@ -173,6 +177,7 @@ class ApplicationCacheManager
     public function getCachedStatistics(): ?array
     {
         $cacheKey = $this->getStatisticsKey();
+
         return Cache::get($cacheKey);
     }
 
@@ -183,7 +188,7 @@ class ApplicationCacheManager
     {
         $cacheKey = $this->getReferenceCodeKey($referenceCode);
         Cache::put($cacheKey, $isValid, $ttl);
-        
+
         Log::debug('Reference code validation cached', [
             'reference_code' => $referenceCode,
             'is_valid' => $isValid,
@@ -198,6 +203,7 @@ class ApplicationCacheManager
     public function getCachedReferenceCodeValidation(string $referenceCode): ?bool
     {
         $cacheKey = $this->getReferenceCodeKey($referenceCode);
+
         return Cache::get($cacheKey);
     }
 
@@ -207,12 +213,12 @@ class ApplicationCacheManager
     public function warmUpCache(): void
     {
         Log::info('Starting cache warm-up');
-        
+
         try {
             // Warm up business products
             // This would typically fetch from database and cache
             Log::info('Cache warm-up completed');
-            
+
         } catch (\Exception $e) {
             Log::error('Cache warm-up failed', [
                 'error' => $e->getMessage(),
@@ -226,18 +232,18 @@ class ApplicationCacheManager
     public function clearAllCache(): void
     {
         $patterns = [
-            self::CACHE_PREFIX . 'app_state:*',
-            self::CACHE_PREFIX . 'user_app:*',
-            self::CACHE_PREFIX . 'form_config:*',
-            self::CACHE_PREFIX . 'business_products',
-            self::CACHE_PREFIX . 'statistics',
-            self::CACHE_PREFIX . 'ref_code:*',
+            self::CACHE_PREFIX.'app_state:*',
+            self::CACHE_PREFIX.'user_app:*',
+            self::CACHE_PREFIX.'form_config:*',
+            self::CACHE_PREFIX.'business_products',
+            self::CACHE_PREFIX.'statistics',
+            self::CACHE_PREFIX.'ref_code:*',
         ];
 
         foreach ($patterns as $pattern) {
             $this->clearCacheByPattern($pattern);
         }
-        
+
         Log::info('All application cache cleared');
     }
 
@@ -261,7 +267,7 @@ class ApplicationCacheManager
      */
     private function getApplicationStateKey(string $sessionId): string
     {
-        return self::CACHE_PREFIX . 'app_state:' . $sessionId;
+        return self::CACHE_PREFIX.'app_state:'.$sessionId;
     }
 
     /**
@@ -269,7 +275,7 @@ class ApplicationCacheManager
      */
     private function getUserApplicationKey(string $userIdentifier, string $channel): string
     {
-        return self::CACHE_PREFIX . 'user_app:' . md5($userIdentifier . ':' . $channel);
+        return self::CACHE_PREFIX.'user_app:'.md5($userIdentifier.':'.$channel);
     }
 
     /**
@@ -277,7 +283,7 @@ class ApplicationCacheManager
      */
     private function getFormConfigKey(string $formId): string
     {
-        return self::CACHE_PREFIX . 'form_config:' . $formId;
+        return self::CACHE_PREFIX.'form_config:'.$formId;
     }
 
     /**
@@ -285,7 +291,7 @@ class ApplicationCacheManager
      */
     private function getBusinessProductsKey(): string
     {
-        return self::CACHE_PREFIX . 'business_products';
+        return self::CACHE_PREFIX.'business_products';
     }
 
     /**
@@ -293,7 +299,7 @@ class ApplicationCacheManager
      */
     private function getStatisticsKey(): string
     {
-        return self::CACHE_PREFIX . 'statistics';
+        return self::CACHE_PREFIX.'statistics';
     }
 
     /**
@@ -301,7 +307,7 @@ class ApplicationCacheManager
      */
     private function getReferenceCodeKey(string $referenceCode): string
     {
-        return self::CACHE_PREFIX . 'ref_code:' . $referenceCode;
+        return self::CACHE_PREFIX.'ref_code:'.$referenceCode;
     }
 
     /**
@@ -313,12 +319,12 @@ class ApplicationCacheManager
             if (config('cache.default') === 'redis') {
                 $redis = Cache::getRedis();
                 $keys = $redis->keys($pattern);
-                if (!empty($keys)) {
+                if (! empty($keys)) {
                     $redis->del($keys);
                 }
             } else {
                 // For other cache drivers, we can't easily clear by pattern
-                Log::warning('Pattern-based cache clearing not supported for driver: ' . config('cache.default'));
+                Log::warning('Pattern-based cache clearing not supported for driver: '.config('cache.default'));
             }
         } catch (\Exception $e) {
             Log::error('Failed to clear cache by pattern', [
