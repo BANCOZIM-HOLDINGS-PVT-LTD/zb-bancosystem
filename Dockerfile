@@ -118,4 +118,4 @@ RUN chmod +x /entrypoint.sh
 EXPOSE 80
 
 # Start via entrypoint (handles caches then supervisord)
-CMD ["/entrypoint.sh"]
+CMD ["/bin/sh", "/entrypoint.sh"]
