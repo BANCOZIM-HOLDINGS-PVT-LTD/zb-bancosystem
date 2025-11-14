@@ -22,3 +22,32 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Mac OS
+.DS_Store
+__MACOSX
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Temporary documentation files
+*_IMPLEMENTATION.md
+*_PROGRESS.md
+*_STATUS.md
+*_COMPLETE.md
+*_FIX.md
+*_FIXES.md
+*_INSTRUCTIONS.md
+*_TESTING.md
+*_CREDENTIALS.md
+*_FLOW.md
+
+# Backup directories and test files
+filament_backup/
+*_backup/
+check-uploads.php
+sync-storage.php
+test-*.php
+notes.txt
+deploy-cpanel.md

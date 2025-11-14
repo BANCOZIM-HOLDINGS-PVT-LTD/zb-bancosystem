@@ -31,7 +31,9 @@
       "Bash(git push:*)",
       "Bash(flyctl logs:*)",
       "Bash(flyctl ssh console:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git rm:*)",
+      "Bash(xargs git rm:*)"
     ],
     "deny": []
   }
