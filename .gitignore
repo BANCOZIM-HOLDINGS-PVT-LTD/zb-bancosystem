@@ -51,3 +51,18 @@ sync-storage.php
 test-*.php
 notes.txt
 deploy-cpanel.md
+
+# PowerShell scripts
+*.ps1
+
+# AI agent files
+.kiro/
+scripts/ai-agents/
+
+# Deployment and docs
+FLYIO_DEPLOYMENT.md
+APPLICATION_RUNNING.md
+docs/
+
+# Mac OS artifacts
+__MACOSX/

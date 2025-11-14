@@ -1,20 +1,57 @@
 # Exclude local dev artifacts and large directories from Docker build context
 .git
 .gitignore
+.gitattributes
 node_modules
-vendor
 storage
 bootstrap/cache
-public/build
 .env
 .env.*
 .idea
 .vscode
+.nova
+.fleet
+.zed
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
 
 # OS/Editor files
 .DS_Store
 Thumbs.db
+__MACOSX
+Desktop.ini
+
+# Tests and development
+tests
+phpunit.xml
+.phpunit.cache
+.phpunit.result.cache
+
+# Documentation and notes
+*.md
+!README.md
+!docker/*.md
+notes.txt
+
+# Backup files
+*_backup/
+filament_backup/
+*.bak
+*.backup
+
+# Deployment scripts
+deploy-*.md
+*.ps1
+!docker/*.ps1
+
+# Temporary files
+check-uploads.php
+sync-storage.php
+test-*.php
+
+# IDE files
+.phpactor.json
+auth.json
 
