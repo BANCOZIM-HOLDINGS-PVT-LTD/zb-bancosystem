@@ -97,14 +97,19 @@ COPY docker/php-fpm-main.conf /usr/local/etc/php-fpm.conf
 COPY docker/www.conf /usr/local/etc/php-fpm.d/www.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Create necessary directories
+# Create necessary directories and set permissions
 RUN mkdir -p /var/log/nginx \
     && mkdir -p /var/log/supervisor \
     && mkdir -p /run/nginx \
     && mkdir -p /var/www/html/storage/logs \
     && mkdir -p /var/www/html/storage/framework/cache \
     && mkdir -p /var/www/html/storage/framework/sessions \
-    && mkdir -p /var/www/html/storage/framework/views
+    && mkdir -p /var/www/html/storage/framework/views \
+    && chown -R www:www /var/www/html/storage \
+    && chown -R www:www /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage \
+    && chmod -R 775 /var/www/html/bootstrap/cache \
+    && chown -R www:www /run/nginx
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

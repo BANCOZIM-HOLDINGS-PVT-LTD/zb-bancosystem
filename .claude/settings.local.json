@@ -33,7 +33,13 @@
       "Bash(flyctl ssh console:*)",
       "Bash(git add:*)",
       "Bash(git rm:*)",
-      "Bash(xargs git rm:*)"
+      "Bash(xargs git rm:*)",
+      "Bash(flyctl status:*)",
+      "Bash(flyctl machine start:*)",
+      "Bash(flyctl secrets set:*)",
+      "Bash(flyctl secrets list:*)",
+      "Bash(flyctl secrets unset:*)",
+      "Bash(flyctl scale:*)"
     ],
     "deny": []
   }
