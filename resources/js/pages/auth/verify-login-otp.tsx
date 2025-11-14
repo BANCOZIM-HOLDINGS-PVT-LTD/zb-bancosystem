@@ -52,7 +52,7 @@ export default function VerifyLoginOtp({ phone, maskedPhone }: VerifyLoginOtpPro
         if (digit.length > 1) {
             // If pasting multiple digits, distribute them
             const digits = digit.slice(0, 6).split('');
-            let newOtp = data.otp.split('');
+            const newOtp = data.otp.split('');
 
             digits.forEach((d, i) => {
                 if (index + i < 6) {

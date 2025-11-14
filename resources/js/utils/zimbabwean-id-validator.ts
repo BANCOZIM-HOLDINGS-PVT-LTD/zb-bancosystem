@@ -52,7 +52,7 @@ export function validateZimbabweanID(id: string): ZimbabweanIDValidationResult {
   // Pattern 2: Without dashes (XXXXXXXXXXXX or XXXXXXXXXXX)
   const patternWithoutDashes = /^(\d{2})(\d{6,7})([A-Z])(\d{2})$/;
 
-  let match = cleanedId.match(patternWithDashes) || cleanedId.match(patternWithoutDashes);
+  const match = cleanedId.match(patternWithDashes) || cleanedId.match(patternWithoutDashes);
 
   if (!match) {
     return {
