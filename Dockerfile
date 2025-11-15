@@ -82,6 +82,9 @@ COPY . .
 # Copy built frontend assets from frontend-builder stage
 COPY --from=frontend-builder /app/public/build ./public/build
 
+# Remove Vite hot file if it exists (tells Laravel to use dev server instead of built assets)
+RUN rm -f public/hot
+
 # Create a minimal .env file for Laravel (actual config comes from Fly.io environment variables)
 # We only set non-critical defaults here - Fly.io secrets will override these
 RUN touch .env

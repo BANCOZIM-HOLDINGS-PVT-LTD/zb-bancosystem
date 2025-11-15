@@ -12,6 +12,7 @@ storage/app/public/
 bootstrap/cache/
 public/storage/
 public/build/
+public/hot
 database/database.sqlite
 .env
 .env.*
