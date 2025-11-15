@@ -38,7 +38,7 @@ class ClientRegisterController extends Controller
             'national_id' => [
                 'required',
                 'string',
-                'regex:/^[0-9]{2}-[0-9]{6,7}[A-Z][0-9]{2}$/', // Zimbabwe National ID format: 63-123456A12
+                'regex:/^[0-9]{2}-[0-9]{6,7}-[A-Z]-[0-9]{2}$/', // Zimbabwe National ID format: XX-XXXXXXX-Y-XX
                 'unique:users,national_id'
             ],
             'phone' => [
@@ -48,7 +48,7 @@ class ClientRegisterController extends Controller
                 'unique:users,phone'
             ],
         ], [
-            'national_id.regex' => 'Please enter a valid Zimbabwe National ID (e.g., 63-123456A12)',
+            'national_id.regex' => 'Please enter a valid Zimbabwe National ID (e.g., 08-2047823-Q-29)',
             'national_id.unique' => 'This National ID is already registered',
             'phone.regex' => 'Please enter a valid Zimbabwe phone number (e.g., +263771234567)',
             'phone.unique' => 'This phone number is already registered',

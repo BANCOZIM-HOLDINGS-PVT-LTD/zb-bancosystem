@@ -163,7 +163,7 @@ export default function Welcome({ hasApplications }: WelcomeProps) {
                                             className="group w-full p-8 text-center rounded-lg border border-[#e3e3e0] transition-all hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-lg dark:border-[#3E3E3A] dark:hover:border-emerald-500 dark:hover:bg-emerald-950/20"
                                         >
                                             <h3 className="text-xl font-semibold mb-2 group-hover:text-emerald-600">Proceed</h3>
-                                            <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">Let's get started with your application</p>
+                                            <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">Let's get started</p>
                                             <ChevronRight className="mx-auto mt-4 h-6 w-6 text-gray-400 group-hover:text-emerald-600" />
                                         </button>
                                     </div>
@@ -177,7 +177,7 @@ export default function Welcome({ hasApplications }: WelcomeProps) {
                                             {selectedLang?.greeting}
                                         </h1>
                                         <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                            Please login or register to continue
+                                            Please register or login to continue
                                         </p>
                                         <button
                                             onClick={() => setCurrentStep('language')}

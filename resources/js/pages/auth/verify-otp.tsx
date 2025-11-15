@@ -19,7 +19,7 @@ export default function VerifyOtp({ phone, maskedPhone }: VerifyOtpProps) {
         otp: '',
     });
 
-    const [resendCooldown, setResendCooldown] = useState(0);
+    const [resendCooldown, setResendCooldown] = useState(60); // Start with 60 second cooldown
     const [resending, setResending] = useState(false);
     const [resendMessage, setResendMessage] = useState('');
 

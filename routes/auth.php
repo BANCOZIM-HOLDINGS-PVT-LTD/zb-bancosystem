@@ -3,13 +3,8 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ClientLoginController;
 use App\Http\Controllers\Auth\ClientRegisterController;
-use App\Http\Controllers\Auth\ConfirmablePasswordController;
-use App\Http\Controllers\Auth\EmailVerificationNotificationController;
-use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -27,27 +22,13 @@ Route::middleware('guest')->group(function () {
     Route::post('client/resend-otp', [ClientRegisterController::class, 'resendOtp'])
         ->name('client.otp.resend');
 
-    // Client Login (National ID + OTP)
+    // Client Login (National ID only)
     Route::get('client/login', [ClientLoginController::class, 'create'])
         ->name('client.login');
 
     Route::post('client/login', [ClientLoginController::class, 'store']);
 
-    Route::get('client/login/verify-otp', [ClientLoginController::class, 'showOtpForm'])
-        ->name('client.login.otp');
-
-    Route::post('client/login/verify-otp', [ClientLoginController::class, 'verifyOtp'])
-        ->name('client.login.otp.verify');
-
-    Route::post('client/login/resend-otp', [ClientLoginController::class, 'resendOtp'])
-        ->name('client.login.otp.resend');
-
-    // Admin Registration & Login (Email + Password) - Keep existing
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
-
-    Route::post('register', [RegisteredUserController::class, 'store']);
-
+    // Admin Login (Email + Password) - For admin access only
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
@@ -67,22 +48,6 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('verify-email', EmailVerificationPromptController::class)
-        ->name('verification.notice');
-
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
-
-    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-        ->middleware('throttle:6,1')
-        ->name('verification.send');
-
-    Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
-        ->name('password.confirm');
-
-    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
-
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
 });

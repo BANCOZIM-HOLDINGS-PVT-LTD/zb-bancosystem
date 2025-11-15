@@ -25,6 +25,10 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->id('admin')
             ->path('admin')
+            ->brandName('BancoSystem')
+            ->brandLogo(asset('adala.jpg'))
+            ->brandLogoHeight('3rem')
+            ->favicon(asset('adala.jpg'))
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -36,8 +40,9 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                // Remove FilamentInfoWidget to clean up dashboard
             ])
+            ->sidebarCollapsibleOnDesktop()
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

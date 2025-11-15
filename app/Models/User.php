@@ -3,11 +3,13 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
@@ -27,6 +29,7 @@ class User extends Authenticatable
         'phone_verified_at',
         'otp_code',
         'otp_expires_at',
+        'is_admin',
     ];
 
     /**
@@ -53,6 +56,7 @@ class User extends Authenticatable
             'otp_expires_at' => 'datetime',
             'password' => 'hashed',
             'phone_verified' => 'boolean',
+            'is_admin' => 'boolean',
         ];
     }
 
@@ -84,6 +88,24 @@ class User extends Authenticatable
                 'otp_expires_at' => null,
             ]);
 
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Determine if the user can access the Filament admin panel
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // Allow access if user is marked as admin
+        if ($this->is_admin) {
+            return true;
+        }
+
+        // Allow access if user has an admin email domain
+        if ($this->email && str_ends_with($this->email, '@bancosystem.fly.dev')) {
             return true;
         }
 

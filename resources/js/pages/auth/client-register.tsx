@@ -1,6 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useState } from 'react';
 
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
+import { validateZimbabweanID } from '@/utils/zimbabwean-id-validator';
 
 type ClientRegisterForm = {
     national_id: string;
@@ -20,8 +21,18 @@ export default function ClientRegister() {
         phone: '+263',
     });
 
+    const [idValidationError, setIdValidationError] = useState<string>('');
+
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
+
+        // Validate ID before submitting
+        const validation = validateZimbabweanID(data.national_id);
+        if (!validation.valid) {
+            setIdValidationError(validation.message || 'Invalid National ID');
+            return;
+        }
+
         post(route('client.register'), {
             onFinish: () => reset('phone'),
         });
@@ -31,19 +42,39 @@ export default function ClientRegister() {
         // Remove any non-alphanumeric characters
         const cleaned = value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
 
-        // Format as XX-XXXXXXXX
+        // Format as XX-XXXXXXX-Y-XX (Zimbabwe ID format)
+        let formatted = '';
+
         if (cleaned.length <= 2) {
-            return cleaned;
+            formatted = cleaned;
         } else if (cleaned.length <= 9) {
-            return `${cleaned.slice(0, 2)}-${cleaned.slice(2)}`;
+            formatted = `${cleaned.slice(0, 2)}-${cleaned.slice(2)}`;
+        } else if (cleaned.length <= 10) {
+            formatted = `${cleaned.slice(0, 2)}-${cleaned.slice(2, 9)}-${cleaned.slice(9)}`;
+        } else if (cleaned.length <= 12) {
+            formatted = `${cleaned.slice(0, 2)}-${cleaned.slice(2, 9)}-${cleaned.slice(9, 10)}-${cleaned.slice(10)}`;
         } else {
-            return `${cleaned.slice(0, 2)}-${cleaned.slice(2, 9)}${cleaned.slice(9)}`;
+            formatted = `${cleaned.slice(0, 2)}-${cleaned.slice(2, 9)}-${cleaned.slice(9, 10)}-${cleaned.slice(10, 12)}`;
         }
+
+        return formatted;
     };
 
     const handleNationalIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const formatted = formatNationalId(e.target.value);
         setData('national_id', formatted);
+
+        // Real-time validation
+        if (formatted.length >= 11) {
+            const validation = validateZimbabweanID(formatted);
+            if (!validation.valid) {
+                setIdValidationError(validation.message || 'Invalid National ID');
+            } else {
+                setIdValidationError('');
+            }
+        } else {
+            setIdValidationError('');
+        }
     };
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,7 +101,7 @@ export default function ClientRegister() {
             title="Register"
             description="Enter your National ID and phone number to register"
         >
-            <Head title="Client Registration" />
+            <Head title="Register" />
             <form className="flex flex-col gap-6" onSubmit={submit}>
                 <div className="grid gap-6">
                     <div className="grid gap-2">
@@ -84,12 +115,15 @@ export default function ClientRegister() {
                             value={data.national_id}
                             onChange={handleNationalIdChange}
                             disabled={processing}
-                            placeholder="63-123456A12"
-                            maxLength={13}
+                            placeholder="08-2047823-Q-29"
+                            maxLength={15}
                         />
                         <p className="text-xs text-muted-foreground">
-                            Enter your Zimbabwe National ID (e.g., 63-123456A12)
+                            Format: XX-XXXXXXX-Y-XX (e.g., 08-2047823-Q-29)
                         </p>
+                        {idValidationError && (
+                            <p className="text-xs text-destructive">{idValidationError}</p>
+                        )}
                         <InputError message={errors.national_id} />
                     </div>
 
