@@ -67,8 +67,8 @@ export default function ClientRegister() {
 
     return (
         <AuthLayout
-            title="Register for Loan"
-            description="Enter your National ID and phone number to get started"
+            title="Register"
+            description="Enter your National ID and phone number to register"
         >
             <Head title="Client Registration" />
             <form className="flex flex-col gap-6" onSubmit={submit}>

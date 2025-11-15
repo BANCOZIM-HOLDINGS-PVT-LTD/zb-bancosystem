@@ -22,15 +22,15 @@ primary_region = "jnb" # Johannesburg, closest to Zimbabwe
   processes = ["app"]
 
   [[http_service.checks]]
-    grace_period = "30s"
-    interval = "15s"
+    grace_period = "60s"
+    interval = "30s"
     method = "GET"
-    timeout = "10s"
+    timeout = "15s"
     path = "/health"
 
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "512mb"
+  memory = "1gb"
 
 [[statics]]
   guest_path = "/var/www/html/public"
