@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
 
         // Seed the product catalog and agents
         $this->call([
+            AdminUserSeeder::class, // Create admin user first
             ProductCatalogSeeder::class,
             PersonalProductsSeeder::class, // Personal products for hire purchase
             AgentSeeder::class,
