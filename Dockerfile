@@ -82,13 +82,9 @@ COPY . .
 # Copy built frontend assets from frontend-builder stage
 COPY --from=frontend-builder /app/public/build ./public/build
 
-# Create a minimal .env file (environment variables will be injected by Fly.io)
-RUN echo "APP_NAME=BancoSystem" > .env \
-    && echo "APP_ENV=production" >> .env \
-    && echo "APP_DEBUG=false" >> .env \
-    && echo "APP_KEY=" >> .env \
-    && echo "LOG_CHANNEL=stack" >> .env \
-    && echo "LOG_LEVEL=error" >> .env
+# Create a minimal .env file for Laravel (actual config comes from Fly.io environment variables)
+# We only set non-critical defaults here - Fly.io secrets will override these
+RUN touch .env
 
 # Create directories and set permissions
 RUN mkdir -p storage/framework/{cache,sessions,views} \
