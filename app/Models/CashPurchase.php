@@ -32,6 +32,11 @@ class CashPurchase extends Model
         'city',
         'region',
         'delivery_fee',
+        // MicroBiz Add-ons
+        'includes_me_system',
+        'me_system_fee',
+        'includes_training',
+        'training_fee',
         // Payment
         'payment_method',
         'amount_paid',
@@ -51,7 +56,11 @@ class CashPurchase extends Model
         'cash_price' => 'decimal:2',
         'loan_price' => 'decimal:2',
         'delivery_fee' => 'decimal:2',
+        'me_system_fee' => 'decimal:2',
+        'training_fee' => 'decimal:2',
         'amount_paid' => 'decimal:2',
+        'includes_me_system' => 'boolean',
+        'includes_training' => 'boolean',
         'status_history' => 'array',
         'paid_at' => 'datetime',
         'dispatched_at' => 'datetime',

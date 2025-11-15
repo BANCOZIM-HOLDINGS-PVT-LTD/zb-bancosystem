@@ -25,6 +25,9 @@ interface CheckoutStepProps {
 
 type PaymentMethod = 'ecocash' | 'onemoney' | 'card';
 
+const ME_SYSTEM_FEE = 9.99;
+const TRAINING_PERCENTAGE = 0.055; // 5.5%
+
 export default function CheckoutStep({ data, onComplete, onBack, loading, error }: CheckoutStepProps) {
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
     const [nationalId, setNationalId] = useState('');
@@ -43,8 +46,8 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
     const isMicrobiz = product.category === 'microbiz';
     const includesMESystem = isMicrobiz && delivery.includesMESystem;
     const includesTraining = isMicrobiz && delivery.includesTraining;
-    const meSystemFee = includesMESystem ? 50 : 0;
-    const trainingFee = includesTraining ? 30 : 0;
+    const meSystemFee = includesMESystem ? ME_SYSTEM_FEE : 0;
+    const trainingFee = includesTraining ? (product.cashPrice * TRAINING_PERCENTAGE) : 0;
     const deliveryFee = delivery.type === 'swift' ? 10 : 0;
     const totalAmount = product.cashPrice + meSystemFee + trainingFee + deliveryFee;
 

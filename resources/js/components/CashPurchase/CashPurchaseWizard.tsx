@@ -32,6 +32,8 @@ export interface CashPurchaseData {
         address?: string;
         city?: string;
         region?: string;
+        includesMESystem?: boolean;
+        includesTraining?: boolean;
     };
     customer?: {
         nationalId: string;

@@ -37,6 +37,11 @@ export default function SummaryStep({ data, onNext, onBack }: SummaryStepProps) 
             meSystemFee,
             includesTraining,
             trainingFee,
+            delivery: {
+                ...delivery,
+                includesMESystem,
+                includesTraining,
+            },
         });
     };
 

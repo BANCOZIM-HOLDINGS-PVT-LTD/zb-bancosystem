@@ -58,6 +58,8 @@ class CashPurchaseController extends Controller
                 'delivery.address' => 'required_if:delivery.type,swift|nullable|string',
                 'delivery.city' => 'required_if:delivery.type,swift|nullable|string',
                 'delivery.region' => 'required_if:delivery.type,gain_outlet|nullable|string',
+                'delivery.includesMESystem' => 'nullable|boolean',
+                'delivery.includesTraining' => 'nullable|boolean',
 
                 // Customer
                 'customer.nationalId' => 'required|string',
@@ -97,6 +99,14 @@ class CashPurchaseController extends Controller
             // Calculate delivery fee
             $deliveryFee = $data['delivery']['type'] === 'swift' ? 10.00 : 0.00;
 
+            // Calculate M&E and Training fees for MicroBiz purchases
+            $isMicrobiz = $data['purchaseType'] === 'microbiz';
+            $includesMESystem = $isMicrobiz && ($data['delivery']['includesMESystem'] ?? false);
+            $includesTraining = $isMicrobiz && ($data['delivery']['includesTraining'] ?? false);
+
+            $meSystemFee = $includesMESystem ? 9.99 : 0.00;
+            $trainingFee = $includesTraining ? ($data['product']['cashPrice'] * 0.055) : 0.00;
+
             // Verify the product exists and get details
             $product = Product::find($data['product']['id']);
             if (!$product) {
@@ -131,6 +141,12 @@ class CashPurchaseController extends Controller
                 'city' => $data['delivery']['city'] ?? null,
                 'region' => $data['delivery']['region'] ?? null,
                 'delivery_fee' => $deliveryFee,
+
+                // MicroBiz Add-ons
+                'includes_me_system' => $includesMESystem,
+                'me_system_fee' => $meSystemFee,
+                'includes_training' => $includesTraining,
+                'training_fee' => $trainingFee,
 
                 // Payment
                 'payment_method' => $data['payment']['method'],
