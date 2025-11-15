@@ -495,7 +495,6 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                     <SelectItem value="Home Affairs and Cultural Heritage">Home Affairs and Cultural Heritage</SelectItem>
                                     <SelectItem value="Justice">Justice</SelectItem>
                                     <SelectItem value="Agriculture">Agriculture</SelectItem>
-                                    <SelectItem value="Defence">Defence</SelectItem>
                                     <SelectItem value="Energy and Power Development">Energy and Power Development</SelectItem>
                                     <SelectItem value="Environment">Environment</SelectItem>
                                     <SelectItem value="Finance and Economic Development">Finance and Economic Development</SelectItem>
