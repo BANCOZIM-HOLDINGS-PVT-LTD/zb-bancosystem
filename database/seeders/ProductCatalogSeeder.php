@@ -12,33 +12,37 @@ class ProductCatalogSeeder extends Seeder
      */
     public function run(): void
     {
+        // 22 MicroBiz Main Categories (Airtime and Delivery Services are now separate)
         $categories = [
+            ['id' => 'agric-mechanization', 'name' => 'Agric mechanization', 'emoji' => '🚜'],
             ['id' => 'agriculture', 'name' => 'Agriculture', 'emoji' => '🌾'],
-            ['id' => 'animal-husbandry', 'name' => 'Animal Husbandry', 'emoji' => '🐄'],
-            ['id' => 'catering', 'name' => 'Catering', 'emoji' => '🍽️'],
-            ['id' => 'construction', 'name' => 'Construction', 'emoji' => '🔨'],
-            ['id' => 'entertainment', 'name' => 'Entertainment', 'emoji' => '🎵'],
-            ['id' => 'events-hire', 'name' => 'Events Hire', 'emoji' => '🎉'],
-            ['id' => 'hair-grooming', 'name' => 'Hair & Grooming', 'emoji' => '💇'],
-            ['id' => 'home-industry-manufacturing', 'name' => 'Home Industry Manufacturing', 'emoji' => '🏭'],
-            ['id' => 'farming-machinery', 'name' => 'Farming Machinery', 'emoji' => '🚜'],
+            ['id' => 'cleaning-services', 'name' => 'Cleaning Services', 'emoji' => '🧹'],
+            ['id' => 'beauty-hair-cosmetics', 'name' => 'Beauty, Hair and Cosmetics', 'emoji' => '💇'],
+            ['id' => 'food-production', 'name' => 'Food Production', 'emoji' => '🍞'],
+            ['id' => 'butchery', 'name' => 'Butchery', 'emoji' => '🥩'],
+            ['id' => 'events-management', 'name' => 'Events Management', 'emoji' => '🎉'],
+            ['id' => 'snack-production', 'name' => 'Snack Production', 'emoji' => '🍿'],
             ['id' => 'food-processing', 'name' => 'Food Processing', 'emoji' => '🥜'],
-            ['id' => 'meat-processing', 'name' => 'Meat Processing', 'emoji' => '🥩'],
-            ['id' => 'mining', 'name' => 'Mining', 'emoji' => '⛏️'],
+            ['id' => 'entertainment', 'name' => 'Entertainment', 'emoji' => '🎮'],
             ['id' => 'printing', 'name' => 'Printing', 'emoji' => '🖨️'],
-            ['id' => 'professional-services-equipment', 'name' => 'Professional Services Equipment', 'emoji' => '💼'],
-            ['id' => 'retail-shop', 'name' => 'Retail Shop', 'emoji' => '🛍️'],
+            ['id' => 'digital-multimedia', 'name' => 'Digital Multimedia Production', 'emoji' => '📸'],
             ['id' => 'tailoring', 'name' => 'Tailoring', 'emoji' => '✂️'],
-            ['id' => 'trade-services', 'name' => 'Trade Services', 'emoji' => '📱'],
-            ['id' => 'vehicle', 'name' => 'Vehicle', 'emoji' => '🚗'],
-            ['id' => 'vocation', 'name' => 'Vocation', 'emoji' => '🎓'],
-            ['id' => 'wedding-attire-hire', 'name' => 'Wedding Attire Hire', 'emoji' => '💒'],
+            ['id' => 'building-construction', 'name' => 'Building & Construction', 'emoji' => '🔨'],
+            ['id' => 'business-licensing', 'name' => 'Business Licensing', 'emoji' => '📄'],
+            ['id' => 'small-scale-mining', 'name' => 'Small scale mining hire', 'emoji' => '⛏️'],
+            ['id' => 'tuck-shop', 'name' => 'Tuck shop', 'emoji' => '🛍️'],
+            ['id' => 'retail', 'name' => 'Retail', 'emoji' => '🏪'],
+            ['id' => 'airtime', 'name' => 'Airtime', 'emoji' => '📱'],
+            ['id' => 'delivery-services', 'name' => 'Delivery Services', 'emoji' => '🏍️'],
+            ['id' => 'motor-vehicle', 'name' => 'Motor vehicle', 'emoji' => '🚗'],
+            ['id' => 'key-replacement', 'name' => 'Key Replacement', 'emoji' => '🔑'],
         ];
 
         foreach ($categories as $categoryData) {
             $categoryId = DB::table('product_categories')->insertGetId([
                 'name' => $categoryData['name'],
                 'emoji' => $categoryData['emoji'],
+                'type' => 'microbiz',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -90,156 +94,157 @@ class ProductCatalogSeeder extends Seeder
     private function getSubcategoriesForCategory(string $categoryId): array
     {
         $allSubcategories = [
+            // 1. Agric mechanization
+            'agric-mechanization' => [
+                ['name' => 'Maize sheller', 'businesses' => $this->getBusinessesForSubcategory('Maize sheller')],
+                ['name' => 'Water storage and pumping systems', 'businesses' => $this->getBusinessesForSubcategory('Water storage and pumping systems')],
+                ['name' => 'Tractors', 'businesses' => $this->getBusinessesForSubcategory('Tractors')],
+                ['name' => 'Irrigation systems', 'businesses' => $this->getBusinessesForSubcategory('Irrigation systems')],
+                ['name' => 'Land security', 'businesses' => $this->getBusinessesForSubcategory('Land security')],
+                ['name' => 'Incubation', 'businesses' => $this->getBusinessesForSubcategory('Incubation')],
+                ['name' => 'Greenhouses', 'businesses' => $this->getBusinessesForSubcategory('Greenhouses')],
+                ['name' => 'Tobacco bailing machine', 'businesses' => $this->getBusinessesForSubcategory('Tobacco bailing machine')],
+            ],
+            // 2. Agriculture
             'agriculture' => [
-                ['name' => 'Cash Crops', 'businesses' => $this->getBusinessesForSubcategory('Cash Crops')],
+                ['name' => 'Cash crop production', 'businesses' => $this->getBusinessesForSubcategory('Cash crop production')],
+                ['name' => 'Supplementary inputs', 'businesses' => $this->getBusinessesForSubcategory('Supplementary inputs')],
+                ['name' => 'Broiler production', 'businesses' => $this->getBusinessesForSubcategory('Broiler production')],
+                ['name' => 'Egg hatching & incubation', 'businesses' => $this->getBusinessesForSubcategory('Egg hatching & incubation')],
             ],
-            'animal-husbandry' => [
-                ['name' => 'Livestock & Poultry', 'businesses' => $this->getBusinessesForSubcategory('Livestock & Poultry')],
-            ],
-            'catering' => [
-                ['name' => 'Food Services', 'businesses' => $this->getBusinessesForSubcategory('Food Services')],
-            ],
-            'construction' => [
-                ['name' => 'Trade Tools', 'businesses' => $this->getBusinessesForSubcategory('Trade Tools')],
-            ],
-            'entertainment' => [
-                ['name' => 'Musical Instruments Hire', 'businesses' => $this->getBusinessesForSubcategory('Musical Instruments Hire')],
-                ['name' => 'PA System', 'businesses' => $this->getBusinessesForSubcategory('PA System')],
-                ['name' => 'Snooker Table', 'businesses' => $this->getBusinessesForSubcategory('Snooker Table')],
-                ['name' => 'Slug Table', 'businesses' => $this->getBusinessesForSubcategory('Slug Table')],
-            ],
-            'events-hire' => [
-                ['name' => 'Chairs & table', 'businesses' => $this->getBusinessesForSubcategory('Chairs & table')],
-                ['name' => 'Tent', 'businesses' => $this->getBusinessesForSubcategory('Tent')],
-                ['name' => 'Decor', 'businesses' => $this->getBusinessesForSubcategory('Decor')],
-                ['name' => 'Red Carpet and accessories', 'businesses' => $this->getBusinessesForSubcategory('Red Carpet and accessories')],
-                ['name' => 'Portable Toilet Hire', 'businesses' => $this->getBusinessesForSubcategory('Portable Toilet Hire')],
-                ['name' => 'Interactive Big Screen Monitors', 'businesses' => $this->getBusinessesForSubcategory('Interactive Big Screen Monitors')],
-            ],
-            'hair-grooming' => [
-                ['name' => 'Barber', 'businesses' => $this->getBusinessesForSubcategory('Barber')],
-                ['name' => 'Hair Salon', 'businesses' => $this->getBusinessesForSubcategory('Hair Salon')],
-                ['name' => 'Nail Installation', 'businesses' => $this->getBusinessesForSubcategory('Nail Installation')],
-            ],
-            'home-industry-manufacturing' => [
-                ['name' => 'Detergent Chemicals', 'businesses' => $this->getBusinessesForSubcategory('Detergent Chemicals')],
-                ['name' => 'Fence Making', 'businesses' => $this->getBusinessesForSubcategory('Fence Making')],
-                ['name' => 'Furniture –Carpentry', 'businesses' => $this->getBusinessesForSubcategory('Furniture –Carpentry')],
-                ['name' => 'Soap production', 'businesses' => $this->getBusinessesForSubcategory('Soap production')],
-                ['name' => 'Ice Making', 'businesses' => $this->getBusinessesForSubcategory('Ice Making')],
-                ['name' => 'Welding', 'businesses' => $this->getBusinessesForSubcategory('Welding')],
-            ],
-            'farming-machinery' => [
-                ['name' => 'Egg Incubator', 'businesses' => $this->getBusinessesForSubcategory('Egg Incubator')],
-                ['name' => 'Indigenous Agric Pack', 'businesses' => $this->getBusinessesForSubcategory('Indigenous Agric Pack')],
-                ['name' => 'Grinding Mill', 'businesses' => $this->getBusinessesForSubcategory('Grinding Mill')],
-                ['name' => 'Green House', 'businesses' => $this->getBusinessesForSubcategory('Green House')],
-                ['name' => 'Farm Security', 'businesses' => $this->getBusinessesForSubcategory('Farm Security')],
-                ['name' => 'Micro Irrigation Systems', 'businesses' => $this->getBusinessesForSubcategory('Micro Irrigation Systems')],
-                ['name' => 'Tractors & accessories', 'businesses' => $this->getBusinessesForSubcategory('Tractors & accessories')],
-            ],
-            'food-processing' => [
-                ['name' => 'Cooking Oil Production', 'businesses' => $this->getBusinessesForSubcategory('Cooking Oil Production')],
-                ['name' => 'Dry Food Repackaging', 'businesses' => $this->getBusinessesForSubcategory('Dry Food Repackaging')],
-                ['name' => 'Freezit making', 'businesses' => $this->getBusinessesForSubcategory('Freezit making')],
-                ['name' => 'Maputi production', 'businesses' => $this->getBusinessesForSubcategory('Maputi production')],
-                ['name' => 'Peanut Butter Making', 'businesses' => $this->getBusinessesForSubcategory('Peanut Butter Making')],
-                ['name' => 'Roasted Corn/Peanuts', 'businesses' => $this->getBusinessesForSubcategory('Roasted Corn/Peanuts')],
-            ],
-            'meat-processing' => [
-                ['name' => 'Butchery', 'businesses' => $this->getBusinessesForSubcategory('Butchery')],
-                ['name' => 'Meat Cutter', 'businesses' => $this->getBusinessesForSubcategory('Meat Cutter')],
-                ['name' => 'Mince Making', 'businesses' => $this->getBusinessesForSubcategory('Mince Making')],
-                ['name' => 'Sausage Production', 'businesses' => $this->getBusinessesForSubcategory('Sausage Production')],
-            ],
-            'mining' => [
-                ['name' => 'Water Extraction', 'businesses' => $this->getBusinessesForSubcategory('Water Extraction')],
-                ['name' => 'Drilling', 'businesses' => $this->getBusinessesForSubcategory('Drilling')],
-                ['name' => 'Industrial generators', 'businesses' => $this->getBusinessesForSubcategory('Industrial generators')],
-            ],
-            'printing' => [
-                ['name' => 'Mugs-Cup', 'businesses' => $this->getBusinessesForSubcategory('Mugs-Cup')],
-                ['name' => 'Vehicle Branding', 'businesses' => $this->getBusinessesForSubcategory('Vehicle Branding')],
-                ['name' => 'Digital Printing', 'businesses' => $this->getBusinessesForSubcategory('Digital Printing')],
-                ['name' => 'D.T.F Printing', 'businesses' => $this->getBusinessesForSubcategory('D.T.F Printing')],
-                ['name' => 'Screen Printing', 'businesses' => $this->getBusinessesForSubcategory('Screen Printing')],
-                ['name' => 'Plans printing', 'businesses' => $this->getBusinessesForSubcategory('Plans printing')],
-                ['name' => 'T Shirt & Cap Printing', 'businesses' => $this->getBusinessesForSubcategory('T Shirt & Cap Printing')],
-                ['name' => 'Photocopy', 'businesses' => $this->getBusinessesForSubcategory('Photocopy')],
-                ['name' => 'Photo printing instant', 'businesses' => $this->getBusinessesForSubcategory('Photo printing instant')],
-            ],
-            'professional-services-equipment' => [
-                ['name' => 'Bar', 'businesses' => $this->getBusinessesForSubcategory('Bar')],
-                ['name' => 'Butchery', 'businesses' => $this->getBusinessesForSubcategory('Butchery')],
-                ['name' => 'Car key programming', 'businesses' => $this->getBusinessesForSubcategory('Car key programming')],
-                ['name' => 'Cell repair', 'businesses' => $this->getBusinessesForSubcategory('Cell repair')],
+            // 3. Cleaning Services
+            'cleaning-services' => [
+                ['name' => 'Laundry', 'businesses' => $this->getBusinessesForSubcategory('Laundry')],
                 ['name' => 'Car wash', 'businesses' => $this->getBusinessesForSubcategory('Car wash')],
-                ['name' => 'Cleaning commercial service', 'businesses' => $this->getBusinessesForSubcategory('Cleaning commercial service')],
-                ['name' => 'Internet', 'businesses' => $this->getBusinessesForSubcategory('Internet')],
-                ['name' => 'Gaming', 'businesses' => $this->getBusinessesForSubcategory('Gaming')],
-                ['name' => 'Gas Station', 'businesses' => $this->getBusinessesForSubcategory('Gas Station')],
-                ['name' => 'Grass Cutting', 'businesses' => $this->getBusinessesForSubcategory('Grass Cutting')],
-                ['name' => 'Gymnasium', 'businesses' => $this->getBusinessesForSubcategory('Gymnasium')],
-                ['name' => 'Motor cycle delivery', 'businesses' => $this->getBusinessesForSubcategory('Motor cycle delivery')],
-                ['name' => 'Laptop repairs', 'businesses' => $this->getBusinessesForSubcategory('Laptop repairs')],
-                ['name' => 'Laundry Service', 'businesses' => $this->getBusinessesForSubcategory('Laundry Service')],
-                ['name' => 'Lock Smith Service', 'businesses' => $this->getBusinessesForSubcategory('Lock Smith Service')],
-                ['name' => 'Photography Studio', 'businesses' => $this->getBusinessesForSubcategory('Photography Studio')],
-                ['name' => 'Photo printing', 'businesses' => $this->getBusinessesForSubcategory('Photo printing')],
-                ['name' => 'Pre School', 'businesses' => $this->getBusinessesForSubcategory('Pre School')],
-                ['name' => 'Satellite Dish Installation', 'businesses' => $this->getBusinessesForSubcategory('Satellite Dish Installation')],
-                ['name' => 'Saw Mill', 'businesses' => $this->getBusinessesForSubcategory('Saw Mill')],
-                ['name' => 'Shop Accessories', 'businesses' => $this->getBusinessesForSubcategory('Shop Accessories')],
-                ['name' => 'Shop Fitting', 'businesses' => $this->getBusinessesForSubcategory('Shop Fitting')],
+                ['name' => 'Carpet and fabric', 'businesses' => $this->getBusinessesForSubcategory('Carpet and fabric')],
+            ],
+            // 4. Beauty, Hair and Cosmetics
+            'beauty-hair-cosmetics' => [
+                ['name' => 'Barber', 'businesses' => $this->getBusinessesForSubcategory('Barber')],
+                ['name' => 'Braiding and weaving', 'businesses' => $this->getBusinessesForSubcategory('Braiding and weaving')],
+                ['name' => 'Wig installation', 'businesses' => $this->getBusinessesForSubcategory('Wig installation')],
+                ['name' => 'Nails and makeup', 'businesses' => $this->getBusinessesForSubcategory('Nails and makeup')],
+                ['name' => 'Saloon equipment', 'businesses' => $this->getBusinessesForSubcategory('Saloon equipment')],
+                ['name' => 'Hair Products and Cosmetics Sales', 'businesses' => $this->getBusinessesForSubcategory('Hair Products and Cosmetics Sales')],
+            ],
+            // 5. Food Production
+            'food-production' => [
+                ['name' => 'Baking', 'businesses' => $this->getBusinessesForSubcategory('Baking')],
+                ['name' => 'Catering', 'businesses' => $this->getBusinessesForSubcategory('Catering')],
+                ['name' => 'Mobile food cart', 'businesses' => $this->getBusinessesForSubcategory('Mobile food cart')],
+                ['name' => 'Canteen', 'businesses' => $this->getBusinessesForSubcategory('Canteen')],
+                ['name' => 'Chip and burger fryer', 'businesses' => $this->getBusinessesForSubcategory('Chip and burger fryer')],
+            ],
+            // 6. Butchery
+            'butchery' => [
+                ['name' => 'Butchery equipment', 'businesses' => $this->getBusinessesForSubcategory('Butchery equipment')],
+                ['name' => 'Sausage maker', 'businesses' => $this->getBusinessesForSubcategory('Sausage maker')],
+                ['name' => 'Mincemeat production', 'businesses' => $this->getBusinessesForSubcategory('Mincemeat production')],
+            ],
+            // 7. Events Management
+            'events-management' => [
+                ['name' => 'PA system', 'businesses' => $this->getBusinessesForSubcategory('PA system')],
+                ['name' => 'Chairs and tables & décor', 'businesses' => $this->getBusinessesForSubcategory('Chairs and tables & décor')],
+                ['name' => 'Tents', 'businesses' => $this->getBusinessesForSubcategory('Tents')],
+                ['name' => 'Balloon décor/room décor', 'businesses' => $this->getBusinessesForSubcategory('Balloon décor/room décor')],
+                ['name' => 'Portable toilet hiring', 'businesses' => $this->getBusinessesForSubcategory('Portable toilet hiring')],
+            ],
+            // 8. Snack Production
+            'snack-production' => [
+                ['name' => 'Freezit making', 'businesses' => $this->getBusinessesForSubcategory('Freezit making')],
+                ['name' => 'Maputi making', 'businesses' => $this->getBusinessesForSubcategory('Maputi making')],
+                ['name' => 'Popcorn making', 'businesses' => $this->getBusinessesForSubcategory('Popcorn making')],
+                ['name' => 'Ice making machine', 'businesses' => $this->getBusinessesForSubcategory('Ice making machine')],
+                ['name' => 'Ice cream making machine', 'businesses' => $this->getBusinessesForSubcategory('Ice cream making machine')],
+                ['name' => 'Roasted corn', 'businesses' => $this->getBusinessesForSubcategory('Roasted corn')],
+            ],
+            // 9. Food Processing
+            'food-processing' => [
+                ['name' => 'Peanut butter', 'businesses' => $this->getBusinessesForSubcategory('Peanut butter')],
+                ['name' => 'Cooking oil', 'businesses' => $this->getBusinessesForSubcategory('Cooking oil')],
+                ['name' => 'Grinding mill', 'businesses' => $this->getBusinessesForSubcategory('Grinding mill')],
+            ],
+            // 10. Entertainment
+            'entertainment' => [
+                ['name' => 'Snooker table', 'businesses' => $this->getBusinessesForSubcategory('Snooker table')],
+                ['name' => 'Slug', 'businesses' => $this->getBusinessesForSubcategory('Slug')],
+                ['name' => 'Gaming (ps4, monitors)', 'businesses' => $this->getBusinessesForSubcategory('Gaming (ps4, monitors)')],
+                ['name' => 'DJ PA system', 'businesses' => $this->getBusinessesForSubcategory('DJ PA system')],
+                ['name' => 'Internet Café', 'businesses' => $this->getBusinessesForSubcategory('Internet Café')],
+                ['name' => 'Movie Projectors', 'businesses' => $this->getBusinessesForSubcategory('Movie Projectors')],
+                ['name' => 'Instruments Hiring', 'businesses' => $this->getBusinessesForSubcategory('Instruments Hiring')],
+            ],
+            // 11. Printing
+            'printing' => [
+                ['name' => 'Tshirt & cap printing', 'businesses' => $this->getBusinessesForSubcategory('Tshirt & cap printing')],
+                ['name' => 'Mug printing', 'businesses' => $this->getBusinessesForSubcategory('Mug printing')],
+                ['name' => 'Laser printing', 'businesses' => $this->getBusinessesForSubcategory('Laser printing')],
+                ['name' => 'Bulk paper printing', 'businesses' => $this->getBusinessesForSubcategory('Bulk paper printing')],
+                ['name' => 'Embroidery printing', 'businesses' => $this->getBusinessesForSubcategory('Embroidery printing')],
+                ['name' => 'Larger scale format printing', 'businesses' => $this->getBusinessesForSubcategory('Larger scale format printing')],
+            ],
+            // 12. Digital Multimedia Production
+            'digital-multimedia' => [
+                ['name' => 'Photography', 'businesses' => $this->getBusinessesForSubcategory('Photography')],
                 ['name' => 'Videography', 'businesses' => $this->getBusinessesForSubcategory('Videography')],
             ],
-            'retail-shop' => [
-                ['name' => 'Agro', 'businesses' => $this->getBusinessesForSubcategory('Agro')],
-                ['name' => 'Book', 'businesses' => $this->getBusinessesForSubcategory('Book')],
-                ['name' => 'Candy', 'businesses' => $this->getBusinessesForSubcategory('Candy')],
-                ['name' => 'Cell phone', 'businesses' => $this->getBusinessesForSubcategory('Cell phone')],
-                ['name' => 'Cell phone Accessories', 'businesses' => $this->getBusinessesForSubcategory('Cell phone Accessories')],
-                ['name' => 'Ceramics Tiles', 'businesses' => $this->getBusinessesForSubcategory('Ceramics Tiles')],
-                ['name' => 'Clothing (Men/Women: Formal/Informal)', 'businesses' => $this->getBusinessesForSubcategory('Clothing (Men/Women: Formal/Informal)')],
-                ['name' => 'Cosmetics', 'businesses' => $this->getBusinessesForSubcategory('Cosmetics')],
-                ['name' => 'Hair (braids, wigs, weaves)', 'businesses' => $this->getBusinessesForSubcategory('Hair (braids, wigs, weaves)')],
-                ['name' => 'Hats & Caps', 'businesses' => $this->getBusinessesForSubcategory('Hats & Caps')],
-                ['name' => 'Herbal', 'businesses' => $this->getBusinessesForSubcategory('Herbal')],
-                ['name' => 'Fabric & textile', 'businesses' => $this->getBusinessesForSubcategory('Fabric & textile')],
-                ['name' => 'Jewellery', 'businesses' => $this->getBusinessesForSubcategory('Jewellery')],
-                ['name' => 'Shoes - Men\'s Sports', 'businesses' => $this->getBusinessesForSubcategory('Shoes - Men\'s Sports')],
-                ['name' => 'Solar & Accessories', 'businesses' => $this->getBusinessesForSubcategory('Solar & Accessories')],
-            ],
+            // 13. Tailoring
             'tailoring' => [
-                ['name' => 'Embroidery', 'businesses' => $this->getBusinessesForSubcategory('Embroidery')],
-                ['name' => 'Knitting – jersey manufacturing', 'businesses' => $this->getBusinessesForSubcategory('Knitting – jersey manufacturing')],
-                ['name' => 'Industrial overlocking', 'businesses' => $this->getBusinessesForSubcategory('Industrial overlocking')],
-                ['name' => 'Domestic sewing machine', 'businesses' => $this->getBusinessesForSubcategory('Domestic sewing machine')],
+                ['name' => 'Jersey making', 'businesses' => $this->getBusinessesForSubcategory('Jersey making')],
+                ['name' => 'Curtain making', 'businesses' => $this->getBusinessesForSubcategory('Curtain making')],
+                ['name' => 'Uniform making', 'businesses' => $this->getBusinessesForSubcategory('Uniform making')],
+                ['name' => 'Work suit & dust coat production', 'businesses' => $this->getBusinessesForSubcategory('Work suit & dust coat production')],
+                ['name' => 'Sunhat production', 'businesses' => $this->getBusinessesForSubcategory('Sunhat production')],
+                ['name' => 'Tshirt production', 'businesses' => $this->getBusinessesForSubcategory('Tshirt production')],
+                ['name' => 'Bonnet, night ware & scrunchie production', 'businesses' => $this->getBusinessesForSubcategory('Bonnet, night ware & scrunchie production')],
             ],
-            'trade-services' => [
-                ['name' => 'Airtime scratch cards distribution', 'businesses' => $this->getBusinessesForSubcategory('Airtime scratch cards distribution')],
-                ['name' => 'Tuck shop -groceries', 'businesses' => $this->getBusinessesForSubcategory('Tuck shop -groceries')],
-                ['name' => 'Tyres', 'businesses' => $this->getBusinessesForSubcategory('Tyres')],
-                ['name' => 'Windscreen Replacement', 'businesses' => $this->getBusinessesForSubcategory('Windscreen Replacement')],
+            // 14. Building & Construction
+            'building-construction' => [
+                ['name' => 'Tiling', 'businesses' => $this->getBusinessesForSubcategory('Tiling')],
+                ['name' => 'Carpentry', 'businesses' => $this->getBusinessesForSubcategory('Carpentry')],
+                ['name' => 'Plumbing', 'businesses' => $this->getBusinessesForSubcategory('Plumbing')],
+                ['name' => 'Electrical', 'businesses' => $this->getBusinessesForSubcategory('Electrical')],
+                ['name' => 'Brick & pavers making', 'businesses' => $this->getBusinessesForSubcategory('Brick & pavers making')],
             ],
-            'vehicle' => [
-                ['name' => 'Air con re-gassing', 'businesses' => $this->getBusinessesForSubcategory('Air con re-gassing')],
-                ['name' => 'Tyre Fitting', 'businesses' => $this->getBusinessesForSubcategory('Tyre Fitting')],
-                ['name' => 'Vehicle Alignment', 'businesses' => $this->getBusinessesForSubcategory('Vehicle Alignment')],
-                ['name' => 'Vehicle diagnosis', 'businesses' => $this->getBusinessesForSubcategory('Vehicle diagnosis')],
-                ['name' => 'Vehicle Repairs Workshop', 'businesses' => $this->getBusinessesForSubcategory('Vehicle Repairs Workshop')],
-                ['name' => 'Vehicle panel beating', 'businesses' => $this->getBusinessesForSubcategory('Vehicle panel beating')],
+            // 15. Business Licensing
+            'business-licensing' => [
+                ['name' => 'Business License', 'businesses' => $this->getBusinessesForSubcategory('Business License')],
             ],
-            'vocation' => [
-                ['name' => 'Network marketing admission Fees (Avon, B.B.B, Forever Living, Honey)', 'businesses' => $this->getBusinessesForSubcategory('Network marketing admission Fees (Avon, B.B.B, Forever Living, Honey)')],
-                ['name' => 'Nurse Aid', 'businesses' => $this->getBusinessesForSubcategory('Nurse Aid')],
+            // 16. Small scale mining hire
+            'small-scale-mining' => [
+                ['name' => 'Mining Equipment', 'businesses' => $this->getBusinessesForSubcategory('Mining Equipment')],
             ],
-            'wedding-attire-hire' => [
-                ['name' => 'Accessories ( Artificial Flowers, Crown, Ring Basset)', 'businesses' => $this->getBusinessesForSubcategory('Accessories ( Artificial Flowers, Crown, Ring Basset)')],
-                ['name' => 'Bridal gown', 'businesses' => $this->getBusinessesForSubcategory('Bridal gown')],
-                ['name' => 'Bridal team', 'businesses' => $this->getBusinessesForSubcategory('Bridal team')],
-                ['name' => 'Groom suit', 'businesses' => $this->getBusinessesForSubcategory('Groom suit')],
-                ['name' => 'High Back Chair', 'businesses' => $this->getBusinessesForSubcategory('High Back Chair')],
+            // 17. Tuck shop
+            'tuck-shop' => [
+                ['name' => 'Groceries', 'businesses' => $this->getBusinessesForSubcategory('Groceries')],
+                ['name' => 'Candy shop', 'businesses' => $this->getBusinessesForSubcategory('Candy shop')],
+            ],
+            // 18. Retail
+            'retail' => [
+                ['name' => 'Stationary shops', 'businesses' => $this->getBusinessesForSubcategory('Stationary shops')],
+                ['name' => 'Cellphone accessories', 'businesses' => $this->getBusinessesForSubcategory('Cellphone accessories')],
+            ],
+            // 19. Airtime
+            'airtime' => [
+                ['name' => 'Airtime vending', 'businesses' => $this->getBusinessesForSubcategory('Airtime vending')],
+            ],
+            // 20. Delivery Services
+            'delivery-services' => [
+                ['name' => 'Motor cycle', 'businesses' => $this->getBusinessesForSubcategory('Motor cycle')],
+            ],
+            // 21. Motor vehicle
+            'motor-vehicle' => [
+                ['name' => 'Workshop', 'businesses' => $this->getBusinessesForSubcategory('Workshop')],
+                ['name' => 'Diagnostic', 'businesses' => $this->getBusinessesForSubcategory('Diagnostic')],
+                ['name' => 'Panel beating', 'businesses' => $this->getBusinessesForSubcategory('Panel beating')],
+                ['name' => 'Tire repair services', 'businesses' => $this->getBusinessesForSubcategory('Tire repair services')],
+                ['name' => 'Wheel alignment', 'businesses' => $this->getBusinessesForSubcategory('Wheel alignment')],
+                ['name' => 'Battery services', 'businesses' => $this->getBusinessesForSubcategory('Battery services')],
+            ],
+            // 22. Key Replacement
+            'key-replacement' => [
+                ['name' => 'Locksmith', 'businesses' => $this->getBusinessesForSubcategory('Locksmith')],
+                ['name' => 'Car keys', 'businesses' => $this->getBusinessesForSubcategory('Car keys')],
             ],
         ];
 
@@ -403,6 +408,12 @@ class ProductCatalogSeeder extends Seeder
                 ['name' => 'Tyres', 'basePrice' => 600, 'scales' => [['name' => 'Small Scale', 'multiplier' => 1], ['name' => 'Medium Scale', 'multiplier' => 1.8], ['name' => 'Large Scale', 'multiplier' => 3]]],
                 ['name' => 'Windscreen Replacement', 'basePrice' => 600, 'scales' => [['name' => 'Small Scale', 'multiplier' => 1], ['name' => 'Medium Scale', 'multiplier' => 1.8], ['name' => 'Large Scale', 'multiplier' => 3]]],
             ],
+            'Airtime vending' => [
+                ['name' => 'Airtime vending equipment', 'basePrice' => 500, 'scales' => [['name' => 'Small Scale', 'multiplier' => 1], ['name' => 'Medium Scale', 'multiplier' => 1.8], ['name' => 'Large Scale', 'multiplier' => 3]]],
+            ],
+            'Motor cycle' => [
+                ['name' => 'Delivery motorcycle', 'basePrice' => 2500, 'scales' => [['name' => 'Single Bike', 'multiplier' => 1], ['name' => 'Two Bikes', 'multiplier' => 2], ['name' => 'Fleet', 'multiplier' => 3]]],
+            ],
             'Vehicle Services' => [
                 ['name' => 'Air con re-gassing', 'basePrice' => 2000, 'scales' => [['name' => 'Basic Workshop', 'multiplier' => 1], ['name' => 'Standard Workshop', 'multiplier' => 1.8], ['name' => 'Full Service', 'multiplier' => 3.2]]],
                 ['name' => 'Tyre Fitting', 'basePrice' => 2000, 'scales' => [['name' => 'Basic Workshop', 'multiplier' => 1], ['name' => 'Standard Workshop', 'multiplier' => 1.8], ['name' => 'Full Service', 'multiplier' => 3.2]]],
@@ -424,6 +435,17 @@ class ProductCatalogSeeder extends Seeder
             ],
         ];
 
-        return $allBusinesses[$subcategoryName] ?? [];
+        // Return specific businesses if found, otherwise return a default business for the subcategory
+        return $allBusinesses[$subcategoryName] ?? [
+            [
+                'name' => $subcategoryName . ' Equipment',
+                'basePrice' => 500,
+                'scales' => [
+                    ['name' => 'Small', 'multiplier' => 1],
+                    ['name' => 'Medium', 'multiplier' => 2],
+                    ['name' => 'Large', 'multiplier' => 3],
+                ]
+            ]
+        ];
     }
 }

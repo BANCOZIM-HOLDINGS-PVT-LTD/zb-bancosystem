@@ -44,31 +44,11 @@ export default function CatalogueStep({ purchaseType, selectedProduct, onNext, o
             const intent = purchaseType === 'personal' ? 'hirePurchase' : 'microBiz';
             const categoriesData = await productService.getProductCategories(intent);
 
-            // Define allowed categories for each purchase type
-            const personalCategories = ['Electronics', 'Homeware', 'Mobile Phones', 'PCs', 'Beds', 'Furniture'];
-            const microbizCategories = ['Agriculture', 'Animal Husbandry', 'Catering', 'Construction',
-                                        'Entertainment', 'Events Hire', 'Farming Machinery', 'Live Chickens',
-                                        'Groceries', 'Tuckshop'];
-
-            const allowedCategories = purchaseType === 'personal' ? personalCategories : microbizCategories;
-
             // Flatten products from all categories and add cash pricing
             const allProducts: Product[] = [];
             const categoryNames: string[] = [];
 
             categoriesData.forEach((category: any) => {
-                // Filter categories based on purchase type
-                const categoryNameLower = category.name?.toLowerCase() || '';
-                const isAllowed = allowedCategories.some(allowed =>
-                    categoryNameLower.includes(allowed.toLowerCase()) ||
-                    allowed.toLowerCase().includes(categoryNameLower)
-                );
-
-                if (!isAllowed) {
-                    console.log(`Skipping category "${category.name}" - not in allowed list for ${purchaseType}`);
-                    return; // Skip this category
-                }
-
                 console.log(`Processing category "${category.name}":`, {
                     hasBusinessTypes: !!category.businessTypes,
                     hasSubcategories: !!category.subcategories,

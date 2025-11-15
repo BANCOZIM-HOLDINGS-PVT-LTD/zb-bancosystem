@@ -9,28 +9,28 @@ class PersonalProductsSeeder extends Seeder
 {
     /**
      * Run the database seeds for Personal Products (Hire Purchase)
+     * 18 Main Categories as specified
      */
     public function run(): void
     {
-        // Electronics Category
-        $electronicsCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'Electronics',
+        // 1. Cellphones
+        $cellphonesCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Cellphones',
             'emoji' => '📱',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        // Mobile Phones Subcategory
-        $mobilePhonesSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $electronicsCategory,
-            'name' => 'Mobile Phones',
+        $smartphonesSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $cellphonesCategory,
+            'name' => 'Smartphones',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        // Smartphone Product
         $smartphoneId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $mobilePhonesSubcategory,
+            'product_sub_category_id' => $smartphonesSubcategory,
             'name' => 'Smartphone',
             'base_price' => 200.00,
             'image_url' => null,
@@ -39,27 +39,21 @@ class PersonalProductsSeeder extends Seeder
         ]);
 
         DB::table('product_package_sizes')->insert([
-            [
-                'product_id' => $smartphoneId,
-                'name' => '1 Unit',
-                'multiplier' => 1.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'product_id' => $smartphoneId,
-                'name' => '2 Units',
-                'multiplier' => 2.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+            ['product_id' => $smartphoneId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $smartphoneId, 'name' => '2 Units', 'multiplier' => 2.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // Laptops Subcategory
+        // 2. Laptops and Printers
+        $laptopsPrintersCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Laptops and Printers',
+            'emoji' => '💻',
+            'type' => 'hire_purchase',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $laptopsSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $electronicsCategory,
+            'product_category_id' => $laptopsPrintersCategory,
             'name' => 'Laptops',
             'created_at' => now(),
             'updated_at' => now(),
@@ -67,7 +61,7 @@ class PersonalProductsSeeder extends Seeder
 
         $laptopId = DB::table('products')->insertGetId([
             'product_sub_category_id' => $laptopsSubcategory,
-            'name' => 'Standard Laptop',
+            'name' => 'Laptop',
             'base_price' => 500.00,
             'image_url' => null,
             'created_at' => now(),
@@ -75,27 +69,48 @@ class PersonalProductsSeeder extends Seeder
         ]);
 
         DB::table('product_package_sizes')->insert([
-            [
-                'product_id' => $laptopId,
-                'name' => '1 Unit',
-                'multiplier' => 1.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+            ['product_id' => $laptopId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // Tablets Subcategory
-        $tabletsSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $electronicsCategory,
-            'name' => 'Tablets',
+        $printersSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $laptopsPrintersCategory,
+            'name' => 'Printers',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $tabletId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $tabletsSubcategory,
-            'name' => 'Tablet',
+        $printerId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $printersSubcategory,
+            'name' => 'Printer',
+            'base_price' => 150.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $printerId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 3. ICT Accessories
+        $ictAccessoriesCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'ICT Accessories',
+            'emoji' => '🎧',
+            'type' => 'hire_purchase',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $projectorsSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $ictAccessoriesCategory,
+            'name' => 'Projectors',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $projectorId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $projectorsSubcategory,
+            'name' => 'Projector',
             'base_price' => 300.00,
             'image_url' => null,
             'created_at' => now(),
@@ -103,83 +118,20 @@ class PersonalProductsSeeder extends Seeder
         ]);
 
         DB::table('product_package_sizes')->insert([
-            [
-                'product_id' => $tabletId,
-                'name' => '1 Unit',
-                'multiplier' => 1.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+            ['product_id' => $projectorId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // Home Appliances Category
-        $appliancesCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'Home Appliances',
-            'emoji' => '🏠',
+        // 4. Kitchen ware
+        $kitchenwareCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Kitchen ware',
+            'emoji' => '🍳',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        // Refrigerators Subcategory
-        $refrigeratorsSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $appliancesCategory,
-            'name' => 'Refrigerators',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $refrigeratorId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $refrigeratorsSubcategory,
-            'name' => 'Refrigerator',
-            'base_price' => 600.00,
-            'image_url' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        DB::table('product_package_sizes')->insert([
-            [
-                'product_id' => $refrigeratorId,
-                'name' => '1 Unit',
-                'multiplier' => 1.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ]);
-
-        // Washing Machines Subcategory
-        $washingMachinesSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $appliancesCategory,
-            'name' => 'Washing Machines',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $washingMachineId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $washingMachinesSubcategory,
-            'name' => 'Washing Machine',
-            'base_price' => 450.00,
-            'image_url' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        DB::table('product_package_sizes')->insert([
-            [
-                'product_id' => $washingMachineId,
-                'name' => '1 Unit',
-                'multiplier' => 1.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-        ]);
-
-        // Stoves Subcategory
         $stovesSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $appliancesCategory,
+            'product_category_id' => $kitchenwareCategory,
             'name' => 'Stoves',
             'created_at' => now(),
             'updated_at' => now(),
@@ -195,43 +147,49 @@ class PersonalProductsSeeder extends Seeder
         ]);
 
         DB::table('product_package_sizes')->insert([
-            [
-                'product_id' => $stoveId,
-                'name' => '4 Burner',
-                'multiplier' => 1.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'product_id' => $stoveId,
-                'name' => '6 Burner',
-                'multiplier' => 1.4,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+            ['product_id' => $stoveId, 'name' => '4 Burner', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $stoveId, 'name' => '6 Burner', 'multiplier' => 1.4, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // Furniture Category
-        $furnitureCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'Furniture',
-            'emoji' => '🛋️',
+        $fridgesSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $kitchenwareCategory,
+            'name' => 'Fridges',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        // Living Room Subcategory
-        $livingRoomSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $furnitureCategory,
-            'name' => 'Living Room',
+        $fridgeId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $fridgesSubcategory,
+            'name' => 'Refrigerator',
+            'base_price' => 600.00,
+            'image_url' => null,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $sofaSetId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $livingRoomSubcategory,
-            'name' => 'Sofa Set',
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $fridgeId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 5. Television and Entertainment
+        $tvEntertainmentCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Television and Entertainment',
+            'emoji' => '📺',
+            'type' => 'hire_purchase',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $televisionsSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $tvEntertainmentCategory,
+            'name' => 'Televisions',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $tvId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $televisionsSubcategory,
+            'name' => 'Smart TV',
             'base_price' => 400.00,
             'image_url' => null,
             'created_at' => now(),
@@ -239,86 +197,76 @@ class PersonalProductsSeeder extends Seeder
         ]);
 
         DB::table('product_package_sizes')->insert([
-            [
-                'product_id' => $sofaSetId,
-                'name' => '3-Seater',
-                'multiplier' => 1.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'product_id' => $sofaSetId,
-                'name' => '5-Seater',
-                'multiplier' => 1.5,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'product_id' => $sofaSetId,
-                'name' => '7-Seater',
-                'multiplier' => 2.0,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+            ['product_id' => $tvId, 'name' => '32 Inch', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $tvId, 'name' => '43 Inch', 'multiplier' => 1.5, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $tvId, 'name' => '55 Inch', 'multiplier' => 2.0, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // Bedroom Subcategory
-        $bedroomSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $furnitureCategory,
-            'name' => 'Bedroom',
+        // 6. Lounge ware
+        $loungewareCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Lounge ware',
+            'emoji' => '🛋️',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $bedId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $bedroomSubcategory,
-            'name' => 'Bed Set',
-            'base_price' => 350.00,
+        $tvStandsSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $loungewareCategory,
+            'name' => 'TV Stands',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $tvStandId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $tvStandsSubcategory,
+            'name' => 'TV Stand',
+            'base_price' => 150.00,
             'image_url' => null,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         DB::table('product_package_sizes')->insert([
-            [
-                'product_id' => $bedId,
-                'name' => 'Single',
-                'multiplier' => 1.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'product_id' => $bedId,
-                'name' => 'Double',
-                'multiplier' => 1.3,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'product_id' => $bedId,
-                'name' => 'King',
-                'multiplier' => 1.6,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+            ['product_id' => $tvStandId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // Dining Room Subcategory
-        $diningRoomSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $furnitureCategory,
-            'name' => 'Dining Room',
+        $gamingConsolesSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $loungewareCategory,
+            'name' => 'Gaming Consoles',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $ps5Id = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $gamingConsolesSubcategory,
+            'name' => 'PlayStation 5',
+            'base_price' => 500.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $ps5Id, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 7. Dining Room Sets
+        $diningRoomCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Dining Room Sets',
+            'emoji' => '🍽️',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $diningTablesSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $diningRoomCategory,
+            'name' => 'Dining Tables',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         $diningSetId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $diningRoomSubcategory,
+            'product_sub_category_id' => $diningTablesSubcategory,
             'name' => 'Dining Set',
             'base_price' => 300.00,
             'image_url' => null,
@@ -327,102 +275,100 @@ class PersonalProductsSeeder extends Seeder
         ]);
 
         DB::table('product_package_sizes')->insert([
-            [
-                'product_id' => $diningSetId,
-                'name' => '4-Seater',
-                'multiplier' => 1.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'product_id' => $diningSetId,
-                'name' => '6-Seater',
-                'multiplier' => 1.4,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'product_id' => $diningSetId,
-                'name' => '8-Seater',
-                'multiplier' => 1.8,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+            ['product_id' => $diningSetId, 'name' => '4-Seater', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $diningSetId, 'name' => '6-Seater', 'multiplier' => 1.4, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $diningSetId, 'name' => '8-Seater', 'multiplier' => 1.8, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // Solar Systems Category
-        $solarCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'Solar Systems',
-            'emoji' => '☀️',
+        // 8. Bedroom ware
+        $bedroomwareCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Bedroom ware',
+            'emoji' => '🛏️',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        // Power Stations Subcategory
-        $powerStationsSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $solarCategory,
-            'name' => 'Power Stations',
+        $wardrobesSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $bedroomwareCategory,
+            'name' => 'Wardrobes',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $powerStationId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $powerStationsSubcategory,
-            'name' => 'Solar Power Station',
-            'base_price' => 1000.00,
+        $wardrobeId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $wardrobesSubcategory,
+            'name' => 'Wardrobe',
+            'base_price' => 400.00,
             'image_url' => null,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         DB::table('product_package_sizes')->insert([
-            [
-                'product_id' => $powerStationId,
-                'name' => '1kW',
-                'multiplier' => 1.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'product_id' => $powerStationId,
-                'name' => '2kW',
-                'multiplier' => 2.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'product_id' => $powerStationId,
-                'name' => '5kW',
-                'multiplier' => 5.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'product_id' => $powerStationId,
-                'name' => '10kW',
-                'multiplier' => 10.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+            ['product_id' => $wardrobeId, 'name' => '2-Door', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $wardrobeId, 'name' => '4-Door', 'multiplier' => 1.5, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // Solar Panels Subcategory
-        $solarPanelsSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $solarCategory,
-            'name' => 'Solar Panels',
+        $headboardsSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $bedroomwareCategory,
+            'name' => 'Headboards',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $solarPanelId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $solarPanelsSubcategory,
+        $headboardId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $headboardsSubcategory,
+            'name' => 'Headboard',
+            'base_price' => 150.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $headboardId, 'name' => 'Single', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $headboardId, 'name' => 'Double', 'multiplier' => 1.3, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $headboardId, 'name' => 'King', 'multiplier' => 1.6, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 9. Solar systems
+        $solarSystemsCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Solar systems',
+            'emoji' => '☀️',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $batteriesSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $solarSystemsCategory,
+            'name' => 'Batteries',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $batteryId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $batteriesSubcategory,
+            'name' => 'Solar Battery',
+            'base_price' => 500.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $batteryId, 'name' => '100Ah', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $batteryId, 'name' => '200Ah', 'multiplier' => 2.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $panelsSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $solarSystemsCategory,
+            'name' => 'Panels',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $panelId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $panelsSubcategory,
             'name' => 'Solar Panel',
             'base_price' => 150.00,
             'image_url' => null,
@@ -431,32 +377,291 @@ class PersonalProductsSeeder extends Seeder
         ]);
 
         DB::table('product_package_sizes')->insert([
-            [
-                'product_id' => $solarPanelId,
-                'name' => '1 Panel (300W)',
-                'multiplier' => 1.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'product_id' => $solarPanelId,
-                'name' => '4 Panels (1.2kW)',
-                'multiplier' => 4.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'product_id' => $solarPanelId,
-                'name' => '8 Panels (2.4kW)',
-                'multiplier' => 8.00,
-                'custom_price' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+            ['product_id' => $panelId, 'name' => '300W', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $panelId, 'name' => '550W', 'multiplier' => 1.8, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        $this->command->info('Personal Products seeded successfully!');
+        // 10. Grooming Accessories
+        $groomingCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Grooming Accessories',
+            'emoji' => '💇',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $shavingKitsSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $groomingCategory,
+            'name' => 'Shaving Kits',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $shavingKitId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $shavingKitsSubcategory,
+            'name' => 'Shaving Kit',
+            'base_price' => 50.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $shavingKitId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 11. Motor Sundries
+        $motorSundriesCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Motor Sundries',
+            'emoji' => '🔧',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $motorPartsSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $motorSundriesCategory,
+            'name' => 'Motor Parts',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $motorPartId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $motorPartsSubcategory,
+            'name' => 'Motor Part',
+            'base_price' => 100.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $motorPartId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 12. Motor cycles and Bicycle
+        $motorcyclesBicyclesCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Motor cycles and Bicycle',
+            'emoji' => '🏍️',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $motorcyclesSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $motorcyclesBicyclesCategory,
+            'name' => 'Motorcycles',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $motorcycleId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $motorcyclesSubcategory,
+            'name' => 'Motorcycle',
+            'base_price' => 1500.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $motorcycleId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 13. Building Materials
+        $buildingMaterialsCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Building Materials',
+            'emoji' => '🏗️',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $cementSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $buildingMaterialsCategory,
+            'name' => 'Cement',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $cementId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $cementSubcategory,
+            'name' => 'Cement',
+            'base_price' => 10.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $cementId, 'name' => '1 Bag (50kg)', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $cementId, 'name' => '10 Bags', 'multiplier' => 10.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 14. Water storage and pumping systems
+        $waterStorageCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Water storage and pumping systems',
+            'emoji' => '💧',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $boreholePumpsSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $waterStorageCategory,
+            'name' => 'Borehole Pumps',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $boreholePumpId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $boreholePumpsSubcategory,
+            'name' => 'Borehole Pump',
+            'base_price' => 800.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $boreholePumpId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 15. Agric Mechanization
+        $agricMechanizationCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Agric Mechanization',
+            'emoji' => '🚜',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $tractorsSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $agricMechanizationCategory,
+            'name' => 'Tractors',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $tractorId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $tractorsSubcategory,
+            'name' => 'Tractor',
+            'base_price' => 5000.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $tractorId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 16. Back to school
+        $backToSchoolCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Back to school',
+            'emoji' => '🎒',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $schoolUniformsSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $backToSchoolCategory,
+            'name' => 'School Uniforms',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $uniformId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $schoolUniformsSubcategory,
+            'name' => 'School Uniform Set',
+            'base_price' => 50.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $uniformId, 'name' => '1 Set', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 17. Mother-to-be preparation
+        $motherToBeCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Mother-to-be preparation',
+            'emoji' => '🤰',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $babyItemsSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $motherToBeCategory,
+            'name' => 'Baby Items',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $babyKitId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $babyItemsSubcategory,
+            'name' => 'Baby Starter Kit',
+            'base_price' => 150.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $babyKitId, 'name' => '1 Kit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 18. Licensing & Certification Documents
+        $licensingCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Licensing & Certification Documents',
+            'emoji' => '📄',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $passportSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $licensingCategory,
+            'name' => 'Passport',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $passportId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $passportSubcategory,
+            'name' => 'Passport Application',
+            'base_price' => 100.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $passportId, 'name' => '1 Application', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 19. Leisure (Note: User listed 18 but this was in the list)
+        $leisureCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Leisure',
+            'emoji' => '🎡',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $vacationPackagesSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $leisureCategory,
+            'name' => 'Vacation Packages',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $vacationId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $vacationPackagesSubcategory,
+            'name' => 'Zimparks Vacation Package',
+            'base_price' => 500.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $vacationId, 'name' => '1 Package', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $this->command->info('Personal Products seeded successfully! 18 main categories created.');
     }
 }

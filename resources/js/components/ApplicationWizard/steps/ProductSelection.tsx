@@ -41,31 +41,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 setError(null);
                 const categories = await productService.getProductCategories(data.intent);
 
-                // Filter categories based on intent
-                let filteredCategories = categories;
-                if (isPersonalProducts) {
-                    // For personal products, show only: Electronics, Appliances, Furniture, Solar, etc.
-                    filteredCategories = categories.filter(cat =>
-                        ['electronics', 'appliances', 'furniture', 'solar', 'technology'].includes(cat.id.toLowerCase()) ||
-                        cat.name.toLowerCase().includes('electronic') ||
-                        cat.name.toLowerCase().includes('appliance') ||
-                        cat.name.toLowerCase().includes('furniture') ||
-                        cat.name.toLowerCase().includes('solar') ||
-                        cat.name.toLowerCase().includes('technology')
-                    );
-                } else if (isMicroBiz) {
-                    // For MicroBiz, exclude personal products categories
-                    filteredCategories = categories.filter(cat =>
-                        !['electronics', 'appliances', 'furniture', 'solar', 'technology'].includes(cat.id.toLowerCase()) &&
-                        !cat.name.toLowerCase().includes('electronic') &&
-                        !cat.name.toLowerCase().includes('appliance') &&
-                        !cat.name.toLowerCase().includes('furniture') &&
-                        !cat.name.toLowerCase().includes('solar') &&
-                        !cat.name.toLowerCase().includes('technology')
-                    );
-                }
-
-                setProductCategories(filteredCategories);
+                // No filtering needed - API already filters by intent
+                setProductCategories(categories);
             } catch (err) {
                 console.error('Failed to load products:', err);
                 setError('Failed to load product catalog. Please try again.');

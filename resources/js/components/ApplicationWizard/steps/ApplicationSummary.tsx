@@ -209,7 +209,11 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                             {data.creditType && (
                                 <div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Credit Type</p>
-                                    <p className="font-medium">{data.creditType}</p>
+                                    <p className="font-medium">
+                                        {data.creditType === 'ZDC' ? 'Zero Deposit Credit' :
+                                         data.creditType === 'PDC' ? 'Paid Deposit Credit' :
+                                         data.creditType}
+                                    </p>
                                 </div>
                             )}
                             <div>

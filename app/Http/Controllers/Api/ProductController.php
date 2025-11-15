@@ -12,9 +12,21 @@ use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $categories = DB::table('product_categories')->get();
+        // Get intent parameter to filter by type
+        $intent = $request->query('intent');
+
+        $query = DB::table('product_categories');
+
+        // Filter by type based on intent
+        if ($intent === 'hirePurchase') {
+            $query->where('type', 'hire_purchase');
+        } elseif ($intent === 'microBiz') {
+            $query->where('type', 'microbiz');
+        }
+
+        $categories = $query->get();
 
         $productCatalog = [];
 
@@ -68,11 +80,21 @@ class ProductController extends Controller
     /**
      * Get all product categories with subcategories (Enhanced version)
      */
-    public function getCategories(): JsonResponse
+    public function getCategories(Request $request): JsonResponse
     {
-        $categories = ProductCategory::with(['subCategories.products.packageSizes'])
-            ->orderBy('name')
-            ->get();
+        // Get intent parameter to filter by type
+        $intent = $request->query('intent');
+
+        $query = ProductCategory::with(['subCategories.products.packageSizes']);
+
+        // Filter by type based on intent
+        if ($intent === 'hirePurchase') {
+            $query->where('type', 'hire_purchase');
+        } elseif ($intent === 'microBiz') {
+            $query->where('type', 'microbiz');
+        }
+
+        $categories = $query->orderBy('name')->get();
 
         return response()->json([
             'success' => true,
@@ -245,11 +267,21 @@ class ProductController extends Controller
     /**
      * Get product catalog in frontend format (matches categories.ts structure)
      */
-    public function getFrontendCatalog(): JsonResponse
+    public function getFrontendCatalog(Request $request): JsonResponse
     {
-        $categories = ProductCategory::with(['subCategories.products.packageSizes'])
-            ->orderBy('name')
-            ->get();
+        // Get intent parameter to filter by type
+        $intent = $request->query('intent');
+
+        $query = ProductCategory::with(['subCategories.products.packageSizes']);
+
+        // Filter by type based on intent
+        if ($intent === 'hirePurchase') {
+            $query->where('type', 'hire_purchase');
+        } elseif ($intent === 'microBiz') {
+            $query->where('type', 'microbiz');
+        }
+
+        $categories = $query->orderBy('name')->get();
 
         $frontendData = $categories->map(function ($category) {
             return [
