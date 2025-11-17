@@ -655,14 +655,35 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $babyKitId, 'name' => '1 Kit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 17. Licensing & Certification Documents
+        // 17. Drivers License
         $licensingCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'Licensing & Certification Documents',
-            'emoji' => '📄',
+            'name' => 'Drivers License',
+            'emoji' => '🚗',
             'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        $driversLicenseSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $licensingCategory,
+            'name' => 'Drivers License',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $driversLicenseId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $driversLicenseSubcategory,
+            'name' => 'Drivers License Application',
+            'base_price' => 150.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $driversLicenseId, 'name' => '1 Application', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
 
         $passportSubcategory = DB::table('product_sub_categories')->insertGetId([
             'product_category_id' => $licensingCategory,
