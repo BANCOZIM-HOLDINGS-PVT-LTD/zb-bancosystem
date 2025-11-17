@@ -206,6 +206,7 @@ class PersonalProductsSeeder extends Seeder
         $loungewareCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Lounge ware',
             'emoji' => '🛋️',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -250,17 +251,10 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $ps5Id, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 7. Dining Room Sets
-        $diningRoomCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'Dining Room Sets',
-            'emoji' => '🍽️',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
+        // Dining Room Sets (under Lounge ware)
         $diningTablesSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $diningRoomCategory,
-            'name' => 'Dining Tables',
+            'product_category_id' => $loungewareCategory,
+            'name' => 'Dining Room Sets',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -280,10 +274,11 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $diningSetId, 'name' => '8-Seater', 'multiplier' => 1.8, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 8. Bedroom ware
+        // 7. Bedroom ware
         $bedroomwareCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Bedroom ware',
             'emoji' => '🛏️',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -331,10 +326,11 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $headboardId, 'name' => 'King', 'multiplier' => 1.6, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 9. Solar systems
+        // 8. Solar systems
         $solarSystemsCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Solar systems',
             'emoji' => '☀️',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -381,10 +377,11 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $panelId, 'name' => '550W', 'multiplier' => 1.8, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 10. Grooming Accessories
+        // 9. Grooming Accessories
         $groomingCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Grooming Accessories',
             'emoji' => '💇',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -409,10 +406,11 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $shavingKitId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 11. Motor Sundries
+        // 10. Motor Sundries
         $motorSundriesCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Motor Sundries',
             'emoji' => '🔧',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -437,10 +435,11 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $motorPartId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 12. Motor cycles and Bicycle
+        // 11. Motor cycles and Bicycle
         $motorcyclesBicyclesCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Motor cycles and Bicycle',
             'emoji' => '🏍️',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -465,10 +464,11 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $motorcycleId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 13. Building Materials
+        // 12. Building Materials
         $buildingMaterialsCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Building Materials',
             'emoji' => '🏗️',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -494,44 +494,17 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $cementId, 'name' => '10 Bags', 'multiplier' => 10.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 14. Water storage and pumping systems
-        $waterStorageCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'Water storage and pumping systems',
-            'emoji' => '💧',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $boreholePumpsSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $waterStorageCategory,
-            'name' => 'Borehole Pumps',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $boreholePumpId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $boreholePumpsSubcategory,
-            'name' => 'Borehole Pump',
-            'base_price' => 800.00,
-            'image_url' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        DB::table('product_package_sizes')->insert([
-            ['product_id' => $boreholePumpId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
-        ]);
-
-        // 15. Agric Mechanization
-        $agricMechanizationCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'Agric Mechanization',
+        // 13. Agricultural Equipment
+        $agricEquipmentCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Agricultural Equipment',
             'emoji' => '🚜',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         $tractorsSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $agricMechanizationCategory,
+            'product_category_id' => $agricEquipmentCategory,
             'name' => 'Tractors',
             'created_at' => now(),
             'updated_at' => now(),
@@ -550,10 +523,32 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $tractorId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 16. Back to school
+        // Water storage and pumping systems (under Agricultural Equipment)
+        $waterStorageSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $agricEquipmentCategory,
+            'name' => 'Water Storage and Pumping Systems',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $boreholePumpId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $waterStorageSubcategory,
+            'name' => 'Borehole Pump',
+            'base_price' => 800.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $boreholePumpId, 'name' => '1 Unit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 14. Scholars back to school
         $backToSchoolCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'Back to school',
+            'name' => 'Scholars back to school',
             'emoji' => '🎒',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -578,10 +573,64 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $uniformId, 'name' => '1 Set', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 17. Mother-to-be preparation
+        // 15. School fees
+        $schoolFeesCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'School fees',
+            'emoji' => '🏫',
+            'type' => 'hire_purchase',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $primarySchoolSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $schoolFeesCategory,
+            'name' => 'Primary School',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $primaryFeesId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $primarySchoolSubcategory,
+            'name' => 'Primary School Fees',
+            'base_price' => 200.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $primaryFeesId, 'name' => '1 Term', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $primaryFeesId, 'name' => '2 Terms', 'multiplier' => 2.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $primaryFeesId, 'name' => '3 Terms', 'multiplier' => 3.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $secondarySchoolSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $schoolFeesCategory,
+            'name' => 'Secondary School',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $secondaryFeesId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $secondarySchoolSubcategory,
+            'name' => 'Secondary School Fees',
+            'base_price' => 300.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $secondaryFeesId, 'name' => '1 Term', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $secondaryFeesId, 'name' => '2 Terms', 'multiplier' => 2.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $secondaryFeesId, 'name' => '3 Terms', 'multiplier' => 3.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 16. Mother-to-be preparation
         $motherToBeCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Mother-to-be preparation',
             'emoji' => '🤰',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -606,10 +655,11 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $babyKitId, 'name' => '1 Kit', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 18. Licensing & Certification Documents
+        // 17. Licensing & Certification Documents
         $licensingCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Licensing & Certification Documents',
             'emoji' => '📄',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -634,16 +684,17 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $passportId, 'name' => '1 Application', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 19. Leisure (Note: User listed 18 but this was in the list)
-        $leisureCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'Leisure',
+        // 18. Holiday Package
+        $holidayPackageCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Holiday Package',
             'emoji' => '🎡',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         $vacationPackagesSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $leisureCategory,
+            'product_category_id' => $holidayPackageCategory,
             'name' => 'Vacation Packages',
             'created_at' => now(),
             'updated_at' => now(),
