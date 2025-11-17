@@ -1056,8 +1056,34 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
 
     const handleSubmit = () => {
         if (!validateDocuments()) {
+            // Scroll to top to show errors
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Add a general error message summarizing issues
+            const errorMessages: string[] = [];
+            documentRequirements.forEach(req => {
+                if (errors[req.id]) {
+                    errorMessages.push(`• ${req.name}: ${errors[req.id]}`);
+                }
+            });
+            if (errors.selfie) errorMessages.push(`• Selfie: ${errors.selfie}`);
+            if (errors.signature) errorMessages.push(`• Signature: ${errors.signature}`);
+
+            if (errorMessages.length > 0) {
+                setErrors(prev => ({
+                    ...prev,
+                    general: `Please complete all required items:\n${errorMessages.join('\n')}`
+                }));
+            }
+
             return;
         }
+
+        // Clear general error if validation passes
+        setErrors(prev => {
+            const { general, ...rest } = prev;
+            return rest;
+        });
 
         // Prepare document data for submission with enhanced metadata
         const documentsData = {
@@ -1520,6 +1546,25 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                     Please upload the required documents, take a selfie, and provide your digital signature
                 </p>
             </div>
+
+            {/* General validation error alert */}
+            {errors.general && (
+                <div className="bg-red-50 dark:bg-red-950/20 border-2 border-red-500 dark:border-red-800 rounded-lg p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-2">
+                                Cannot Submit Application
+                            </h3>
+                            <div className="text-sm text-red-800 dark:text-red-300 space-y-1">
+                                {errors.general.split('\n').map((line, index) => (
+                                    <p key={index}>{line}</p>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Required Documents */}
             <div className="space-y-6">
