@@ -13,32 +13,33 @@ interface AccountVerificationProps {
 const AccountVerification: React.FC<AccountVerificationProps> = ({ data, onNext, onBack, loading }) => {
     const [currentStep, setCurrentStep] = useState<'account-check' | 'want-account'>('account-check');
     const [showAccountRequiredModal, setShowAccountRequiredModal] = useState(false);
-    
-    // Check if Government employer (should skip this step)
-    const isGovernment = data.employer === 'government-ssb' || data.employer === 'government-non-ssb';
+    const [showServicesUnavailableModal, setShowServicesUnavailableModal] = useState(false);
+
+    // Check if SSB employer (should skip this step)
+    const isSSB = data.employer === 'government-ssb';
     const isEntrepreneur = data.employer === 'entrepreneur';
-    
-    // Skip this step for Government employees using useEffect to avoid render issues
+
+    // Skip this step for SSB employees using useEffect to avoid render issues
     useEffect(() => {
-        if (isGovernment) {
-            onNext({ 
-                hasAccount: true, 
+        if (isSSB) {
+            onNext({
+                hasAccount: true,
                 accountType: 'SSB',
-                skipAccountCheck: true 
+                skipAccountCheck: true
             });
         }
-    }, [isGovernment]); // Remove onNext from dependencies to prevent infinite loop
-    
-    // Don't render anything for Government employees while transitioning
-    if (isGovernment) {
+    }, [isSSB]); // Remove onNext from dependencies to prevent infinite loop
+
+    // Don't render anything for SSB employees while transitioning
+    if (isSSB) {
         return null;
     }
 
     const handleAccountResponse = (hasAccount: boolean) => {
         if (hasAccount) {
-            onNext({ 
+            onNext({
                 hasAccount: true,
-                accountType: isEntrepreneur ? 'SME Transaction Account' : 'ZB Account'
+                accountType: isEntrepreneur ? 'SME Transaction Account' : 'ZB Bank Account'
             });
         } else {
             setCurrentStep('want-account');
@@ -47,63 +48,59 @@ const AccountVerification: React.FC<AccountVerificationProps> = ({ data, onNext,
 
     const handleWantAccountResponse = (wantsAccount: boolean) => {
         if (wantsAccount) {
-            onNext({ 
+            onNext({
                 hasAccount: false,
                 wantsAccount: true,
-                accountType: isEntrepreneur ? 'SME Transaction Account' : 'ZB Account'
+                accountType: isEntrepreneur ? 'SME Transaction Account' : 'ZB Bank Account'
             });
         } else {
-            // Show modal instead of alert
-            setShowAccountRequiredModal(true);
+            // Show services unavailable modal for non-SSB, non-ZB account holders
+            setShowServicesUnavailableModal(true);
         }
     };
 
-    const accountType = isEntrepreneur ? 'SME Transaction Account' : 'ZB Account';
+    const accountType = isEntrepreneur ? 'SME Transaction Account' : 'ZB Bank account';
 
     return (
         <div className="space-y-6">
-            {/* Account Required Modal */}
-            {showAccountRequiredModal && (
+            {/* Services Unavailable Modal */}
+            {showServicesUnavailableModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4 relative">
                         <button
-                            onClick={() => setShowAccountRequiredModal(false)}
+                            onClick={() => setShowServicesUnavailableModal(false)}
                             className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                         >
                             <X className="h-5 w-5" />
                         </button>
-                        
+
                         <div className="text-center">
                             <AlertCircle className="mx-auto h-16 w-16 text-red-500 mb-4" />
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                Account Required
+                                Services Currently Unavailable
                             </h3>
                             <p className="text-gray-600 dark:text-gray-300 mb-6">
-                                An account is required to proceed with the loan application. Please consider opening an account with us first.
+                                Services are currently unavailable for non-SSB and non-ZB Bank account holders.
                             </p>
                             <div className="space-y-3">
                                 <Button
                                     onClick={() => {
-                                        setShowAccountRequiredModal(false);
-                                        setCurrentStep('account-check');
+                                        setShowServicesUnavailableModal(false);
+                                        setCurrentStep('want-account');
                                     }}
                                     className="w-full bg-emerald-600 hover:bg-emerald-700"
                                 >
-                                    I'll open an account
+                                    I'll open a ZB Bank account
                                 </Button>
                                 <Button
                                     variant="outline"
                                     onClick={() => {
-                                        setShowAccountRequiredModal(false);
-                                        onNext({
-                                            hasAccount: false,
-                                            wantsAccount: false,
-                                            accountType: 'None'
-                                        });
+                                        setShowServicesUnavailableModal(false);
+                                        onBack();
                                     }}
                                     className="w-full"
                                 >
-                                    Continue without account
+                                    Go Back
                                 </Button>
                             </div>
                         </div>

@@ -490,6 +490,9 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                     <SelectValue placeholder="Select Ministry" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                    <SelectItem value="Zimbabwe National Army">Zimbabwe National Army</SelectItem>
+                                    <SelectItem value="Air Force of Zimbabwe">Air Force of Zimbabwe</SelectItem>
+                                    <SelectItem value="Other Security Sector">Other Security Sector</SelectItem>
                                     <SelectItem value="Primary and Secondary Education">Primary and Secondary Education</SelectItem>
                                     <SelectItem value="Health and Child Care">Health and Child Care</SelectItem>
                                     <SelectItem value="Home Affairs and Cultural Heritage">Home Affairs and Cultural Heritage</SelectItem>

@@ -35,17 +35,21 @@ interface ApplicationSummaryProps {
 const getFormIdByEmployer = (employerId: string, hasAccount: boolean, wantsAccount: boolean) => {
     switch (employerId) {
         case 'government-ssb':
+            // SSB employers always use SSB form
             return 'ssb_account_opening_form.json';
-        case 'government-non-ssb':
-            return 'ssb_account_opening_form.json'; // Use SSB form for non-SSB government as well
         case 'entrepreneur':
+            // Entrepreneurs use SME form
             return 'smes_business_account_opening.json';
         default:
+            // For all other employers (non-SSB)
             if (hasAccount) {
+                // User has ZB Bank account -> use Account Holders form
                 return 'account_holder_loan_application.json';
             } else if (wantsAccount) {
+                // User wants to open ZB Bank account -> use ZB Account Opening form
                 return 'individual_account_opening.json';
             }
+            // Fallback (shouldn't reach here due to validation in AccountVerification)
             return 'individual_account_opening.json';
     }
 };

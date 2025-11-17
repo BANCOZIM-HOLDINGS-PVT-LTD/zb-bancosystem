@@ -86,17 +86,18 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
 
     const [hasOtherLoans, setHasOtherLoans] = useState<string>(''); // 'yes' or 'no'
     const [isCustomBranch, setIsCustomBranch] = useState<boolean>(false);
+    const [accountNumberError, setAccountNumberError] = useState<string>('');
 
     const [formData, setFormData] = useState({
         // Credit Facility Details (pre-populated)
         ...creditDetails,
-        
+
         // Header Fields
         deliveryStatus: 'Future',
         province: '',
         agent: '',
         team: '',
-        
+
         // Personal Details
         title: '',
         surname: '',
@@ -122,15 +123,15 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
         headOfInstitution: '',
         headOfInstitutionCell: '',
         currentNetSalary: '',
-        
+
         // Spouse and Next of Kin
         spouseDetails: [
             { fullName: '', relationship: '', phoneNumber: '', residentialAddress: '' },
             { fullName: '', relationship: '', phoneNumber: '', residentialAddress: '' }
         ],
-        
-        // Banking Details
-        bankName: '',
+
+        // Banking Details - Pre-fill ZB Bank if user has ZB account
+        bankName: data.hasAccount && data.accountType === 'ZB Bank Account' ? 'ZB Bank' : '',
         branch: '',
         accountNumber: '',
         
@@ -149,7 +150,25 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
         const processedValue = field.toLowerCase().includes('idnumber')
             ? formatZimbabweId(value)
             : value;
-        
+
+        // Validate account number for ZB Bank
+        if (field === 'accountNumber' && formData.bankName === 'ZB Bank') {
+            // Clear previous error
+            setAccountNumberError('');
+
+            // Only validate if there's a value
+            if (value) {
+                // Check if it's exactly 13 digits
+                if (!/^\d{13}$/.test(value)) {
+                    setAccountNumberError('Account number must be exactly 13 digits');
+                }
+                // Check if it starts with 4
+                else if (!value.startsWith('4')) {
+                    setAccountNumberError('ZB Bank account number must start with 4');
+                }
+            }
+        }
+
         setFormData(prev => ({
             ...prev,
             [field]: processedValue
@@ -176,7 +195,19 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
+        // Validate account number for ZB Bank before submission
+        if (formData.bankName === 'ZB Bank' && formData.accountNumber) {
+            if (!/^\d{13}$/.test(formData.accountNumber)) {
+                setAccountNumberError('Account number must be exactly 13 digits');
+                return;
+            }
+            if (!formData.accountNumber.startsWith('4')) {
+                setAccountNumberError('ZB Bank account number must start with 4');
+                return;
+            }
+        }
+
         // Map Account Holders form fields to match PDF template expectations
         const mappedData = {
             formResponses: {
@@ -713,14 +744,21 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     
                     <div className="grid gap-4 md:grid-cols-3">
                         <div>
-                            <Label htmlFor="bankName">Bank</Label>
+                            <Label htmlFor="bankName">
+                                Bank
+                                {data.hasAccount && data.accountType === 'ZB Bank Account' && (
+                                    <span className="text-xs text-emerald-600 ml-2">(Pre-filled)</span>
+                                )}
+                            </Label>
                             <Select
                                 value={formData.bankName}
                                 onValueChange={(value) => {
                                     handleInputChange('bankName', value);
                                     handleInputChange('branch', ''); // Reset branch when bank changes
                                     setIsCustomBranch(false); // Reset custom branch mode
+                                    setAccountNumberError(''); // Clear account number error when bank changes
                                 }}
+                                disabled={data.hasAccount && data.accountType === 'ZB Bank Account'}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select bank" />
@@ -792,12 +830,23 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                         </div>
 
                         <div>
-                            <Label htmlFor="accountNumber">Account Number</Label>
+                            <Label htmlFor="accountNumber">
+                                Account Number
+                                {formData.bankName === 'ZB Bank' && (
+                                    <span className="text-xs text-gray-500 ml-2">(13 digits, starts with 4)</span>
+                                )}
+                            </Label>
                             <Input
                                 id="accountNumber"
                                 value={formData.accountNumber}
                                 onChange={(e) => handleInputChange('accountNumber', e.target.value)}
+                                maxLength={formData.bankName === 'ZB Bank' ? 13 : undefined}
+                                placeholder={formData.bankName === 'ZB Bank' ? '4XXXXXXXXXXXX' : ''}
+                                className={accountNumberError ? 'border-red-500' : ''}
                             />
+                            {accountNumberError && (
+                                <p className="text-sm text-red-500 mt-1">{accountNumberError}</p>
+                            )}
                         </div>
                     </div>
                 </Card>
