@@ -42,10 +42,10 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
     const product = data.product!;
     const delivery = data.delivery!;
 
-    // Check if product is microbiz and calculate fees
-    const isMicrobiz = product.category === 'microbiz';
-    const includesMESystem = isMicrobiz && delivery.includesMESystem;
-    const includesTraining = isMicrobiz && delivery.includesTraining;
+    // Check if purchase type is microbiz and calculate fees
+    const isMicrobiz = data.purchaseType === 'microbiz';
+    const includesMESystem = isMicrobiz && (delivery.includesMESystem || false);
+    const includesTraining = isMicrobiz && (delivery.includesTraining || false);
     const meSystemFee = includesMESystem ? ME_SYSTEM_FEE : 0;
     const trainingFee = includesTraining ? (product.cashPrice * TRAINING_PERCENTAGE) : 0;
     const deliveryFee = delivery.type === 'swift' ? 10 : 0;

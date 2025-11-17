@@ -147,7 +147,7 @@ export default function ClientRegister() {
 
                     <Button type="submit" className="mt-2 w-full" tabIndex={3} disabled={processing}>
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                        Continue with OTP
+                        Continue
                     </Button>
                 </div>
 

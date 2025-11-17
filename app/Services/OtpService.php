@@ -32,7 +32,7 @@ class OtpService
         try {
             $otp = $user->generateOtp();
 
-            $message = "Hello {$user->id}, welcome to bancosystem. Please copy this code {$otp} and enter it to complete your account verification.";
+            $message = "Hello, welcome to bancosystem. Please copy this code {$otp} and enter it to complete your account verification.";
 
             $this->twilio->messages->create(
                 $user->phone, // to
