@@ -158,11 +158,23 @@ class ProductService {
    * Calculate credit term options
    */
   getCreditTermOptions(amount: number): CreditTermOption[] {
-    const terms = [6, 12, 18, 24, 36];
-    return terms.map(months => ({
-      months,
-      monthlyPayment: Math.round(amount / months * 1.1) // 10% interest approximation
-    }));
+    // Generate terms from 3 to 18 months
+    const terms = Array.from({ length: 16 }, (_, i) => i + 3); // [3, 4, 5, ..., 18]
+    const interestRate = 0.10; // 10% annual interest rate
+
+    return terms.map(months => {
+      // Calculate monthly payment using amortization formula
+      const monthlyInterestRate = interestRate / 12;
+      const monthlyPayment = amount > 0
+        ? (amount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) /
+          (Math.pow(1 + monthlyInterestRate, months) - 1)
+        : 0;
+
+      return {
+        months,
+        monthlyPayment: Math.round(monthlyPayment * 100) / 100 // Round to 2 decimal places
+      };
+    });
   }
 
   /**

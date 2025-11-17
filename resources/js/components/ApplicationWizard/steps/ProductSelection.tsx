@@ -25,6 +25,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [productCategories, setProductCategories] = useState<Category[]>([]);
     const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [selectedTermMonths, setSelectedTermMonths] = useState<number | null>(null);
+    const [validationError, setValidationError] = useState<string>('');
 
     const ME_SYSTEM_FEE = 9.99;
     const TRAINING_PERCENTAGE = 0.055; // 5.5%
@@ -73,14 +75,47 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         setSelectedScale(scale);
         const amount = (selectedBusiness?.basePrice || 0) * scale.multiplier;
         setFinalAmount(amount);
+        setSelectedTermMonths(null); // Reset term selection
+        setValidationError(''); // Clear validation error
         setCurrentView('terms');
     };
 
-    const handleTermSelect = (term: { months: number; monthlyPayment: number }) => {
+    const handleTermDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const months = e.target.value ? parseInt(e.target.value) : null;
+        setSelectedTermMonths(months);
+        setValidationError(''); // Clear validation error when user selects
+    };
+
+    const handleContinue = () => {
+        // Validate term selection
+        if (!selectedTermMonths) {
+            setValidationError('Please select a loan duration before continuing');
+            return;
+        }
+
+        if (selectedTermMonths < 3 || selectedTermMonths > 18) {
+            setValidationError('Loan duration must be between 3 and 18 months');
+            return;
+        }
+
+        // Find the selected term details
+        const selectedTerm = creditTerms.find(term => term.months === selectedTermMonths);
+        if (!selectedTerm) {
+            setValidationError('Invalid loan duration selected');
+            return;
+        }
+
         const meSystemFee = includesMESystem ? ME_SYSTEM_FEE : 0;
         const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
         const totalAmount = finalAmount + meSystemFee + trainingFee;
-        const adjustedMonthlyPayment = (totalAmount / term.months).toFixed(2);
+
+        // Calculate monthly payment using amortization formula
+        const interestRate = 0.10;
+        const monthlyInterestRate = interestRate / 12;
+        const monthlyPayment = totalAmount > 0
+            ? (totalAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
+              (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
+            : 0;
 
         onNext({
             // Legacy fields for backward compatibility
@@ -89,8 +124,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             business: selectedBusiness?.name,
             scale: selectedScale?.name,
             amount: totalAmount,
-            creditTerm: term.months,
-            monthlyPayment: parseFloat(adjustedMonthlyPayment),
+            creditTerm: selectedTermMonths,
+            monthlyPayment: parseFloat(monthlyPayment.toFixed(2)),
             // New fields with IDs for better tracking
             productId: selectedBusiness?.id,
             scaleId: (selectedScale as any)?.id,
@@ -353,32 +388,129 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                             )}
                         </div>
 
-                        {/* Credit Terms */}
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {creditTerms.map((term, index) => {
-                                const meSystemFee = includesMESystem ? ME_SYSTEM_FEE : 0;
-                                const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
-                                const totalAmount = finalAmount + meSystemFee + trainingFee;
-                                const adjustedPayment = (totalAmount / term.months).toFixed(2);
-
-                                return (
-                                    <Card
-                                        key={index}
-                                        className="cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg text-center"
-                                        onClick={() => handleTermSelect(term)}
-                                    >
-                                        <div className="flex items-center justify-center mb-3">
-                                            <Calendar className="h-6 w-6 text-emerald-600 mr-2" />
-                                            <h3 className="text-lg font-medium">{term.months} Months</h3>
-                                        </div>
-                                        <div className="text-2xl font-bold text-emerald-600 mb-2">
-                                            ${adjustedPayment}
-                                        </div>
-                                        <p className="text-sm text-gray-500">per month</p>
-                                    </Card>
-                                );
-                            })}
+                        {/* Loan Duration Dropdown */}
+                        <div className="max-w-md mx-auto">
+                            <label htmlFor="loan-duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Select Loan Duration
+                            </label>
+                            <select
+                                id="loan-duration"
+                                value={selectedTermMonths || ''}
+                                onChange={handleTermDropdownChange}
+                                className="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all"
+                            >
+                                <option value="">Select duration</option>
+                                {creditTerms.map((term) => (
+                                    <option key={term.months} value={term.months}>
+                                        {term.months} months
+                                    </option>
+                                ))}
+                            </select>
                         </div>
+
+                        {/* Animated Loan Details Container */}
+                        {selectedTermMonths && (
+                            <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <Card className="p-6 border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                                        <Calendar className="h-5 w-5 text-emerald-600" />
+                                        Loan Details
+                                    </h3>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {/* Monthly Payment */}
+                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Monthly Payment</p>
+                                            <p className="text-2xl font-bold text-emerald-600">
+                                                ${(() => {
+                                                    const meSystemFee = includesMESystem ? ME_SYSTEM_FEE : 0;
+                                                    const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
+                                                    const totalAmount = finalAmount + meSystemFee + trainingFee;
+                                                    const interestRate = 0.10;
+                                                    const monthlyInterestRate = interestRate / 12;
+                                                    const monthlyPayment = totalAmount > 0
+                                                        ? (totalAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
+                                                          (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
+                                                        : 0;
+                                                    return monthlyPayment.toFixed(2);
+                                                })()}
+                                            </p>
+                                        </div>
+
+                                        {/* Total Repayment */}
+                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Repayment</p>
+                                            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                                ${(() => {
+                                                    const meSystemFee = includesMESystem ? ME_SYSTEM_FEE : 0;
+                                                    const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
+                                                    const totalAmount = finalAmount + meSystemFee + trainingFee;
+                                                    const interestRate = 0.10;
+                                                    const monthlyInterestRate = interestRate / 12;
+                                                    const monthlyPayment = totalAmount > 0
+                                                        ? (totalAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
+                                                          (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
+                                                        : 0;
+                                                    return (monthlyPayment * selectedTermMonths).toFixed(2);
+                                                })()}
+                                            </p>
+                                        </div>
+
+                                        {/* Total Interest */}
+                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Interest</p>
+                                            <p className="text-2xl font-bold text-blue-600">
+                                                ${(() => {
+                                                    const meSystemFee = includesMESystem ? ME_SYSTEM_FEE : 0;
+                                                    const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
+                                                    const totalAmount = finalAmount + meSystemFee + trainingFee;
+                                                    const interestRate = 0.10;
+                                                    const monthlyInterestRate = interestRate / 12;
+                                                    const monthlyPayment = totalAmount > 0
+                                                        ? (totalAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
+                                                          (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
+                                                        : 0;
+                                                    const totalRepayment = monthlyPayment * selectedTermMonths;
+                                                    const totalInterest = totalRepayment - totalAmount;
+                                                    return totalInterest.toFixed(2);
+                                                })()}
+                                            </p>
+                                        </div>
+
+                                        {/* First Payment Date */}
+                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">First Payment Date</p>
+                                            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                                {(() => {
+                                                    const today = new Date();
+                                                    // Get the first day of next month
+                                                    const firstPaymentDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+                                                    return firstPaymentDate.toLocaleDateString('en-US', {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        year: 'numeric'
+                                                    });
+                                                })()}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Additional Info */}
+                                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                                        <p className="text-sm text-blue-800 dark:text-blue-300">
+                                            Interest rate: 10% per annum | Duration: {selectedTermMonths} months
+                                        </p>
+                                    </div>
+                                </Card>
+                            </div>
+                        )}
+
+                        {/* Validation Error */}
+                        {validationError && (
+                            <div className="max-w-md mx-auto p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+                                <p className="text-sm text-red-800 dark:text-red-300 font-medium">{validationError}</p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -393,6 +525,17 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     <ArrowLeft className="h-4 w-4" />
                     Back
                 </Button>
+
+                {currentView === 'terms' && (
+                    <Button
+                        onClick={handleContinue}
+                        disabled={loading || !selectedTermMonths}
+                        className="flex items-center gap-2"
+                    >
+                        Continue
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                )}
             </div>
         </div>
     );
