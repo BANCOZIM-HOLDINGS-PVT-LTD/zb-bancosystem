@@ -221,7 +221,13 @@ class ApplicationWizardController extends Controller
                     // Try to get phone from different possible locations in form_data
                     $formData = is_string($state->form_data) ? json_decode($state->form_data, true) : $state->form_data;
 
-                    $phoneNumber = $formData['phone']
+                    // Check in formResponses first (most common location)
+                    $phoneNumber = data_get($formData, 'formResponses.mobile')
+                        ?? data_get($formData, 'formResponses.cellNumber')
+                        ?? data_get($formData, 'formResponses.whatsApp')
+                        ?? data_get($formData, 'formResponses.phoneNumber')
+                        ?? data_get($formData, 'formResponses.contactPhone')
+                        ?? $formData['phone']
                         ?? $formData['contact']['phone']
                         ?? $formData['phoneNumber']
                         ?? data_get($state->metadata, 'phone_number')
