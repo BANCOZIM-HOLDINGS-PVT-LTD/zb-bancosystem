@@ -176,7 +176,7 @@
     <table class="header-table">
         <tr>
             <td class="logo-cell">
-                <img src="{{ public_path('assets/images/qupa.png') }}" alt="Qupa Logo" class="logo-img">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/qupa.png'))) }}" alt="Qupa Logo" class="logo-img">
             </td>
             <td class="address-cell">
                 ZB Chambers, 2nd Floor, Corner 1st Street & George Silundika<br>
@@ -418,7 +418,7 @@
     <table class="header-table">
         <tr>
             <td class="logo-cell">
-                <img src="{{ public_path('assets/images/qupa.png') }}" alt="Qupa Logo" class="logo-img">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/qupa.png'))) }}" alt="Qupa Logo" class="logo-img">
             </td>
             <td class="address-cell">
                 ZB Chambers, 2nd Floor, Corner 1st Street & George Silundika<br>
@@ -832,9 +832,6 @@
     </div>
     @endif
 </div>
-
-<!-- Attachments Page -->
-@include('forms.partials.pdf_attachments')
 
 </body>
 </html>

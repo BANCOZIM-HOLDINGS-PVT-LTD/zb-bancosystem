@@ -1,3 +1,53 @@
+@php
+    // Helper to format address from JSON or string
+    $formatAddress = function($value) {
+        if (empty($value)) {
+            return '';
+        }
+
+        // If it's already a string (not JSON), return it
+        if (is_string($value) && !str_starts_with(trim($value), '{')) {
+            return $value;
+        }
+
+        // Try to decode JSON
+        $decoded = is_string($value) ? json_decode($value, true) : $value;
+
+        if (!is_array($decoded)) {
+            return is_string($value) ? $value : '';
+        }
+
+        // Build address from components
+        $parts = [];
+
+        if (!empty($decoded['houseNumber'])) {
+            $parts[] = $decoded['houseNumber'];
+        }
+        if (!empty($decoded['streetName'])) {
+            $parts[] = $decoded['streetName'];
+        }
+        if (!empty($decoded['suburb'])) {
+            $parts[] = $decoded['suburb'];
+        }
+        if (!empty($decoded['city'])) {
+            $parts[] = $decoded['city'];
+        }
+        if (!empty($decoded['province'])) {
+            $parts[] = $decoded['province'];
+        }
+        if (!empty($decoded['district'])) {
+            $parts[] = $decoded['district'];
+        }
+        if (!empty($decoded['ward'])) {
+            $parts[] = $decoded['ward'];
+        }
+        if (!empty($decoded['village'])) {
+            $parts[] = $decoded['village'];
+        }
+
+        return implode(', ', $parts);
+    };
+@endphp
 <!DOCTYPE html>
 <html>
 <head>
@@ -21,7 +71,6 @@
         .page {
             page-break-after: always;
             position: relative;
-            min-height: 275mm;
             padding: 5mm;
         }
         
@@ -46,12 +95,12 @@
         }
         
         .logo-qupa img {
-            max-width: 80px;
+            max-width: 120px;
             height: auto;
         }
-        
+
         .logo-bancozim img {
-            max-width: 80px;
+            max-width: 120px;
             height: auto;
         }
         
@@ -191,6 +240,39 @@
             padding-top: 40px;
             float: right;
         }
+
+        /* Document cards */
+        .doc-card {
+            border: 2px solid #000;
+            background-color: #fff;
+            padding: 10px;
+            position: relative;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .doc-card img {
+            max-width: 100%;
+            max-height: 150px;
+            display: block;
+            margin: 20px auto 5px auto;
+        }
+
+        .doc-card .doc-label {
+            font-weight: bold;
+            font-size: 9pt;
+            text-transform: uppercase;
+            color: #000;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .doc-card .no-doc {
+            color: #999;
+            font-size: 8pt;
+            text-align: center;
+            padding: 40px 10px;
+        }
     </style>
 </head>
 <body>
@@ -201,26 +283,14 @@
     <table class="header-table">
         <tr>
             <td class="logo-qupa">
-                <img src="{{ public_path('assets/images/qupa.png') }}" alt="Qupa Logo">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/qupa.png'))) }}" alt="Qupa Logo">
                 <div class="micro-finance">Micro-Finance</div>
                 <div class="registered">Registered Microfinance</div>
             </td>
-            <td style="width: 50%; text-align: center; vertical-align: middle;">
-                <table style="width: 300px; border: 1px solid #000; border-collapse: collapse; margin: 0 auto;">
-                    <tr>
-                        <td style="border: 1px solid #000; padding: 2px; width: 33%; font-size: 7pt;">Delivery Status :</td>
-                        <td style="border: 1px solid #000; padding: 2px; width: 33%; font-size: 7pt;">{{ $deliveryStatus ?? 'Future' }}</td>
-                        <td style="border: 1px solid #000; padding: 2px; width: 34%; font-size: 7pt;">Agent : {{ $agent ?? '' }}</td>
-                    </tr>
-                    <tr>
-                        <td style="border: 1px solid #000; padding: 2px; font-size: 7pt;">Province :</td>
-                        <td style="border: 1px solid #000; padding: 2px; font-size: 7pt;">{{ $province ?? '' }}</td>
-                        <td style="border: 1px solid #000; padding: 2px; font-size: 7pt;">Team : {{ $team ?? '' }}</td>
-                    </tr>
-                </table>
+            <td style="text-align: center; vertical-align: middle;">
             </td>
             <td class="logo-bancozim">
-                <img src="{{ public_path('assets/images/bancozim.png') }}" alt="BancoZim Logo">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="BancoZim Logo">
             </td>
         </tr>
     </table>
@@ -267,10 +337,10 @@
         <tr>
             <td>Name of Employer :</td>
             <td>{{ $employerName ?? '' }}</td>
-            <td colspan="4">Employer Address: {{ $employerAddress ?? '' }}</td>
+            <td colspan="4">Employer Address: {{ $formatAddress($employerAddress ?? '') }}</td>
         </tr>
         <tr>
-            <td colspan="6">Permanent Address (if different from above): {{ $residentialAddress ?? '' }}</td>
+            <td colspan="6">Permanent Address (if different from above): {{ $formatAddress($residentialAddress ?? '') }}</td>
         </tr>
         <tr>
             <td>Property Ownership:</td>
@@ -324,7 +394,7 @@
                     <td>{{ $kin['fullName'] ?? '' }}</td>
                     <td>{{ $kin['relationship'] ?? '' }}</td>
                     <td>{{ $kin['phoneNumber'] ?? '' }}</td>
-                    <td>{{ $kin['residentialAddress'] ?? '' }}</td>
+                    <td>{{ $formatAddress($kin['residentialAddress'] ?? '') }}</td>
                 </tr>
             @endforeach
         @else
@@ -439,15 +509,14 @@
         </tr>
     </table>
 </div>
-</body>
-</html><
-!-- PAGE 2 -->
+
+<!-- PAGE 2 -->
 <div class="page">
     <!-- Header -->
     <table class="header-table">
         <tr>
             <td class="logo-qupa">
-                <img src="{{ public_path('assets/images/qupa.png') }}" alt="Qupa Logo">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/qupa.png'))) }}" alt="Qupa Logo">
                 <div class="micro-finance">Micro-Finance</div>
                 <div class="registered">Registered Microfinance</div>
             </td>
@@ -561,12 +630,12 @@
     <table class="header-table">
         <tr>
             <td class="logo-qupa">
-                <img src="{{ public_path('assets/images/qupa.png') }}" alt="Qupa Logo">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/qupa.png'))) }}" alt="Qupa Logo">
                 <div class="micro-finance">Micro-Finance</div>
                 <div class="registered">Registered Microfinance</div>
             </td>
             <td style="text-align: right;">
-                <img src="{{ public_path('assets/images/bancozim.png') }}" alt="BancoZim Logo">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="BancoZim Logo">
             </td>
         </tr>
     </table>
@@ -588,7 +657,7 @@
                 <strong>PART A</strong><br/><br/>
                 Surname: {{ $surname ?? '' }}<br/><br/>
                 Forename(s): {{ $firstName ?? '' }} {{ $otherNames ?? '' }}<br/><br/>
-                Address: {{ $residentialAddress ?? '' }}<br/><br/>
+                Address: {{ $formatAddress($residentialAddress ?? '') }}<br/><br/>
                 Telephone Nos. Cell No: {{ $mobile ?? '' }} Work: {{ $telephoneRes ?? '' }}<br/><br/>
                 Email Address: {{ $emailAddress ?? '' }} National ID: {{ $nationalIdNumber ?? '' }}
             </td>
@@ -639,7 +708,7 @@
     <table class="header-table">
         <tr>
             <td style="text-align: right;">
-                <img src="{{ public_path('assets/images/bancozim.png') }}" alt="BancoZim Logo">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="BancoZim Logo">
             </td>
         </tr>
     </table>
@@ -661,7 +730,7 @@
         </tr>
         <tr>
             <td class="field-label">Delivery Address</td>
-            <td colspan="3">{{ $residentialAddress ?? '' }}</td>
+            <td colspan="3">{{ $formatAddress($residentialAddress ?? '') }}</td>
         </tr>
     </table>
     
@@ -726,36 +795,194 @@
         </tr>
     </table>
 
-    @if(isset($hasDocuments) && $hasDocuments)
-    <div style="margin-top: 30px; page-break-before: always;">
-        <h3 style="text-align: center; margin-bottom: 20px;">Uploaded Documents</h3>
-        
-        @if(isset($documents['uploadedDocuments']) && count($documents['uploadedDocuments']) > 0)
-            @foreach($documents['uploadedDocuments'] as $docType => $files)
-                @if(count($files) > 0)
-                    <div style="margin-bottom: 20px;">
-                        <h4>{{ ucwords(str_replace('_', ' ', $docType)) }}</h4>
-                        <ul>
-                            @foreach($files as $file)
-                                <li>{{ $file['name'] ?? 'Document' }} ({{ number_format(($file['size'] ?? 0) / 1024 / 1024, 2) }} MB)</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-            @endforeach
-        @endif
-        
-        @if(isset($documents['uploadedAt']))
-            <p style="margin-top: 20px; font-size: 8pt; color: #666;">
-                Documents uploaded on: {{ date('d/m/Y H:i', strtotime($documents['uploadedAt'])) }}
-            </p>
-        @endif
-    </div>
-    @endif
 </div>
 
-<!-- Attachments Page -->
-@include('forms.partials.pdf_attachments')
+<!-- PAGE 5: SUPPORTING DOCUMENTS -->
+<div class="page">
+    <div class="section-header">SUPPORTING DOCUMENTS - {{ $firstName ?? '' }} {{ $surname ?? '' }}</div>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+        <tr>
+            <!-- Selfie Card -->
+            <td class="doc-card" style="width: 35%; height: 180px;">
+                <span class="doc-label">Selfie</span>
+                @php
+                    // Check for processed selfie data first (from PDFGeneratorService)
+                    $selfie = $selfieImageData['data'] ?? null;
+                    // Fallback to raw selfie fields
+                    if (empty($selfie)) {
+                        $selfie = $documents['selfie'] ?? $selfieImage ?? '';
+                    }
+                @endphp
+                @if(!empty($selfie))
+                    @if(str_starts_with($selfie, 'data:image'))
+                        {{-- Base64 data URI (already processed) --}}
+                        <img src="{{ $selfie }}" alt="Selfie">
+                    @elseif(str_starts_with($selfie, 'http'))
+                        {{-- External URL --}}
+                        <img src="{{ $selfie }}" alt="Selfie">
+                    @else
+                        {{-- File path - try to load from storage or public --}}
+                        @php
+                            $selfiePath = null;
+                            if (file_exists(storage_path('app/public/' . $selfie))) {
+                                $selfiePath = storage_path('app/public/' . $selfie);
+                            } elseif (file_exists(public_path($selfie))) {
+                                $selfiePath = public_path($selfie);
+                            } elseif (file_exists($selfie)) {
+                                $selfiePath = $selfie;
+                            }
+                        @endphp
+                        @if($selfiePath && file_exists($selfiePath))
+                            <img src="data:image/png;base64,{{ base64_encode(file_get_contents($selfiePath)) }}" alt="Selfie">
+                        @else
+                            <div class="no-doc">No selfie uploaded</div>
+                        @endif
+                    @endif
+                @else
+                    <div class="no-doc">No selfie uploaded</div>
+                @endif
+            </td>
+
+            <!-- ID Document Card -->
+            <td class="doc-card" style="width: 65%; height: 180px;">
+                <span class="doc-label">ID Document</span>
+                @php
+                    // Check for processed ID data first (from PDFGeneratorService)
+                    $idDocument = $idImageData['data'] ?? null;
+
+                    // Fallback to various possible locations for ID document
+                    if (empty($idDocument)) {
+                        // Try uploadedDocuments array
+                        if (isset($documents['uploadedDocuments']['national_id'][0]['path'])) {
+                            $idDocument = $documents['uploadedDocuments']['national_id'][0]['path'];
+                        } elseif (isset($documents['uploadedDocuments']['nationalId'][0]['path'])) {
+                            $idDocument = $documents['uploadedDocuments']['nationalId'][0]['path'];
+                        } elseif (isset($documents['uploadedDocuments']['id'][0]['path'])) {
+                            $idDocument = $documents['uploadedDocuments']['id'][0]['path'];
+                        }
+                        // Try documentReferences array
+                        elseif (isset($documents['documentReferences']['national_id'][0]['path'])) {
+                            $idDocument = $documents['documentReferences']['national_id'][0]['path'];
+                        } elseif (isset($documents['documentReferences']['nationalId'][0]['path'])) {
+                            $idDocument = $documents['documentReferences']['nationalId'][0]['path'];
+                        }
+                        // Try direct document keys
+                        elseif (isset($documents['nationalId'])) {
+                            $idDocument = $documents['nationalId'];
+                        } elseif (isset($documents['id'])) {
+                            $idDocument = $documents['id'];
+                        } elseif (isset($documents['national_id'])) {
+                            $idDocument = $documents['national_id'];
+                        }
+                    }
+                @endphp
+                @if(!empty($idDocument))
+                    @if(str_starts_with($idDocument, 'data:image'))
+                        <img src="{{ $idDocument }}" alt="ID Document">
+                    @elseif(str_starts_with($idDocument, 'http'))
+                        <img src="{{ $idDocument }}" alt="ID Document">
+                    @else
+                        @php
+                            $idDocPath = null;
+                            // Check if path starts with 'storage/' and try public path
+                            if (str_starts_with($idDocument, 'storage/')) {
+                                $publicPath = public_path($idDocument);
+                                if (file_exists($publicPath)) {
+                                    $idDocPath = $publicPath;
+                                }
+                            }
+                            // Try other paths if not found
+                            if (!$idDocPath && file_exists(storage_path('app/public/' . $idDocument))) {
+                                $idDocPath = storage_path('app/public/' . $idDocument);
+                            } elseif (!$idDocPath && file_exists(public_path($idDocument))) {
+                                $idDocPath = public_path($idDocument);
+                            } elseif (!$idDocPath && file_exists($idDocument)) {
+                                $idDocPath = $idDocument;
+                            }
+                        @endphp
+                        @if($idDocPath && file_exists($idDocPath))
+                            <img src="data:image/png;base64,{{ base64_encode(file_get_contents($idDocPath)) }}" alt="ID Document">
+                        @else
+                            <div class="no-doc">No ID uploaded</div>
+                        @endif
+                    @endif
+                @else
+                    <div class="no-doc">No ID uploaded</div>
+                @endif
+            </td>
+        </tr>
+        <tr>
+            <!-- Payslip Card -->
+            <td class="doc-card" colspan="2" style="height: 220px;">
+                <span class="doc-label">Payslip</span>
+            @php
+                // Check for processed payslip data first (from PDFGeneratorService)
+                $payslip = $payslipImageData['data'] ?? null;
+
+                // Fallback to various possible locations for payslip
+                if (empty($payslip)) {
+                    // Try uploadedDocuments array
+                    if (isset($documents['uploadedDocuments']['payslip'][0]['path'])) {
+                        $payslip = $documents['uploadedDocuments']['payslip'][0]['path'];
+                    } elseif (isset($documents['uploadedDocuments']['pay_slip'][0]['path'])) {
+                        $payslip = $documents['uploadedDocuments']['pay_slip'][0]['path'];
+                    }
+                    // Try documentReferences array
+                    elseif (isset($documents['documentReferences']['payslip'][0]['path'])) {
+                        $payslip = $documents['documentReferences']['payslip'][0]['path'];
+                    } elseif (isset($documents['documentReferences']['pay_slip'][0]['path'])) {
+                        $payslip = $documents['documentReferences']['pay_slip'][0]['path'];
+                    }
+                    // Try direct document keys
+                    elseif (isset($documents['payslip'])) {
+                        $payslip = $documents['payslip'];
+                    } elseif (isset($documents['pay_slip'])) {
+                        $payslip = $documents['pay_slip'];
+                    }
+                }
+            @endphp
+            @if(!empty($payslip))
+                @if(str_starts_with($payslip, 'data:image'))
+                    <img src="{{ $payslip }}" alt="Payslip">
+                @elseif(str_starts_with($payslip, 'http'))
+                    <img src="{{ $payslip }}" alt="Payslip">
+                @else
+                    @php
+                        $payslipPath = null;
+                        // Check if path starts with 'storage/' and try public path
+                        if (str_starts_with($payslip, 'storage/')) {
+                            $publicPath = public_path($payslip);
+                            if (file_exists($publicPath)) {
+                                $payslipPath = $publicPath;
+                            }
+                        }
+                        // Try other paths if not found
+                        if (!$payslipPath && file_exists(storage_path('app/public/' . $payslip))) {
+                            $payslipPath = storage_path('app/public/' . $payslip);
+                        } elseif (!$payslipPath && file_exists(public_path($payslip))) {
+                            $payslipPath = public_path($payslip);
+                        } elseif (!$payslipPath && file_exists($payslip)) {
+                            $payslipPath = $payslip;
+                        }
+                    @endphp
+                    @if($payslipPath && file_exists($payslipPath))
+                        <img src="data:image/png;base64,{{ base64_encode(file_get_contents($payslipPath)) }}" alt="Payslip">
+                    @else
+                        <div class="no-doc">No payslip uploaded</div>
+                    @endif
+                @endif
+            @else
+                <div class="no-doc">No payslip uploaded</div>
+            @endif
+            </td>
+        </tr>
+    </table>
+
+    <div style="margin-top: 10px; font-size: 7pt; text-align: center; color: #666;">
+        <em>End of Application - Page 5 of 5</em>
+    </div>
+</div>
 
 </body>
 </html>

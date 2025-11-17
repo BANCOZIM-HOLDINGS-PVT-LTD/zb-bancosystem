@@ -161,7 +161,7 @@
     <table class="header-table">
         <tr>
             <td class="logo-qupa">
-                <img src="{{ public_path('assets/images/qupa.png') }}" alt="Qupa Logo">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/qupa.png'))) }}" alt="Qupa Logo">
                 <div class="micro-finance">Micro-Finance</div>
                 <div class="registered">Registered Microfinance</div>
             </td>
@@ -180,7 +180,7 @@
                 </table>
             </td>
             <td class="logo-bancozim">
-                <img src="{{ public_path('assets/images/bancozim.png') }}" alt="BancoZim Logo">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="BancoZim Logo">
             </td>
         </tr>
     </table>
@@ -332,7 +332,7 @@
     <table class="header-table">
         <tr>
             <td class="logo-qupa">
-                <img src="{{ public_path('assets/images/qupa.png') }}" alt="Qupa Logo">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/qupa.png'))) }}" alt="Qupa Logo">
                 <div class="micro-finance">Micro-Finance</div>
                 <div class="registered">Registered Microfinance</div>
             </td>
@@ -430,9 +430,6 @@
         <strong>Welcome to Qupa Microfinance - Your Partner in Business Growth</strong>
     </div>
 </div>
-
-<!-- Attachments Page -->
-@include('forms.partials.pdf_attachments')
 
 </body>
 </html>

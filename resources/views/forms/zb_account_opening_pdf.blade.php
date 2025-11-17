@@ -164,7 +164,7 @@
     <table class="header-table">
         <tr>
             <td style="width: 20%;">
-                <img src="{{ public_path('assets/images/zb_logo.png') }}" alt="ZB Logo" class="logo-img">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/zb_logo.png'))) }}" alt="ZB Logo" class="logo-img">
             </td>
             <td style="width: 60%;"></td>
             <td style="width: 20%;" class="tagline">
@@ -744,7 +744,7 @@
     <table class="header-table">
         <tr>
             <td style="width: 20%;">
-                <img src="{{ public_path('assets/images/zb_logo.png') }}" alt="ZB Logo" class="logo-img">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/zb_logo.png'))) }}" alt="ZB Logo" class="logo-img">
             </td>
             <td style="width: 60%;"></td>
             <td style="width: 20%;" class="tagline">
@@ -994,7 +994,7 @@
     <table class="header-table">
         <tr>
             <td style="width: 20%;">
-                <img src="{{ public_path('assets/images/zb_logo.png') }}" alt="ZB Logo" class="logo-img">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/zb_logo.png'))) }}" alt="ZB Logo" class="logo-img">
             </td>
             <td style="width: 60%;"></td>
             <td style="width: 20%;" class="tagline">
@@ -1148,7 +1148,7 @@ PAGE 4 -->
     <table class="header-table">
         <tr>
             <td style="width: 20%;">
-                <img src="{{ public_path('assets/images/zb_logo.png') }}" alt="ZB Logo" class="logo-img">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/zb_logo.png'))) }}" alt="ZB Logo" class="logo-img">
             </td>
             <td style="width: 60%;"></td>
             <td style="width: 20%;" class="tagline">
@@ -1294,9 +1294,6 @@ PAGE 4 -->
     
     <div class="page-footer">Page 4 of 4</div>
 </div>
-
-<!-- Attachments Page -->
-@include('forms.partials.pdf_attachments')
 
 </body>
 </html>
