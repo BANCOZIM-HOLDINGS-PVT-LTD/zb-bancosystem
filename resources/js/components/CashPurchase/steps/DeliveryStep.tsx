@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronRight, ChevronLeft, Truck, Building2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { CashPurchaseData } from '../CashPurchaseWizard';
@@ -50,23 +50,35 @@ const GAIN_DEPOTS = [
     'WX Gokwe - gokwe', 'ZX Zvishavane - zvishavane'
 ];
 
-// Determine delivery agent based on product category
-const determineDeliveryAgent = (category?: string): {
+// Determine delivery agent based on product category and name
+const determineDeliveryAgent = (category?: string, productName?: string): {
     agent: 'swift' | 'gain_outlet';
     reason: string;
 } => {
     const categoryLower = (category || '').toLowerCase();
+    const productNameLower = (productName || '').toLowerCase();
+    const combinedText = `${categoryLower} ${productNameLower}`;
 
-    // Check for live poultry and groceries ONLY - Gain Outlet
+    // Check for tuckshops, groceries, airtime, candy, books, stationary, back to school and live broilers ONLY - Gain Outlet
     if (
-        categoryLower.includes('chicken') ||
-        categoryLower.includes('poultry') ||
-        categoryLower.includes('livestock') ||
-        categoryLower.includes('groceries')
+        combinedText.includes('tuckshop') ||
+        combinedText.includes('groceries') ||
+        combinedText.includes('grocery') ||
+        combinedText.includes('airtime') ||
+        combinedText.includes('candy') ||
+        combinedText.includes('chicken') ||
+        combinedText.includes('poultry') ||
+        combinedText.includes('broiler') ||
+        combinedText.includes('livestock') ||
+        combinedText.includes('back to school') ||
+        combinedText.includes('book') ||
+        combinedText.includes('stationery') ||
+        combinedText.includes('stationary') ||
+        combinedText.includes('retailing')
     ) {
         return {
             agent: 'gain_outlet',
-            reason: 'Live poultry and groceries are delivered through Gain Outlet depots'
+            reason: 'Tuckshops, groceries, airtime, candy, books, stationary, back to school and live broilers are delivered through Gain Outlet depots'
         };
     }
 
@@ -78,7 +90,7 @@ const determineDeliveryAgent = (category?: string): {
 };
 
 export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps) {
-    const deliveryAgentInfo = determineDeliveryAgent(data.product?.category);
+    const deliveryAgentInfo = determineDeliveryAgent(data.product?.category, data.product?.name);
 
     const [selectedAgent] = useState<'swift' | 'gain_outlet'>(
         data.delivery?.type || deliveryAgentInfo.agent
@@ -104,8 +116,8 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
         if (Object.keys(newErrors).length === 0) {
             onNext({
                 type: selectedAgent,
-                city: selectedAgent === 'swift' ? selectedCity : undefined,
-                depot: selectedAgent === 'gain_outlet' ? selectedDepot : undefined,
+                city: selectedAgent === 'swift' ? selectedCity : '',
+                depot: selectedAgent === 'gain_outlet' ? selectedDepot : '',
             });
         }
     };

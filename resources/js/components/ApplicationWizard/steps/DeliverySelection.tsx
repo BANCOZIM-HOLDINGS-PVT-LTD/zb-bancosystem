@@ -164,22 +164,30 @@ const determineDeliveryAgent = (category?: string, subcategory?: string, busines
     const categoryLower = (category || '').toLowerCase();
     const subcategoryLower = (subcategory || '').toLowerCase();
     const businessLower = (business || '').toLowerCase();
+    const combinedText = `${categoryLower} ${subcategoryLower} ${businessLower}`;
 
-    // Check for live poultry and groceries ONLY - Gain Outlet
+    // Check for tuckshops, groceries, airtime, candy, books, stationary, back to school and live broilers ONLY - Gain Outlet
     if (
-        subcategoryLower.includes('poultry') ||
-        subcategoryLower.includes('chicken') ||
-        subcategoryLower.includes('livestock') ||
-        businessLower.includes('chicken') ||
-        businessLower.includes('broiler') ||
-        businessLower.includes('layer') ||
-        categoryLower.includes('groceries') ||
-        subcategoryLower.includes('groceries')
+        combinedText.includes('tuckshop') ||
+        combinedText.includes('groceries') ||
+        combinedText.includes('grocery') ||
+        combinedText.includes('airtime') ||
+        combinedText.includes('candy') ||
+        combinedText.includes('poultry') ||
+        combinedText.includes('chicken') ||
+        combinedText.includes('livestock') ||
+        combinedText.includes('broiler') ||
+        combinedText.includes('layer') ||
+        combinedText.includes('back to school') ||
+        combinedText.includes('book') ||
+        combinedText.includes('stationery') ||
+        combinedText.includes('stationary') ||
+        combinedText.includes('retailing')
     ) {
         return {
             agent: 'Gain Outlet',
             isEditable: false,
-            reason: 'Live poultry and groceries are delivered through Gain Outlet depots'
+            reason: 'Tuckshops, groceries, airtime, candy, books, stationary, back to school and live broilers are delivered through Gain Outlet depots'
         };
     }
 
@@ -296,11 +304,11 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                             setSelectedDepot('');
                                         }
                                     }}
-                                    disabled={isSwiftDisabled || (!deliveryAgentInfo.isEditable && selectedAgent !== 'Swift')}
+                                    disabled={isSwiftDisabled}
                                     className={`p-4 border-2 rounded-lg text-left transition-all ${
                                         selectedAgent === 'Swift'
                                             ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                            : isSwiftDisabled || (!deliveryAgentInfo.isEditable && selectedAgent !== 'Swift')
+                                            : isSwiftDisabled
                                             ? 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed'
                                             : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400'
                                     }`}
@@ -323,11 +331,11 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                             setSelectedCity('');
                                         }
                                     }}
-                                    disabled={isGainDisabled || (!deliveryAgentInfo.isEditable && selectedAgent !== 'Gain Outlet')}
+                                    disabled={isGainDisabled}
                                     className={`p-4 border-2 rounded-lg text-left transition-all ${
                                         selectedAgent === 'Gain Outlet'
                                             ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                            : isGainDisabled || (!deliveryAgentInfo.isEditable && selectedAgent !== 'Gain Outlet')
+                                            : isGainDisabled
                                             ? 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed'
                                             : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400'
                                     }`}
