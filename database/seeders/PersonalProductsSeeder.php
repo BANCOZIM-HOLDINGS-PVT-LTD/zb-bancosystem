@@ -420,7 +420,7 @@ class PersonalProductsSeeder extends Seeder
         // 4. Kitchen ware
         $kitchenwareCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Kitchen ware',
-            'emoji' => '🧊',
+            'emoji' => '🥡',
             'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
@@ -1190,7 +1190,7 @@ class PersonalProductsSeeder extends Seeder
         // 14. Scholars back to school
         $backToSchoolCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Scholars back to school',
-            'emoji' => '🎒',
+            'emoji' => '🎒📚',
             'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
@@ -1219,7 +1219,7 @@ class PersonalProductsSeeder extends Seeder
         // 15. School fees
         $schoolFeesCategory = DB::table('product_categories')->insertGetId([
             'name' => 'School fees',
-            'emoji' => '👫',
+            'emoji' => '👫📚',
             'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),

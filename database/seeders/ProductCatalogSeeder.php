@@ -12,7 +12,7 @@ class ProductCatalogSeeder extends Seeder
     {
         // 22 MicroBiz Main Categories
         $categories = [
-            ['id' => 'agric-mechanization', 'name' => 'Agric mechanization', 'emoji' => '🚜'],
+            ['id' => 'agric-mechanization', 'name' => 'Agricultural mechanization', 'emoji' => '🚜'],
             ['id' => 'agriculture', 'name' => 'Agriculture', 'emoji' => '🌾'],
             ['id' => 'cleaning-services', 'name' => 'Cleaning Services', 'emoji' => '🧹'],
             ['id' => 'beauty-hair-cosmetics', 'name' => 'Beauty, Hair and Cosmetics', 'emoji' => '💇'],
@@ -21,7 +21,7 @@ class ProductCatalogSeeder extends Seeder
             ['id' => 'events-management', 'name' => 'Events Management', 'emoji' => '🎉'],
             ['id' => 'snack-production', 'name' => 'Snack Production', 'emoji' => '🍿'],
             ['id' => 'food-processing', 'name' => 'Food Processing', 'emoji' => '🥜'],
-            ['id' => 'entertainment', 'name' => 'Musical Instruments', 'emoji' => '🎮'],
+            ['id' => 'entertainment', 'name' => 'Entertainment', 'emoji' => '🎮'],
             ['id' => 'printing', 'name' => 'Material Printing', 'emoji' => '🖨️'],
             ['id' => 'digital-multimedia', 'name' => 'Digital Multimedia Production', 'emoji' => '📸'],
             ['id' => 'tailoring', 'name' => 'Tailoring', 'emoji' => '✂️'],
@@ -93,7 +93,7 @@ class ProductCatalogSeeder extends Seeder
     private function getSubcategoriesForCategory(string $categoryId): array
     {
         $allSubcategories = [
-            // 1. Agric mechanization
+            // 1. Agricultural mechanization
             'agric-mechanization' => [
                 ['name' => 'Maize sheller', 'businesses' => $this->getBusinessesForSubcategory('Maize sheller')],
                 ['name' => 'Water storage and pumping systems', 'businesses' => $this->getBusinessesForSubcategory('Water storage and pumping systems')],
@@ -163,7 +163,7 @@ class ProductCatalogSeeder extends Seeder
                 ['name' => 'Cooking oil', 'businesses' => $this->getBusinessesForSubcategory('Cooking oil')],
                 ['name' => 'Grinding mill', 'businesses' => $this->getBusinessesForSubcategory('Grinding mill')],
             ],
-            // 10. Musical Instruments
+            // 10. Entertainment
             'entertainment' => [
                 ['name' => 'Snooker table', 'businesses' => $this->getBusinessesForSubcategory('Snooker table')],
                 ['name' => 'Slug', 'businesses' => $this->getBusinessesForSubcategory('Slug')],
@@ -171,7 +171,8 @@ class ProductCatalogSeeder extends Seeder
                 ['name' => 'DJ PA system', 'businesses' => $this->getBusinessesForSubcategory('DJ PA system')],
                 ['name' => 'Internet Café', 'businesses' => $this->getBusinessesForSubcategory('Internet Café')],
                 ['name' => 'Movie Projectors', 'businesses' => $this->getBusinessesForSubcategory('Movie Projectors')],
-                ['name' => 'Instruments Hiring', 'businesses' => $this->getBusinessesForSubcategory('Instruments Hiring')],
+                ['name' => 'Musical Instruments', 'businesses' => $this->getBusinessesForSubcategory('Musical Instruments')],
+                ['name' => 'Quad bikes', 'businesses' => $this->getBusinessesForSubcategory('Quad bikes')],
             ],
             // 11. Material Printing
             'printing' => [
@@ -262,15 +263,9 @@ class ProductCatalogSeeder extends Seeder
                 ['name' => 'Sweet Potato', 'basePrice' => 800, 'scales' => [['name' => '1 Ha', 'multiplier' => 1], ['name' => '2 Ha', 'multiplier' => 2], ['name' => '3 Ha', 'multiplier' => 3], ['name' => '5 Ha', 'multiplier' => 5]]],
             ],
             'Supplementary inputs' => [
-                ['name' => 'Animal Feed Production', 'basePrice' => 600, 'scales' => [['name' => 'Small', 'multiplier' => 1], ['name' => 'Medium', 'multiplier' => 2], ['name' => 'Large', 'multiplier' => 3], ['name' => 'Commercial', 'multiplier' => 5]]],
-                ['name' => 'Bee keeping', 'basePrice' => 600, 'scales' => [['name' => 'Small', 'multiplier' => 1], ['name' => 'Medium', 'multiplier' => 2], ['name' => 'Large', 'multiplier' => 3], ['name' => 'Commercial', 'multiplier' => 5]]],
-                ['name' => 'Cattle Services', 'basePrice' => 600, 'scales' => [['name' => 'Small', 'multiplier' => 1], ['name' => 'Medium', 'multiplier' => 2], ['name' => 'Large', 'multiplier' => 3], ['name' => 'Commercial', 'multiplier' => 5]]],
-                ['name' => 'Chickens Layers', 'basePrice' => 600, 'scales' => [['name' => 'Small', 'multiplier' => 1], ['name' => 'Medium', 'multiplier' => 2], ['name' => 'Large', 'multiplier' => 3], ['name' => 'Commercial', 'multiplier' => 5]]],
-                ['name' => 'Chickens Rearing', 'basePrice' => 600, 'scales' => [['name' => 'Small', 'multiplier' => 1], ['name' => 'Medium', 'multiplier' => 2], ['name' => 'Large', 'multiplier' => 3], ['name' => 'Commercial', 'multiplier' => 5]]],
-                ['name' => 'Goat Rearing', 'basePrice' => 600, 'scales' => [['name' => 'Small', 'multiplier' => 1], ['name' => 'Medium', 'multiplier' => 2], ['name' => 'Large', 'multiplier' => 3], ['name' => 'Commercial', 'multiplier' => 5]]],
-                ['name' => 'Fish Farming', 'basePrice' => 600, 'scales' => [['name' => 'Small', 'multiplier' => 1], ['name' => 'Medium', 'multiplier' => 2], ['name' => 'Large', 'multiplier' => 3], ['name' => 'Commercial', 'multiplier' => 5]]],
-                ['name' => 'Rabbits', 'basePrice' => 600, 'scales' => [['name' => 'Small', 'multiplier' => 1], ['name' => 'Medium', 'multiplier' => 2], ['name' => 'Large', 'multiplier' => 3], ['name' => 'Commercial', 'multiplier' => 5]]],
-                ['name' => 'Piggery', 'basePrice' => 600, 'scales' => [['name' => 'Small', 'multiplier' => 1], ['name' => 'Medium', 'multiplier' => 2], ['name' => 'Large', 'multiplier' => 3], ['name' => 'Commercial', 'multiplier' => 5]]],
+                ['name' => 'Fertilizers', 'basePrice' => 600, 'scales' => [['name' => 'Small', 'multiplier' => 1], ['name' => 'Medium', 'multiplier' => 2], ['name' => 'Large', 'multiplier' => 3], ['name' => 'Commercial', 'multiplier' => 5]]],
+                ['name' => 'Herbicides', 'basePrice' => 600, 'scales' => [['name' => 'Small', 'multiplier' => 1], ['name' => 'Medium', 'multiplier' => 2], ['name' => 'Large', 'multiplier' => 3], ['name' => 'Commercial', 'multiplier' => 5]]],
+                ['name' => 'Pesticides', 'basePrice' => 600, 'scales' => [['name' => 'Small', 'multiplier' => 1], ['name' => 'Medium', 'multiplier' => 2], ['name' => 'Large', 'multiplier' => 3], ['name' => 'Commercial', 'multiplier' => 5]]],
             ],
             'Baking' => [
                 ['name' => 'Baking – Bread', 'basePrice' => 1000, 'scales' => [['name' => 'Small', 'multiplier' => 1], ['name' => 'Medium', 'multiplier' => 2], ['name' => 'Large', 'multiplier' => 3]]],
@@ -294,8 +289,8 @@ class ProductCatalogSeeder extends Seeder
             'Plumbing' => [
                 ['name' => 'Plumbing Tools', 'basePrice' => 1200, 'scales' => [['name' => 'Basic Tools', 'multiplier' => 1], ['name' => 'Standard Tools', 'multiplier' => 2], ['name' => 'Professional Tools', 'multiplier' => 3]]],
             ],
-            'Instruments Hiring' => [
-                ['name' => 'Musical Instruments Hire', 'basePrice' => 2000, 'scales' => [['name' => 'Basic Package', 'multiplier' => 1], ['name' => 'Standard Package', 'multiplier' => 2], ['name' => 'Premium Package', 'multiplier' => 3]]],
+            'Entertainment' => [
+                ['name' => 'Entertainment', 'basePrice' => 2000, 'scales' => [['name' => 'Basic Package', 'multiplier' => 1], ['name' => 'Standard Package', 'multiplier' => 2], ['name' => 'Premium Package', 'multiplier' => 3]]],
             ],
             'PA system' => [
                 ['name' => 'PA System', 'basePrice' => 1800, 'scales' => [['name' => 'Basic Setup', 'multiplier' => 1], ['name' => 'Standard Setup', 'multiplier' => 2], ['name' => 'Professional Setup', 'multiplier' => 3]]],
