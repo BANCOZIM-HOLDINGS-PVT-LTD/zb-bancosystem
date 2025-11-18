@@ -42,9 +42,25 @@ export interface CashPurchaseData {
         email?: string;
     };
     payment?: {
-        method: 'paynow';
+        method: 'visa' | 'zimswitch' | 'ecocash' | 'onemoney' | 'innbucks' | 'omari';
         amount: number;
+        currency?: 'USD' | 'ZIG';
+        // Common fields
         transactionId?: string;
+        // Mobile wallet specific (EcoCash, OneMoney, Omari)
+        mobileNumber?: string;
+        otpCode?: string;
+        // Card specific (Visa, Zimswitch)
+        cardNumber?: string;
+        cardHolder?: string;
+        expiryMonth?: string;
+        expiryYear?: string;
+        cvv?: string;
+        // InnBucks specific
+        authorizationCode?: string;
+        // Payment gateway response
+        paymentReference?: string;
+        paymentStatus?: 'pending' | 'success' | 'failed';
     };
 }
 
