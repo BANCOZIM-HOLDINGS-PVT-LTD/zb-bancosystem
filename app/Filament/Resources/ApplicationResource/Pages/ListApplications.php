@@ -26,40 +26,60 @@ class ListApplications extends ListRecords
                 ->action(function () {
                     // Export logic here
                     $applications = ApplicationResource::getEloquentQuery()->get();
-                    
+
                     $csvData = [];
                     $csvData[] = [
-                        'ID', 'Reference Code', 'Applicant Name', 'Business Type', 
-                        'Amount', 'Channel', 'Status', 'Submitted Date'
+                        'REFERENCE', 'ID NUMBER', 'EC NUMBER', 'TYPE',
+                        'END DATE', 'AMOUNT', 'START DATE'
                     ];
-                    
+
                     foreach ($applications as $application) {
                         $formData = $application->form_data;
-                        $firstName = $formData['formResponses']['firstName'] ?? '';
-                        $lastName = $formData['formResponses']['lastName'] ?? '';
-                        $applicantName = trim($firstName . ' ' . $lastName) ?: 'N/A';
-                        
+                        $formResponses = $formData['formResponses'] ?? [];
+
+                        // REFERENCE - Auto-generated ID like ZB2025000008
+                        $reference = 'ZB' . date('Y') . str_pad($application->id, 6, '0', STR_PAD_LEFT);
+
+                        // ID NUMBER - National ID from form responses
+                        $idNumber = $formResponses['idNumber']
+                                 ?? $formResponses['nationalIdNumber']
+                                 ?? $formResponses['nationalId']
+                                 ?? 'N/A';
+
+                        // EC NUMBER - Employment Number
+                        $ecNumber = $formResponses['employmentNumber'] ?? 'N/A';
+
+                        // TYPE - Always "NEW"
+                        $type = 'NEW';
+
+                        // AMOUNT - Loan amount
+                        $amount = number_format($formData['finalPrice'] ?? 0, 2);
+
+                        // Calculate loan repayment dates
+                        $loanTenure = (int)($formResponses['loanTenure'] ?? 12); // Default 12 months
+                        $startDate = $application->created_at;
+                        $endDate = (clone $startDate)->addMonths($loanTenure);
+
                         $csvData[] = [
-                            'ZB' . date('Y') . str_pad($application->id, 6, '0', STR_PAD_LEFT),
-                            $application->reference_code ?? 'N/A',
-                            $applicantName,
-                            $formData['selectedBusiness']['name'] ?? 'N/A',
-                            number_format($formData['finalPrice'] ?? 0, 2),
-                            $application->channel,
-                            $application->current_step,
-                            $application->created_at->format('Y-m-d H:i:s'),
+                            $reference,
+                            $idNumber,
+                            $ecNumber,
+                            $type,
+                            $endDate->format('Y-m-d'),
+                            $amount,
+                            $startDate->format('Y-m-d'),
                         ];
                     }
-                    
+
                     $filename = 'applications_export_' . date('Ymd_His') . '.csv';
                     $path = storage_path('app/public/' . $filename);
-                    
+
                     $fp = fopen($path, 'w');
                     foreach ($csvData as $row) {
                         fputcsv($fp, $row);
                     }
                     fclose($fp);
-                    
+
                     return response()->download($path, $filename)->deleteFileAfterSend();
                 }),
                 
