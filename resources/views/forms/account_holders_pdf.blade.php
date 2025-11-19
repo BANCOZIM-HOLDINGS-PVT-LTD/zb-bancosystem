@@ -634,9 +634,6 @@
                 <div class="micro-finance">Micro-Finance</div>
                 <div class="registered">Registered Microfinance</div>
             </td>
-            <td style="text-align: right;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="BancoZim Logo">
-            </td>
         </tr>
     </table>
     
@@ -708,11 +705,11 @@
     <table class="header-table">
         <tr>
             <td style="text-align: right;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="BancoZim Logo">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="BancoZim Logo" style="max-width: 80px; height: auto;">
             </td>
         </tr>
     </table>
-    
+
     <h3 style="text-align: center; text-decoration: underline; margin: 20px 0;">PRODUCT ORDER FORM (P.O.F)</h3>
     
     <table class="main-table">
@@ -778,20 +775,11 @@
     <table style="width: 100%; margin-top: 30px;">
         <tr>
             <td style="width: 15%;">Signature</td>
-            <td style="width: 30%; border-bottom: 1px solid #000; height: 50px; vertical-align: bottom;">
+            <td style="width: 85%; border-bottom: 1px solid #000; height: 50px; vertical-align: bottom;">
                 @if(isset($signatureImage) && !empty($signatureImage))
                     <img src="{{ $signatureImage }}" style="max-width: 150px; max-height: 40px;" alt="Digital Signature">
                 @endif
             </td>
-            <td style="width: 10%; text-align: center; background-color: #4B9BFF; color: white; padding: 20px;">
-                @if(isset($selfieImage) && !empty($selfieImage))
-                    <img src="{{ $selfieImage }}" style="width: 40px; height: 40px; object-fit: cover;" alt="Selfie">
-                @else
-                    Fingerprint
-                @endif
-            </td>
-            <td style="width: 30%; border-bottom: 1px solid #000;"></td>
-            <td style="width: 15%;">I.D Number</td>
         </tr>
     </table>
 

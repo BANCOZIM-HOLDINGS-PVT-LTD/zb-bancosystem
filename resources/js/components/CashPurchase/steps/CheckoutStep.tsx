@@ -620,7 +620,7 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
                         disabled={loading}
                     />
                     <span className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                        I agree to the{' '}
+                        I agree to the delivery{' '}
                         <a href="#" className="text-emerald-600 hover:text-emerald-700 underline">
                             terms and conditions
                         </a>{' '}

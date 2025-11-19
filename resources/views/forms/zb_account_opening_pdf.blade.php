@@ -1,3 +1,146 @@
+@php
+    // Helper to format address objects into readable strings
+    $formatAddress = function($address) {
+        // Try to decode JSON string first
+        if (is_string($address)) {
+            $decoded = json_decode($address, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $address = $decoded;
+            } else {
+                // If it's not JSON, check if it looks like a plain address string
+                // (doesn't start with { or [)
+                if (!str_starts_with(trim($address), '{') && !str_starts_with(trim($address), '[')) {
+                    return $address;
+                }
+                // Otherwise it's malformed JSON, return empty
+                return '';
+            }
+        }
+
+        if (is_array($address) || is_object($address)) {
+            $address = (array)$address;
+            $parts = [];
+
+            // Add house/building number
+            if (!empty($address['houseNumber'])) {
+                $parts[] = $address['houseNumber'];
+            }
+
+            // Add street name
+            if (!empty($address['streetName'])) {
+                $parts[] = $address['streetName'];
+            }
+
+            // Add suburb
+            if (!empty($address['suburb'])) {
+                $parts[] = $address['suburb'];
+            }
+
+            // Add city
+            if (!empty($address['city'])) {
+                $parts[] = $address['city'];
+            }
+
+            // Add province if available
+            if (!empty($address['province'])) {
+                $parts[] = $address['province'];
+            }
+
+            // Add district for rural addresses
+            if (!empty($address['district'])) {
+                $parts[] = $address['district'];
+            }
+
+            // Add ward for rural addresses
+            if (!empty($address['ward'])) {
+                $parts[] = 'Ward ' . $address['ward'];
+            }
+
+            // Add village for rural addresses
+            if (!empty($address['village'])) {
+                $parts[] = $address['village'];
+            }
+
+            return implode(', ', array_filter($parts));
+        }
+
+        return '';
+    };
+
+    // Helper to safely get form response values
+    $get = function($key, $default = '') use ($formResponses, $formatAddress) {
+        $value = $formResponses[$key] ?? $default;
+
+        // Special handling for address fields
+        if (strpos($key, 'Address') !== false || strpos($key, 'address') !== false) {
+            return $formatAddress($value);
+        }
+
+        return is_array($value) ? $default : (string)$value;
+    };
+
+    // Helper function for checkboxes
+    $isChecked = function($key, $value) use ($formResponses) {
+        $fieldValue = $formResponses[$key] ?? '';
+        if (is_array($fieldValue)) {
+            return in_array($value, $fieldValue);
+        }
+        return $fieldValue === $value || $fieldValue == $value;
+    };
+
+    // Helper to get image data for embedding
+    $getImageData = function($imageKey) use ($formResponses, $documents, $selfieImage, $signatureImage) {
+        // Check if image data is already processed and passed as variable
+        if ($imageKey === 'selfie' && !empty($selfieImage)) {
+            return $selfieImage;
+        }
+        if ($imageKey === 'signature' && !empty($signatureImage)) {
+            return $signatureImage;
+        }
+
+        // Check in documents array
+        if (isset($documents[$imageKey])) {
+            $imagePath = $documents[$imageKey];
+
+            // If it's already base64 data URL
+            if (strpos($imagePath, 'data:image') === 0) {
+                return $imagePath;
+            }
+
+            // If it's a file path
+            if (file_exists(public_path($imagePath))) {
+                $imageData = file_get_contents(public_path($imagePath));
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mimeType = finfo_file($finfo, public_path($imagePath));
+                finfo_close($finfo);
+                return 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+            }
+
+            // Try storage path
+            if (\Storage::disk('public')->exists($imagePath)) {
+                $imageData = \Storage::disk('public')->get($imagePath);
+                $extension = pathinfo($imagePath, PATHINFO_EXTENSION);
+                $mimeType = 'image/' . ($extension === 'jpg' ? 'jpeg' : $extension);
+                return 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+            }
+        }
+
+        // Check in formResponses
+        if (isset($formResponses[$imageKey])) {
+            $imagePath = $formResponses[$imageKey];
+
+            // If it's already base64 data URL
+            if (strpos($imagePath, 'data:image') === 0) {
+                return $imagePath;
+            }
+        }
+
+        return null;
+    };
+
+    $selfieImageData = $getImageData('selfie');
+    $signatureImageData = $getImageData('signature');
+@endphp
 <!DOCTYPE html>
 <html>
 <head>
@@ -5,154 +148,192 @@
     <title>ZB Account Opening Form</title>
     <style>
         @page {
-            margin: 8mm;
+            margin: 12mm 10mm;
             size: A4;
         }
-        
+
         body {
             font-family: Arial, sans-serif;
-            font-size: 6pt;
-            line-height: 1.0;
+            font-size: 9pt;
+            line-height: 1.2;
             margin: 0;
             padding: 0;
+            color: #000;
         }
-        
+
         .page {
             page-break-after: always;
-            position: relative;
-            height: 280mm;
         }
-        
+
         .page:last-child {
             page-break-after: avoid;
         }
-        
-        /* Header styles */
-        .header-table {
+
+        /* Header */
+        .header {
+            display: table;
             width: 100%;
-            margin-bottom: 2px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
         }
-        
-        .logo-img {
-            height: 30px;
+
+        .header-left {
+            display: table-cell;
+            vertical-align: middle;
+            width: 50%;
         }
-        
-        .tagline {
+
+        .header-right {
+            display: table-cell;
+            vertical-align: middle;
+            width: 50%;
             text-align: right;
-            font-size: 5pt;
-            letter-spacing: 0.5px;
+            font-size: 8pt;
+            letter-spacing: 1px;
         }
-        
-        /* Form title */
-        .form-title {
-            font-size: 10pt;
+
+        .logo {
+            height: 40px;
+        }
+
+        .for-you {
+            font-size: 18pt;
+            color: #333;
+            margin-left: 10px;
+        }
+
+        /* Page title */
+        .page-title {
+            font-size: 14pt;
             font-weight: bold;
-            border-bottom: 2px solid #000;
-            padding-bottom: 1px;
-            margin-bottom: 2px;
+            margin: 8px 0 2px 0;
         }
-        
-        .subtitle {
-            font-size: 5pt;
+
+        .page-subtitle {
+            font-size: 7pt;
             font-style: italic;
-            margin-bottom: 3px;
+            color: #00439C;
+            margin-bottom: 5px;
         }
-        
+
+        /* Account number and service centre */
+        .account-line {
+            margin: 5px 0;
+            font-size: 8pt;
+        }
+
+        .account-number-boxes {
+            display: inline-block;
+        }
+
+        .num-box {
+            display: inline-block;
+            width: 15px;
+            height: 18px;
+            border: 1px solid #000;
+            text-align: center;
+            vertical-align: middle;
+            margin: 0 1px;
+            padding-top: 2px;
+            font-weight: bold;
+        }
+
         /* Section headers */
         .section-header {
             background-color: #8BC34A;
             color: white;
             font-weight: bold;
-            padding: 2px 4px;
-            font-size: 6pt;
-            margin: 3px 0 1px 0;
+            padding: 4px 8px;
+            font-size: 10pt;
+            margin: 6px 0 4px 0;
         }
-        
-        /* Main form table */
-        .main-table {
+
+        .section-note {
+            font-size: 7pt;
+            font-style: italic;
+            color: white;
+        }
+
+        /* Form table */
+        .form-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 5pt;
-            margin-bottom: 1px;
+            margin-bottom: 4px;
         }
-        
-        .main-table td {
-            border: 1px solid #000;
-            padding: 1px 2px;
+
+        .form-table td {
+            border: 1px solid #666;
+            padding: 2px 4px;
+            font-size: 8pt;
             vertical-align: middle;
-            height: 10px;
         }
-        
-        .label {
+
+        .form-label {
             background-color: #f5f5f5;
             font-weight: normal;
+            white-space: nowrap;
         }
-        
-        .input {
+
+        .form-value {
             background-color: white;
         }
-        
-        /* Checkbox */
+
+        .italic-note {
+            font-style: italic;
+            color: #00439C;
+            font-size: 7pt;
+        }
+
+        /* Checkboxes */
         .checkbox {
             display: inline-block;
-            width: 8px;
-            height: 8px;
+            width: 12px;
+            height: 12px;
             border: 1px solid #000;
-            margin: 0 1px;
+            margin: 0 3px;
             vertical-align: middle;
         }
-        
-        .checkbox-checked {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border: 1px solid #000;
-            margin: 0 1px;
-            vertical-align: middle;
-            background-color: #000;
+
+        .checkbox-checked::after {
+            content: 'X';
+            font-weight: bold;
+            font-size: 10pt;
         }
-        
-        /* Small input boxes for dates/numbers */
-        .box {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border: 1px solid #000;
-            margin: 0 0.5px;
-            text-align: center;
-            vertical-align: middle;
-            font-size: 5pt;
-        }
-        
+
         /* Page footer */
         .page-footer {
-            position: absolute;
-            bottom: 3mm;
-            right: 8mm;
-            font-size: 5pt;
-            font-weight: bold;
+            position: fixed;
+            bottom: 8mm;
+            right: 10mm;
+            font-size: 8pt;
+            color: #666;
         }
-        
+
         /* Terms text */
-        .terms-text {
-            font-size: 4pt;
-            line-height: 1.1;
-            text-align: justify;
+        .terms-list {
+            font-size: 7pt;
+            line-height: 1.3;
+            margin: 3px 0;
         }
-        
-        .terms-columns {
-            column-count: 2;
-            column-gap: 8px;
+
+        .terms-list p {
+            margin: 2px 0 2px 15px;
+            text-indent: -15px;
         }
-        
-        /* Compact spacing */
-        .compact {
-            margin: 0;
-            padding: 0;
+
+        .signature-box {
+            border: 1px solid #000;
+            min-height: 50px;
+            padding: 5px;
         }
-        
-        .tight-row {
-            height: 8px;
+
+        .photo-box {
+            border: 2px solid #000;
+            min-height: 120px;
+            width: 100px;
+            text-align: center;
+            padding: 5px;
         }
     </style>
 </head>
@@ -161,1137 +342,786 @@
 <!-- PAGE 1 -->
 <div class="page">
     <!-- Header -->
-    <table class="header-table">
+    <div class="header">
+        <div class="header-left">
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/zb_logo.png'))) }}" alt="ZB Logo" class="logo">
+            <span class="for-you">for you</span>
+        </div>
+        <div class="header-right">
+            BANKING | INVESTMENTS | INSURANCE
+        </div>
+    </div>
+
+    <!-- Page Title -->
+    <div class="page-title">Individual Customer Account Opening Application Form</div>
+    <div class="page-subtitle">(Please complete in black or blue pen with clear CAPITAL LETTERS print)</div>
+
+    <!-- Account Number -->
+    <div class="account-line">
+        <strong>Account Number:</strong> <span style="font-size: 7pt; color: #666;">(For Official Use Only)</span>
+        <div class="account-number-boxes">
+            <span class="num-box">4</span>
+            <span class="num-box"></span>
+            <span class="num-box"></span>
+            —
+            <span class="num-box"></span>
+            <span class="num-box"></span>
+            <span class="num-box"></span>
+            —
+            <span class="num-box"></span>
+            <span class="num-box"></span>
+            <span class="num-box"></span>
+            <span class="num-box"></span>
+            <span class="num-box"></span>
+        </div>
+    </div>
+
+    <div class="account-line">
+        <strong>Service Centre for Card Collection:</strong> _____________________________
+    </div>
+
+    <!-- Section A - Account Specifications -->
+    <div class="section-header">
+        A - ACCOUNT SPECIFICATIONS
+    </div>
+
+    <table class="form-table">
         <tr>
-            <td style="width: 20%;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/zb_logo.png'))) }}" alt="ZB Logo" class="logo-img">
-            </td>
-            <td style="width: 60%;"></td>
-            <td style="width: 20%;" class="tagline">
-                BANKING | INVESTMENTS | INSURANCE
+            <td class="form-label" style="width: 25%;">CURRENCY OF ACCOUNT:</td>
+            <td class="form-value" colspan="5">
+                ZWL$ <span class="checkbox {{ $isChecked('currency', 'ZWL') ? 'checkbox-checked' : '' }}"></span>
+                USD <span class="checkbox {{ $isChecked('currency', 'USD') ? 'checkbox-checked' : '' }}"></span>
+                ZAR <span class="checkbox {{ $isChecked('currency', 'ZAR') ? 'checkbox-checked' : '' }}"></span>
+                BWP <span class="checkbox {{ $isChecked('currency', 'BWP') ? 'checkbox-checked' : '' }}"></span>
+                EURO <span class="checkbox {{ $isChecked('currency', 'EURO') ? 'checkbox-checked' : '' }}"></span>
+                OTHER <span class="checkbox"></span>
             </td>
         </tr>
     </table>
-    
-    <div class="form-title">Individual Customer Account Opening Application Form</div>
-    <div class="subtitle">(Please complete in black or blue pen with clear CAPITAL LETTERS print)</div>
-    
-    <!-- Account Number and Service Centre -->
-    <table class="main-table">
-        <tr>
-            <td class="label" style="width: 15%;">Account Number:<br/><span style="font-size: 4pt;">(For Official Use Only)</span></td>
-            <td class="input" style="width: 35%; text-align: center;">
-                <span class="box">4</span><span class="box"></span><span class="box"></span>—<span class="box"></span><span class="box"></span><span class="box"></span>—<span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span><span class="box"></span>
-            </td>
-            <td class="label" style="width: 20%;">Service Centre for Card Collection:</td>
-            <td class="input" style="width: 30%;">{{ $formResponses['serviceCenter'] ?? '' }}</td>
-        </tr>
-    </table>    
-    <!
--- Section A -->
-    <div class="section-header">A - ACCOUNT SPECIFICATIONS <span style="font-size: 4pt; font-style: italic;">(Please mark (X) the appropriate boxes)</span></div>
-    <table class="main-table">
-        <tr>
-            <td class="label" style="width: 20%;">CURRENCY OF ACCOUNT:</td>
-            <td class="input" style="width: 10%;">ZWL$ 
-                @if(isset($formResponses['accountCurrency']) && $formResponses['accountCurrency'] == 'ZWL$')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input" style="width: 10%;">USD 
-                @if(isset($formResponses['accountCurrency']) && $formResponses['accountCurrency'] == 'USD')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input" style="width: 10%;">ZAR 
-                @if(isset($formResponses['accountCurrency']) && $formResponses['accountCurrency'] == 'ZAR')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input" style="width: 10%;">BWP 
-                @if(isset($formResponses['accountCurrency']) && $formResponses['accountCurrency'] == 'BWP')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input" style="width: 10%;">EURO 
-                @if(isset($formResponses['accountCurrency']) && $formResponses['accountCurrency'] == 'EURO')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input" style="width: 15%;">OTHER <span style="font-style: italic;">(Indicate)</span> 
-                @if(isset($formResponses['accountCurrency']) && !in_array($formResponses['accountCurrency'], ['ZWL$', 'USD', 'ZAR', 'BWP', 'EURO']))
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input" style="width: 15%;">
-                @if(isset($formResponses['accountCurrency']) && !in_array($formResponses['accountCurrency'], ['ZWL$', 'USD', 'ZAR', 'BWP', 'EURO']))
-                    {{ $formResponses['accountCurrency'] }}
-                @endif
-            </td>
-        </tr>
-    </table>
-    
-    <!-- Section B -->
+
+    <!-- Section B - Customer Personal Details -->
     <div class="section-header">B - CUSTOMER PERSONAL DETAILS</div>
-    <table class="main-table">
+
+    <table class="form-table">
         <tr>
-            <td class="label" style="width: 5%;">Title:</td>
-            <td class="input" style="width: 5%;">Mr 
-                @if(isset($formResponses['title']) && $formResponses['title'] == 'Mr')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
+            <td class="form-label" style="width: 8%;">Title:</td>
+            <td class="form-value" style="width: 25%;">
+                Mr <span class="checkbox {{ $isChecked('title', 'Mr') ? 'checkbox-checked' : '' }}"></span>
+                Mrs <span class="checkbox {{ $isChecked('title', 'Mrs') ? 'checkbox-checked' : '' }}"></span>
+                Ms <span class="checkbox {{ $isChecked('title', 'Ms') ? 'checkbox-checked' : '' }}"></span>
+                Dr <span class="checkbox {{ $isChecked('title', 'Dr') ? 'checkbox-checked' : '' }}"></span>
+                Prof <span class="checkbox {{ $isChecked('title', 'Prof') ? 'checkbox-checked' : '' }}"></span>
             </td>
-            <td class="input" style="width: 5%;">Mrs 
-                @if(isset($formResponses['title']) && $formResponses['title'] == 'Mrs')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input" style="width: 5%;">Ms 
-                @if(isset($formResponses['title']) && $formResponses['title'] == 'Ms')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input" style="width: 5%;">Dr 
-                @if(isset($formResponses['title']) && $formResponses['title'] == 'Dr')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input" style="width: 5%;">Prof 
-                @if(isset($formResponses['title']) && $formResponses['title'] == 'Prof')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="label" style="width: 10%;">First Name:</td>
-            <td class="input" style="width: 25%;">{{ $formResponses['firstName'] ?? '' }}</td>
-            <td class="label" style="width: 10%;">Surname:</td>
-            <td class="input" style="width: 25%;">{{ $formResponses['surname'] ?? '' }}</td>
+            <td class="form-label" style="width: 12%;">First Name:</td>
+            <td class="form-value" style="width: 22%;">{{ $get('firstName') }}</td>
+            <td class="form-label" style="width: 10%;">Surname:</td>
+            <td class="form-value" style="width: 23%;">{{ $get('surname') }}</td>
         </tr>
         <tr>
-            <td class="label">Maiden Name:</td>
-            <td class="input" colspan="3">{{ $formResponses['maidenName'] ?? '' }}</td>
-            <td class="label" colspan="2">Other Name(s):</td>
-            <td class="input" colspan="2">{{ $formResponses['otherNames'] ?? '' }}</td>
-            <td class="label">Gender:</td>
-            <td class="input">Male 
-                @if(isset($formResponses['gender']) && $formResponses['gender'] == 'Male')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-                Female 
-                @if(isset($formResponses['gender']) && $formResponses['gender'] == 'Female')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
+            <td class="form-label">Maiden Name:</td>
+            <td class="form-value" colspan="2">{{ $get('maidenName') }}</td>
+            <td class="form-label">Other Name(s):</td>
+            <td class="form-value" colspan="2">{{ $get('otherNames') }}</td>
+        </tr>
+        <tr>
+            <td class="form-label">Date of Birth:</td>
+            <td class="form-value">{{ $get('dateOfBirth') }}</td>
+            <td class="form-label">Place of Birth:</td>
+            <td class="form-value">{{ $get('placeOfBirth') }}</td>
+            <td class="form-label">Nationality:</td>
+            <td class="form-value">{{ $get('nationality') }}</td>
+        </tr>
+        <tr>
+            <td class="form-label" colspan="2">Marital Status:</td>
+            <td class="form-value" colspan="2">
+                Single <span class="checkbox {{ $isChecked('maritalStatus', 'Single') ? 'checkbox-checked' : '' }}"></span>
+                Married <span class="checkbox {{ $isChecked('maritalStatus', 'Married') ? 'checkbox-checked' : '' }}"></span>
+                Other <span class="checkbox {{ $isChecked('maritalStatus', 'Other') ? 'checkbox-checked' : '' }}"></span>
+            </td>
+            <td class="form-label">Citizenship:</td>
+            <td class="form-value">{{ $get('citizenship') }}</td>
+        </tr>
+        <tr>
+            <td class="form-label" style="width: 8%;">Dependents:</td>
+            <td class="form-value" style="width: 25%;">{{ $get('dependents') }}</td>
+            <td class="form-label" colspan="2">National ID Number:</td>
+            <td class="form-value" colspan="2">{{ $get('nationalIdNumber') }}</td>
+        </tr>
+        <tr>
+            <td class="form-label" colspan="2"></td>
+            <td class="form-label">Driver's License No:</td>
+            <td class="form-value" colspan="3">{{ $get('driversLicense') }}</td>
+        </tr>
+        <tr>
+            <td class="form-label" colspan="2">Passport Number:</td>
+            <td class="form-value" colspan="2">{{ $get('passportNumber') }}</td>
+            <td class="form-label">Expiry Date:</td>
+            <td class="form-value">{{ $get('passportExpiry') }}</td>
+        </tr>
+        <tr>
+            <td class="form-label" colspan="2">Country of Residence:</td>
+            <td class="form-value" colspan="2">{{ $get('countryOfResidence') }}</td>
+            <td class="form-label">Gender:</td>
+            <td class="form-value">
+                Male <span class="checkbox {{ $isChecked('gender', 'Male') ? 'checkbox-checked' : '' }}"></span>
+                Female <span class="checkbox {{ $isChecked('gender', 'Female') ? 'checkbox-checked' : '' }}"></span>
             </td>
         </tr>
         <tr>
-            <td class="label">Date of Birth:</td>
-            <td class="input" colspan="2">{{ $formResponses['dateOfBirth'] ?? '' }}</td>
-            <td class="label" colspan="2">Place of Birth:</td>
-            <td class="input" colspan="2">{{ $formResponses['placeOfBirth'] ?? '' }}</td>
-            <td class="label">Nationality:</td>
-            <td class="input" colspan="2">{{ $formResponses['nationality'] ?? '' }}</td>
+            <td class="form-label" colspan="2">Highest Educational Qualification:</td>
+            <td class="form-value" colspan="2">{{ $get('educationalQualification') }}</td>
+            <td class="form-label">Hobbies:</td>
+            <td class="form-value">{{ $get('hobbies') }}</td>
         </tr>
-        <tr>
-            <td class="label" colspan="2">Marital Status: <span style="font-style: italic; font-size: 4pt;">(mark applicable)</span></td>
-            <td class="input">Single 
-                @if(isset($formResponses['maritalStatus']) && $formResponses['maritalStatus'] == 'Single')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input">Married 
-                @if(isset($formResponses['maritalStatus']) && $formResponses['maritalStatus'] == 'Married')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input">Other 
-                @if(isset($formResponses['maritalStatus']) && !in_array($formResponses['maritalStatus'], ['Single', 'Married']))
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="label">Citizenship:</td>
-            <td class="input" colspan="2">{{ $formResponses['citizenship'] ?? '' }}</td>
-            <td class="label">Dependents:</td>
-            <td class="input">{{ $formResponses['dependents'] ?? '' }}</td>
-        </tr>
-        <tr>
-            <td class="label" colspan="2">National ID Number: <span style="font-style: italic; font-size: 4pt;">(mandatory)</span></td>
-            <td class="input" colspan="3">{{ $formResponses['nationalIdNumber'] ?? '' }}</td>
-            <td class="label" colspan="2">Driver's License No:</td>
-            <td class="input" colspan="3">{{ $formResponses['driversLicense'] ?? '' }}</td>
-        </tr>
-        <tr>
-            <td class="label" colspan="2">Passport Number: <span style="font-style: italic; font-size: 4pt;">(if applicable)</span></td>
-            <td class="input" colspan="3">{{ $formResponses['passportNumber'] ?? '' }}</td>
-            <td class="label">Expiry Date:</td>
-            <td class="input" colspan="4">{{ $formResponses['passportExpiry'] ?? '' }}</td>
-        </tr>
-        <tr>
-            <td class="label" colspan="2">Country of Residence:</td>
-            <td class="input" colspan="2">{{ $formResponses['countryOfResidence'] ?? '' }}</td>
-            <td class="label" colspan="2">Highest Educational Qualification:</td>
-            <td class="input" colspan="2">{{ $formResponses['highestEducation'] ?? '' }}</td>
-            <td class="label">Hobbies:</td>
-            <td class="input">{{ $formResponses['hobbies'] ?? '' }}</td>
-        </tr>
-    </table>  
-  
-    <!-- Section C -->
+    </table>
+
+    <!-- Section C - Customer Contact Details -->
     <div class="section-header">C - CUSTOMER CONTACT DETAILS</div>
-    <table class="main-table">
+
+    <table class="form-table">
         <tr>
-            <td class="label" style="width: 20%;">Residential Address:</td>
-            <td class="input" colspan="9">{{ $formResponses['residentialAddress'] ?? '' }}</td>
+            <td class="form-label" style="width: 20%;">Residential Address:</td>
+            <td class="form-value" colspan="5">{{ $get('residentialAddress') }}</td>
         </tr>
         <tr>
-            <td class="label">Telephone:</td>
-            <td class="label" style="width: 5%;">Res:</td>
-            <td class="input" style="width: 20%;">{{ $formResponses['telephoneRes'] ?? '' }}</td>
-            <td class="label" style="width: 15%;">Mobile: +263-</td>
-            <td class="input" style="width: 20%;">{{ $formResponses['mobile'] ?? '' }}</td>
-            <td class="label" style="width: 5%;">Bus:</td>
-            <td class="input" style="width: 15%;">{{ $formResponses['bus'] ?? '' }}</td>
+            <td class="form-label">Telephone:</td>
+            <td class="form-value">Res: {{ $get('telephoneRes') }}</td>
+            <td class="form-value">Mobile: +263-{{ $get('mobile') }}</td>
+            <td class="form-value" colspan="2">Bus: {{ $get('telephoneBus') }}</td>
         </tr>
         <tr>
-            <td class="label">Email Address:</td>
-            <td class="input" colspan="6">{{ $formResponses['emailAddress'] ?? '' }}</td>
+            <td class="form-label">Email Address:</td>
+            <td class="form-value" colspan="5">{{ $get('emailAddress') }}</td>
         </tr>
     </table>
-    
-    <!-- Section D -->
+
+    <!-- Section D - Customer Employment Details -->
     <div class="section-header">D - CUSTOMER EMPLOYMENT DETAILS</div>
-    <table class="main-table">
+
+    <table class="form-table">
         <tr>
-            <td class="label" style="width: 15%;">Employer Name:</td>
-            <td class="input" style="width: 35%;">{{ $formResponses['employerName'] ?? '' }}</td>
-            <td class="label" style="width: 15%;">Occupation:</td>
-            <td class="input" style="width: 35%;">{{ $formResponses['occupation'] ?? '' }}</td>
+            <td class="form-label" style="width: 20%;">Employer Name:</td>
+            <td class="form-value" style="width: 45%;">{{ $get('employerName') }}</td>
+            <td class="form-label" style="width: 12%;">Occupation:</td>
+            <td class="form-value" style="width: 23%;">{{ $get('occupation') }}</td>
         </tr>
         <tr>
-            <td class="label" colspan="2">Employment Status: <span style="font-style: italic; font-size: 4pt;">(mark applicable)</span></td>
-            <td class="input">Permanent 
-                @if(isset($formResponses['employmentStatus']) && $formResponses['employmentStatus'] == 'Permanent')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input">Contract 
-                @if(isset($formResponses['employmentStatus']) && $formResponses['employmentStatus'] == 'Contract')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input">Pensioner 
-                @if(isset($formResponses['employmentStatus']) && $formResponses['employmentStatus'] == 'Pensioner')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input">Unemployed 
-                @if(isset($formResponses['employmentStatus']) && $formResponses['employmentStatus'] == 'Unemployed')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input" colspan="2">Self-Employed 
-                @if(isset($formResponses['employmentStatus']) && $formResponses['employmentStatus'] == 'Self-Employed')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
+            <td class="form-label" colspan="2">Employment Status:</td>
+            <td class="form-value" colspan="2">
+                Permanent <span class="checkbox {{ $isChecked('employmentStatus', 'Permanent') ? 'checkbox-checked' : '' }}"></span>
+                Contract <span class="checkbox {{ $isChecked('employmentStatus', 'Contract') ? 'checkbox-checked' : '' }}"></span>
+                Pensioner <span class="checkbox {{ $isChecked('employmentStatus', 'Pensioner') ? 'checkbox-checked' : '' }}"></span>
+                Unemployed <span class="checkbox {{ $isChecked('employmentStatus', 'Unemployed') ? 'checkbox-checked' : '' }}"></span>
+                Self-Employed <span class="checkbox {{ $isChecked('employmentStatus', 'Self-Employed') ? 'checkbox-checked' : '' }}"></span>
             </td>
         </tr>
         <tr>
-            <td class="label" colspan="2">Business Description: <span style="font-style: italic; font-size: 4pt;">(state, if self-employed)</span></td>
-            <td class="input" colspan="6">{{ $formResponses['businessDescription'] ?? '' }}</td>
+            <td class="form-label" colspan="2">Business Description:</td>
+            <td class="form-value" colspan="2">{{ $get('businessDescription') }}</td>
         </tr>
         <tr>
-            <td class="label" colspan="2">Employer Type: <span style="font-style: italic; font-size: 4pt;">(mark applicable)</span></td>
-            <td class="input">Government 
-                @if(isset($formResponses['employerType']) && (
-                    $formResponses['employerType'] == 'Government' || 
-                    (is_array($formResponses['employerType']) && isset($formResponses['employerType']['government']) && $formResponses['employerType']['government'])
-                ))
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input">Local Company 
-                @if(isset($formResponses['employerType']) && (
-                    $formResponses['employerType'] == 'Local Company' || 
-                    (is_array($formResponses['employerType']) && isset($formResponses['employerType']['localCompany']) && $formResponses['employerType']['localCompany'])
-                ))
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input">Multinational 
-                @if(isset($formResponses['employerType']) && (
-                    $formResponses['employerType'] == 'Multinational' || 
-                    (is_array($formResponses['employerType']) && isset($formResponses['employerType']['multinational']) && $formResponses['employerType']['multinational'])
-                ))
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input">NGO 
-                @if(isset($formResponses['employerType']) && (
-                    $formResponses['employerType'] == 'NGO' || 
-                    (is_array($formResponses['employerType']) && isset($formResponses['employerType']['ngo']) && $formResponses['employerType']['ngo'])
-                ))
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input" colspan="2">Other (specify): 
-                @if(isset($formResponses['employerType']) && (
-                    (!in_array($formResponses['employerType'], ['Government', 'Local Company', 'Multinational', 'NGO']) && !is_array($formResponses['employerType'])) || 
-                    (is_array($formResponses['employerType']) && isset($formResponses['employerType']['other']) && $formResponses['employerType']['other'])
-                ))
-                    @if(is_array($formResponses['employerType']) && isset($formResponses['employerType']['otherSpecify']))
-                        {{ $formResponses['employerType']['otherSpecify'] }}
-                    @elseif(!is_array($formResponses['employerType']))
-                        {{ $formResponses['employerType'] }}
-                    @endif
-                @endif
+            <td class="form-label" colspan="2">Employer Type:</td>
+            <td class="form-value" colspan="2">
+                Government <span class="checkbox {{ $isChecked('employerType', 'Government') ? 'checkbox-checked' : '' }}"></span>
+                Local Company <span class="checkbox {{ $isChecked('employerType', 'Local Company') ? 'checkbox-checked' : '' }}"></span>
+                Multinational <span class="checkbox {{ $isChecked('employerType', 'Multinational') ? 'checkbox-checked' : '' }}"></span>
+                NGO <span class="checkbox {{ $isChecked('employerType', 'NGO') ? 'checkbox-checked' : '' }}"></span>
+                Other (specify): {{ $get('employerTypeOther') }}
             </td>
         </tr>
         <tr>
-            <td class="label">Employer Physical Address:</td>
-            <td class="input" colspan="3">{{ $formResponses['employerAddress'] ?? '' }}</td>
-            <td class="label" colspan="2">Employer Contact Number:</td>
-            <td class="input" colspan="2">{{ $formResponses['employerContact'] ?? '' }}</td>
+            <td class="form-label">Employer Physical Address:</td>
+            <td class="form-value" style="width: 45%;">{{ $get('employerAddress') }}</td>
+            <td class="form-label">Employer Contact Number:</td>
+            <td class="form-value">{{ $get('employerContact') }}</td>
         </tr>
         <tr>
-            <td class="label">Gross Monthly Salary:</td>
-            <td class="input">${{ $formResponses['grossMonthlySalary'] ?? '' }}</td>
-            <td class="label" colspan="2">Other Source(s) of Income:</td>
-            <td class="input" colspan="4">{{ $formResponses['otherIncome'] ?? '' }}</td>
+            <td class="form-label">Gross Monthly Salary:</td>
+            <td class="form-value">{{ $get('grossMonthlySalary') }}</td>
+            <td class="form-label">Other Source(s) of Income:</td>
+            <td class="form-value">{{ $get('otherIncomeSources') }}</td>
         </tr>
     </table>
-    
-    <!-- Section E -->
-    <div class="section-header">E - SPOUSE/NEXT OF KIN</div>
-    <table class="main-table">
+
+    <!-- Section E - Spouse/Next of Kin -->
+    <div class="section-header">E - SPOUSE/ NEXT OF KIN</div>
+
+    <table class="form-table">
         <tr>
-            <td class="label" style="width: 5%;">Title:</td>
-            <td class="input" style="width: 5%;">Mr 
-                @if(isset($formResponses['spouseTitle']) && $formResponses['spouseTitle'] == 'Mr')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
+            <td class="form-label" style="width: 8%;">Title:</td>
+            <td class="form-value" style="width: 25%;">
+                Mr <span class="checkbox {{ $isChecked('spouseTitle', 'Mr') ? 'checkbox-checked' : '' }}"></span>
+                Mrs <span class="checkbox {{ $isChecked('spouseTitle', 'Mrs') ? 'checkbox-checked' : '' }}"></span>
+                Ms <span class="checkbox {{ $isChecked('spouseTitle', 'Ms') ? 'checkbox-checked' : '' }}"></span>
+                Dr <span class="checkbox {{ $isChecked('spouseTitle', 'Dr') ? 'checkbox-checked' : '' }}"></span>
+                Prof <span class="checkbox {{ $isChecked('spouseTitle', 'Prof') ? 'checkbox-checked' : '' }}"></span>
             </td>
-            <td class="input" style="width: 5%;">Mrs 
-                @if(isset($formResponses['spouseTitle']) && $formResponses['spouseTitle'] == 'Mrs')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input" style="width: 5%;">Ms 
-                @if(isset($formResponses['spouseTitle']) && $formResponses['spouseTitle'] == 'Ms')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input" style="width: 5%;">Dr 
-                @if(isset($formResponses['spouseTitle']) && $formResponses['spouseTitle'] == 'Dr')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input" style="width: 5%;">Prof 
-                @if(isset($formResponses['spouseTitle']) && $formResponses['spouseTitle'] == 'Prof')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="label" style="width: 10%;">Full Name:</td>
-            <td class="input" style="width: 60%;">
-                @if(isset($formResponses['spouseDetails']) && isset($formResponses['spouseDetails'][0]))
-                    {{ $formResponses['spouseDetails'][0]['fullName'] ?? '' }}
-                @else
-                    {{ $formResponses['spouseFirstName'] ?? '' }} {{ $formResponses['spouseSurname'] ?? '' }}
-                @endif
+            <td class="form-label" style="width: 12%;">Full Name:</td>
+            <td class="form-value" style="width: 55%;">{{ $get('spouseFullName') }}</td>
+        </tr>
+        <tr>
+            <td class="form-label">Residential Address:</td>
+            <td class="form-value" colspan="3">{{ $get('spouseResidentialAddress') }}</td>
+        </tr>
+        <tr>
+            <td class="form-label">National ID No:</td>
+            <td class="form-value">{{ $get('spouseIdNumber') }}</td>
+            <td class="form-label">Contact Number:</td>
+            <td class="form-value">{{ $get('spouseContact') }}</td>
+        </tr>
+        <tr>
+            <td class="form-label">Nature of relationship:</td>
+            <td class="form-value">{{ $get('spouseRelationship') }}</td>
+            <td class="form-label" colspan="2">Gender:
+                Male <span class="checkbox {{ $isChecked('spouseGender', 'Male') ? 'checkbox-checked' : '' }}"></span>
+                Female <span class="checkbox {{ $isChecked('spouseGender', 'Female') ? 'checkbox-checked' : '' }}"></span>
             </td>
         </tr>
         <tr>
-            <td class="label">Residential Address:</td>
-            <td class="input" colspan="7">
-                @if(isset($formResponses['spouseDetails']) && isset($formResponses['spouseDetails'][0]))
-                    {{ $formResponses['spouseDetails'][0]['residentialAddress'] ?? '' }}
-                @else
-                    {{ $formResponses['spouseAddress'] ?? '' }}
-                @endif
-            </td>
-        </tr>
-        <tr>
-            <td class="label">National ID No:</td>
-            <td class="input" colspan="2">{{ $formResponses['spouseIdNumber'] ?? '' }}</td>
-            <td class="label">Contact Number:</td>
-            <td class="input" colspan="2">
-                @if(isset($formResponses['spouseDetails']) && isset($formResponses['spouseDetails'][0]))
-                    {{ $formResponses['spouseDetails'][0]['phoneNumber'] ?? '' }}
-                @else
-                    {{ $formResponses['spouseContact'] ?? '' }}
-                @endif
-            </td>
-            <td class="label">Nature of relationship:</td>
-            <td class="input">
-                @if(isset($formResponses['spouseDetails']) && isset($formResponses['spouseDetails'][0]))
-                    {{ $formResponses['spouseDetails'][0]['relationship'] ?? '' }}
-                @else
-                    {{ $formResponses['spouseRelationship'] ?? '' }}
-                @endif
-            </td>
-        </tr>
-        <tr>
-            <td class="label" colspan="2">Gender: <span style="font-style: italic; font-size: 4pt;">(mark applicable)</span></td>
-            <td class="input">Male 
-                @if(isset($formResponses['spouseGender']) && $formResponses['spouseGender'] == 'Male')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="input">Female 
-                @if(isset($formResponses['spouseGender']) && $formResponses['spouseGender'] == 'Female')
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="label">Email Address:</td>
-            <td class="input" colspan="3">
-                @if(isset($formResponses['spouseDetails']) && isset($formResponses['spouseDetails'][0]))
-                    {{ $formResponses['spouseDetails'][0]['emailAddress'] ?? '' }}
-                @else
-                    {{ $formResponses['spouseEmail'] ?? '' }}
-                @endif
-            </td>
+            <td class="form-label" colspan="2">Email Address:</td>
+            <td class="form-value" colspan="2">{{ $get('spouseEmail') }}</td>
         </tr>
     </table>
-    
-    <!-- Section F -->
+
+    <!-- Section F - Other Services -->
     <div class="section-header">F - OTHER SERVICES</div>
-    <table class="main-table">
+
+    <table class="form-table">
         <tr>
-            <td class="label" style="width: 10%;">SMS Alerts:</td>
-            <td class="input" style="width: 10%;">Yes 
-                @if(isset($formResponses['smsAlerts']) && $formResponses['smsAlerts'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-                No 
-                @if(isset($formResponses['smsAlerts']) && !$formResponses['smsAlerts'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
+            <td class="form-label" style="width: 15%;">SMS Alerts:</td>
+            <td class="form-value" style="width: 18%;">
+                <span class="checkbox {{ $isChecked('smsAlerts', true) ? 'checkbox-checked' : '' }}"></span>
+                <span class="checkbox {{ $isChecked('smsAlerts', false) ? 'checkbox-checked' : '' }}"></span>
             </td>
-            <td class="label" style="width: 25%;"><span style="font-style: italic; font-size: 4pt;">(If yes, state your mobile number)</span></td>
-            <td class="label" style="width: 15%;">Mobile Number:</td>
-            <td class="input" style="width: 40%;">{{ $formResponses['smsNumber'] ?? $formResponses['mobile'] ?? '' }}</td>
+            <td class="form-label" style="width: 15%;">Mobile Number:</td>
+            <td class="form-value" style="width: 22%;">
+                @php
+                    $mobile = $get('mobile');
+                    $digits = str_split(preg_replace('/[^0-9]/', '', $mobile));
+                @endphp
+                @foreach(range(0, 11) as $i)
+                    <span class="num-box">{{ $digits[$i] ?? '' }}</span>
+                @endforeach
+            </td>
         </tr>
         <tr>
-            <td class="label">E-Statements:</td>
-            <td class="input">Yes 
-                @if(isset($formResponses['eStatements']) && $formResponses['eStatements'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-                No 
-                @if(isset($formResponses['eStatements']) && !$formResponses['eStatements'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
+            <td class="form-label">E-Statements:</td>
+            <td class="form-value">
+                <span class="checkbox {{ $isChecked('eStatements', true) ? 'checkbox-checked' : '' }}"></span>
+                <span class="checkbox {{ $isChecked('eStatements', false) ? 'checkbox-checked' : '' }}"></span>
             </td>
-            <td class="label"><span style="font-style: italic; font-size: 4pt;">(If yes, state your email address)</span></td>
-            <td class="label">Email address:</td>
-            <td class="input">{{ $formResponses['eStatementsEmail'] ?? $formResponses['emailAddress'] ?? '' }}</td>
+            <td class="form-label">Email address:</td>
+            <td class="form-value">{{ $get('eStatementsEmail', $get('emailAddress')) }}</td>
         </tr>
     </table>
-    
-    <!-- Section G -->
+
+    <!-- Section G - Digital Banking Services -->
     <div class="section-header">G - DIGITAL BANKING SERVICES</div>
-    <table class="main-table">
+
+    <table class="form-table">
         <tr>
-            <td class="label" style="width: 25%;">Mobile money e.g. Ecocash Services:</td>
-            <td class="input" style="width: 8%;">Yes 
-                @if(isset($formResponses['mobileMoneyEcocash']) && $formResponses['mobileMoneyEcocash'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
+            <td class="form-label" style="width: 25%;">Mobile money e.g. Ecocash Services:</td>
+            <td class="form-value" style="width: 10%;">
+                Yes <span class="checkbox {{ $isChecked('mobileMoney', true) ? 'checkbox-checked' : '' }}"></span>
+                No <span class="checkbox {{ !$isChecked('mobileMoney', true) ? 'checkbox-checked' : '' }}"></span>
             </td>
-            <td class="input" style="width: 8%;">No 
-                @if(isset($formResponses['mobileMoneyEcocash']) && !$formResponses['mobileMoneyEcocash'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
+            <td class="form-label" style="width: 15%;">Mobile Number:</td>
+            <td class="form-value" style="width: 20%;">
+                @php
+                    $mobileMoneyNum = $get('mobileMoneyNumber', $get('mobile'));
+                    $digits = str_split(preg_replace('/[^0-9]/', '', $mobileMoneyNum));
+                @endphp
+                @foreach(range(0, 11) as $i)
+                    <span class="num-box">{{ $digits[$i] ?? '' }}</span>
+                @endforeach
             </td>
-            <td class="label" style="width: 24%;"><span style="font-style: italic; font-size: 4pt;">(If yes, state your mobile number)</span></td>
-            <td class="label" style="width: 15%;">Mobile Number:</td>
-            <td class="input" style="width: 20%;">{{ $formResponses['mobileMoneyNumber'] ?? $formResponses['mobile'] ?? '' }}</td>
         </tr>
         <tr>
-            <td class="label">E-Wallet:</td>
-            <td class="input">Yes 
-                @if(isset($formResponses['eWallet']) && $formResponses['eWallet'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
+            <td class="form-label">E-Wallet:</td>
+            <td class="form-value">
+                <span class="checkbox {{ $isChecked('eWallet', true) ? 'checkbox-checked' : '' }}"></span>
             </td>
-            <td class="input">No 
-                @if(isset($formResponses['eWallet']) && !$formResponses['eWallet'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
+            <td class="form-label">Mobile Number:</td>
+            <td class="form-value">
+                @php
+                    $eWalletNum = $get('eWalletNumber', $get('mobile'));
+                    $digits = str_split(preg_replace('/[^0-9]/', '', $eWalletNum));
+                @endphp
+                @foreach(range(0, 11) as $i)
+                    <span class="num-box">{{ $digits[$i] ?? '' }}</span>
+                @endforeach
             </td>
-            <td class="label"><span style="font-style: italic; font-size: 4pt;">(If yes, state your mobile number)</span></td>
-            <td class="label">Mobile Number:</td>
-            <td class="input">{{ $formResponses['eWalletNumber'] ?? $formResponses['mobile'] ?? '' }}</td>
         </tr>
         <tr>
-            <td class="label">Whatsapp Banking:</td>
-            <td class="input">Yes 
-                @if(isset($formResponses['whatsappBanking']) && $formResponses['whatsappBanking'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
+            <td class="form-label">Whatsapp Banking:</td>
+            <td class="form-value" colspan="2">
+                <span class="checkbox {{ $isChecked('whatsappBanking', true) ? 'checkbox-checked' : '' }}"></span>
             </td>
-            <td class="input">No 
-                @if(isset($formResponses['whatsappBanking']) && !$formResponses['whatsappBanking'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="label"><span style="font-style: italic; font-size: 4pt;">(Self registration or seek assistance)</span></td>
-            <td class="label">Internet Banking:</td>
-            <td class="input">Yes 
-                @if(isset($formResponses['internetBanking']) && $formResponses['internetBanking'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-                No 
-                @if(isset($formResponses['internetBanking']) && !$formResponses['internetBanking'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-                <span style="font-style: italic; font-size: 4pt;">(Self registration or seek assistance)</span>
+            <td class="form-label">Internet Banking:</td>
+            <td class="form-value">
+                <span class="checkbox {{ $isChecked('internetBanking', true) ? 'checkbox-checked' : '' }}"></span>
             </td>
         </tr>
     </table>
-    
+
     <div class="page-footer">Page 1 of 4</div>
 </div>
-<!--
- PAGE 2 -->
+
+<!-- PAGE 2 -->
 <div class="page">
     <!-- Header -->
-    <table class="header-table">
-        <tr>
-            <td style="width: 20%;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/zb_logo.png'))) }}" alt="ZB Logo" class="logo-img">
-            </td>
-            <td style="width: 60%;"></td>
-            <td style="width: 20%;" class="tagline">
-                BANKING | INVESTMENTS | INSURANCE
-            </td>
-        </tr>
-    </table>
-    
-    <!-- Section H -->
+    <div class="header">
+        <div class="header-left">
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/zb_logo.png'))) }}" alt="ZB Logo" class="logo">
+            <span class="for-you">for you</span>
+        </div>
+        <div class="header-right">
+            BANKING | INVESTMENTS | INSURANCE
+        </div>
+    </div>
+
+    <!-- Section H - ZB Life Funeral Cash Cover -->
     <div class="section-header">H - ZB LIFE FUNERAL CASH COVER</div>
-    <div style="font-size: 5pt; margin: 1px 0;">
-        Details of dependents to be covered by this application is up to eight (8) dependents. <span style="font-style: italic;">Please tick (✓) the appropriate box to show supplementary benefits to be included.</span>
+
+    <div style="font-size: 8pt; margin: 4px 0;">
+        Details of dependents to be covered by this application is up to eight (8) dependents. <span style="font-style: italic;">Please tick (√) the appropriate box to show supplementary benefits to be included.</span>
     </div>
-    
-    <!-- Dependents Table -->
-    <table class="main-table">
+
+    <table class="form-table" style="font-size: 7pt;">
         <tr style="background-color: #f0f0f0;">
-            <td class="label" style="text-align: center; font-weight: bold; height: 12px;">Surname</td>
-            <td class="label" style="text-align: center; font-weight: bold;">Forename(s)</td>
-            <td class="label" style="text-align: center; font-weight: bold;">Relationship</td>
-            <td class="label" style="text-align: center; font-weight: bold;">Date of Birth</td>
-            <td class="label" style="text-align: center; font-weight: bold;">Birth Entry/ National ID No.</td>
-            <td class="label" style="text-align: center; font-weight: bold;">Cover Amount Per Dependant</td>
-            <td class="label" style="text-align: center; font-weight: bold;">Premium Per Month $</td>
+            <th style="width: 12%;">Surname</th>
+            <th style="width: 15%;">Forename(s)</th>
+            <th style="width: 12%;">Relationship</th>
+            <th style="width: 12%;">Date of Birth</th>
+            <th style="width: 18%;">Birth Entry/ National ID No.</th>
+            <th style="width: 13%;">Cover Amount Per Dependant $</th>
+            <th style="width: 18%;">Premium Per Month $</th>
         </tr>
-        @for ($i = 0; $i < 8; $i++)
+        @php
+            $dependents = $formResponses['funeralDependents'] ?? [];
+            if (!is_array($dependents)) $dependents = [];
+            while(count($dependents) < 8) {
+                $dependents[] = ['surname' => '', 'forenames' => '', 'relationship' => '', 'dateOfBirth' => '', 'idNumber' => '', 'coverAmount' => '', 'premium' => ''];
+            }
+        @endphp
+        @foreach($dependents as $index => $dependent)
         <tr>
-            <td class="input tight-row">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['dependents'][$i]['name']))
-                    {{ $formResponses['funeralCover']['dependents'][$i]['name'] }}
-                @endif
-            </td>
-            <td class="input tight-row">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['dependents'][$i]['forenames']))
-                    {{ $formResponses['funeralCover']['dependents'][$i]['forenames'] }}
-                @endif
-            </td>
-            <td class="input tight-row">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['dependents'][$i]['relationship']))
-                    {{ $formResponses['funeralCover']['dependents'][$i]['relationship'] }}
-                @endif
-            </td>
-            <td class="input tight-row">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['dependents'][$i]['dateOfBirth']))
-                    {{ $formResponses['funeralCover']['dependents'][$i]['dateOfBirth'] }}
-                @endif
-            </td>
-            <td class="input tight-row">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['dependents'][$i]['idNumber']))
-                    {{ $formResponses['funeralCover']['dependents'][$i]['idNumber'] }}
-                @endif
-            </td>
-            <td class="input tight-row">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['dependents'][$i]['coverAmount']))
-                    {{ $formResponses['funeralCover']['dependents'][$i]['coverAmount'] }}
-                @endif
-            </td>
-            <td class="input tight-row">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['dependents'][$i]['premium']))
-                    {{ $formResponses['funeralCover']['dependents'][$i]['premium'] }}
-                @endif
-            </td>
+            <td>{{ $dependent['surname'] ?? '' }}</td>
+            <td>{{ $dependent['forenames'] ?? '' }}</td>
+            <td>{{ $dependent['relationship'] ?? '' }}</td>
+            <td>{{ $dependent['dateOfBirth'] ?? '' }}</td>
+            <td>{{ $dependent['idNumber'] ?? '' }}</td>
+            <td>{{ $dependent['coverAmount'] ?? '' }}</td>
+            <td>{{ $dependent['premium'] ?? '' }}</td>
         </tr>
-        @endfor
-        <tr>
-            <td colspan="7" style="text-align: center; font-weight: bold; background-color: #f0f0f0; padding: 1px; height: 10px;">Principal Member</td>
+        @endforeach
+        <tr style="background-color: #f5f5f5;">
+            <td colspan="7" style="text-align: center; font-weight: bold;">Principal Member</td>
         </tr>
         <tr>
-            <td class="input tight-row">{{ $formResponses['surname'] ?? '' }}</td>
-            <td class="input tight-row">{{ $formResponses['firstName'] ?? '' }} {{ $formResponses['otherNames'] ?? '' }}</td>
-            <td class="input tight-row">Self</td>
-            <td class="input tight-row">{{ $formResponses['dateOfBirth'] ?? '' }}</td>
-            <td class="input tight-row">{{ $formResponses['nationalIdNumber'] ?? '' }}</td>
-            <td class="input tight-row">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['principalMember']) && isset($formResponses['funeralCover']['principalMember']['coverAmount']))
-                    {{ $formResponses['funeralCover']['principalMember']['coverAmount'] }}
-                @endif
+            <td colspan="3" rowspan="5" style="vertical-align: top;">
+                <strong>Supplementary Benefits (Tick (√) appropriate box)</strong><br/><br/>
+                <table style="width: 100%; border: none;">
+                    <tr><td style="border: none; padding: 2px;">Memorial Cash Benefit:</td><td style="border: none;">Amount of Cover Per Person</td></tr>
+                    <tr><td style="border: none; padding: 2px;">Tombstone Cash Benefit:</td><td style="border: none;">Amount of Cover Per Person</td></tr>
+                    <tr><td style="border: none; padding: 2px;">Grocery Benefit:</td><td style="border: none;">Amount of Cover</td></tr>
+                    <tr><td style="border: none; padding: 2px;">School Fees Benefit:</td><td style="border: none;">Amount of Cover</td></tr>
+                    <tr><td style="border: none; padding: 2px;">Personal Accident Benefit:</td><td style="border: none;">Please supply details below</td></tr>
+                </table>
             </td>
-            <td class="input tight-row">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['principalMember']) && isset($formResponses['funeralCover']['principalMember']['premium']))
-                    {{ $formResponses['funeralCover']['principalMember']['premium'] }}
-                @endif
-            </td>
+            <td colspan="4"></td>
+        </tr>
+        <tr><td colspan="4"></td></tr>
+        <tr><td colspan="4"></td></tr>
+        <tr><td colspan="4"></td></tr>
+        <tr>
+            <td colspan="4" style="text-align: center; font-weight: bold;">Total Monthly Premium</td>
         </tr>
     </table>
-    
-    <!-- Supplementary Benefits -->
-    <table class="main-table">
-        <tr>
-            <td colspan="7" style="text-align: center; font-weight: bold; background-color: #f0f0f0; padding: 1px; height: 10px;">Supplementary Benefits (Tick (✓) appropriate box)</td>
-        </tr>
-        <tr>
-            <td class="input" style="width: 5%; height: 8px;">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['principalMember']) && isset($formResponses['funeralCover']['principalMember']['memorialCashBenefit']) && $formResponses['funeralCover']['principalMember']['memorialCashBenefit'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="label">Memorial Cash Benefit:</td>
-            <td class="label">Amount of Cover Per Person</td>
-            <td class="input" colspan="4">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['principalMember']) && isset($formResponses['funeralCover']['principalMember']['memorialCashBenefitAmount']))
-                    {{ $formResponses['funeralCover']['principalMember']['memorialCashBenefitAmount'] }}
-                @endif
-            </td>
-        </tr>
-        <tr>
-            <td class="input">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['principalMember']) && isset($formResponses['funeralCover']['principalMember']['tombstoneCashBenefit']) && $formResponses['funeralCover']['principalMember']['tombstoneCashBenefit'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="label">Tombstone Cash Benefit:</td>
-            <td class="label">Amount of Cover Per Person</td>
-            <td class="input" colspan="4">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['principalMember']) && isset($formResponses['funeralCover']['principalMember']['tombstoneCashBenefitAmount']))
-                    {{ $formResponses['funeralCover']['principalMember']['tombstoneCashBenefitAmount'] }}
-                @endif
-            </td>
-        </tr>
-        <tr>
-            <td class="input">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['principalMember']) && isset($formResponses['funeralCover']['principalMember']['groceryBenefit']) && $formResponses['funeralCover']['principalMember']['groceryBenefit'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="label">Grocery Benefit:</td>
-            <td class="label">Amount of Cover</td>
-            <td class="input" colspan="4">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['principalMember']) && isset($formResponses['funeralCover']['principalMember']['groceryBenefitAmount']))
-                    {{ $formResponses['funeralCover']['principalMember']['groceryBenefitAmount'] }}
-                @endif
-            </td>
-        </tr>
-        <tr>
-            <td class="input">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['principalMember']) && isset($formResponses['funeralCover']['principalMember']['schoolFeesBenefit']) && $formResponses['funeralCover']['principalMember']['schoolFeesBenefit'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="label">School Fees Benefit:</td>
-            <td class="label">Amount of Cover</td>
-            <td class="input" colspan="4">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['principalMember']) && isset($formResponses['funeralCover']['principalMember']['schoolFeesBenefitAmount']))
-                    {{ $formResponses['funeralCover']['principalMember']['schoolFeesBenefitAmount'] }}
-                @endif
-            </td>
-        </tr>
-        <tr>
-            <td class="input">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['principalMember']) && isset($formResponses['funeralCover']['principalMember']['personalAccidentBenefit']) && $formResponses['funeralCover']['principalMember']['personalAccidentBenefit'])
-                    <span class="checkbox-checked"></span>
-                @else
-                    <span class="checkbox"></span>
-                @endif
-            </td>
-            <td class="label">Personal Accident Benefit:</td>
-            <td class="label" colspan="2">Please supply details below</td>
-            <td class="input" colspan="3">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['principalMember']) && isset($formResponses['funeralCover']['principalMember']['personalAccidentBenefitDetails']))
-                    {{ $formResponses['funeralCover']['principalMember']['personalAccidentBenefitDetails'] }}
-                @endif
-            </td>
-        </tr>
-        <tr>
-            <td colspan="3" style="text-align: right; font-weight: bold; background-color: #f0f0f0; padding: 1px; height: 8px;">Total Monthly Premium</td>
-            <td class="input" colspan="4">
-                @if(isset($formResponses['funeralCover']) && isset($formResponses['funeralCover']['totalMonthlyPremium']))
-                    {{ $formResponses['funeralCover']['totalMonthlyPremium'] }}
-                @endif
-            </td>
-        </tr>
-    </table>
-    
-    <!-- Section I -->
+
+    <!-- Section I - Personal Accident Benefit -->
     <div class="section-header">I - PERSONAL ACCIDENT BENEFIT</div>
-    <table class="main-table">
+
+    <table class="form-table">
         <tr style="background-color: #f0f0f0;">
-            <td class="label" style="text-align: center; font-weight: bold; width: 50%; height: 10px;">Surname</td>
-            <td class="label" style="text-align: center; font-weight: bold; width: 50%;">Forename(s)</td>
+            <th style="width: 50%;">Surname</th>
+            <th style="width: 50%;">Forename(s)</th>
         </tr>
-        @for ($i = 0; $i < 4; $i++)
+        @for($i = 0; $i < 4; $i++)
         <tr>
-            <td class="input tight-row">
-                @if(isset($formResponses['personalAccidentBenefit'][$i]['surname']))
-                    {{ $formResponses['personalAccidentBenefit'][$i]['surname'] }}
-                @endif
-            </td>
-            <td class="input tight-row">
-                @if(isset($formResponses['personalAccidentBenefit'][$i]['forenames']))
-                    {{ $formResponses['personalAccidentBenefit'][$i]['forenames'] }}
-                @endif
-            </td>
+            <td style="height: 25px;"></td>
+            <td></td>
         </tr>
         @endfor
     </table>
-    
-    <!-- Section J -->
+
+    <!-- Section J - Summary of Terms and Conditions -->
     <div class="section-header">J - SUMMARY OF TERMS AND CONDITIONS OF MEMBERSHIP</div>
-    <div style="font-size: 4pt; line-height: 1.1; margin: 1px 0;">
-        <p style="margin: 1px 0;"><strong>1.0</strong> Funeral assurance cover under the Plan shall commence on the first day of the month coinciding with or next following the payment of the first premium.</p>
-        <p style="margin: 1px 0;"><strong>1.1</strong> The Plan does not cover death by suicide or by the hand of Justice within a period of twenty-four (24) months from the date of Joining the Plan.</p>
-        <p style="margin: 1px 0;"><strong>1.2</strong> Save as herein provided, Membership shall apply if any premium is not paid when due and no right Reinstated nor on account of previous payment shall exist.</p>
-        <p style="margin: 1px 0;"><strong>1.3</strong> A grace period of one calendar month is allowed for the payment of each and every premium.</p>
-        <p style="margin: 1px 0;"><strong>1.4</strong> Coverage under the Plan shall terminate on the death of the Principal Member or on the voluntary termination by the Principal Member or on the lapse of Membership of the Plan as a result of non-payment of premiums.</p>
-        <p style="margin: 1px 0;"><strong>1.5</strong> Funeral Assurance cover does not become payable under claims when only one claim is vested after the expiry of three (3) consecutive months in respect of the Principal Member and any Immediate Family Member, from the Date of Joining the Plan or date of reinstatement or date of registration of a Dependent.</p>
-        <p style="margin: 1px 0;"><strong>1.6</strong> Immediate Family Member means, in respect of the Principal Member, a claim dependent spouse, own children and persons under the legal guardianship of the Principal Member, and dependent natural or adoptive parents or grandparents.</p>
-        <p style="margin: 1px 0;"><strong>1.7</strong> Extended Family Member means a Dependent who is not an Immediate Family Member.</p>
-        <p style="margin: 1px 0;"><strong>1.8</strong> The qualifying period for coverage to be effectively stated in paragraph 1.0 above shall apply to any increase in the funeral benefit cover of each insured person.</p>
-        <p style="margin: 1px 0;"><strong>1.9</strong> Claims shall be settled only if they are reported to ZB Bank Limited within three (3) months from the date of death of an insured person.</p>
-        <p style="margin: 1px 0;"><strong>1.10</strong> The maximum cover for each person shall not exceed the limit set from time to time.</p>
+
+    <div class="terms-list">
+        <p><strong>1.0</strong> Funeral assurance cover under the Plan shall commence on the first day of the month coinciding with or next following the payment of the first premium.</p>
+        <p><strong>1.1</strong> The Plan does not cover death by suicide or by the hand of Justice within a period of twenty-four (24) months from the date of Joining the Plan.</p>
+        <p><strong>1.2</strong> Save as herein provided, Membership shall apply if any premium is not paid when due and no right Reinstated nor on account of previous payment shall exist.</p>
+        <p><strong>1.3</strong> A grace period of one calendar month is allowed for the payment of each and every premium.</p>
+        <p><strong>1.4</strong> Coverage under the Plan shall terminate on the death of the Principal Member or on the voluntary termination by the Principal Member or on the lapse of Membership of the Plan as a result of non-payment of premiums.</p>
+        <p><strong>1.5</strong> Extended Family Member means, in respect of a Principal Member, a valid registered Spouse (under 65) and his / her biological children (under 25) and an (8) consecutive months in respect of an Extended Family Member, from the Date of Joining the Plan or date of reinstatement or date of registration of a Dependant.</p>
+        <p><strong>1.6</strong> Immediate Family Member means, in respect of the Principal Member, a valid registered Spouse, children (under 21), other children of the Principal Member, and dependants (nature or adoptive parents or parents-in-law of the Principal Member).</p>
+        <p><strong>1.7</strong> Extended Family Member means a Dependent who is not an Immediate Family Member.</p>
+        <p><strong>1.8</strong> The qualifying period for coverage to be effectively stated in paragraph 1.6 above and ninety (90) days in respect of any increase in the funeral benefit cover of each insured person.</p>
+        <p><strong>1.9</strong> Claims shall be settled only if they are reported to ZB Bank Limited within three (3) months from the date of death of an insured person.</p>
+        <p><strong>1.10</strong> The maximum cover for each person shall not exceed the limit set from time to time.</p>
     </div>
-    
-    <!-- Section K -->
+
+    <!-- Section K - Declaration -->
     <div class="section-header">K - DECLARATION</div>
-    <div style="font-size: 5pt; margin: 2px 0;">
+
+    <div style="font-size: 8pt; margin: 4px 0;">
         I confirm that to the best of my knowledge, the above information is true and correct and that all the persons registered above are not on medication for any disease or illness. Should anything change, I undertake to advise ZB Bank immediately.
     </div>
-    
-    <table class="main-table">
+
+    <table class="form-table" style="font-size: 8pt;">
         <tr>
-            <td class="label" style="width: 15%;">Full Name:</td>
-            <td class="input" style="width: 30%;">{{ $formResponses['firstName'] ?? '' }} {{ $formResponses['surname'] ?? '' }}</td>
-            <td class="label" style="width: 20%;">Applicant's Signature:</td>
-            <td class="input" style="width: 20%;">
-                @if(isset($documents['signature']) && $documents['signature'])
-                    <img src="{{ $documents['signature'] }}" alt="Signature" style="max-height: 20px; max-width: 100%;">
+            <td class="form-label" style="width: 15%; padding: 3px 4px;">Full Name:</td>
+            <td class="form-value" style="width: 35%; padding: 3px 4px;">{{ $get('firstName') }} {{ $get('surname') }}</td>
+            <td class="form-label" style="width: 20%; padding: 3px 4px;">Applicant's Signature:</td>
+            <td class="form-value" style="width: 20%; padding: 3px 4px; vertical-align: middle;">
+                @if($signatureImageData)
+                    <img src="{{ $signatureImageData }}" style="max-width: 100%; max-height: 30px; display: block;" alt="Signature">
                 @endif
             </td>
-            <td class="label" style="width: 5%;">Date:</td>
-            <td class="input" style="width: 10%;">{{ isset($formResponses['declaration']['date']) ? $formResponses['declaration']['date'] : date('Y-m-d') }}</td>
+            <td class="form-label" style="width: 10%; padding: 3px 4px;">Date:</td>
+            <td class="form-value" style="padding: 3px 4px;">
+                @php
+                    $date = date('d/m/Y');
+                    $dateBoxes = str_split($date);
+                @endphp
+                @foreach($dateBoxes as $char)
+                    @if($char === '/')
+                        /
+                    @else
+                        <span class="num-box" style="width: 12px; height: 14px; font-size: 7pt;">{{ $char }}</span>
+                    @endif
+                @endforeach
+            </td>
         </tr>
     </table>
-    
+
     <div class="page-footer">Page 2 of 4</div>
-</div><
-!-- PAGE 3 -->
+</div>
+
+<!-- PAGE 3 -->
 <div class="page">
     <!-- Header -->
-    <table class="header-table">
-        <tr>
-            <td style="width: 20%;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/zb_logo.png'))) }}" alt="ZB Logo" class="logo-img">
-            </td>
-            <td style="width: 60%;"></td>
-            <td style="width: 20%;" class="tagline">
-                BANKING | INVESTMENTS | INSURANCE
-            </td>
-        </tr>
-    </table>
-    
-    <!-- Section L -->
+    <div class="header">
+        <div class="header-left">
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/zb_logo.png'))) }}" alt="ZB Logo" class="logo">
+            <span class="for-you">for you</span>
+        </div>
+        <div class="header-right">
+            BANKING | INVESTMENTS | INSURANCE
+        </div>
+    </div>
+
+    <!-- Section L - Declaration by Applicant -->
     <div class="section-header">L - DECLARATION BY APPLICANT</div>
-    <div style="font-size: 5pt; margin: 1px 0;">
+
+    <div style="font-size: 8pt; margin: 4px 0;">
         I authorise ZB Bank to deduct the premiums stated above each month from my account when funded.
     </div>
-    
-    <table class="main-table">
+
+    <table class="form-table">
         <tr>
-            <td class="label" style="width: 20%;">Accountholder's name:</td>
-            <td class="input" style="width: 30%;">{{ $formResponses['firstName'] ?? '' }} {{ $formResponses['surname'] ?? '' }}</td>
-            <td class="label" style="width: 20%;">Accountholder's ID:</td>
-            <td class="input" style="width: 30%;">{{ $formResponses['nationalIdNumber'] ?? '' }}</td>
+            <td class="form-label" style="width: 20%;">Accountholder's name:</td>
+            <td class="form-value" style="width: 30%;">{{ $get('firstName') }} {{ $get('surname') }}</td>
+            <td class="form-label" style="width: 15%;">Accountholder's ID:</td>
+            <td class="form-value" style="width: 35%;">{{ $get('nationalIdNumber') }}</td>
         </tr>
         <tr>
-            <td class="label">Account number:</td>
-            <td class="input">{{ $formResponses['accountNumber'] ?? '' }}</td>
-            <td class="label">Accountholder's Signature:</td>
-            <td class="input">
-                @if(isset($documents['signature']) && $documents['signature'])
-                    <img src="{{ $documents['signature'] }}" alt="Signature" style="max-height: 20px; max-width: 100%;">
+            <td class="form-label">Account number:</td>
+            <td class="form-value"></td>
+            <td class="form-label">Accountholder's Signature:</td>
+            <td class="form-value" style="height: 40px; vertical-align: middle;">
+                @if($signatureImageData)
+                    <img src="{{ $signatureImageData }}" style="max-width: 100%; max-height: 35px; display: block;" alt="Signature">
                 @endif
             </td>
         </tr>
     </table>
-    
-    <!-- Section M -->
+
+    <!-- Section M - For Completion at Branch Upon Card Collection -->
     <div class="section-header">M - FOR COMPLETION AT BRANCH UPON CARD COLLECTION</div>
-    <div style="font-size: 5pt; margin: 1px 0;">
+
+    <div style="font-size: 8pt; margin: 4px 0;">
         I confirm safe receipt of my PIN (Personal Identification Number) and acknowledge receipt of my card.
     </div>
-    
-    <table class="main-table">
+
+    <table class="form-table">
         <tr>
-            <td class="label" style="width: 20%;">Name of Cardholder:</td>
-            <td class="input" style="width: 25%;"></td>
-            <td class="label" style="width: 20%;">Signature of Cardholder:</td>
-            <td class="input" style="width: 20%;"></td>
-            <td class="label" style="width: 5%;">Date:</td>
-            <td class="input" style="width: 10%;"></td>
+            <td class="form-label" style="width: 20%;">Name of Cardholder:</td>
+            <td class="form-value" style="width: 30%;"></td>
+            <td class="form-label" style="width: 20%;">Signature of Cardholder:</td>
+            <td class="form-value" style="width: 15%;"></td>
+            <td class="form-label" style="width: 15%;">Date:</td>
+            <td class="form-value"></td>
         </tr>
     </table>
-    
+
     <!-- Section N - Terms and Conditions -->
-    <div class="section-header">N- TERMS AND CONDITIONS</div>
-    
-    <div class="terms-columns">
-        <div style="font-size: 3.5pt; line-height: 1.0; margin: 1px 0;">
-            <p style="margin: 1px 0;">These terms and conditions, together with any further instructions that may be presented by ZB BANK ('the Bank') from time to time shall constitute the Agreement between the customer and ZB Bank. The words used in this Agreement shall have the following meanings:</p>
-            
-            <p style="margin: 1px 0;"><strong>1. DEFINITIONS.</strong> The following terms as stated in these terms and conditions shall have the following meanings:</p>
-            <p style="margin: 0.5px 0;"><strong>1.1</strong> Customer: The applicant of the account and services is hereinafter referred as 'Customer'.</p>
-            <p style="margin: 0.5px 0;"><strong>1.2</strong> Bank: The 'Bank' means ZB BANK LIMITED.</p>
-            <p style="margin: 0.5px 0;"><strong>1.3</strong> Service: All services offered by the Bank is hereinafter referred as 'Service'.</p>
-            <p style="margin: 0.5px 0;"><strong>1.4</strong> Card: The card means the ZB Bank Debit Card.</p>
-            <p style="margin: 0.5px 0;"><strong>1.5</strong> Cardholder: The account holder issued the card by the Bank.</p>
-            <p style="margin: 0.5px 0;"><strong>1.6</strong> Account: The account means the designated account with the Bank.</p>
-            <p style="margin: 0.5px 0;"><strong>1.7</strong> Accountholder: The person who has been issued an account by the Bank.</p>
-            <p style="margin: 0.5px 0;"><strong>1.8</strong> PIN: The Personal Identification Number issued to the Cardholder.</p>
-            <p style="margin: 0.5px 0;"><strong>1.9</strong> ATM: Automated Teller Machine.</p>
-            <p style="margin: 0.5px 0;"><strong>1.10</strong> POS: Point of Sale terminal.</p>
-            <p style="margin: 0.5px 0;"><strong>1.11</strong> Merchant: Any person who agrees to accept the Card as payment for goods and services.</p>
-            <p style="margin: 0.5px 0;"><strong>1.12</strong> Transaction: Any transaction effected by the use of the Card, PIN or Card number.</p>
-            <p style="margin: 0.5px 0;"><strong>1.13</strong> Statement: A periodic statement of account sent by the Bank to a Customer setting out the transactions carried out in the Account during the given period and the balance in such Account.</p>
-            <p style="margin: 0.5px 0;"><strong>1.14</strong> Zimswitch: The shared financial services network operated by Zimswitch (Pvt) Ltd.</p>
-            
-            <p style="margin: 1px 0;"><strong>2. ACCOUNT OPENING AND OPERATION</strong></p>
-            <p style="margin: 0.5px 0;"><strong>2.1</strong> The Bank may open an account for the Customer upon receiving a duly completed account opening form and all supporting documents required by the Bank.</p>
-            <p style="margin: 0.5px 0;"><strong>2.2</strong> The Bank reserves the right to decline to open an account without giving any reasons.</p>
-            <p style="margin: 0.5px 0;"><strong>2.3</strong> The Customer shall provide the Bank with specimen signatures of all persons authorized to operate the account.</p>
-            <p style="margin: 0.5px 0;"><strong>2.4</strong> The Bank shall be entitled to rely on the specimen signatures provided by the Customer until such time as the Customer notifies the Bank in writing of any change.</p>
-            <p style="margin: 0.5px 0;"><strong>2.5</strong> The Customer shall immediately notify the Bank in writing of any change in the details provided in the account opening form.</p>
-            <p style="margin: 0.5px 0;"><strong>2.6</strong> The Bank may accept deposits from the Customer in cash, by cheque or by electronic funds transfer.</p>
-            <p style="margin: 0.5px 0;"><strong>2.7</strong> The Bank may require the Customer to maintain a minimum balance in the account and may levy a charge if the balance falls below the required minimum.</p>
-            <p style="margin: 0.5px 0;"><strong>2.8</strong> The Bank may close an account if in the Bank's opinion the Customer is not operating the account satisfactorily.</p>
-            <p style="margin: 0.5px 0;"><strong>2.9</strong> The Bank may also close the account at its sole discretion by giving the Customer 14 days' notice.</p>
-            <p style="margin: 0.5px 0;"><strong>2.10</strong> The Customer may close the account by giving the Bank 14 days' notice in writing.</p>
-            
-            <p style="margin: 1px 0;"><strong>3. DEPOSITS AND WITHDRAWALS</strong></p>
-            <p style="margin: 0.5px 0;"><strong>3.1</strong> The Bank will credit the Customer's account with deposits received in accordance with the Bank's standard procedures.</p>
-            <p style="margin: 0.5px 0;"><strong>3.2</strong> The Bank will only allow withdrawals if there are sufficient funds in the account.</p>
-            <p style="margin: 0.5px 0;"><strong>3.3</strong> The Bank may refuse to make a payment if it would result in the account being overdrawn without prior arrangement.</p>
-            <p style="margin: 0.5px 0;"><strong>3.4</strong> The Customer may withdraw money from the account by using the Card at ATMs, by issuing a cheque (if applicable), by giving instructions for a standing order, direct debit, or other payment service, or by making a transfer to another account.</p>
-            <p style="margin: 0.5px 0;"><strong>3.5</strong> The Bank may limit cash withdrawals to a maximum amount per day.</p>
-            
-            <p style="margin: 1px 0;"><strong>4. FEES AND CHARGES</strong></p>
-            <p style="margin: 0.5px 0;"><strong>4.1</strong> The Bank shall be entitled to charge fees for the operation of the account, the use of the Card, and for other services provided to the Customer.</p>
-            <p style="margin: 0.5px 0;"><strong>4.2</strong> The Bank shall display a list of its standard fees and charges at its branches and on its website.</p>
-            <p style="margin: 0.5px 0;"><strong>4.3</strong> The Bank may vary its fees and charges from time to time by giving the Customer 14 days' notice.</p>
-            <p style="margin: 0.5px 0;"><strong>4.4</strong> The Bank shall be entitled to debit the Customer's account with all fees and charges payable by the Customer.</p>
-            
-            <p style="margin: 1px 0;"><strong>5. STATEMENTS</strong></p>
-            <p style="margin: 0.5px 0;"><strong>5.1</strong> The Bank will provide the Customer with statements of account at regular intervals or as agreed with the Customer.</p>
-            <p style="margin: 0.5px 0;"><strong>5.2</strong> The Customer shall examine the statement carefully and notify the Bank in writing of any errors or discrepancies within 14 days of receiving the statement.</p>
-            <p style="margin: 0.5px 0;"><strong>5.3</strong> If the Customer does not notify the Bank of any errors or discrepancies within 14 days, the statement shall be deemed to be correct.</p>
-            <p style="margin: 0.5px 0;"><strong>5.4</strong> The Bank may correct any errors in the statement even after the 14-day period has expired.</p>
-            
-            <p style="margin: 1px 0;"><strong>6. CARD USAGE</strong></p>
-            <p style="margin: 0.5px 0;"><strong>6.1</strong> The Card is and shall remain the property of the Bank at all times.</p>
-            <p style="margin: 0.5px 0;"><strong>6.2</strong> The Card is issued for the exclusive use of the Cardholder and is not transferable.</p>
-            <p style="margin: 0.5px 0;"><strong>6.3</strong> The Cardholder shall sign the Card immediately upon receipt.</p>
-            <p style="margin: 0.5px 0;"><strong>6.4</strong> The Cardholder shall keep the Card secure at all times and shall not allow any other person to use the Card.</p>
-            <p style="margin: 0.5px 0;"><strong>6.5</strong> The Cardholder shall keep the PIN secret and shall not disclose it to any other person.</p>
-            <p style="margin: 0.5px 0;"><strong>6.6</strong> The Cardholder shall not write the PIN on the Card or keep a written record of the PIN in close proximity to the Card.</p>
-            <p style="margin: 0.5px 0;"><strong>6.7</strong> The Cardholder shall use the Card only for transactions permitted by the Bank.</p>
-            <p style="margin: 0.5px 0;"><strong>6.8</strong> The Cardholder shall not use the Card for any illegal purpose.</p>
-            <p style="margin: 0.5px 0;"><strong>6.9</strong> The Cardholder shall not use the Card after the expiry date printed on the Card.</p>
-            <p style="margin: 0.5px 0;"><strong>6.10</strong> The Bank may refuse to authorize a transaction if it suspects that the Card is being used fraudulently or for an illegal purpose.</p>
-            
-            <p style="margin: 1px 0;"><strong>7. LOST OR STOLEN CARDS</strong></p>
-            <p style="margin: 0.5px 0;"><strong>7.1</strong> The Cardholder shall immediately notify the Bank if the Card is lost or stolen, or if the PIN becomes known to any other person.</p>
-            <p style="margin: 0.5px 0;"><strong>7.2</strong> The Cardholder shall be liable for all transactions made with the Card before the Bank receives notification of the loss or theft of the Card.</p>
-            <p style="margin: 0.5px 0;"><strong>7.3</strong> The Bank shall not be liable for any loss or damage arising from the loss or theft of the Card or the disclosure of the PIN.</p>
-            
-            <p style="margin: 1px 0;"><strong>8. LIABILITY</strong></p>
-            <p style="margin: 0.5px 0;"><strong>8.1</strong> The Customer shall be liable for all transactions made with the Card, whether authorized by the Cardholder or not.</p>
-            <p style="margin: 0.5px 0;"><strong>8.2</strong> The Bank shall not be liable for any loss or damage arising from the use of the Card or the refusal of any Merchant to accept the Card.</p>
-            <p style="margin: 0.5px 0;"><strong>8.3</strong> The Bank shall not be liable for any defect in the goods or services purchased with the Card.</p>
-            <p style="margin: 0.5px 0;"><strong>8.4</strong> The Bank shall not be liable for any loss or damage arising from the failure of any ATM or POS terminal.</p>
-            <p style="margin: 0.5px 0;"><strong>8.5</strong> The Bank shall not be liable for any loss or damage arising from the failure of the Zimswitch network.</p>
-            
-            <p style="margin: 1px 0;"><strong>9. AMENDMENTS</strong></p>
-            <p style="margin: 0.5px 0;"><strong>9.1</strong> The Bank may amend these terms and conditions at any time by giving the Customer 14 days' notice.</p>
-            <p style="margin: 0.5px 0;"><strong>9.2</strong> The notice may be given by displaying the amendments at the Bank's branches, by publishing the amendments on the Bank's website, or by any other means the Bank considers appropriate.</p>
-            <p style="margin: 0.5px 0;"><strong>9.3</strong> The Customer shall be deemed to have accepted the amendments if the Customer continues to use the Card or the account after the 14-day notice period has expired.</p>
-            
-            <p style="margin: 1px 0;"><strong>10. TERMINATION</strong></p>
-            <p style="margin: 0.5px 0;"><strong>10.1</strong> The Bank may terminate this Agreement at any time by giving the Customer 14 days' notice.</p>
-            <p style="margin: 0.5px 0;"><strong>10.2</strong> The Customer may terminate this Agreement at any time by giving the Bank 14 days' notice in writing and returning the Card to the Bank.</p>
-            <p style="margin: 0.5px 0;"><strong>10.3</strong> The Bank may terminate this Agreement immediately if the Customer breaches any of these terms and conditions.</p>
-            <p style="margin: 0.5px 0;"><strong>10.4</strong> Upon termination of this Agreement, the Customer shall return the Card to the Bank and shall pay all amounts due to the Bank.</p>
-            
-            <p style="margin: 1px 0;"><strong>11. GOVERNING LAW</strong></p>
-            <p style="margin: 0.5px 0;"><strong>11.1</strong> This Agreement shall be governed by and construed in accordance with the laws of Zimbabwe.</p>
-            <p style="margin: 0.5px 0;"><strong>11.2</strong> Any dispute arising from or in connection with this Agreement shall be subject to the exclusive jurisdiction of the courts of Zimbabwe.</p>
-        </div>
+    <div class="section-header">N - TERMS AND CONDITIONS</div>
+
+    <div class="terms-list" style="font-size: 6.5pt; column-count: 2; column-gap: 10px;">
+        <p style="margin: 1px 0;"><strong>1. DEFINITIONS:</strong> The following terms as stated in these terms and conditions shall have the following meanings:</p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>1.1</strong> Customer: The person in whose name the Services is henceforth referred as "Customer".</p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>1.2</strong> Bank: The Bank means ZB BANK LIMITED.</p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>1.3</strong> Services: Means any of the services provided by ZB Bank Limited henceforth referred as "Service".</p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>1.4</strong> Card: The card means the ZB Bank Debit Card.</p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>1.5</strong> PIN: Means the Personal Identification Number to be used by the Bank.</p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>1.6</strong> Cardholder: The person who is permitted to use the card holder with the Bank.</p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>1.7</strong> Accountholder: The person in whose name the account is opened and maintained and for whose use a card is issued to use in conjunction with the PIN for any benefit, be it personally or electronically or any third party nominated as per the agreement.</p>
+
+        <p style="margin: 3px 0 1px 0;"><strong>2. APPLICATION OF THE CARD</strong></p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>2.1</strong> All applications for cards are subject to the Bank's processes and approval procedures.</p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>2.2</strong> The Bank reserves the right to refuse the cardholder access to the card in its sole and absolute discretion.</p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>2.3</strong> Additional cards may be issued to such third persons as advised by Account Holder.</p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>2.4</strong> You will be charged service fees and other account charges at the rate fixed by ZB Bank from time to time.</p>
+
+        <p style="margin: 3px 0 1px 0;"><strong>3. USE OF THE CARD</strong></p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>3.1</strong> The card may only be used:</p>
+        <p style="margin: 1px 0; margin-left: 15px;"><strong>3.1.1</strong> Subject to the terms and provisions of this Agreement that the physical PIN shall not be kept together with the card.</p>
+        <p style="margin: 1px 0; margin-left: 15px;"><strong>3.1.2</strong> Subject to the terms and provisions of this Agreement and as amended from time to time. 3.1.3 Within the period of validity of the card shown on the card and after the required activation of the Account.</p>
+
+        <p style="margin: 3px 0 1px 0;"><strong>3.2</strong> The Card</p>
+        <p style="margin: 1px 0; margin-left: 10px;">ZB Bank shall not be liable for any loss of funds arising from any unauthorised transaction on Account holder's account after stolen of card.</p>
+
+        <p style="margin: 3px 0 1px 0;"><strong>4. LIABILITY</strong></p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>4.1</strong> When transactions are made by a person other than the holder of the Account and/or the Cardholder, both shall verify and severally be responsible for verifying the PIN when making any use of the Card, the Bank shall reduce the liability of the other.</p>
+
+        <p style="margin: 3px 0 1px 0;"><strong>5. FUNDS IN THE ACCOUNT</strong></p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>5.1</strong> The Bank shall not be obliged to act on or give effect to any payment or disbursement initiated through the use of the card where there are insufficient funds or such payment or disbursement to be made or affects suitable arrangements have been agreed to by the Bank.</p>
+
+        <p style="margin: 3px 0 1px 0;"><strong>6. COMMUNICATION</strong></p>
+        <p style="margin: 1px 0; margin-left: 10px;"><strong>6.1</strong> The Bank, its officers and servants, shall not be responsible or accountable to the Cardholder for any loss or damage, actual or consequential, arising directly or indirectly out of or in connection with the issue of the card facilities in being recorded either in or out of date, malfunction, failure or unavailability of the card facilities, the loss or destruction of any data, the failure or interruption or distortion of communication lines, any delay or in acting on any request made or instruction received, incomplete or inaccurate information or signature supplied through the use of the card, any fraudulent or by any person who incorrectly, incompletely or inaccurately supplies information obtained through the use of any transaction or any misuse or theft of any data.</p>
     </div>
-    
+
+    <div style="margin-top: 8px;">
+        <table class="form-table">
+            <tr>
+                <td class="form-label" style="width: 20%;">Customer Signature:</td>
+                <td class="form-value" style="width: 30%; height: 50px; vertical-align: middle;">
+                    @if($signatureImageData)
+                        <img src="{{ $signatureImageData }}" style="max-width: 100%; max-height: 45px; display: block;" alt="Signature">
+                    @endif
+                </td>
+                <td class="form-label" style="width: 10%;">Date:</td>
+                <td class="form-value" style="width: 40%;">{{ date('d/m/Y') }}</td>
+            </tr>
+        </table>
+    </div>
+
     <div class="page-footer">Page 3 of 4</div>
-</div><!-- 
-PAGE 4 -->
+</div>
+
+<!-- PAGE 4 -->
 <div class="page">
     <!-- Header -->
-    <table class="header-table">
-        <tr>
-            <td style="width: 20%;">
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/zb_logo.png'))) }}" alt="ZB Logo" class="logo-img">
-            </td>
-            <td style="width: 60%;"></td>
-            <td style="width: 20%;" class="tagline">
-                BANKING | INVESTMENTS | INSURANCE
-            </td>
-        </tr>
-    </table>
-    
-    <!-- Section O -->
-    <div class="section-header">O - DECLARATION AND ACCEPTANCE OF TERMS AND CONDITIONS</div>
-    <div style="font-size: 5pt; margin: 1px 0; line-height: 1.2;">
-        <p>I/We hereby apply for the opening of an account with ZB Bank Limited. I/We understand that the information given herein and the documents supplied are the basis for opening such account and I/We therefore warrant that such information is correct.</p>
-        <p>I/We further undertake to inform the Bank of any change in the information provided in this form.</p>
-        <p>I/We agree to be bound by the terms and conditions governing the operations of the account as set out in section N above.</p>
-        <p>I/We have read and understood the terms and conditions and hereby accept them.</p>
-    </div>
-    
-    <table class="main-table">
-        <tr>
-            <td class="label" style="width: 15%;">Full Name:</td>
-            <td class="input" style="width: 30%;">{{ $formResponses['firstName'] ?? '' }} {{ $formResponses['surname'] ?? '' }}</td>
-            <td class="label" style="width: 20%;">Applicant's Signature:</td>
-            <td class="input" style="width: 20%;">
-                @if(isset($documents['signature']) && $documents['signature'])
-                    <img src="{{ $documents['signature'] }}" alt="Signature" style="max-height: 20px; max-width: 100%;">
-                @endif
-            </td>
-            <td class="label" style="width: 5%;">Date:</td>
-            <td class="input" style="width: 10%;">{{ isset($formResponses['declaration']['date']) ? $formResponses['declaration']['date'] : date('Y-m-d') }}</td>
-        </tr>
-    </table>
-    
-    <!-- Section P -->
-    <div class="section-header">P - FOR BANK USE ONLY</div>
-    
-    <table class="main-table">
-        <tr>
-            <td class="label" style="width: 20%;">Account Name:</td>
-            <td class="input" style="width: 30%;"></td>
-            <td class="label" style="width: 20%;">Account Number:</td>
-            <td class="input" style="width: 30%;"></td>
-        </tr>
-        <tr>
-            <td class="label">Account Type:</td>
-            <td class="input">{{ $formResponses['accountType'] ?? '' }}</td>
-            <td class="label">Currency:</td>
-            <td class="input">{{ $formResponses['accountCurrency'] ?? '' }}</td>
-        </tr>
-        <tr>
-            <td class="label">Branch:</td>
-            <td class="input">{{ $formResponses['serviceCenter'] ?? '' }}</td>
-            <td class="label">Date Opened:</td>
-            <td class="input">{{ $applicationDate ?? date('d/m/Y') }}</td>
-        </tr>
-    </table>
-    
-    <div style="font-size: 5pt; margin: 5px 0; font-weight: bold;">DOCUMENTATION CHECKLIST</div>
-    
-    <table class="main-table">
-        <tr>
-            <td class="label" style="width: 40%;">National ID/Valid Passport:</td>
-            <td class="input" style="width: 10%; text-align: center;">
-                <span class="checkbox"></span>
-            </td>
-            <td class="label" style="width: 40%;">Proof of Residence:</td>
-            <td class="input" style="width: 10%; text-align: center;">
-                <span class="checkbox"></span>
-            </td>
-        </tr>
-        <tr>
-            <td class="label">Proof of Income/Employment:</td>
-            <td class="input" style="text-align: center;">
-                <span class="checkbox"></span>
-            </td>
-            <td class="label">Passport Photos:</td>
-            <td class="input" style="text-align: center;">
-                <span class="checkbox"></span>
-            </td>
-        </tr>
-        <tr>
-            <td class="label">Birth Certificate (for minors):</td>
-            <td class="input" style="text-align: center;">
-                <span class="checkbox"></span>
-            </td>
-            <td class="label">Other (specify):</td>
-            <td class="input" style="text-align: center;">
-                <span class="checkbox"></span>
-            </td>
-        </tr>
-    </table>
-    
-    <div style="font-size: 5pt; margin: 5px 0; font-weight: bold;">APPROVALS</div>
-    
-    <table class="main-table">
-        <tr>
-            <td class="label" style="width: 20%;">Prepared by:</td>
-            <td class="input" style="width: 30%;"></td>
-            <td class="label" style="width: 20%;">Signature:</td>
-            <td class="input" style="width: 30%;"></td>
-        </tr>
-        <tr>
-            <td class="label">Checked by:</td>
-            <td class="input"></td>
-            <td class="label">Signature:</td>
-            <td class="input"></td>
-        </tr>
-        <tr>
-            <td class="label">Approved by:</td>
-            <td class="input"></td>
-            <td class="label">Signature:</td>
-            <td class="input"></td>
-        </tr>
-    </table>
-    
-    <div style="font-size: 5pt; margin: 5px 0; font-weight: bold;">CARD DETAILS</div>
-    
-    <table class="main-table">
-        <tr>
-            <td class="label" style="width: 20%;">Card Number:</td>
-            <td class="input" style="width: 30%;"></td>
-            <td class="label" style="width: 20%;">Card Type:</td>
-            <td class="input" style="width: 30%;"></td>
-        </tr>
-        <tr>
-            <td class="label">Issued by:</td>
-            <td class="input"></td>
-            <td class="label">Date Issued:</td>
-            <td class="input"></td>
-        </tr>
-        <tr>
-            <td class="label">Collected by:</td>
-            <td class="input"></td>
-            <td class="label">Date Collected:</td>
-            <td class="input"></td>
-        </tr>
-    </table>
-    
-    <div style="margin-top: 10px; text-align: center;">
-        <div style="display: inline-block; border: 1px solid #000; padding: 5px; width: 150px; height: 80px; text-align: center; vertical-align: middle; font-size: 5pt;">
-            <p style="margin-top: 30px;">BANK STAMP</p>
+    <div class="header">
+        <div class="header-left">
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/zb_logo.png'))) }}" alt="ZB Logo" class="logo">
+            <span class="for-you">for you</span>
+        </div>
+        <div class="header-right">
+            BANKING | INVESTMENTS | INSURANCE
         </div>
     </div>
-    
+
+    <!-- Two Column Layout for O and P sections -->
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 5px;">
+                <!-- Section O - Indemnity by Applicant -->
+                <div class="section-header" style="font-size: 9pt;">O - INDEMNITY BY APPLICANT</div>
+
+                <div class="terms-list" style="font-size: 6pt;">
+                    <p style="margin: 1px 0;"><strong>a.</strong> I agree that the Bank reserves the right to close my account compulsorily without warning if it is conducted unsatisfactorily or rules are broken.</p>
+                    <p style="margin: 1px 0;"><strong>b.</strong> (a) When used withdraw/redraw/request reveal that I am of questionable credit worthiness.</p>
+                    <p style="margin: 1px 0;">(b) Stolen cheques/cards being deposited has been subject to constant requests being honoured in respect of cheques without adequate proof of such report to the Bank within 14 days after being notified of such deposits by the bank.</p>
+                    <p style="margin: 1px 0;"><strong>c.</strong> (c) Where it is proven by the Bank that overpayments deposits have erroneously been made into my account or any fraudulent deposits are made into the account and I fail to repay any such amount within the agreed time period as my be stipulated.</p>
+                    <p style="margin: 1px 0;"><strong>d.</strong> I also authorize the Bank to retrieve any entries erroneously made into my account or any fraudulent deposits to my account. The amount of such retrieval shall constitute a debt owed by me.</p>
+                    <p style="margin: 1px 0;"><strong>e.</strong> Where my account has been debited, I acknowledge that I am unable to pay the Bank the said amount even if payment is made or affects suitable arrangements have not been agreed to by the Bank.</p>
+                    <p style="margin: 1px 0;"><strong>f.</strong> In respect of my personal details, contact details; employment details etc;</p>
+                </div>
+            </td>
+            <td style="width: 50%; vertical-align: top; padding-left: 5px;">
+                <!-- Section P - ZB Ecocash Banking Services Terms -->
+                <div class="section-header" style="font-size: 9pt;">P - ZB ECOCASH BANKING SERVICES TERMS AND CONDITIONS</div>
+
+                <div class="terms-list" style="font-size: 6pt;">
+                    <p style="margin: 1px 0;"><strong>a.</strong> I hereby certify that all the information provided is correct and authorize ZB Bank to use the information contained on this form for the purposes of opening an account and the Ecocash Banking Platform.</p>
+                    <p style="margin: 1px 0;"><strong>b.</strong> I hereby indemnify ZB Bank Limited against any losses, claims damages, whether direct, special or consequential nature, arising from my registration to and use of the Ecocash Banking Services being offline or unavailable for any reason, the mobile phone number provided being registered to my mobile by another person or the Ecocash Banking Services or direct or indirect losses which the Bank could not reasonably have foreseen.</p>
+                    <p style="margin: 1px 0;"><strong>c.</strong> I further agree to be bound by the Terms and Conditions governing use by me registered for the event of the termination of the Ecocash Banking Services registration being done by me against any loss caused by termination of the use of services or records.</p>
+                    <p style="margin: 1px 0;"><strong>d.</strong> In the event that I wish to terminate the Ecocash Banking Services registration or withdraw Ecocash Banking Services, I understand that the termination can only be done subject to me providing prior written notice to the Bank.</p>
+                    <p style="margin: 1px 0;"><strong>e.</strong> The Ecocash PIN Number used to access any other ecocash Services shall be the same used to access Ecocash Banking Services and I agree not to disclose the Personal Identification Number whether in Bank, I authorize Ecocash Banking Services to use the same PIN number to access the Ecocash Banking Services shall remain confidential and secure.</p>
+                    <p style="margin: 1px 0;"><strong>f.</strong> I understand and acknowledge that SMS notification charges apply when using Ecocash Banking Services.</p>
+                    <p style="margin: 1px 0;"><strong>g.</strong> The above terms and conditions shall be read together with the other terms and conditions as they appear on the Ecocash User Registration Form and Bank Account Opening form and any other Ecocash Services guidelines as may be amended by the Bank or Ecocash from time to time.</p>
+                    <p style="margin: 1px 0;"><strong>h.</strong> The bank reserves the right, from time, to review and or amend the terms and conditions applicable to the use of Ecocash Services and shall advise Ecocash registered users of those changes accordingly.</p>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="form-table" style="margin-top: 8px;">
+        <tr>
+            <td class="form-label" style="width: 15%;">Print Name:</td>
+            <td class="form-value" style="width: 35%;">{{ $get('firstName') }} {{ $get('surname') }}</td>
+            <td class="form-label" style="width: 25%;">Authorised Signatory Specimen Signature:</td>
+            <td class="form-value" style="width: 25%; height: 50px; vertical-align: middle;">
+                @if($signatureImageData)
+                    <img src="{{ $signatureImageData }}" style="max-width: 100%; max-height: 45px; display: block;" alt="Signature">
+                @endif
+            </td>
+        </tr>
+    </table>
+
+    <div style="margin-top: 5px; text-align: right;">
+        <div class="photo-box" style="display: inline-block; float: right; text-align: center; padding: 10px;">
+            @if($selfieImageData)
+                <img src="{{ $selfieImageData }}" style="max-width: 100px; max-height: 110px; display: block; margin: 0 auto;" alt="Photo of Applicant">
+            @else
+                Photo of Applicant:
+            @endif
+        </div>
+    </div>
+    <div style="clear: both;"></div>
+
+    <!-- For Official Use Only -->
+    <div class="section-header" style="margin-top: 10px;">FOR OFFICIAL USE ONLY</div>
+
+    <table class="form-table">
+        <tr>
+            <td class="form-label" style="width: 30%;">TYPE OF ACCOUNT:</td>
+            <td class="form-value" colspan="5">
+                Individual Transactional Account <span class="checkbox"></span>
+                Senior Citizen Transactional Account <span class="checkbox"></span>
+                Informal Trader Transactional Account <span class="checkbox"></span>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td class="form-value" colspan="5">
+                Individual Current Account <span class="checkbox"></span>
+                Stash Transactional Account <span class="checkbox"></span>
+                Other <span style="font-style: italic;">(Specify)</span> __________
+            </td>
+        </tr>
+    </table>
+
+    <!-- Supporting KYC Checklist -->
+    <div class="section-header">SUPPORTING KYC CHECKLIST</div>
+
+    <div style="font-size: 8pt; margin: 4px 0;">
+        Please attach certified copies of the following and indicate by marking:
+    </div>
+
+    <table class="form-table">
+        <tr>
+            <td class="form-label" style="width: 45%;">(i) Two (2) recent passport-sized photos</td>
+            <td class="form-value" style="width: 18%;"><span class="checkbox"></span></td>
+            <td class="form-label" style="width: 18%;">(ii) Proof of residence (within 3-months)</td>
+            <td class="form-value" style="width: 19%;"><span class="checkbox"></span></td>
+        </tr>
+        <tr>
+            <td class="form-label">(iii) Payslip <span style="font-style: italic;">(where applicable)</span></td>
+            <td class="form-value"><span class="checkbox"></span></td>
+            <td colspan="2"></td>
+        </tr>
+        <tr>
+            <td class="form-label" colspan="4">(iv) Current Identification Documents: (mark applicable): National ID Card <span class="checkbox"></span> Passport <span class="checkbox"></span> Drivers' License <span class="checkbox"></span></td>
+        </tr>
+    </table>
+
+    <!-- Account Opening & KYC Checker Section -->
+    <div class="section-header">ACCOUNT OPENING & KYC CHECKER SECTION</div>
+
+    <table class="form-table" style="font-size: 7pt;">
+        <tr>
+            <td class="form-label" style="width: 25%;">Service Center Name:</td>
+            <td class="form-value" style="width: 25%;"></td>
+            <td class="form-label" style="width: 25%;">Domicile Service Center Code:</td>
+            <td class="form-value" style="width: 10%;"></td>
+            <td class="form-label" style="width: 15%;">ZB ID:</td>
+            <td class="form-value"></td>
+        </tr>
+        <tr>
+            <td class="form-label">Financial Clearing Bureau Vetting:</td>
+            <td class="form-value">Favourable <span class="checkbox"></span> Unfavourable <span class="checkbox"></span></td>
+            <td class="form-label">Politically Exposed Persons Screening:</td>
+            <td class="form-value" colspan="3">Favourable <span class="checkbox"></span> Unfavourable <span class="checkbox"></span></td>
+        </tr>
+        <tr>
+            <td class="form-label">Sanctions Screening (UN&OFAC Watch lists):</td>
+            <td class="form-value">Favourable <span class="checkbox"></span> Unfavourable <span class="checkbox"></span></td>
+            <td class="form-label">RBZ Credit Registry Clearance:</td>
+            <td class="form-value" colspan="3">Favourable <span class="checkbox"></span> Unfavourable <span class="checkbox"></span></td>
+        </tr>
+        <tr>
+            <td class="form-label">A/C Opened By:</td>
+            <td class="form-value"></td>
+            <td class="form-label">Signature:</td>
+            <td class="form-value"></td>
+            <td class="form-label">ZB Life Certificate No.:</td>
+            <td class="form-value"></td>
+        </tr>
+        <tr>
+            <td class="form-label">ZB Life Agent No (if applicable):</td>
+            <td class="form-value"></td>
+            <td class="form-label">Date:</td>
+            <td class="form-value" colspan="3"></td>
+        </tr>
+    </table>
+
+    <!-- Account Opening Approver & Reviewer Section -->
+    <div class="section-header" style="font-size: 8pt;">ACCOUNT OPENING APPROVER & REVIEWER SECTION <span style="font-style: italic; font-size: 7pt;">(Note: Service Centre Manager or Service Centre Consultant in Charge)</span></div>
+
+    <table class="form-table" style="font-size: 7pt;">
+        <tr>
+            <td class="form-label" style="width: 20%;">Account Opened:</td>
+            <td class="form-value" style="width: 15%;"><span class="checkbox"></span> <span class="checkbox"></span></td>
+            <td class="form-label" style="width: 30%;">All Mandatory Fields Captured:</td>
+            <td class="form-value"><span class="checkbox"></span> <span class="checkbox"></span></td>
+        </tr>
+        <tr>
+            <td class="form-label">KYC Complete:</td>
+            <td class="form-value"><span class="checkbox"></span> <span class="checkbox"></span></td>
+            <td class="form-label">Customer Risk Review Profile:</td>
+            <td class="form-value">High <span class="checkbox"></span> Medium <span class="checkbox"></span> Low <span class="checkbox"></span></td>
+        </tr>
+        <tr>
+            <td colspan="4" style="font-size: 7pt;">
+                <strong>KEY:</strong> High Risk Customer - Annual Review &nbsp;&nbsp;&nbsp; Medium Risk Customer - 2-3 Years Review &nbsp;&nbsp;&nbsp; Low Risk Customer - 5 Years Review
+            </td>
+        </tr>
+        <tr>
+            <td class="form-label">Next KYC Review Date:</td>
+            <td class="form-value" colspan="3"></td>
+        </tr>
+        <tr>
+            <td class="form-label">Approved by:</td>
+            <td class="form-value" style="width: 30%;"></td>
+            <td class="form-label">Signature:</td>
+            <td class="form-value"></td>
+        </tr>
+        <tr>
+            <td class="form-label">Date:</td>
+            <td class="form-value" colspan="3"></td>
+        </tr>
+    </table>
+
+    <div style="margin-top: 15px; text-align: center;">
+        <div style="border: 2px solid #000; width: 180px; height: 90px; display: inline-block; padding-top: 30px; color: #ccc; font-size: 16pt;">
+            SERVICE CENTER<br/>STAMP
+        </div>
+    </div>
+
     <div class="page-footer">Page 4 of 4</div>
 </div>
 

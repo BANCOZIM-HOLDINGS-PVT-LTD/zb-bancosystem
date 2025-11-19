@@ -87,12 +87,31 @@ class AgentResource extends Resource
                             ->default('individual')
                             ->required(),
 
+                        Forms\Components\Select::make('agent_type')
+                            ->label('Agent Type')
+                            ->options([
+                                'online' => 'Online Agent',
+                                'physical' => 'Physical Agent',
+                            ])
+                            ->default('physical')
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function ($state, callable $set) {
+                                if ($state === 'online') {
+                                    $set('commission_rate', 0.3);
+                                }
+                            }),
+
                         Forms\Components\TextInput::make('commission_rate')
                             ->label('Commission Rate (%)')
                             ->numeric()
                             ->step(0.01)
                             ->suffix('%')
-                            ->default(0.00),
+                            ->default(0.00)
+                            ->disabled(fn (callable $get) => $get('agent_type') === 'online')
+                            ->helperText(fn (callable $get) => $get('agent_type') === 'online' 
+                                ? 'Online agents have a fixed commission of 0.3%' 
+                                : 'Set custom commission rate for physical agents'),
 
                         Forms\Components\TextInput::make('region')
                             ->maxLength(255),
@@ -105,15 +124,17 @@ class AgentResource extends Resource
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Banking Information')
+                Forms\Components\Section::make('Ecocash Account Details')
                     ->schema([
-                        Forms\Components\TextInput::make('bank_name')
-                            ->label('Bank Name')
+                        Forms\Components\TextInput::make('ecocash_name')
+                            ->label('Ecocash Account Name')
                             ->maxLength(255),
 
-                        Forms\Components\TextInput::make('bank_account')
-                            ->label('Account Number')
-                            ->maxLength(255),
+                        Forms\Components\TextInput::make('ecocash_number')
+                            ->label('Ecocash Number')
+                            ->tel()
+                            ->maxLength(255)
+                            ->placeholder('e.g., 0771234567'),
                     ])
                     ->columns(2),
             ]);
@@ -149,11 +170,20 @@ class AgentResource extends Resource
                         'danger' => 'suspended',
                     ]),
 
+                Tables\Columns\BadgeColumn::make('agent_type')
+                    ->label('Type')
+                    ->colors([
+                        'info' => 'online',
+                        'success' => 'physical',
+                    ]),
+
                 Tables\Columns\BadgeColumn::make('type')
+                    ->label('Category')
                     ->colors([
                         'primary' => 'individual',
                         'secondary' => 'corporate',
-                    ]),
+                    ])
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('commission_rate')
                     ->label('Commission %')
@@ -191,7 +221,15 @@ class AgentResource extends Resource
                         'suspended' => 'Suspended',
                     ]),
 
+                SelectFilter::make('agent_type')
+                    ->label('Agent Type')
+                    ->options([
+                        'online' => 'Online Agent',
+                        'physical' => 'Physical Agent',
+                    ]),
+
                 SelectFilter::make('type')
+                    ->label('Category')
                     ->options([
                         'individual' => 'Individual',
                         'corporate' => 'Corporate',

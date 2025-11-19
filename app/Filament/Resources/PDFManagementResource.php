@@ -211,10 +211,14 @@ class PDFManagementResource extends Resource
                     ->icon('heroicon-o-arrow-down-tray')
                     ->action(function (Collection $records) {
                         $sessionIds = $records->pluck('session_id')->toArray();
-                        
-                        return redirect()->route('admin.pdf.bulk-download', [
-                            'session_ids' => $sessionIds
-                        ]);
+
+                        // Create a request with the session IDs
+                        $request = request();
+                        $request->merge(['session_ids' => $sessionIds]);
+
+                        // Call the controller method directly
+                        $controller = app(\App\Http\Controllers\Admin\PDFManagementController::class);
+                        return $controller->bulkDownload($request);
                     }),
                 
                 BulkAction::make('export_for_bank')
@@ -230,19 +234,25 @@ class PDFManagementResource extends Resource
                             ])
                             ->required()
                             ->default('pdf'),
-                        
+
                         Forms\Components\DatePicker::make('date_from')
                             ->label('From Date')
                             ->required()
                             ->default(Carbon::now()->startOfMonth()),
-                        
+
                         Forms\Components\DatePicker::make('date_to')
                             ->label('To Date')
                             ->required()
                             ->default(Carbon::now()->endOfMonth()),
                     ])
                     ->action(function (Collection $records, array $data) {
-                        return redirect()->route('admin.pdf.export-bank', $data);
+                        // Create a request with the form data
+                        $request = request();
+                        $request->merge($data);
+
+                        // Call the controller method directly
+                        $controller = app(\App\Http\Controllers\Admin\PDFManagementController::class);
+                        return $controller->exportForBank($request);
                     }),
                 
                 Tables\Actions\DeleteBulkAction::make()
