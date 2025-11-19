@@ -81,7 +81,7 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({ referenceCode, 
 
     return (
         <>
-            <Head title="Application Submitted Successfully" />
+            <Head title="BancoSystem - Application Submitted" />
 
             {/* Success Notification Popup */}
             {showSuccessNotification && (

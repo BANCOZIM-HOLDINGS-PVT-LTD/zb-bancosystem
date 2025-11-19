@@ -160,7 +160,7 @@ export default function ApplicationStatus() {
 
     return (
         <>
-            <Head title="Application Status" />
+            <Head title="BancoSystem - Application Status" />
             <div className="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a]">
                 <div className="max-w-2xl mx-auto px-4 py-8">
                     {/* Header */}

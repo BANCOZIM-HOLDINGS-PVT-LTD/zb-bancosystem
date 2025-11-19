@@ -7,8 +7,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 
-class Agent extends Model
+class Agent extends Authenticatable implements FilamentUser
 {
 
     protected $fillable = [
@@ -38,6 +41,11 @@ class Agent extends Model
         'commission_rate' => 'decimal:2',
     ];
 
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
     protected static function boot()
     {
         parent::boot();
@@ -50,11 +58,19 @@ class Agent extends Model
     }
 
     /**
+     * Get the agent's name (required by Filament)
+     */
+    public function getNameAttribute(): string
+    {
+        return trim($this->first_name . ' ' . $this->last_name);
+    }
+
+    /**
      * Get the agent's full name
      */
     public function getFullNameAttribute(): string
     {
-        return trim($this->first_name . ' ' . $this->last_name);
+        return $this->name;
     }
 
     /**
@@ -249,5 +265,57 @@ class Agent extends Model
             ->orderBy('applications_count', 'desc')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Determine if the agent can access the Filament panel
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        if ($panel->getId() === 'agent') {
+            return $this->status === 'active';
+        }
+
+        return false;
+    }
+
+    /**
+     * Get the name of the unique identifier for the user.
+     */
+    public function getAuthIdentifierName()
+    {
+        return 'id';
+    }
+
+    /**
+     * Get the unique identifier for the user.
+     */
+    public function getAuthIdentifier()
+    {
+        return $this->getAttribute($this->getAuthIdentifierName());
+    }
+
+    /**
+     * Get the password for the agent
+     */
+    public function getAuthPassword()
+    {
+        return $this->agent_code; // Using agent_code as password for simple auth
+    }
+
+    /**
+     * Get the column name for the "remember me" token
+     */
+    public function getRememberTokenName()
+    {
+        return null; // Agents don't use remember tokens
+    }
+
+    /**
+     * Get the name attribute for Filament
+     */
+    public function getFilamentName(): string
+    {
+        return $this->name ?: 'Agent ' . $this->agent_code;
     }
 }

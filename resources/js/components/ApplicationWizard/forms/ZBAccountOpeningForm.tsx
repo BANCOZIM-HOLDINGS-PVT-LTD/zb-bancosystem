@@ -252,6 +252,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
 
             const updatedData = { ...prev };
             let currentLevel: any = updatedData;
+            
 
             for (let i = 0; i < pathSegments.length - 1; i++) {
                 const segment = pathSegments[i];

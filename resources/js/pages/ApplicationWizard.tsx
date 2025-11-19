@@ -19,7 +19,7 @@ export default function ApplicationWizardPage({
 }: ApplicationWizardPageProps) {
     return (
         <>
-            <Head title="Application Wizard" />
+            <Head title="BancoSystem - Application" />
             <ErrorBoundary>
                 <ApplicationProvider
                     initialApplicationState={applicationState}

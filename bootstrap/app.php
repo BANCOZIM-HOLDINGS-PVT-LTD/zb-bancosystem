@@ -40,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'request.size' => RequestSizeLimitMiddleware::class,
             'csp' => ContentSecurityPolicyMiddleware::class,
+            'auth.agent' => \App\Http\Middleware\AuthenticateAgent::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

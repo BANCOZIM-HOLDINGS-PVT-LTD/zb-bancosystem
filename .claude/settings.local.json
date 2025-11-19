@@ -39,7 +39,9 @@
       "Bash(flyctl secrets set:*)",
       "Bash(flyctl secrets list:*)",
       "Bash(flyctl secrets unset:*)",
-      "Bash(flyctl scale:*)"
+      "Bash(flyctl scale:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(nul)"
     ],
     "deny": []
   }
