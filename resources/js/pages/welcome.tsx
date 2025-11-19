@@ -5,9 +5,13 @@ import { Globe, CreditCard, Briefcase, FileText, Package, ChevronRight, User, Do
 
 interface WelcomeProps {
     hasApplications: boolean;
+    hasCompletedApplications: boolean;
+    referralCode?: string;
+    agentId?: number;
+    agentName?: string;
 }
 
-export default function Welcome({ hasApplications }: WelcomeProps) {
+export default function Welcome({ hasApplications, hasCompletedApplications, referralCode, agentId, agentName }: WelcomeProps) {
     const { auth } = usePage<SharedData>().props;
 
     // If user is authenticated, skip directly to intent selection
@@ -80,16 +84,16 @@ export default function Welcome({ hasApplications }: WelcomeProps) {
         }
     ];
 
-    // Filter intents based on whether user has applications
+    // Filter intents based on whether user has COMPLETED applications
     const intents = useMemo(() => {
-        if (hasApplications) {
-            // Returning user - show only tracking options
+        if (hasCompletedApplications) {
+            // Returning user with completed applications - show only tracking options
             return allIntents.filter(intent => !intent.forNewUsers);
         } else {
-            // New user - show only application options
+            // New user or user with incomplete applications - show application options
             return allIntents.filter(intent => intent.forNewUsers);
         }
-    }, [hasApplications]);
+    }, [hasCompletedApplications]);
 
     const handleLanguageSelect = (language: string) => {
         setSelectedLanguage(language);
@@ -105,14 +109,28 @@ export default function Welcome({ hasApplications }: WelcomeProps) {
     const handleIntentSelect = (intent: string) => {
         const selectedIntent = intents.find(i => i.id === intent);
         if (selectedIntent) {
+            // Build base params
+            let params: Record<string, string> = {};
+
             if (intent === 'hirePurchase' || intent === 'microBiz') {
-                window.location.href = route(selectedIntent.route, { intent, language: selectedLanguage });
+                params = { intent, language: selectedLanguage };
+                // Add referral code if available
+                if (referralCode) {
+                    params.ref = referralCode;
+                }
+                window.location.href = route(selectedIntent.route, params);
             } else if (intent === 'cashPurchasePersonal' || intent === 'cashPurchaseMicroBiz') {
                 // Determine purchase type based on intent
                 const purchaseType = intent === 'cashPurchasePersonal' ? 'personal' : 'microbiz';
-                window.location.href = route(selectedIntent.route, { type: purchaseType, language: selectedLanguage });
+                params = { type: purchaseType, language: selectedLanguage };
+                // Add referral code if available
+                if (referralCode) {
+                    params.ref = referralCode;
+                }
+                window.location.href = route(selectedIntent.route, params);
             } else {
-                window.location.href = route(selectedIntent.route, { language: selectedLanguage });
+                params = { language: selectedLanguage };
+                window.location.href = route(selectedIntent.route, params);
             }
         }
     };
@@ -137,6 +155,16 @@ export default function Welcome({ hasApplications }: WelcomeProps) {
                             </Link>
                         </nav>
                     </header>
+                )}
+
+                {referralCode && agentName && (
+                    <div className="mb-6 w-full max-w-4xl">
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 dark:bg-emerald-950/20 dark:border-emerald-800">
+                            <p className="text-sm text-emerald-800 dark:text-emerald-300">
+                                <span className="font-semibold">Referred by:</span> {agentName}
+                            </p>
+                        </div>
+                    </div>
                 )}
 
                 <div className="flex w-full items-center justify-center opacity-100 transition-opacity duration-750 lg:grow starting:opacity-0">

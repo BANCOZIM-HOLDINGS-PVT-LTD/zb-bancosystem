@@ -14,9 +14,10 @@ class WelcomeController extends Controller
     /**
      * Show the welcome page
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $hasApplications = false;
+        $hasCompletedApplications = false;
 
         // Check if user is authenticated and has any applications or cash purchases
         if (Auth::check()) {
@@ -60,16 +61,34 @@ class WelcomeController extends Controller
 
                 $hasApplications = $applicationQuery->exists();
 
+                // Check if user has any COMPLETED applications (submitted, not just in-progress)
+                if ($hasApplications) {
+                    $hasCompletedApplications = $applicationQuery
+                        ->where('current_step', 'documents')
+                        ->where('is_completed', true)
+                        ->exists();
+                }
+
                 // If no applications found, check for cash purchases
                 if (!$hasApplications && $user->national_id) {
                     $hasCashPurchases = CashPurchase::where('national_id', $user->national_id)->exists();
                     $hasApplications = $hasCashPurchases;
+                    $hasCompletedApplications = $hasCashPurchases; // Cash purchases are considered completed
                 }
             }
         }
 
+        // Retrieve referral data from session
+        $referralCode = session('referral_code');
+        $agentId = session('agent_id');
+        $agentName = session('agent_name');
+
         return Inertia::render('welcome', [
             'hasApplications' => $hasApplications,
+            'hasCompletedApplications' => $hasCompletedApplications,
+            'referralCode' => $referralCode,
+            'agentId' => $agentId,
+            'agentName' => $agentName,
         ]);
     }
 }

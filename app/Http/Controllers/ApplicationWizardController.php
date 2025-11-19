@@ -34,41 +34,60 @@ class ApplicationWizardController extends Controller
         $intent = $request->query('intent');
         $language = $request->query('language', 'en');
         $sessionId = $request->query('session_id');
+        $referralCode = $request->query('ref');
 
         $initialData = [];
-        $initialStep = 'language';
+        $initialStep = 'employer'; // Start at employer step since auth is required
+        $agentId = null;
+
+        // Handle referral code if provided (from welcome page)
+        if ($referralCode) {
+            $referralLink = \App\Models\AgentReferralLink::where('code', $referralCode)
+                ->usable()
+                ->with('agent')
+                ->first();
+
+            if ($referralLink) {
+                // Set agent ID for tracking
+                $agentId = $referralLink->agent_id;
+                $initialData['agentId'] = $agentId;
+                $initialData['referralCode'] = $referralCode;
+                $initialData['agentName'] = $referralLink->agent->full_name;
+
+                \Log::info('Agent referral applied to wizard', [
+                    'referral_code' => $referralCode,
+                    'agent_id' => $agentId,
+                    'intent' => $intent,
+                ]);
+            }
+        }
 
         // If language is provided, add it to initial data
         if ($language) {
             $initialData['language'] = $language;
         }
 
-        // If intent is provided, skip language and intent steps
+        // If intent is provided, add it to initial data (always the case now)
         if ($intent) {
             $initialData['intent'] = $intent;
-            $initialStep = 'employer';
         }
 
         return Inertia::render('ApplicationWizard', [
             'initialStep' => $initialStep,
             'initialData' => $initialData,
             'sessionId' => $sessionId,
+            'agentId' => $agentId,
+            'referralCode' => $referralCode,
         ]);
     }
 
     /**
      * Show the application wizard with agent referral handling
+     * Now redirects to welcome page with referral code in session
      */
-    public function showWithReferral(Request $request): Response
+    public function showWithReferral(Request $request): \Illuminate\Http\RedirectResponse
     {
         $referralCode = $request->query('ref');
-        $intent = $request->query('intent');
-        $language = $request->query('language', 'en');
-        $sessionId = $request->query('session_id');
-
-        $initialData = [];
-        $initialStep = 'language';
-        $agentId = null;
 
         // Handle agent referral
         if ($referralCode) {
@@ -81,16 +100,18 @@ class ApplicationWizardController extends Controller
                 // Record the click
                 $referralLink->recordClick();
 
-                // Set agent ID for tracking
-                $agentId = $referralLink->agent_id;
-                $initialData['agentId'] = $agentId;
-                $initialData['referralCode'] = $referralCode;
-                $initialData['agentName'] = $referralLink->agent->full_name;
+                // Store referral data in session
+                session([
+                    'referral_code' => $referralCode,
+                    'agent_id' => $referralLink->agent_id,
+                    'agent_name' => $referralLink->agent->full_name,
+                    'campaign_name' => $referralLink->campaign_name,
+                ]);
 
                 // Log the referral for analytics
                 \Log::info('Agent referral accessed', [
                     'referral_code' => $referralCode,
-                    'agent_id' => $agentId,
+                    'agent_id' => $referralLink->agent_id,
                     'agent_name' => $referralLink->agent->full_name,
                     'campaign' => $referralLink->campaign_name,
                     'ip' => $request->ip(),
@@ -105,24 +126,8 @@ class ApplicationWizardController extends Controller
             }
         }
 
-        // If language is provided, add it to initial data
-        if ($language) {
-            $initialData['language'] = $language;
-        }
-
-        // If intent is provided, skip language and intent steps
-        if ($intent) {
-            $initialData['intent'] = $intent;
-            $initialStep = 'employer';
-        }
-
-        return Inertia::render('ApplicationWizard', [
-            'initialStep' => $initialStep,
-            'initialData' => $initialData,
-            'sessionId' => $sessionId,
-            'agentId' => $agentId,
-            'referralCode' => $referralCode,
-        ]);
+        // Redirect to welcome page for authentication and intent selection
+        return redirect()->route('home');
     }
     
     /**

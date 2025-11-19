@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
-import LanguageSelection from './steps/LanguageSelection';
-import IntentSelection from './steps/IntentSelection';
 import EmployerSelection from './steps/EmployerSelection';
 import ProductSelection from './steps/ProductSelection';
 import CreditTypeSelection from './steps/CreditTypeSelection';
@@ -455,8 +453,6 @@ interface ApplicationWizardProps {
 }
 
 const allSteps = [
-    'language',
-    'intent',
     'employer',
     'product',
     'creditType',
@@ -469,7 +465,7 @@ const allSteps = [
 ];
 
 const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
-    initialStep = 'language',
+    initialStep = 'employer',
     initialData = {},
     sessionId: propSessionId
 }) => {
@@ -515,12 +511,9 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
     const [isStateRestored, setIsStateRestored] = useState(false);
 
     // Create filtered steps based on conditions
-    // Filter out language/intent if coming from Welcome page
-    // Filter out depositPayment if credit type is ZDC
+    // Filter out depositPayment if credit type is not PDC
     const steps = React.useMemo(() => {
-        let filteredSteps = initialData.intent
-            ? allSteps.filter(step => step !== 'language' && step !== 'intent')
-            : allSteps;
+        let filteredSteps = [...allSteps];
 
         // Only show depositPayment step for PDC credit type
         if (wizardData.creditType !== 'PDC') {
@@ -528,7 +521,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         }
 
         return filteredSteps;
-    }, [initialData.intent, wizardData.creditType]);
+    }, [wizardData.creditType]);
 
     // Effect to save state whenever it changes
     useEffect(() => {
@@ -795,10 +788,6 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         };
 
         switch (currentStep) {
-            case 'language':
-                return <LanguageSelection {...commonProps} />;
-            case 'intent':
-                return <IntentSelection {...commonProps} />;
             case 'employer':
                 return <EmployerSelection {...commonProps} />;
             case 'product':
