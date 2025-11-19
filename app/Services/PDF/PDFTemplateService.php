@@ -29,25 +29,39 @@ class PDFTemplateService
     public function detectFormType(ApplicationState $applicationState): string
     {
         $formData = $applicationState->form_data ?? [];
-        
-        // Check metadata first
+
+        // PRIORITY 1: Check for formId first (most reliable)
+        if (isset($formData['formId'])) {
+            return $this->getTemplateForFormId($formData['formId']);
+        }
+
+        // PRIORITY 2: Check metadata
         if (isset($formData['formType'])) {
             return $this->getTemplateForFormType($formData['formType']);
         }
-        
-        // Check for specific form indicators
+
+        // PRIORITY 3: Check for specific form indicators
+        // SSB indicator
         if (isset($formData['responsibleMinistry'])) {
             return 'forms.ssb_form_pdf';
         }
-        
+
+        // SME Business indicator
         if (isset($formData['businessName']) || isset($formData['registeredName']) || isset($formData['businessRegistration'])) {
             return 'forms.sme_business_pdf';
         }
-        
-        if (isset($formData['accountType']) || isset($formData['accountCurrency'])) {
+
+        // IMPORTANT: Only detect as account opening if wantsAccount is explicitly true
+        // Don't use accountType alone as it's also set for existing account holders
+        if (isset($formData['wantsAccount']) && $formData['wantsAccount'] === true) {
             return 'forms.zb_account_opening_pdf';
         }
-        
+
+        // If hasAccount is true, it's an account holder loan form
+        if (isset($formData['hasAccount']) && $formData['hasAccount'] === true) {
+            return 'forms.account_holders_pdf';
+        }
+
         // Default to account holders
         return 'forms.account_holders_pdf';
     }

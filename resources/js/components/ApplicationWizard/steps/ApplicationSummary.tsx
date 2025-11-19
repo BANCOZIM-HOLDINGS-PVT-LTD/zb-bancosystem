@@ -57,11 +57,28 @@ const getFormIdByEmployer = (employerId: string, hasAccount: boolean, wantsAccou
 const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, onBack, loading }) => {
     const formId = getFormIdByEmployer(data.employer, data.hasAccount, data.wantsAccount);
 
+    // Debug logging to help trace any issues
+    console.log('[ApplicationSummary] Form routing data:', {
+        employer: data.employer,
+        hasAccount: data.hasAccount,
+        wantsAccount: data.wantsAccount,
+        accountType: data.accountType,
+        selectedFormId: formId
+    });
+
     const handleSubmit = () => {
-        onNext({
+        const submissionData = {
             formId,
-            proceedToForm: true
-        });
+            proceedToForm: true,
+            hasAccount: data.hasAccount,
+            wantsAccount: data.wantsAccount,
+            accountType: data.accountType
+        };
+
+        console.log('[ApplicationSummary] Submitting with data:', submissionData);
+
+        // Explicitly preserve hasAccount and wantsAccount flags along with formId
+        onNext(submissionData);
     };
 
     const getEmployerName = (employerId: string) => {
@@ -82,6 +99,17 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
         return employerMap[employerId] || data.employerName || employerId;
     };
 
+    const getFormTypeName = (formId: string) => {
+        const formTypeMap: { [key: string]: string } = {
+            'account_holder_loan_application.json': 'Account Holder Loan Application',
+            'ssb_account_opening_form.json': 'SSB Loan Application',
+            'individual_account_opening.json': 'New ZB Account Opening',
+            'smes_business_account_opening.json': 'SME Business Account Opening',
+            'pensioners_loan_account.json': 'Pensioners Loan Account'
+        };
+        return formTypeMap[formId] || 'Application Form';
+    };
+
     return (
         <div className="space-y-6">
             <div className="text-center">
@@ -91,6 +119,26 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                     Review your application details before submitting
                 </p>
             </div>
+
+            {/* Form Type Information */}
+            <Card className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800">
+                <div className="flex items-start gap-3">
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-full">
+                        <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-semibold text-emerald-900 dark:text-emerald-100 mb-1">
+                            Form Type: {getFormTypeName(formId)}
+                        </h3>
+                        <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                            {data.hasAccount && !data.wantsAccount && 'You will complete the Account Holder Loan Application form.'}
+                            {data.wantsAccount && 'You will complete the New Account Opening form.'}
+                            {data.employer === 'government-ssb' && 'You will complete the SSB Loan Application form.'}
+                            {data.employer === 'entrepreneur' && 'You will complete the SME Business Account Opening form.'}
+                        </p>
+                    </div>
+                </div>
+            </Card>
 
             <div className="grid gap-6 sm:grid-cols-2">
                 <Card className="p-6">

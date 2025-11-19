@@ -12,6 +12,14 @@ interface FormStepProps {
 }
 
 const FormStep: React.FC<FormStepProps> = ({ data, onNext, onBack, loading }) => {
+    // Debug logging to verify correct formId
+    console.log('[FormStep] Rendering form with data:', {
+        formId: data.formId,
+        hasAccount: data.hasAccount,
+        wantsAccount: data.wantsAccount,
+        employer: data.employer
+    });
+
     // Determine which form to show based on the form ID from ApplicationSummary
     const getFormComponent = () => {
         switch (data.formId) {

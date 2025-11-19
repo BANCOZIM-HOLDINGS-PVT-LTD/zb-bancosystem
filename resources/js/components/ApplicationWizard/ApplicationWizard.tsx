@@ -462,8 +462,8 @@ const allSteps = [
     'creditType',
     'delivery',
     'depositPayment',
+    'account',  // Moved BEFORE summary so hasAccount is set before determining formId
     'summary',
-    'account',
     'form',
     'documents'
 ];
