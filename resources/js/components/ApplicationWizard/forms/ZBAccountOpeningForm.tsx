@@ -402,7 +402,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 <Card className="p-6 bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700">
                     <div className="flex items-center mb-4">
                         <CreditCard className="h-6 w-6 text-green-600 mr-3" />
-                        <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Credit Facility Application Details</h3>
+                        <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Hire Purchase Application Details</h3>
                     </div>
                     
                     {/* Pre-populated readonly fields */}
@@ -413,7 +413,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Credit Facility Type</Label>
+                                <Label className="text-gray-700 dark:text-gray-300">Hire Purchase Facility Type</Label>
                                 <Input
                                     value={formData.creditFacilityType}
                                     readOnly
@@ -421,7 +421,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 />
                             </div>
                             <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Loan Amount (USD)</Label>
+                                <Label className="text-gray-700 dark:text-gray-300">Amount (USD)</Label>
                                 <div className="relative">
                                     <span className="absolute left-3 top-2.5 text-gray-500">$</span>
                                     <Input
@@ -432,7 +432,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 </div>
                             </div>
                             <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Loan Tenure (Months)</Label>
+                                <Label className="text-gray-700 dark:text-gray-300">Duration (Months)</Label>
                                 <Input
                                     value={`${formData.loanTenure} months`}
                                     readOnly
@@ -455,6 +455,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 <Input
                                     value={`${formData.interestRate}%`}
                                     readOnly
+                                    type="hidden"
                                     className="bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
                                 />
                             </div>

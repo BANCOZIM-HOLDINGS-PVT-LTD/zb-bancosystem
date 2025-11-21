@@ -168,6 +168,7 @@ const FormField: React.FC<FormFieldProps> = ({
             required={required}
             label={label}
             className={className}
+            isInstitutionAddress={label === 'Institution Address'}
           />
         );
       

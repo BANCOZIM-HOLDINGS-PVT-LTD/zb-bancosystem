@@ -99,6 +99,8 @@ class AgentResource extends Resource
                             ->afterStateUpdated(function ($state, callable $set) {
                                 if ($state === 'online') {
                                     $set('commission_rate', 0.3);
+                                } elseif ($state === 'physical') {
+                                    $set('commission_rate', 3.5);
                                 }
                             }),
 

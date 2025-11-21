@@ -23,6 +23,7 @@ interface AddressInputProps {
   required?: boolean;
   className?: string;
   label?: string;
+  isInstitutionAddress?: boolean;
 }
 
 // Zimbabwe provinces and their districts
@@ -75,7 +76,8 @@ const AddressInput: React.FC<AddressInputProps> = ({
   error,
   required = false,
   className = '',
-  label = 'Address'
+  label = 'Address',
+  isInstitutionAddress = false
 }) => {
   const hasError = !!error;
 
@@ -102,51 +104,105 @@ const AddressInput: React.FC<AddressInputProps> = ({
     onChange(updatedValue);
   };
 
-  const renderUrbanFields = () => (
-    <>
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <Label htmlFor="houseNumber">House Number</Label>
-          <Input
-            id="houseNumber"
-            value={value.houseNumber || ''}
-            onChange={(e) => handleFieldChange('houseNumber', e.target.value)}
-            placeholder="e.g., 123"
-          />
+  const renderUrbanFields = () => {
+    // For institution addresses, show a single text field
+    if (isInstitutionAddress) {
+      return (
+        <>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="opacity-50 pointer-events-none">
+              <Label htmlFor="houseNumber">House Number</Label>
+              <Input
+                id="houseNumber"
+                value=""
+                disabled
+                placeholder="Not applicable"
+                className="bg-gray-100 dark:bg-gray-800"
+              />
+            </div>
+            <div>
+              <Label htmlFor="streetName">Address</Label>
+              <Input
+                id="streetName"
+                value={value.streetName || ''}
+                onChange={(e) => handleFieldChange('streetName', e.target.value)}
+                placeholder="Enter institution address"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="opacity-50 pointer-events-none">
+              <Label htmlFor="suburb">Suburb</Label>
+              <Input
+                id="suburb"
+                value=""
+                disabled
+                placeholder="Not applicable"
+                className="bg-gray-100 dark:bg-gray-800"
+              />
+            </div>
+            <div>
+              <Label htmlFor="city">City/Town</Label>
+              <Input
+                id="city"
+                value={value.city || ''}
+                onChange={(e) => handleFieldChange('city', e.target.value)}
+                placeholder="e.g., Harare"
+              />
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    // For regular addresses, show all fields
+    return (
+      <>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <Label htmlFor="houseNumber">House Number</Label>
+            <Input
+              id="houseNumber"
+              value={value.houseNumber || ''}
+              onChange={(e) => handleFieldChange('houseNumber', e.target.value)}
+              placeholder="e.g., 123"
+            />
+          </div>
+          <div>
+            <Label htmlFor="streetName">Street Name</Label>
+            <Input
+              id="streetName"
+              value={value.streetName || ''}
+              onChange={(e) => handleFieldChange('streetName', e.target.value)}
+              placeholder="e.g., Main Street"
+            />
+          </div>
         </div>
-        <div>
-          <Label htmlFor="streetName">Street Name</Label>
-          <Input
-            id="streetName"
-            value={value.streetName || ''}
-            onChange={(e) => handleFieldChange('streetName', e.target.value)}
-            placeholder="e.g., Main Street"
-          />
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <Label htmlFor="suburb">Suburb</Label>
+            <Input
+              id="suburb"
+              value={value.suburb || ''}
+              onChange={(e) => handleFieldChange('suburb', e.target.value)}
+              placeholder="e.g., Avondale"
+            />
+          </div>
+          <div>
+            <Label htmlFor="city">City</Label>
+            <Input
+              id="city"
+              value={value.city || ''}
+              onChange={(e) => handleFieldChange('city', e.target.value)}
+              placeholder="e.g., Harare"
+            />
+          </div>
         </div>
-      </div>
-      
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <Label htmlFor="suburb">Suburb</Label>
-          <Input
-            id="suburb"
-            value={value.suburb || ''}
-            onChange={(e) => handleFieldChange('suburb', e.target.value)}
-            placeholder="e.g., Avondale"
-          />
-        </div>
-        <div>
-          <Label htmlFor="city">City</Label>
-          <Input
-            id="city"
-            value={value.city || ''}
-            onChange={(e) => handleFieldChange('city', e.target.value)}
-            placeholder="e.g., Harare"
-          />
-        </div>
-      </div>
-    </>
-  );
+      </>
+    );
+  };
 
   const renderRuralFields = () => (
     <>

@@ -9,6 +9,7 @@ interface ApplicationData {
     employer: string;
     hasAccount: boolean;
     wantsAccount: boolean;
+    accountType?: string;
     specificEmployer?: string;
     business?: string;
     category?: string;
@@ -27,7 +28,7 @@ interface ApplicationData {
 
 interface ApplicationSummaryProps {
     data: ApplicationData;
-    onNext: (data: { formId: string; proceedToForm: boolean }) => void;
+    onNext: (data: { formId: string; proceedToForm: boolean; hasAccount: boolean; wantsAccount: boolean; accountType?: string }) => void;
     onBack: () => void;
     loading?: boolean;
 }

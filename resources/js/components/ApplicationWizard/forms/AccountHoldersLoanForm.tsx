@@ -316,56 +316,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Header Fields */}
-                <Card className="p-6">
-                    <div className="flex items-center mb-4">
-                        <Building className="h-6 w-6 text-emerald-600 mr-3" />
-                        <h3 className="text-lg font-semibold">Application Details</h3>
-                    </div>
-                    
-                    <div className="grid gap-4 md:grid-cols-4">
-                        <div>
-                            <Label htmlFor="deliveryStatus">Delivery Status</Label>
-                            <Select value={formData.deliveryStatus} onValueChange={(value) => handleInputChange('deliveryStatus', value)}>
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Future">Future</SelectItem>
-                                    <SelectItem value="Present">Present</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        
-                        <div>
-                            <Label htmlFor="province">Province</Label>
-                            <Input
-                                id="province"
-                                value={formData.province}
-                                onChange={(e) => handleInputChange('province', e.target.value)}
-                            />
-                        </div>
-                        
-                        <div>
-                            <Label htmlFor="agent">Agent</Label>
-                            <Input
-                                id="agent"
-                                value={formData.agent}
-                                onChange={(e) => handleInputChange('agent', e.target.value)}
-                            />
-                        </div>
-                        
-                        <div>
-                            <Label htmlFor="team">Team</Label>
-                            <Input
-                                id="team"
-                                value={formData.team}
-                                onChange={(e) => handleInputChange('team', e.target.value)}
-                            />
-                        </div>
-                    </div>
-                </Card>
-
+                
                 {/* Personal Details */}
                 <Card className="p-6">
                     <div className="flex items-center mb-4">
@@ -491,21 +442,11 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 onChange={(value) => handleInputChange('emailAddress', value)}
                                 required
                             />
-                        </div>
-                        
-                        <div>
-                            <Label htmlFor="responsiblePaymaster">Name of Responsible Paymaster</Label>
-                            <Input
-                                id="responsiblePaymaster"
-                                value={formData.responsiblePaymaster}
-                                onChange={(e) => handleInputChange('responsiblePaymaster', e.target.value)}
-                            />
-                        </div>
-                        
+                        </div>                    
                         <div className="md:col-span-2 lg:col-span-3">
                             <FormField
                                 id="permanentAddress"
-                                label="Permanent Address (if different from above)"
+                                label="Permanent Address"
                                 type="address"
                                 value={formData.permanentAddress || '{}'}
                                 onChange={(value) => handleInputChange('permanentAddress', value)}
@@ -650,7 +591,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                         </div>
                         
                         <div>
-                            <Label htmlFor="headOfInstitution">Name of Head of Institution: Mr/Mrs/Miss</Label>
+                            <Label htmlFor="headOfInstitution">Name of Immediate Supervisor</Label>
                             <Input
                                 id="headOfInstitution"
                                 value={formData.headOfInstitution}
@@ -661,7 +602,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                         <div>
                             <FormField
                                 id="headOfInstitutionCell"
-                                label="Cell No of Head of Institution"
+                                label="Cell No of Head of Immediate Supervisor"
                                 type="phone"
                                 value={formData.headOfInstitutionCell}
                                 onChange={(value) => handleInputChange('headOfInstitutionCell', value)}
@@ -893,7 +834,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                         />
                                     </div>
 
-                                    <div>
+                                    <div style={{ display: 'none' }}>
                                         <Label htmlFor={`loan-${index}-balance`}>Current Loan Balance</Label>
                                         <Input
                                             id={`loan-${index}-balance`}
@@ -902,7 +843,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                         />
                                     </div>
 
-                                    <div>
+                                    <div style={{ display: 'none' }}>
                                         <FormField
                                             id={`loan-${index}-maturity`}
                                             label="Maturity Date"
@@ -924,7 +865,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 <Card className="p-6 bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700">
                     <div className="flex items-center mb-4">
                         <CreditCard className="h-6 w-6 text-green-600 mr-3" />
-                        <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Credit Facility Application Details</h3>
+                        <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Hire Purchase Application Details</h3>
                     </div>
                     
                     {/* Pre-populated readonly fields */}
@@ -935,7 +876,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                         
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Credit Facility Type</Label>
+                                <Label className="text-gray-700 dark:text-gray-300">Hire Purchase Facility Type</Label>
                                 <Input
                                     value={formData.creditFacilityType}
                                     readOnly
@@ -943,7 +884,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 />
                             </div>
                             <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Loan Amount (USD)</Label>
+                                <Label className="text-gray-700 dark:text-gray-300"> Amount (USD)</Label>
                                 <div className="relative">
                                     <span className="absolute left-3 top-2.5 text-gray-500">$</span>
                                     <Input
@@ -954,7 +895,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 </div>
                             </div>
                             <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Loan Tenure (Months)</Label>
+                                <Label className="text-gray-700 dark:text-gray-300">Duration (Months)</Label>
                                 <Input
                                     value={`${formData.loanTenure} months`}
                                     readOnly
@@ -972,14 +913,12 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                     />
                                 </div>
                             </div>
-                            <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Interest Rate (%)</Label>
-                                <Input
-                                    value={`${formData.interestRate}%`}
-                                    readOnly
-                                    className="bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
-                                />
-                            </div>
+                            {/* Interest rate field hidden from client but available in background */}
+                            <input
+                                type="hidden"
+                                name="interestRate"
+                                value={formData.interestRate}
+                            />
                         </div>
                     </div>
                     

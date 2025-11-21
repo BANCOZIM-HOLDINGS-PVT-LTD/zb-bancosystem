@@ -477,9 +477,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             </p>
                                         </div>
 
-                                        {/* First Payment Date */}
+                                        {/* First Payment */}
                                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">First Payment Date</p>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">First Payment</p>
                                             <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                                                 {(() => {
                                                     const today = new Date();
@@ -487,7 +487,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                     const firstPaymentDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
                                                     return firstPaymentDate.toLocaleDateString('en-US', {
                                                         month: 'short',
-                                                        day: 'numeric',
                                                         year: 'numeric'
                                                     });
                                                 })()}
