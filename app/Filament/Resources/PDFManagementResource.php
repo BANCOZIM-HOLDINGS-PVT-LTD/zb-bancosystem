@@ -209,7 +209,37 @@ class PDFManagementResource extends Resource
                 BulkAction::make('bulk_download')
                     ->label('Download Selected PDFs')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->action(function (Collection $records) {
+                    ->form([
+                        Forms\Components\Select::make('form_type_filter')
+                            ->label('Filter by Form Type')
+                            ->options([
+                                'all' => 'All Form Types',
+                                'ssb' => 'SSB Forms Only',
+                                'zb_account_opening' => 'ZB Account Opening Only',
+                                'account_holders' => 'Account Holders Only',
+                                'sme_business' => 'SME Business Forms Only',
+                            ])
+                            ->required()
+                            ->default('all')
+                            ->helperText('Select which form types to include in the download'),
+                    ])
+                    ->action(function (Collection $records, array $data) {
+                        // Filter records by form type if specified
+                        if ($data['form_type_filter'] !== 'all') {
+                            $records = $records->filter(function ($record) use ($data) {
+                                return static::detectFormType($record) === $data['form_type_filter'];
+                            });
+                        }
+
+                        if ($records->isEmpty()) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('No Applications Found')
+                                ->body('No applications match the selected form type.')
+                                ->warning()
+                                ->send();
+                            return;
+                        }
+
                         $sessionIds = $records->pluck('session_id')->toArray();
 
                         // Create a request with the session IDs
@@ -230,10 +260,24 @@ class PDFManagementResource extends Resource
                             ->options([
                                 'pdf' => 'PDF Archive',
                                 'excel' => 'Excel Spreadsheet',
-                                'csv' => 'CSV File',
+                                'csv' => 'CSV File (SSB Only)',
                             ])
                             ->required()
-                            ->default('pdf'),
+                            ->default('pdf')
+                            ->helperText('Note: CSV exports will only include SSB applications'),
+
+                        Forms\Components\Select::make('form_type')
+                            ->label('Form Type (for PDF/Excel)')
+                            ->options([
+                                'all' => 'All Form Types',
+                                'ssb' => 'SSB Forms Only',
+                                'zb_account_opening' => 'ZB Account Opening Only',
+                                'account_holders' => 'Account Holders Only',
+                                'sme_business' => 'SME Business Forms Only',
+                            ])
+                            ->default('all')
+                            ->helperText('This filter applies only to PDF and Excel exports. CSV always exports SSB only.')
+                            ->hidden(fn ($get) => $get('format') === 'csv'),
 
                         Forms\Components\DatePicker::make('date_from')
                             ->label('From Date')
@@ -246,9 +290,10 @@ class PDFManagementResource extends Resource
                             ->default(Carbon::now()->endOfMonth()),
                     ])
                     ->action(function (Collection $records, array $data) {
-                        // Create a request with the form data
+                        // Create a request with the form data and records
                         $request = request();
                         $request->merge($data);
+                        $request->merge(['records' => $records]);
 
                         // Call the controller method directly
                         $controller = app(\App\Http\Controllers\Admin\PDFManagementController::class);

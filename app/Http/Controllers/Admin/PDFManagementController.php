@@ -177,20 +177,29 @@ class PDFManagementController extends Controller
             'date_to' => 'required|date',
             'format' => 'in:pdf,excel,csv'
         ]);
-        
+
         $applications = ApplicationState::whereBetween('created_at', [
             $request->date_from,
             $request->date_to
         ])->get();
-        
+
+        // Apply form type filter for PDF and Excel exports
+        $formTypeFilter = $request->input('form_type', 'all');
+        if ($formTypeFilter !== 'all' && $request->format !== 'csv') {
+            $applications = $applications->filter(function ($app) use ($formTypeFilter) {
+                return $this->detectFormType($app) === $formTypeFilter;
+            });
+        }
+
         $format = $request->format ?? 'pdf';
-        
+
         switch ($format) {
             case 'pdf':
-                return $this->exportBankPDFs($applications);
+                return $this->exportBankPDFs($applications, $formTypeFilter);
             case 'excel':
-                return $this->exportBankExcel($applications);
+                return $this->exportBankExcel($applications, $formTypeFilter);
             case 'csv':
+                // CSV always exports SSB only
                 return $this->exportBankCSV($applications);
             default:
                 return response()->json(['error' => 'Invalid format'], 400);
@@ -390,65 +399,100 @@ class PDFManagementController extends Controller
         ];
     }
     
-    protected function exportBankPDFs($applications)
+    protected function exportBankPDFs($applications, $formTypeFilter = 'all')
     {
         // Implementation for bank-specific PDF export format
         // This would create a standardized format for bank processing
-        
-        $zipFileName = 'bank_export_' . Carbon::now()->format('Y-m-d_His') . '.zip';
+
+        $formTypeName = $formTypeFilter !== 'all' ? $formTypeFilter . '_' : '';
+        $zipFileName = 'bank_' . $formTypeName . 'export_' . Carbon::now()->format('Y-m-d_His') . '.zip';
         $zipPath = storage_path('app/temp/' . $zipFileName);
-        
-        // Create ZIP with bank-specific structure
-        // Implementation details would depend on bank requirements
-        
+
+        // Ensure temp directory exists
+        if (!is_dir(storage_path('app/temp'))) {
+            mkdir(storage_path('app/temp'), 0755, true);
+        }
+
+        $zip = new ZipArchive;
+        if ($zip->open($zipPath, ZipArchive::CREATE) !== TRUE) {
+            return response()->json(['error' => 'Cannot create ZIP file'], 500);
+        }
+
+        foreach ($applications as $application) {
+            try {
+                $formType = $this->detectFormType($application);
+                $result = $this->pdfGenerator->generatePDF($application, ['formType' => $formType, 'admin' => true]);
+                $pdfPath = $result['path'] ?? null;
+
+                if ($pdfPath && \Storage::disk('local')->exists($pdfPath)) {
+                    $filename = $this->generatePDFFilename($application, $formType);
+                    $zip->addFile(\Storage::disk('local')->path($pdfPath), $filename);
+                }
+            } catch (\Exception $e) {
+                \Log::error("Error adding PDF to bank export: " . $e->getMessage());
+            }
+        }
+
+        $zip->close();
+
         return ResponseFacade::download($zipPath, $zipFileName)->deleteFileAfterSend(true);
     }
-    
-    protected function exportBankExcel($applications)
+
+    protected function exportBankExcel($applications, $formTypeFilter = 'all')
     {
         // Implementation for Excel export
         // Would use Laravel Excel package
-        
+
         return response()->json(['message' => 'Excel export not yet implemented']);
     }
     
     protected function exportBankCSV($applications)
     {
-        // Implementation for CSV export
-        $filename = 'bank_export_' . Carbon::now()->format('Y-m-d_His') . '.csv';
+        // Filter for SSB applications only
+        $ssbApplications = $applications->filter(function ($app) {
+            return $this->detectFormType($app) === 'ssb';
+        });
+
+        // Implementation for CSV export - SSB ONLY
+        $filename = 'ssb_applications_export_' . Carbon::now()->format('Y-m-d_His') . '.csv';
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
-        
-        $callback = function() use ($applications) {
+
+        $callback = function() use ($ssbApplications) {
             $file = fopen('php://output', 'w');
-            
+
             // CSV headers
             fputcsv($file, [
-                'Session ID', 'Name', 'Email', 'Phone', 'Form Type', 
-                'Channel', 'Status', 'Created At', 'Monthly Payment', 'Loan Tenure'
+                'Session ID', 'Name', 'Email', 'Phone', 'Form Type',
+                'Channel', 'Status', 'Created At', 'Monthly Payment', 'Loan Tenure',
+                'Responsible Ministry', 'National ID'
             ]);
-            
-            foreach ($applications as $app) {
+
+            foreach ($ssbApplications as $app) {
                 $formData = $app->form_data;
+                $formResponses = $formData['formResponses'] ?? $formData;
+
                 fputcsv($file, [
                     $app->session_id,
-                    ($formData['firstName'] ?? '') . ' ' . ($formData['surname'] ?? ''),
-                    $formData['emailAddress'] ?? '',
-                    $formData['mobile'] ?? '',
-                    $this->detectFormType($app),
+                    ($formData['firstName'] ?? $formResponses['firstName'] ?? '') . ' ' . ($formData['surname'] ?? $formResponses['surname'] ?? ''),
+                    $formData['emailAddress'] ?? $formResponses['emailAddress'] ?? '',
+                    $formData['mobile'] ?? $formResponses['mobile'] ?? '',
+                    'SSB',
                     $app->channel,
                     $app->current_step,
                     $app->created_at->format('Y-m-d H:i:s'),
-                    $formData['monthlyPayment'] ?? '',
-                    $formData['loanTenure'] ?? ''
+                    $formData['monthlyPayment'] ?? $formResponses['monthlyPayment'] ?? '',
+                    $formData['loanTenure'] ?? $formResponses['loanTenure'] ?? '',
+                    $formData['responsibleMinistry'] ?? $formResponses['responsibleMinistry'] ?? '',
+                    $formData['nationalIdNumber'] ?? $formResponses['nationalIdNumber'] ?? $formResponses['idNumber'] ?? ''
                 ]);
             }
-            
+
             fclose($file);
         };
-        
+
         return response()->stream($callback, 200, $headers);
     }
 }

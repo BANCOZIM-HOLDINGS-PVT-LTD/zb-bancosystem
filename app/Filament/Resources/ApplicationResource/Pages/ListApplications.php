@@ -21,10 +21,10 @@ class ListApplications extends ListRecords
     {
         return [
             Actions\Action::make('export')
-                ->label('Export to CSV')
+                ->label('Export SSB Applications to CSV')
                 ->icon('heroicon-o-arrow-down-on-square')
                 ->action(function () {
-                    // Export logic here
+                    // Export logic - ONLY SSB applications
                     $applications = ApplicationResource::getEloquentQuery()->get();
 
                     $csvData = [];
@@ -36,6 +36,12 @@ class ListApplications extends ListRecords
                     foreach ($applications as $application) {
                         $formData = $application->form_data;
                         $formResponses = $formData['formResponses'] ?? [];
+
+                        // Filter: Only export SSB applications
+                        // SSB applications have responsibleMinistry field
+                        if (!isset($formData['responsibleMinistry']) && !isset($formResponses['responsibleMinistry'])) {
+                            continue; // Skip non-SSB applications
+                        }
 
                         // REFERENCE - Auto-generated ID like ZB2025000008
                         $reference = 'ZB' . date('Y') . str_pad($application->id, 6, '0', STR_PAD_LEFT);
@@ -71,7 +77,7 @@ class ListApplications extends ListRecords
                         ];
                     }
 
-                    $filename = 'applications_export_' . date('Ymd_His') . '.csv';
+                    $filename = 'ssb_applications_export_' . date('Ymd_His') . '.csv';
                     $path = storage_path('app/public/' . $filename);
 
                     $fp = fopen($path, 'w');
@@ -88,6 +94,18 @@ class ListApplications extends ListRecords
                 ->icon('heroicon-o-document')
                 ->color('success')
                 ->form([
+                    \Filament\Forms\Components\Select::make('form_type')
+                        ->label('Form Type')
+                        ->options([
+                            'all' => 'All Form Types',
+                            'ssb' => 'SSB Forms',
+                            'zb_account_opening' => 'ZB Account Opening Forms',
+                            'account_holders' => 'Account Holder Forms',
+                            'sme_business' => 'SME Business Forms',
+                        ])
+                        ->required()
+                        ->default('all')
+                        ->helperText('Select which type of forms to generate PDFs for'),
                     \Filament\Forms\Components\Select::make('status')
                         ->label('Application Status')
                         ->options([
@@ -109,22 +127,30 @@ class ListApplications extends ListRecords
                 ])
                 ->action(function (array $data) {
                     $query = ApplicationResource::getEloquentQuery();
-                    
+
                     // Apply status filter
                     if ($data['status'] !== 'all') {
                         $query->where('current_step', $data['status']);
                     }
-                    
+
                     // Apply date filters
                     if ($data['date_from']) {
                         $query->whereDate('created_at', '>=', $data['date_from']);
                     }
-                    
+
                     if ($data['date_to']) {
                         $query->whereDate('created_at', '<=', $data['date_to']);
                     }
-                    
+
                     $applications = $query->get();
+
+                    // Apply form type filter
+                    if ($data['form_type'] !== 'all') {
+                        $applications = $applications->filter(function ($application) use ($data) {
+                            return static::detectFormType($application) === $data['form_type'];
+                        });
+                    }
+
                     $count = $applications->count();
                     
                     if ($count === 0) {
@@ -244,5 +270,31 @@ class ListApplications extends ListRecords
         return [
             \App\Filament\Widgets\ApplicationStatsWidget::class,
         ];
+    }
+
+    /**
+     * Detect form type from application data
+     */
+    protected static function detectFormType($application): string
+    {
+        // Check metadata first
+        if (isset($application->metadata['form_type'])) {
+            return $application->metadata['form_type'];
+        }
+
+        // Detect from form data
+        $formData = $application->form_data;
+        $formResponses = $formData['formResponses'] ?? $formData;
+
+        if (isset($formData['responsibleMinistry']) || isset($formResponses['responsibleMinistry'])) {
+            return 'ssb';
+        } elseif (isset($formData['businessName']) || isset($formData['businessRegistration']) ||
+                  isset($formResponses['businessName']) || isset($formResponses['businessRegistration'])) {
+            return 'sme_business';
+        } elseif (isset($formData['accountType']) || isset($formResponses['accountType'])) {
+            return 'zb_account_opening';
+        } else {
+            return 'account_holders';
+        }
     }
 }
