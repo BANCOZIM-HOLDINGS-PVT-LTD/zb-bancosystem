@@ -211,16 +211,22 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         @foreach($documents['uploadedDocuments'] as $docType => $docList)
                             @foreach($docList as $index => $document)
-                                <div class="bg-gray-50 dark:bg-gray-700 rounded p-3">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                            {{ ucwords(str_replace('_', ' ', $docType)) }} {{ count($docList) > 1 ? ($index + 1) : '' }}
-                                        </span>
-                                        <a href="{{ Storage::disk('public')->url($document) }}" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                                            View
-                                        </a>
+                                @php
+                                    // Handle both string paths and array structures
+                                    $documentPath = is_array($document) ? ($document['path'] ?? $document['url'] ?? '') : $document;
+                                @endphp
+                                @if(!empty($documentPath))
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded p-3">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                {{ ucwords(str_replace('_', ' ', $docType)) }} {{ count($docList) > 1 ? ($index + 1) : '' }}
+                                            </span>
+                                            <a href="{{ Storage::disk('public')->url($documentPath) }}" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                                                View
+                                            </a>
+                                        </div>
                                     </div>
-                                </div>
+                                @endif
                             @endforeach
                         @endforeach
                     </div>

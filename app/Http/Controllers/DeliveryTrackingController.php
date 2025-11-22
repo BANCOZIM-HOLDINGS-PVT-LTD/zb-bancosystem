@@ -114,6 +114,7 @@ class DeliveryTrackingController extends Controller
             "trackingNumber" => $trackingNumber,
             "trackingType" => $trackingType,
             "purchaseType" => "loan", // Indicate this is a loan application
+            "deliveredAt" => $deliveryTracking ? $deliveryTracking->delivered_at : null,
         ]);
     }
 
@@ -155,6 +156,7 @@ class DeliveryTrackingController extends Controller
             "purchaseType" => "cash", // Indicate this is a cash purchase
             "paymentStatus" => $purchase->payment_status,
             "amountPaid" => '$' . number_format($purchase->amount_paid, 2),
+            "deliveredAt" => $purchase->status === 'delivered' ? ($purchase->updated_at ?? $purchase->created_at) : null,
         ]);
     }
 }

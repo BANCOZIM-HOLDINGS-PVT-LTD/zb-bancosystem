@@ -50,6 +50,7 @@ class CashPurchase extends Model
         'paid_at',
         'dispatched_at',
         'delivered_at',
+        'exempt_from_auto_deletion',
     ];
 
     protected $casts = [
@@ -65,6 +66,7 @@ class CashPurchase extends Model
         'paid_at' => 'datetime',
         'dispatched_at' => 'datetime',
         'delivered_at' => 'datetime',
+        'exempt_from_auto_deletion' => 'boolean',
     ];
 
     /**

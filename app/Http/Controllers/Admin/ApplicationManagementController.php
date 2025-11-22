@@ -6,9 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\ApplicationState;
 use App\Repositories\ApplicationStateRepository;
 use App\Services\PDFGeneratorService;
+use App\Services\SSBStatusService;
+use App\Services\ZBStatusService;
+use App\Enums\SSBLoanStatus;
+use App\Enums\ZBLoanStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,11 +21,19 @@ class ApplicationManagementController extends Controller
 {
     private ApplicationStateRepository $repository;
     private PDFGeneratorService $pdfGenerator;
+    private SSBStatusService $ssbStatusService;
+    private ZBStatusService $zbStatusService;
 
-    public function __construct(ApplicationStateRepository $repository, PDFGeneratorService $pdfGenerator)
-    {
+    public function __construct(
+        ApplicationStateRepository $repository,
+        PDFGeneratorService $pdfGenerator,
+        SSBStatusService $ssbStatusService,
+        ZBStatusService $zbStatusService
+    ) {
         $this->repository = $repository;
         $this->pdfGenerator = $pdfGenerator;
+        $this->ssbStatusService = $ssbStatusService;
+        $this->zbStatusService = $zbStatusService;
     }
 
     /**
@@ -352,5 +365,997 @@ class ApplicationManagementController extends Controller
         $metadata['status_updated_by'] = auth()->id();
 
         $application->update(['metadata' => $metadata]);
+    }
+
+    // ==================== SSB LOAN WORKFLOW METHODS ====================
+
+    /**
+     * Get SSB application status
+     */
+    public function getSSBStatus(string $sessionId): JsonResponse
+    {
+        $application = $this->repository->findBySessionId($sessionId);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        $statusDetails = $this->ssbStatusService->getStatusDetailsForClient($application);
+
+        return response()->json([
+            'success' => true,
+            'data' => $statusDetails,
+        ]);
+    }
+
+    /**
+     * Client checks status by reference code
+     */
+    public function checkStatusByReference(Request $request): JsonResponse
+    {
+        $request->validate([
+            'reference_code' => 'required|string',
+        ]);
+
+        $application = ApplicationState::where('reference_code', $request->reference_code)->first();
+
+        if (!$application) {
+            return response()->json([
+                'error' => 'Application not found',
+                'message' => 'No application found with this reference code',
+            ], 404);
+        }
+
+        $statusDetails = $this->ssbStatusService->getStatusDetailsForClient($application);
+
+        return response()->json([
+            'success' => true,
+            'data' => array_merge($statusDetails, [
+                'reference_code' => $application->reference_code,
+                'created_at' => $application->created_at,
+            ]),
+        ]);
+    }
+
+    /**
+     * Initialize SSB workflow for application
+     */
+    public function initializeSSBWorkflow(Request $request, string $sessionId): JsonResponse
+    {
+        $application = $this->repository->findBySessionId($sessionId);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $this->ssbStatusService->initializeSSBApplication($application);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'SSB workflow initialized successfully',
+                'status' => $this->ssbStatusService->getCurrentStatus($application)?->value,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to initialize SSB workflow', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to initialize SSB workflow',
+            ], 500);
+        }
+    }
+
+    /**
+     * Adjust loan period (for insufficient salary or contract expiry)
+     */
+    public function adjustLoanPeriod(Request $request): JsonResponse
+    {
+        $request->validate([
+            'reference_code' => 'required|string',
+            'new_period' => 'required|integer|min:1|max:60',
+            'adjustment_type' => 'required|in:salary,contract',
+        ]);
+
+        $application = ApplicationState::where('reference_code', $request->reference_code)->first();
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $success = $this->ssbStatusService->adjustLoanPeriod(
+                $application,
+                $request->new_period,
+                $request->adjustment_type
+            );
+
+            if (!$success) {
+                return response()->json([
+                    'error' => 'Cannot adjust period at this time',
+                    'message' => 'Your application is not in a state that allows period adjustment',
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Loan period adjusted successfully. Your application has been resubmitted to SSB.',
+                'new_status' => $this->ssbStatusService->getCurrentStatus($application)?->value,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to adjust loan period', [
+                'reference_code' => $request->reference_code,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to adjust loan period',
+            ], 500);
+        }
+    }
+
+    /**
+     * Update ID number
+     */
+    public function updateIDNumber(Request $request): JsonResponse
+    {
+        $request->validate([
+            'reference_code' => 'required|string',
+            'id_number' => 'required|string|regex:/^[0-9]{2}-[0-9]{6,7}[A-Z][0-9]{2}$/',
+        ]);
+
+        $application = ApplicationState::where('reference_code', $request->reference_code)->first();
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $success = $this->ssbStatusService->updateIDNumber($application, $request->id_number);
+
+            if (!$success) {
+                return response()->json([
+                    'error' => 'Cannot update ID number at this time',
+                    'message' => 'Your application is not in a state that requires ID correction',
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ID number updated successfully. Your application has been resubmitted to SSB.',
+                'new_status' => $this->ssbStatusService->getCurrentStatus($application)?->value,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to update ID number', [
+                'reference_code' => $request->reference_code,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to update ID number',
+            ], 500);
+        }
+    }
+
+    /**
+     * Decline adjustment and cancel application
+     */
+    public function declineAdjustment(Request $request): JsonResponse
+    {
+        $request->validate([
+            'reference_code' => 'required|string',
+        ]);
+
+        $application = ApplicationState::where('reference_code', $request->reference_code)->first();
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $this->ssbStatusService->declineAdjustmentAndCancel($application);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Your application has been cancelled as per your request.',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to decline adjustment', [
+                'reference_code' => $request->reference_code,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to process your request',
+            ], 500);
+        }
+    }
+
+    /**
+     * Upload and process SSB CSV response file
+     */
+    public function uploadSSBCSVResponse(Request $request): JsonResponse
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:10240', // Max 10MB
+        ]);
+
+        try {
+            $file = $request->file('csv_file');
+            $fileName = 'ssb_response_' . now()->format('Y-m-d_His') . '.csv';
+            $filePath = $file->storeAs('ssb_responses', $fileName);
+
+            $fullPath = storage_path('app/' . $filePath);
+
+            $results = $this->ssbStatusService->parseAndProcessSSBCSV($fullPath);
+
+            // Archive the file
+            Storage::move($filePath, 'ssb_responses/processed/' . $fileName);
+
+            Log::info('SSB CSV processed', $results);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'SSB CSV response processed successfully',
+                'results' => $results,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to process SSB CSV', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to process SSB CSV file',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Manually update SSB status (admin only)
+     */
+    public function manualSSBStatusUpdate(Request $request, string $sessionId): JsonResponse
+    {
+        $request->validate([
+            'status' => 'required|string',
+            'notes' => 'nullable|string|max:1000',
+            'ssb_response_data' => 'nullable|array',
+        ]);
+
+        $application = $this->repository->findBySessionId($sessionId);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            // Validate status exists
+            try {
+                $status = SSBLoanStatus::from($request->status);
+            } catch (\ValueError $e) {
+                return response()->json([
+                    'error' => 'Invalid status provided',
+                ], 400);
+            }
+
+            $this->ssbStatusService->updateStatus(
+                $application,
+                $status,
+                $request->notes ?? 'Manually updated by admin',
+                $request->ssb_response_data ?? []
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'SSB status updated successfully',
+                'new_status' => $status->value,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to manually update SSB status', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to update SSB status',
+            ], 500);
+        }
+    }
+
+    /**
+     * Simulate SSB response (for testing without actual SSB integration)
+     */
+    public function simulateSSBResponse(Request $request, string $sessionId): JsonResponse
+    {
+        if (!app()->environment(['local', 'development', 'testing'])) {
+            return response()->json(['error' => 'Not available in production'], 403);
+        }
+
+        $request->validate([
+            'response_type' => 'required|in:approved,insufficient_salary,invalid_id,contract_expiring,rejected',
+            'recommended_period' => 'nullable|integer|min:1|max:60',
+            'salary' => 'nullable|numeric',
+            'contract_expiry_date' => 'nullable|date',
+            'error_message' => 'nullable|string',
+            'reason' => 'nullable|string',
+        ]);
+
+        $application = $this->repository->findBySessionId($sessionId);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        // Validate required fields for specific response types
+        if ($request->response_type === 'insufficient_salary' && !$request->recommended_period) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'message' => 'recommended_period is required for insufficient_salary response',
+            ], 400);
+        }
+
+        if ($request->response_type === 'contract_expiring' && (!$request->contract_expiry_date || !$request->recommended_period)) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'message' => 'contract_expiry_date and recommended_period are required for contract_expiring response',
+            ], 400);
+        }
+
+        try {
+            $ssbResponse = [
+                'response_type' => $request->response_type,
+                'recommended_period' => $request->recommended_period,
+                'salary' => $request->salary,
+                'contract_expiry_date' => $request->contract_expiry_date,
+                'error_message' => $request->error_message,
+                'reason' => $request->reason,
+            ];
+
+            $this->ssbStatusService->processSSBResponse($application, $ssbResponse);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'SSB response simulated successfully',
+                'new_status' => $this->ssbStatusService->getCurrentStatus($application)?->value,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to simulate SSB response', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to simulate SSB response',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get SSB status history
+     */
+    public function getSSBStatusHistory(string $sessionId): JsonResponse
+    {
+        $application = $this->repository->findBySessionId($sessionId);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        $metadata = $application->metadata ?? [];
+        $history = $metadata['ssb_status_history'] ?? [];
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'current_status' => $this->ssbStatusService->getCurrentStatus($application)?->value,
+                'history' => $history,
+            ],
+        ]);
+    }
+
+    /**
+     * Export SSB applications for submission to SSB
+     */
+    public function exportSSBApplicationsCSV(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $filters = $request->only(['date_from', 'date_to', 'employer']);
+
+        $applications = ApplicationState::query()
+            ->when($filters['date_from'] ?? null, function ($query, $dateFrom) {
+                $query->where('created_at', '>=', $dateFrom);
+            })
+            ->when($filters['date_to'] ?? null, function ($query, $dateTo) {
+                $query->where('created_at', '<=', $dateTo);
+            })
+            ->where(function ($query) {
+                $query->whereJsonContains('metadata->ssb_status', SSBLoanStatus::AWAITING_SSB_APPROVAL->value)
+                    ->orWhereJsonContains('metadata->ssb_status', SSBLoanStatus::PERIOD_ADJUSTED_RESUBMITTED->value)
+                    ->orWhereJsonContains('metadata->ssb_status', SSBLoanStatus::ID_CORRECTED_RESUBMITTED->value)
+                    ->orWhereJsonContains('metadata->ssb_status', SSBLoanStatus::CONTRACT_PERIOD_ADJUSTED_RESUBMITTED->value);
+            })
+            ->get();
+
+        $fileName = 'ssb_submissions_' . now()->format('Y-m-d_His') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$fileName\"",
+        ];
+
+        $callback = function () use ($applications) {
+            $file = fopen('php://output', 'w');
+
+            // Headers
+            fputcsv($file, [
+                'reference_code',
+                'first_name',
+                'last_name',
+                'id_number',
+                'mobile',
+                'email',
+                'employer',
+                'loan_amount',
+                'loan_period',
+                'status',
+                'submission_date',
+            ]);
+
+            foreach ($applications as $application) {
+                $formData = $application->form_data ?? [];
+                $formResponses = $formData['formResponses'] ?? [];
+
+                fputcsv($file, [
+                    $application->reference_code,
+                    $formResponses['firstName'] ?? '',
+                    $formResponses['lastName'] ?? '',
+                    $formResponses['idNumber'] ?? '',
+                    $formResponses['mobile'] ?? '',
+                    $formResponses['emailAddress'] ?? '',
+                    $formData['employer'] ?? '',
+                    $formResponses['loanAmount'] ?? '',
+                    $formResponses['loanPeriod'] ?? '',
+                    $application->metadata['ssb_status'] ?? '',
+                    $application->created_at->format('Y-m-d H:i:s'),
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    // ==================== ZB LOAN WORKFLOW METHODS ====================
+
+    /**
+     * Initialize ZB workflow for application
+     */
+    public function initializeZBWorkflow(Request $request, string $sessionId): JsonResponse
+    {
+        $application = $this->repository->findBySessionId($sessionId);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $this->zbStatusService->initializeZBApplication($application);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ZB workflow initialized successfully',
+                'status' => $this->zbStatusService->getCurrentStatus($application)?->value,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to initialize ZB workflow', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to initialize ZB workflow',
+            ], 500);
+        }
+    }
+
+    /**
+     * Get ZB application status
+     */
+    public function getZBStatus(string $sessionId): JsonResponse
+    {
+        $application = $this->repository->findBySessionId($sessionId);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        $statusDetails = $this->zbStatusService->getStatusDetailsForClient($application);
+
+        return response()->json([
+            'success' => true,
+            'data' => $statusDetails,
+        ]);
+    }
+
+    /**
+     * Client checks ZB status by reference code
+     */
+    public function checkZBStatusByReference(Request $request): JsonResponse
+    {
+        $request->validate([
+            'reference_code' => 'required|string',
+        ]);
+
+        $application = ApplicationState::where('reference_code', $request->reference_code)->first();
+
+        if (!$application) {
+            return response()->json([
+                'error' => 'Application not found',
+                'message' => 'No application found with this reference code',
+            ], 404);
+        }
+
+        $statusDetails = $this->zbStatusService->getStatusDetailsForClient($application);
+
+        return response()->json([
+            'success' => true,
+            'data' => array_merge($statusDetails, [
+                'reference_code' => $application->reference_code,
+                'created_at' => $application->created_at,
+            ]),
+        ]);
+    }
+
+    /**
+     * Admin processes credit check - Good
+     */
+    public function processCreditCheckGood(Request $request, string $sessionId): JsonResponse
+    {
+        $request->validate([
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $application = $this->repository->findBySessionId($sessionId);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $success = $this->zbStatusService->processCreditCheckGood(
+                $application,
+                $request->notes ?? ''
+            );
+
+            if (!$success) {
+                return response()->json([
+                    'error' => 'Failed to process credit check',
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Credit check processed - Good - Approved',
+                'new_status' => $this->zbStatusService->getCurrentStatus($application)?->value,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to process credit check good', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to process credit check',
+            ], 500);
+        }
+    }
+
+    /**
+     * Admin processes credit check - Poor
+     */
+    public function processCreditCheckPoor(Request $request, string $sessionId): JsonResponse
+    {
+        $request->validate([
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $application = $this->repository->findBySessionId($sessionId);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $success = $this->zbStatusService->processCreditCheckPoor(
+                $application,
+                $request->notes ?? ''
+            );
+
+            if (!$success) {
+                return response()->json([
+                    'error' => 'Failed to process credit check',
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Credit check processed - Poor - Client offered blacklist report',
+                'new_status' => $this->zbStatusService->getCurrentStatus($application)?->value,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to process credit check poor', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to process credit check',
+            ], 500);
+        }
+    }
+
+    /**
+     * Admin processes salary not regular rejection
+     */
+    public function processSalaryNotRegular(Request $request, string $sessionId): JsonResponse
+    {
+        $request->validate([
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $application = $this->repository->findBySessionId($sessionId);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $success = $this->zbStatusService->processSalaryNotRegular(
+                $application,
+                $request->notes ?? ''
+            );
+
+            if (!$success) {
+                return response()->json([
+                    'error' => 'Failed to process salary check',
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Application rejected - Salary not deposited regularly',
+                'new_status' => $this->zbStatusService->getCurrentStatus($application)?->value,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to process salary not regular', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to process salary check',
+            ], 500);
+        }
+    }
+
+    /**
+     * Admin processes insufficient salary rejection
+     */
+    public function processInsufficientSalary(Request $request, string $sessionId): JsonResponse
+    {
+        $request->validate([
+            'recommended_period' => 'required|integer|min:1|max:60',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $application = $this->repository->findBySessionId($sessionId);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $success = $this->zbStatusService->processInsufficientSalary(
+                $application,
+                $request->recommended_period,
+                $request->notes ?? ''
+            );
+
+            if (!$success) {
+                return response()->json([
+                    'error' => 'Failed to process insufficient salary',
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Application rejected - Insufficient salary - Client offered period adjustment',
+                'new_status' => $this->zbStatusService->getCurrentStatus($application)?->value,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to process insufficient salary', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to process insufficient salary',
+            ], 500);
+        }
+    }
+
+    /**
+     * Admin processes approved application
+     */
+    public function processZBApproved(Request $request, string $sessionId): JsonResponse
+    {
+        $request->validate([
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $application = $this->repository->findBySessionId($sessionId);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $success = $this->zbStatusService->processApproved(
+                $application,
+                $request->notes ?? ''
+            );
+
+            if (!$success) {
+                return response()->json([
+                    'error' => 'Failed to process approval',
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Application approved - Client can track delivery after 24 hours',
+                'new_status' => $this->zbStatusService->getCurrentStatus($application)?->value,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to process ZB approved', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to process approval',
+            ], 500);
+        }
+    }
+
+    /**
+     * Client declines blacklist report
+     */
+    public function declineBlacklistReport(Request $request): JsonResponse
+    {
+        $request->validate([
+            'reference_code' => 'required|string',
+        ]);
+
+        $application = ApplicationState::where('reference_code', $request->reference_code)->first();
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $this->zbStatusService->declineBlacklistReport($application);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Thank you for your interest. Kindly reapply when circumstances in your credit rating have changed.',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to decline blacklist report', [
+                'reference_code' => $request->reference_code,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to process your request',
+            ], 500);
+        }
+    }
+
+    /**
+     * Client requests blacklist report
+     */
+    public function requestBlacklistReport(Request $request): JsonResponse
+    {
+        $request->validate([
+            'reference_code' => 'required|string',
+        ]);
+
+        $application = ApplicationState::where('reference_code', $request->reference_code)->first();
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $result = $this->zbStatusService->requestBlacklistReport($application);
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to request blacklist report', [
+                'reference_code' => $request->reference_code,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to process your request',
+            ], 500);
+        }
+    }
+
+    /**
+     * Process blacklist report payment (webhook/callback)
+     */
+    public function processBlacklistReportPayment(Request $request): JsonResponse
+    {
+        $request->validate([
+            'reference_code' => 'required|string',
+            'payment_reference' => 'required|string',
+            'blacklist_institutions' => 'nullable|array',
+        ]);
+
+        $application = ApplicationState::where('reference_code', $request->reference_code)->first();
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $success = $this->zbStatusService->processBlacklistReportPayment(
+                $application,
+                $request->payment_reference,
+                $request->blacklist_institutions ?? []
+            );
+
+            if (!$success) {
+                return response()->json([
+                    'error' => 'Failed to process payment',
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment received. Blacklist report will be sent shortly.',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to process blacklist payment', [
+                'reference_code' => $request->reference_code,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to process payment',
+            ], 500);
+        }
+    }
+
+    /**
+     * Client declines period adjustment
+     */
+    public function declineZBPeriodAdjustment(Request $request): JsonResponse
+    {
+        $request->validate([
+            'reference_code' => 'required|string',
+        ]);
+
+        $application = ApplicationState::where('reference_code', $request->reference_code)->first();
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $this->zbStatusService->declinePeriodAdjustment($application);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Application declined. Thank you for your interest.',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to decline period adjustment', [
+                'reference_code' => $request->reference_code,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to process your request',
+            ], 500);
+        }
+    }
+
+    /**
+     * Client accepts period adjustment
+     */
+    public function acceptZBPeriodAdjustment(Request $request): JsonResponse
+    {
+        $request->validate([
+            'reference_code' => 'required|string',
+        ]);
+
+        $application = ApplicationState::where('reference_code', $request->reference_code)->first();
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        try {
+            $success = $this->zbStatusService->acceptPeriodAdjustment($application);
+
+            if (!$success) {
+                return response()->json([
+                    'error' => 'Failed to adjust period',
+                    'message' => 'Could not find recommended period or adjust application',
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Application resubmitted with adjusted period. Check again after 24 hours.',
+                'new_status' => $this->zbStatusService->getCurrentStatus($application)?->value,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to accept period adjustment', [
+                'reference_code' => $request->reference_code,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to process your request',
+            ], 500);
+        }
+    }
+
+    /**
+     * Get ZB status history
+     */
+    public function getZBStatusHistory(string $sessionId): JsonResponse
+    {
+        $application = $this->repository->findBySessionId($sessionId);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+
+        $metadata = $application->metadata ?? [];
+        $history = $metadata['zb_status_history'] ?? [];
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'current_status' => $this->zbStatusService->getCurrentStatus($application)?->value,
+                'history' => $history,
+            ],
+        ]);
     }
 }

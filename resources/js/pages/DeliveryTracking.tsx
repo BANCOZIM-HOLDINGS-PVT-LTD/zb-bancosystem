@@ -28,6 +28,8 @@ interface DeliveryDetails {
     estimatedDelivery: string;
     trackingNumber: string;
     trackingType: string;
+    purchaseType?: string;
+    deliveredAt?: string | null;
 }
 
 export default function DeliveryTracking() {
@@ -243,6 +245,39 @@ export default function DeliveryTracking() {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Delivery Status Messages */}
+                                {deliveryDetails.purchaseType === 'cash' && deliveryDetails.status !== 'delivered' && (
+                                    <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-lg">
+                                        <div className="flex items-start gap-3">
+                                            <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                                            <div>
+                                                <p className="font-medium text-blue-900 dark:text-blue-100">
+                                                    Expected Delivery Time
+                                                </p>
+                                                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                                                    Expect delivery within 72 hours
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {deliveryDetails.status === 'delivered' && deliveryDetails.deliveredAt && (
+                                    <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded-lg">
+                                        <div className="flex items-start gap-3">
+                                            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
+                                            <div>
+                                                <p className="font-medium text-green-900 dark:text-green-100">
+                                                    Thank you for collection!
+                                                </p>
+                                                <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                                                    You can apply again after 90 days.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </Card>
 
                             {/* Customer Support */}

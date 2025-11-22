@@ -10,7 +10,7 @@ interface SummaryStepProps {
     onBack: () => void;
 }
 
-const ME_SYSTEM_FEE = 9.99;
+const ME_SYSTEM_PERCENTAGE = 0.10; // 10% of cash price
 const TRAINING_PERCENTAGE = 0.055; // 5.5%
 
 export default function SummaryStep({ data, onNext, onBack }: SummaryStepProps) {
@@ -23,7 +23,7 @@ export default function SummaryStep({ data, onNext, onBack }: SummaryStepProps) 
 
     // Calculate fees
     const deliveryFee = delivery.type === 'swift' ? 10 : 0; // $10 for Swift delivery
-    const meSystemFee = includesMESystem ? ME_SYSTEM_FEE : 0;
+    const meSystemFee = includesMESystem ? (product.cashPrice * ME_SYSTEM_PERCENTAGE) : 0;
     const trainingFee = includesTraining ? (product.cashPrice * TRAINING_PERCENTAGE) : 0;
     const totalAmount = product.cashPrice + deliveryFee + meSystemFee + trainingFee;
 
@@ -106,8 +106,8 @@ export default function SummaryStep({ data, onNext, onBack }: SummaryStepProps) 
                                         Track your business performance, monitor inventory, manage finances, and get business insights with our advanced M&E system.
                                     </p>
                                     <div className="mt-2 flex items-center gap-2">
-                                        <span className="text-xl font-bold text-emerald-600">+${ME_SYSTEM_FEE}</span>
-                                        <span className="text-sm text-gray-500">added to total</span>
+                                        <span className="text-xl font-bold text-emerald-600">+${meSystemFee.toFixed(2)}</span>
+                                        <span className="text-sm text-gray-500">(10% of product price)</span>
                                     </div>
                                 </div>
                             </div>

@@ -1269,6 +1269,48 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $secondaryFeesId, 'name' => '3 Terms', 'multiplier' => 3.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
+        $polytechSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $schoolFeesCategory,
+            'name' => 'Polytech',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $polytechFeesId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $polytechSubcategory,
+            'name' => 'Polytech Fees',
+            'base_price' => 500.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $polytechFeesId, 'name' => '1 Semester', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $polytechFeesId, 'name' => '2 Semesters', 'multiplier' => 2.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $universitySubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $schoolFeesCategory,
+            'name' => 'University',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $universityFeesId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $universitySubcategory,
+            'name' => 'University Fees',
+            'base_price' => 600.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $universityFeesId, 'name' => '1 Semester', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $universityFeesId, 'name' => '2 Semesters', 'multiplier' => 2.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
         // 16. Mother-to-be preparation
         $motherToBeCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Mother-to-be preparation',

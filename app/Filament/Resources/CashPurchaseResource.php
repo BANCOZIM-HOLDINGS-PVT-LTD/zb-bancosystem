@@ -124,6 +124,16 @@ class CashPurchaseResource extends Resource
                             ->disabled()
                             ->dehydrated(false),
                     ])->columns(2),
+
+                Forms\Components\Section::make('Data Retention')
+                    ->schema([
+                        Forms\Components\Toggle::make('exempt_from_auto_deletion')
+                            ->label('Exempt from Auto-Deletion')
+                            ->helperText('Cash purchases are automatically deleted 90 days after delivery completion. Enable this to prevent automatic deletion.')
+                            ->default(false),
+                    ])
+                    ->collapsible()
+                    ->collapsed(),
             ]);
     }
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, ArrowLeft, DollarSign, Calendar, Loader2, Monitor, GraduationCap } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ChevronLeft, ChevronRight, ArrowLeft, DollarSign, Calendar, Loader2, Monitor, GraduationCap, Info } from 'lucide-react';
 import { productService, type BusinessType, type Subcategory, type Category } from '../../../services/productService';
 
 interface ProductSelectionProps {
@@ -27,8 +28,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [error, setError] = useState<string | null>(null);
     const [selectedTermMonths, setSelectedTermMonths] = useState<number | null>(null);
     const [validationError, setValidationError] = useState<string>('');
+    const [showZBBankingNotification, setShowZBBankingNotification] = useState<boolean>(false);
 
-    const ME_SYSTEM_FEE = 9.99;
+    const ME_SYSTEM_PERCENTAGE = 0.10; // 10% of loan amount
     const TRAINING_PERCENTAGE = 0.055; // 5.5%
 
     // Determine if this is a personal products or MicroBiz application
@@ -68,6 +70,19 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
     const handleBusinessSelect = (business: BusinessType) => {
         setSelectedBusiness(business);
+
+        // Show notification for school fees products (Primary, Secondary, Polytech, University)
+        const schoolFeeProducts = ['Primary School Fees', 'Secondary School Fees', 'Polytech Fees', 'University Fees'];
+        if (schoolFeeProducts.includes(business.name)) {
+            setShowZBBankingNotification(true);
+            // Auto-hide notification after 8 seconds
+            setTimeout(() => {
+                setShowZBBankingNotification(false);
+            }, 8000);
+        } else {
+            setShowZBBankingNotification(false);
+        }
+
         setCurrentView('scales');
     };
 
@@ -105,7 +120,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             return;
         }
 
-        const meSystemFee = includesMESystem ? ME_SYSTEM_FEE : 0;
+        const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
         const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
         const totalAmount = finalAmount + meSystemFee + trainingFee;
 
@@ -294,8 +309,17 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 )}
 
                 {currentView === 'scales' && selectedBusiness && (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        {selectedBusiness.scales.map((scale, index) => {
+                    <>
+                        {showZBBankingNotification && (
+                            <Alert className="mb-4 border-blue-500 bg-blue-50 dark:bg-blue-950">
+                                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                <AlertDescription className="text-blue-800 dark:text-blue-200">
+                                    Please make sure that this school or institution banks with ZB before proceeding.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            {selectedBusiness.scales.map((scale, index) => {
                             const amount = selectedBusiness.basePrice * scale.multiplier;
                             return (
                                 <Card
@@ -313,7 +337,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 </Card>
                             );
                         })}
-                    </div>
+                        </div>
+                    </>
                 )}
 
                 {currentView === 'terms' && (
@@ -339,8 +364,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                 Track your business performance, monitor inventory, manage finances, and get business insights with our advanced M&E system.
                                             </p>
                                             <div className="mt-2 flex items-center gap-2">
-                                                <span className="text-xl font-bold text-emerald-600">+$9.99</span>
-                                                <span className="text-sm text-gray-500">added to loan amount</span>
+                                                <span className="text-xl font-bold text-emerald-600">+${(finalAmount * ME_SYSTEM_PERCENTAGE).toFixed(2)}</span>
+                                                <span className="text-sm text-gray-500">(10% of loan amount)</span>
                                             </div>
                                         </div>
                                     </div>
@@ -377,12 +402,12 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                         <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Loan Amount</p>
                             <p className="text-3xl font-bold text-emerald-600">
-                                ${(finalAmount + (includesMESystem ? ME_SYSTEM_FEE : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)).toLocaleString()}
+                                ${(finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)).toLocaleString()}
                             </p>
                             {(includesMESystem || includesTraining) && (
                                 <p className="text-sm text-gray-500 mt-1">
                                     Includes ${finalAmount.toLocaleString()} product
-                                    {includesMESystem && ` + $${ME_SYSTEM_FEE} M&E`}
+                                    {includesMESystem && ` + $${(finalAmount * ME_SYSTEM_PERCENTAGE).toFixed(2)} M&E`}
                                     {includesTraining && ` + $${(finalAmount * TRAINING_PERCENTAGE).toFixed(2)} Training`}
                                 </p>
                             )}
@@ -423,7 +448,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Monthly Payment</p>
                                             <p className="text-2xl font-bold text-emerald-600">
                                                 ${(() => {
-                                                    const meSystemFee = includesMESystem ? ME_SYSTEM_FEE : 0;
+                                                    const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
                                                     const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
                                                     const totalAmount = finalAmount + meSystemFee + trainingFee;
                                                     const interestRate = 0.10;
@@ -442,7 +467,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Repayment</p>
                                             <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                                                 ${(() => {
-                                                    const meSystemFee = includesMESystem ? ME_SYSTEM_FEE : 0;
+                                                    const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
                                                     const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
                                                     const totalAmount = finalAmount + meSystemFee + trainingFee;
                                                     const interestRate = 0.10;
@@ -461,7 +486,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Interest</p>
                                             <p className="text-2xl font-bold text-blue-600">
                                                 ${(() => {
-                                                    const meSystemFee = includesMESystem ? ME_SYSTEM_FEE : 0;
+                                                    const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
                                                     const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
                                                     const totalAmount = finalAmount + meSystemFee + trainingFee;
                                                     const interestRate = 0.10;

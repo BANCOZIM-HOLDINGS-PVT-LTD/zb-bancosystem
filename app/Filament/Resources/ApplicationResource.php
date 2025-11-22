@@ -8,6 +8,10 @@ use App\Models\ApplicationState;
 use App\Services\PDFGeneratorService;
 use App\Services\NotificationService;
 use App\Services\ApplicationWorkflowService;
+use App\Services\SSBStatusService;
+use App\Services\ZBStatusService;
+use App\Enums\SSBLoanStatus;
+use App\Enums\ZBLoanStatus;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -129,6 +133,16 @@ class ApplicationResource extends Resource
                             ->columnSpanFull(),
                     ])
                     ->collapsible(),
+
+                Forms\Components\Section::make('Data Retention')
+                    ->schema([
+                        Forms\Components\Toggle::make('exempt_from_auto_deletion')
+                            ->label('Exempt from Auto-Deletion')
+                            ->helperText('Applications are automatically deleted 90 days after delivery completion. Enable this to prevent automatic deletion.')
+                            ->default(false),
+                    ])
+                    ->collapsible()
+                    ->collapsed(),
             ]);
     }
     
@@ -380,91 +394,352 @@ class ApplicationResource extends Resource
                     ->label('Update Status')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
+                    ->form(function (Model $record) {
+                        // Detect form type using the same logic as ListApplications
+                        $formType = static::detectFormType($record);
+
+                        // SSB Loan Application Form
+                        if ($formType === 'ssb') {
+                            return [
+                                Forms\Components\Select::make('ssb_action')
+                                    ->label('SSB Workflow Action')
+                                    ->options([
+                                        'initialize' => 'Initialize SSB Workflow',
+                                        'simulate_approved' => 'Simulate: Approved',
+                                        'simulate_insufficient_salary' => 'Simulate: Insufficient Salary',
+                                        'simulate_invalid_id' => 'Simulate: Invalid ID',
+                                        'simulate_contract_expiring' => 'Simulate: Contract Expiring',
+                                        'simulate_rejected' => 'Simulate: Rejected',
+                                    ])
+                                    ->required()
+                                    ->live(),
+                                Forms\Components\TextInput::make('recommended_period')
+                                    ->label('Recommended Period (months)')
+                                    ->numeric()
+                                    ->visible(fn (Forms\Get $get) => in_array($get('ssb_action'), ['simulate_insufficient_salary', 'simulate_contract_expiring']))
+                                    ->required(fn (Forms\Get $get) => in_array($get('ssb_action'), ['simulate_insufficient_salary', 'simulate_contract_expiring'])),
+                                Forms\Components\DatePicker::make('contract_expiry_date')
+                                    ->label('Contract Expiry Date')
+                                    ->visible(fn (Forms\Get $get) => $get('ssb_action') === 'simulate_contract_expiring')
+                                    ->required(fn (Forms\Get $get) => $get('ssb_action') === 'simulate_contract_expiring'),
+                            ];
+                        }
+
+                        // ZB Account Opening or Account Holder Form
+                        if ($formType === 'zb_account_opening' || $formType === 'account_holders') {
+                            return [
+                                Forms\Components\Select::make('zb_action')
+                                    ->label('ZB Workflow Action')
+                                    ->options([
+                                        'initialize' => 'Initialize ZB Workflow',
+                                        'credit_check_good' => 'Credit Check: Good (Approve)',
+                                        'credit_check_poor' => 'Credit Check: Poor (Reject + Blacklist Report)',
+                                        'salary_not_regular' => 'Salary Not Regular (Reject)',
+                                        'insufficient_salary' => 'Insufficient Salary (Reject + Period Adjustment)',
+                                        'approved' => 'Approved',
+                                    ])
+                                    ->required()
+                                    ->live(),
+                                Forms\Components\TextInput::make('recommended_period')
+                                    ->label('Recommended Period (months)')
+                                    ->numeric()
+                                    ->visible(fn (Forms\Get $get) => $get('zb_action') === 'insufficient_salary')
+                                    ->required(fn (Forms\Get $get) => $get('zb_action') === 'insufficient_salary'),
+                            ];
+                        }
+
+                        // Fallback - should never reach here
+                        return [
+                            Forms\Components\Placeholder::make('error')
+                                ->label('Unknown Form Type')
+                                ->content('Unable to detect form type. Please contact support.'),
+                        ];
+                    })
+                    ->action(function (array $data, Model $record) {
+                        // Detect form type using the same logic as ListApplications
+                        $formType = static::detectFormType($record);
+
+                        // Handle SSB workflow
+                        if ($formType === 'ssb') {
+                            $controller = app(\App\Http\Controllers\Admin\ApplicationManagementController::class);
+
+                            switch ($data['ssb_action']) {
+                                case 'initialize':
+                                    $controller->initializeSSBWorkflow($record->session_id);
+                                    break;
+                                case 'simulate_approved':
+                                    $controller->simulateSSBResponse($record->session_id, new \Illuminate\Http\Request([
+                                        'response_type' => 'approved'
+                                    ]));
+                                    break;
+                                case 'simulate_insufficient_salary':
+                                    $controller->simulateSSBResponse($record->session_id, new \Illuminate\Http\Request([
+                                        'response_type' => 'insufficient_salary',
+                                        'recommended_period' => $data['recommended_period']
+                                    ]));
+                                    break;
+                                case 'simulate_invalid_id':
+                                    $controller->simulateSSBResponse($record->session_id, new \Illuminate\Http\Request([
+                                        'response_type' => 'invalid_id'
+                                    ]));
+                                    break;
+                                case 'simulate_contract_expiring':
+                                    $controller->simulateSSBResponse($record->session_id, new \Illuminate\Http\Request([
+                                        'response_type' => 'contract_expiring',
+                                        'recommended_period' => $data['recommended_period'],
+                                        'contract_expiry_date' => $data['contract_expiry_date']
+                                    ]));
+                                    break;
+                                case 'simulate_rejected':
+                                    $controller->simulateSSBResponse($record->session_id, new \Illuminate\Http\Request([
+                                        'response_type' => 'rejected'
+                                    ]));
+                                    break;
+                            }
+
+                            Notification::make()
+                                ->title('SSB Workflow Updated Successfully')
+                                ->success()
+                                ->send();
+                            return;
+                        }
+
+                        // Handle ZB workflow (Account Opening or Account Holders)
+                        if ($formType === 'zb_account_opening' || $formType === 'account_holders') {
+                            $controller = app(\App\Http\Controllers\Admin\ApplicationManagementController::class);
+
+                            switch ($data['zb_action']) {
+                                case 'initialize':
+                                    $controller->initializeZBWorkflow($record->session_id);
+                                    break;
+                                case 'credit_check_good':
+                                    $controller->processCreditCheckGood($record->session_id, new \Illuminate\Http\Request());
+                                    break;
+                                case 'credit_check_poor':
+                                    $controller->processCreditCheckPoor($record->session_id, new \Illuminate\Http\Request());
+                                    break;
+                                case 'salary_not_regular':
+                                    $controller->processSalaryNotRegular($record->session_id, new \Illuminate\Http\Request());
+                                    break;
+                                case 'insufficient_salary':
+                                    $controller->processInsufficientSalary($record->session_id, new \Illuminate\Http\Request([
+                                        'recommended_period' => $data['recommended_period']
+                                    ]));
+                                    break;
+                                case 'approved':
+                                    $controller->processZBApproved($record->session_id, new \Illuminate\Http\Request());
+                                    break;
+                            }
+
+                            Notification::make()
+                                ->title('ZB Workflow Updated Successfully')
+                                ->success()
+                                ->send();
+                            return;
+                        }
+
+                        // This should never happen - all forms should be SSB, ZB Account Opening, or Account Holders
+                        Log::error('Unknown form type detected in Update Status', [
+                            'session_id' => $record->session_id,
+                            'form_type' => $formType,
+                            'form_data' => $record->form_data,
+                        ]);
+
+                        Notification::make()
+                            ->title('Unknown Form Type')
+                            ->body('Unable to detect form type for this application. Please contact support.')
+                            ->danger()
+                            ->send();
+                    }),
+
+                // SSB Loan Workflow Actions
+                Action::make('ssb_workflow')
+                    ->label('SSB Loan Status')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('info')
+                    ->visible(fn (Model $record) => ($record->form_data['employer'] ?? '') === 'SSB' || ($record->metadata['workflow_type'] ?? '') === 'ssb')
+                    ->modalHeading('Update SSB Loan Status')
+                    ->modalWidth('2xl')
                     ->form([
-                        Forms\Components\Select::make('status')
-                            ->label('New Status')
+                        Forms\Components\Select::make('ssb_action')
+                            ->label('SSB Status Update')
                             ->options([
-                                'in_review' => 'In Review',
-                                'approved' => 'Approved',
-                                'rejected' => 'Rejected',
-                                'pending_documents' => 'Pending Documents',
-                                'processing' => 'Processing',
+                                'initialize' => 'Initialize SSB Workflow',
+                                'simulate_approved' => 'Simulate: Approved',
+                                'simulate_insufficient_salary' => 'Simulate: Insufficient Salary',
+                                'simulate_invalid_id' => 'Simulate: Invalid ID',
+                                'simulate_contract_expiring' => 'Simulate: Contract Expiring',
+                                'simulate_rejected' => 'Simulate: Rejected',
                             ])
-                            ->required(),
+                            ->required()
+                            ->live(),
+                        Forms\Components\TextInput::make('recommended_period')
+                            ->label('Recommended Period (months)')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(60)
+                            ->visible(fn (Forms\Get $get) => in_array($get('ssb_action'), ['simulate_insufficient_salary', 'simulate_contract_expiring']))
+                            ->required(fn (Forms\Get $get) => in_array($get('ssb_action'), ['simulate_insufficient_salary', 'simulate_contract_expiring'])),
+                        Forms\Components\TextInput::make('salary')
+                            ->label('Applicant Salary')
+                            ->numeric()
+                            ->prefix('$')
+                            ->visible(fn (Forms\Get $get) => $get('ssb_action') === 'simulate_insufficient_salary'),
+                        Forms\Components\DatePicker::make('contract_expiry_date')
+                            ->label('Contract Expiry Date')
+                            ->visible(fn (Forms\Get $get) => $get('ssb_action') === 'simulate_contract_expiring')
+                            ->required(fn (Forms\Get $get) => $get('ssb_action') === 'simulate_contract_expiring'),
+                        Forms\Components\Textarea::make('error_message')
+                            ->label('Error Message')
+                            ->visible(fn (Forms\Get $get) => $get('ssb_action') === 'simulate_invalid_id'),
+                        Forms\Components\Textarea::make('rejection_reason')
+                            ->label('Rejection Reason')
+                            ->visible(fn (Forms\Get $get) => $get('ssb_action') === 'simulate_rejected'),
                         Forms\Components\Textarea::make('notes')
-                            ->label('Status Notes')
-                            ->placeholder('Add notes about this status change'),
-                        Forms\Components\Toggle::make('send_notification')
-                            ->label('Send Notification to Applicant')
-                            ->default(true),
+                            ->label('Admin Notes')
+                            ->placeholder('Optional notes about this status update'),
                     ])
                     ->action(function (array $data, Model $record) {
-                        $oldStatus = $record->current_step;
-                        $newStatus = $data['status'];
-                        
-                        // Update both current_step and metadata for consistency
-                        $metadata = $record->metadata ?? [];
-                        $metadata['status'] = $newStatus;
-                        $metadata['status_updated_at'] = now()->toIso8601String();
-                        $metadata['status_updated_by'] = auth()->id();
-                        
-                        // Add status history to metadata
-                        $metadata['status_history'] = $metadata['status_history'] ?? [];
-                        $metadata['status_history'][] = [
-                            'status' => $newStatus,
-                            'timestamp' => now()->toIso8601String(),
-                            'updated_by' => auth()->id(),
-                            'notes' => $data['notes'] ?? null,
-                        ];
-                        
-                        $record->current_step = $newStatus;
-                        $record->metadata = $metadata;
-                        $record->save();
-                        
-                        // Create a state transition record with audit information
-                        $record->transitions()->create([
-                            'from_step' => $oldStatus,
-                            'to_step' => $newStatus,
-                            'channel' => 'admin',
-                            'transition_data' => [
-                                'notes' => $data['notes'] ?? null,
-                                'admin_id' => auth()->id(),
-                                'admin_name' => auth()->user()->name ?? 'Unknown Admin',
-                                'admin_email' => auth()->user()->email ?? null,
-                                'ip_address' => request()->ip(),
-                                'user_agent' => request()->userAgent(),
-                                'timestamp' => now()->toIso8601String(),
-                            ],
-                            'created_at' => now(),
-                        ]);
-                        
-                        // Send notification to applicant if requested
-                        if ($data['send_notification'] ?? true) {
-                            $notificationService = new NotificationService();
-                            $notificationService->sendStatusUpdateNotification($record, $oldStatus, $newStatus);
+                        $ssbService = app(SSBStatusService::class);
+
+                        try {
+                            if ($data['ssb_action'] === 'initialize') {
+                                $ssbService->initializeSSBApplication($record);
+
+                                Notification::make()
+                                    ->title('SSB Workflow Initialized')
+                                    ->success()
+                                    ->send();
+                            } else {
+                                // Simulate SSB response
+                                $responseType = str_replace('simulate_', '', $data['ssb_action']);
+
+                                $ssbResponse = [
+                                    'response_type' => $responseType,
+                                    'recommended_period' => $data['recommended_period'] ?? null,
+                                    'salary' => $data['salary'] ?? null,
+                                    'contract_expiry_date' => $data['contract_expiry_date'] ?? null,
+                                    'error_message' => $data['error_message'] ?? null,
+                                    'reason' => $data['rejection_reason'] ?? null,
+                                ];
+
+                                $ssbService->processSSBResponse($record, $ssbResponse);
+
+                                Notification::make()
+                                    ->title('SSB Status Updated')
+                                    ->body("Status: " . str_replace('_', ' ', ucwords($responseType)))
+                                    ->success()
+                                    ->send();
+                            }
+                        } catch (\Exception $e) {
+                            Log::error('SSB status update failed', [
+                                'session_id' => $record->session_id,
+                                'error' => $e->getMessage(),
+                            ]);
+
+                            Notification::make()
+                                ->title('SSB Status Update Failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
                         }
-                        
-                        // Log the status change with comprehensive audit information
-                        Log::info('Application status updated by admin', [
-                            'session_id' => $record->session_id,
-                            'reference_code' => $record->reference_code,
-                            'from_status' => $oldStatus,
-                            'to_status' => $newStatus,
-                            'admin_id' => auth()->id(),
-                            'admin_name' => auth()->user()->name ?? 'Unknown Admin',
-                            'admin_email' => auth()->user()->email ?? null,
-                            'notes' => $data['notes'] ?? null,
-                            'notification_sent' => $data['send_notification'] ?? true,
-                            'ip_address' => request()->ip(),
-                            'user_agent' => request()->userAgent(),
-                            'timestamp' => now()->toIso8601String(),
-                        ]);
-                        
-                        Notification::make()
-                            ->title('Status Updated Successfully')
-                            ->body("Application status changed from {$oldStatus} to {$newStatus}")
-                            ->success()
-                            ->send();
+                    }),
+
+                // ZB Loan Workflow Actions
+                Action::make('zb_workflow')
+                    ->label('ZB Loan Status')
+                    ->icon('heroicon-o-building-library')
+                    ->color('success')
+                    ->visible(fn (Model $record) => ($record->form_data['employer'] ?? '') === 'ZB' || ($record->metadata['workflow_type'] ?? '') === 'zb')
+                    ->modalHeading('Update ZB Loan Status')
+                    ->modalWidth('2xl')
+                    ->form([
+                        Forms\Components\Select::make('zb_action')
+                            ->label('ZB Status Update')
+                            ->options([
+                                'initialize' => 'Initialize ZB Workflow',
+                                'credit_check_good' => 'Credit Check: Good (Approve)',
+                                'credit_check_poor' => 'Credit Check: Poor (Reject + Blacklist Report)',
+                                'salary_not_regular' => 'Salary Not Regular (Reject)',
+                                'insufficient_salary' => 'Insufficient Salary (Reject + Period Adjustment)',
+                                'approved' => 'Approved (Final)',
+                            ])
+                            ->required()
+                            ->live(),
+                        Forms\Components\TextInput::make('recommended_period')
+                            ->label('Recommended Period (months)')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(60)
+                            ->visible(fn (Forms\Get $get) => $get('zb_action') === 'insufficient_salary')
+                            ->required(fn (Forms\Get $get) => $get('zb_action') === 'insufficient_salary')
+                            ->helperText('Calculate based on salary (max 30% for installment)'),
+                        Forms\Components\Textarea::make('notes')
+                            ->label('Admin Notes')
+                            ->placeholder('Optional notes about this status update')
+                            ->helperText('e.g., Credit score, salary details, reasons'),
+                    ])
+                    ->action(function (array $data, Model $record) {
+                        $zbService = app(ZBStatusService::class);
+
+                        try {
+                            switch ($data['zb_action']) {
+                                case 'initialize':
+                                    $zbService->initializeZBApplication($record);
+                                    $message = 'ZB Workflow Initialized';
+                                    break;
+
+                                case 'credit_check_good':
+                                    $zbService->processCreditCheckGood($record, $data['notes'] ?? '');
+                                    $message = 'Credit Check: Good - Application Approved';
+                                    break;
+
+                                case 'credit_check_poor':
+                                    $zbService->processCreditCheckPoor($record, $data['notes'] ?? '');
+                                    $message = 'Credit Check: Poor - Client offered blacklist report ($5)';
+                                    break;
+
+                                case 'salary_not_regular':
+                                    $zbService->processSalaryNotRegular($record, $data['notes'] ?? '');
+                                    $message = 'Rejected: Salary Not Regular';
+                                    break;
+
+                                case 'insufficient_salary':
+                                    $zbService->processInsufficientSalary(
+                                        $record,
+                                        $data['recommended_period'],
+                                        $data['notes'] ?? ''
+                                    );
+                                    $message = 'Rejected: Insufficient Salary - Client offered period adjustment';
+                                    break;
+
+                                case 'approved':
+                                    $zbService->processApproved($record, $data['notes'] ?? '');
+                                    $message = 'Application Approved - Delivery tracking available';
+                                    break;
+
+                                default:
+                                    throw new \Exception('Invalid action');
+                            }
+
+                            Notification::make()
+                                ->title('ZB Status Updated')
+                                ->body($message)
+                                ->success()
+                                ->send();
+
+                        } catch (\Exception $e) {
+                            Log::error('ZB status update failed', [
+                                'session_id' => $record->session_id,
+                                'error' => $e->getMessage(),
+                            ]);
+
+                            Notification::make()
+                                ->title('ZB Status Update Failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
                     }),
             ])
             ->bulkActions([
@@ -770,5 +1045,42 @@ class ApplicationResource extends Resource
             Widgets\RecentApplicationsWidget::class,
             Widgets\PendingApprovalsWidget::class,
         ];
+    }
+
+    /**
+     * Detect form type from application data
+     * Same logic as ListApplications::detectFormType()
+     */
+    protected static function detectFormType($application): string
+    {
+        // Check metadata first
+        if (isset($application->metadata['form_type'])) {
+            return $application->metadata['form_type'];
+        }
+
+        // Detect from form data
+        $formData = $application->form_data;
+        $formResponses = $formData['formResponses'] ?? $formData;
+
+        // SSB Form: Has responsibleMinistry field
+        if (isset($formData['responsibleMinistry']) || isset($formResponses['responsibleMinistry'])) {
+            return 'ssb';
+        }
+
+        // SME Business Form: Has businessName or businessRegistration
+        elseif (isset($formData['businessName']) || isset($formData['businessRegistration']) ||
+                isset($formResponses['businessName']) || isset($formResponses['businessRegistration'])) {
+            return 'sme_business';
+        }
+
+        // ZB Account Opening: Has accountType field
+        elseif (isset($formData['accountType']) || isset($formResponses['accountType'])) {
+            return 'zb_account_opening';
+        }
+
+        // Account Holders: Default
+        else {
+            return 'account_holders';
+        }
     }
 }

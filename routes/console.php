@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -54,3 +55,11 @@ Artisan::command('test:ssb-pdf', function () {
         return 1;
     }
 })->purpose('Test SSB PDF generation');
+
+// Schedule automatic cleanup of delivered applications and cash purchases
+// Runs daily at 2:00 AM to clean up records that were delivered 90+ days ago
+Schedule::command('app:cleanup-delivered-applications')
+    ->dailyAt('02:00')
+    ->timezone('Africa/Harare')
+    ->name('cleanup-delivered-applications')
+    ->description('Cleanup applications and cash purchases delivered 90+ days ago');

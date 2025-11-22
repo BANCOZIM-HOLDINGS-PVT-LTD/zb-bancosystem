@@ -58,4 +58,10 @@ return [
         'result_url' => env('PAYNOW_RESULT_URL'),
     ],
 
+    'ecocash' => [
+        'merchant_code' => env('ECOCASH_MERCHANT_CODE'),
+        'merchant_key' => env('ECOCASH_MERCHANT_KEY'),
+        'api_url' => env('ECOCASH_API_URL', 'https://api.ecocash.co.zw'),
+    ],
+
 ];

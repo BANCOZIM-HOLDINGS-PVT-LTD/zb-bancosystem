@@ -21,6 +21,7 @@ class ApplicationState extends Model
         'reference_code',
         'reference_code_expires_at',
         'agent_id',
+        'exempt_from_auto_deletion',
     ];
 
     protected $casts = [
@@ -28,6 +29,7 @@ class ApplicationState extends Model
         'metadata' => 'array',
         'expires_at' => 'datetime',
         'reference_code_expires_at' => 'datetime',
+        'exempt_from_auto_deletion' => 'boolean',
     ];
 
     public function transitions(): HasMany

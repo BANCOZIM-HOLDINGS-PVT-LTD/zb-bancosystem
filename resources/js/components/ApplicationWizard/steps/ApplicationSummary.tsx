@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ChevronLeft, CheckCircle, User, Building, DollarSign, CreditCard, MapPin, Package } from 'lucide-react';
+import { ChevronLeft, CheckCircle, User, Building, DollarSign, CreditCard, MapPin, Package, Monitor, GraduationCap } from 'lucide-react';
 
 interface ApplicationData {
     language?: string;
@@ -24,6 +24,10 @@ interface ApplicationData {
     deliveryAddress?: string;
     product?: string;
     totalLoanAmount?: number;
+    includesMESystem?: boolean;
+    meSystemFee?: number;
+    includesTraining?: boolean;
+    trainingFee?: number;
 }
 
 interface ApplicationSummaryProps {
@@ -269,16 +273,64 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                     </p>
                                 </div>
                             )}
-                            <div>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    {data.totalLoanAmount ? 'Total Loan Amount Due' : 'Loan Amount'}
-                                </p>
-                                <p className="font-medium text-xl text-emerald-600">
-                                    ${(data.totalLoanAmount || data.amount)?.toLocaleString()}
-                                </p>
+
+                            {/* Loan Amount Breakdown */}
+                            <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Loan Amount Breakdown:</p>
+
+                                {/* Base Product Amount */}
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-600 dark:text-gray-400">Product/Business</span>
+                                    <span className="font-medium">
+                                        ${(() => {
+                                            const total = data.totalLoanAmount || data.amount || 0;
+                                            const meSystem = data.meSystemFee || 0;
+                                            const training = data.trainingFee || 0;
+                                            const base = total - meSystem - training;
+                                            return base.toLocaleString();
+                                        })()}
+                                    </span>
+                                </div>
+
+                                {/* M&E System Fee */}
+                                {data.includesMESystem && data.meSystemFee && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                            <Monitor className="h-3 w-3" />
+                                            M&E System (10%)
+                                        </span>
+                                        <span className="font-medium text-emerald-600">
+                                            +${data.meSystemFee.toLocaleString()}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Training Fee */}
+                                {data.includesTraining && data.trainingFee && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                            <GraduationCap className="h-3 w-3" />
+                                            Training (5.5%)
+                                        </span>
+                                        <span className="font-medium text-purple-600">
+                                            +${data.trainingFee.toFixed(2)}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Total Line */}
+                                <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                        {data.totalLoanAmount ? 'Total Loan Amount' : 'Loan Amount'}
+                                    </span>
+                                    <span className="font-bold text-xl text-emerald-600">
+                                        ${(data.totalLoanAmount || data.amount)?.toLocaleString()}
+                                    </span>
+                                </div>
                             </div>
+
                             {data.creditTerm && data.monthlyPayment && (
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-200 dark:border-gray-700">
                                 <div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Term</p>
                                     <p className="font-medium">{data.creditTerm} months</p>

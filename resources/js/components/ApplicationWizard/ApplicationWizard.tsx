@@ -38,6 +38,8 @@ export interface WizardData {
     interestRate?: string;
     includesMESystem?: boolean;
     meSystemFee?: number;
+    includesTraining?: boolean;
+    trainingFee?: number;
 
     // Credit type selection (ZDC or PDC)
     creditType?: 'ZDC' | 'PDC';

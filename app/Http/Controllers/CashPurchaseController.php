@@ -104,7 +104,7 @@ class CashPurchaseController extends Controller
             $includesMESystem = $isMicrobiz && ($data['delivery']['includesMESystem'] ?? false);
             $includesTraining = $isMicrobiz && ($data['delivery']['includesTraining'] ?? false);
 
-            $meSystemFee = $includesMESystem ? 9.99 : 0.00;
+            $meSystemFee = $includesMESystem ? ($data['product']['cashPrice'] * 0.10) : 0.00; // 10% of cash price
             $trainingFee = $includesTraining ? ($data['product']['cashPrice'] * 0.055) : 0.00;
 
             // Verify the product exists and get details

@@ -35,7 +35,7 @@ interface CheckoutStepProps {
 
 type PaymentMethod = 'visa' | 'zimswitch' | 'ecocash' | 'onemoney' | 'innbucks' | 'omari';
 
-const ME_SYSTEM_FEE = 9.99;
+const ME_SYSTEM_PERCENTAGE = 0.10; // 10% of cash price
 const TRAINING_PERCENTAGE = 0.055; // 5.5%
 
 export default function CheckoutStep({ data, onComplete, onBack, loading, error }: CheckoutStepProps) {
@@ -55,7 +55,7 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
     const isMicrobiz = data.purchaseType === 'microbiz';
     const includesMESystem = isMicrobiz && (delivery.includesMESystem || false);
     const includesTraining = isMicrobiz && (delivery.includesTraining || false);
-    const meSystemFee = includesMESystem ? ME_SYSTEM_FEE : 0;
+    const meSystemFee = includesMESystem ? (product.cashPrice * ME_SYSTEM_PERCENTAGE) : 0;
     const trainingFee = includesTraining ? (product.cashPrice * TRAINING_PERCENTAGE) : 0;
     const deliveryFee = delivery.type === 'swift' ? 10 : 0;
     const totalAmount = product.cashPrice + meSystemFee + trainingFee + deliveryFee;

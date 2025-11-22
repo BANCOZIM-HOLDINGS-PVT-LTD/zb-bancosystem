@@ -153,6 +153,66 @@ Route::prefix('application')->group(function () {
     Route::get('/insights/{reference}', [\App\Http\Controllers\ApplicationStatusController::class, 'getApplicationInsights']);
 });
 
+// SSB Loan Workflow API routes (Public - for clients)
+Route::prefix('ssb')->group(function () {
+    // Client-facing endpoints
+    Route::post('/status/check', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'checkStatusByReference']);
+    Route::post('/adjust-period', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'adjustLoanPeriod']);
+    Route::post('/update-id', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'updateIDNumber']);
+    Route::post('/decline-adjustment', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'declineAdjustment']);
+});
+
+// SSB Loan Workflow API routes (Admin - protected)
+Route::prefix('admin/ssb')->middleware('auth:sanctum')->group(function () {
+    // Admin endpoints
+    Route::post('/{sessionId}/initialize', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'initializeSSBWorkflow']);
+    Route::get('/{sessionId}/status', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'getSSBStatus']);
+    Route::get('/{sessionId}/history', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'getSSBStatusHistory']);
+    Route::post('/{sessionId}/manual-update', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'manualSSBStatusUpdate']);
+    Route::post('/{sessionId}/simulate', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'simulateSSBResponse']);
+    Route::post('/csv-upload', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'uploadSSBCSVResponse']);
+    Route::get('/export-csv', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'exportSSBApplicationsCSV']);
+});
+
+// ZB Loan Workflow API routes (Public - for clients)
+Route::prefix('zb')->group(function () {
+    // Client-facing endpoints
+    Route::post('/status/check', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'checkZBStatusByReference']);
+    Route::post('/blacklist-report/decline', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'declineBlacklistReport']);
+    Route::post('/blacklist-report/request', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'requestBlacklistReport']);
+    Route::post('/blacklist-report/payment', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'processBlacklistReportPayment']);
+    Route::post('/period-adjustment/decline', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'declineZBPeriodAdjustment']);
+    Route::post('/period-adjustment/accept', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'acceptZBPeriodAdjustment']);
+});
+
+// ZB Loan Workflow API routes (Admin - protected)
+Route::prefix('admin/zb')->middleware('auth:sanctum')->group(function () {
+    // Admin endpoints
+    Route::post('/{sessionId}/initialize', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'initializeZBWorkflow']);
+    Route::get('/{sessionId}/status', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'getZBStatus']);
+    Route::get('/{sessionId}/history', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'getZBStatusHistory']);
+
+    // Admin manual status updates
+    Route::post('/{sessionId}/credit-check/good', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'processCreditCheckGood']);
+    Route::post('/{sessionId}/credit-check/poor', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'processCreditCheckPoor']);
+    Route::post('/{sessionId}/salary-not-regular', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'processSalaryNotRegular']);
+    Route::post('/{sessionId}/insufficient-salary', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'processInsufficientSalary']);
+    Route::post('/{sessionId}/approved', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'processZBApproved']);
+});
+
+// Ecocash Payment API routes
+Route::prefix('ecocash')->group(function () {
+    // Public webhook endpoint for Ecocash callbacks
+    Route::post('/webhook', [\App\Http\Controllers\EcocashWebhookController::class, 'handleWebhook'])->name('ecocash.webhook');
+
+    // Client-facing endpoints
+    Route::post('/initiate', [\App\Http\Controllers\EcocashWebhookController::class, 'initiatePayment']);
+    Route::post('/check-status', [\App\Http\Controllers\EcocashWebhookController::class, 'checkStatus']);
+
+    // TEST MODE ONLY - Simulate payment completion
+    Route::post('/simulate', [\App\Http\Controllers\EcocashWebhookController::class, 'simulatePayment']);
+});
+
 // Delivery Tracking API routes
 Route::prefix('delivery')->group(function () {
     Route::get('/tracking/{reference}', [\App\Http\Controllers\DeliveryTrackingController::class, 'getStatus']);
