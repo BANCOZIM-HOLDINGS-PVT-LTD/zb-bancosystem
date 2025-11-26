@@ -4,16 +4,16 @@ namespace App\Filament\Resources\DeliveryTrackingResource\Pages;
 
 use App\Filament\Resources\DeliveryTrackingResource;
 use Filament\Actions;
-use Filament\Resources\Pages\ListRecords;
+use Filament\Resources\Pages\ViewRecord;
 
-class ListDeliveryTrackings extends ListRecords
+class ViewDeliveryTracking extends ViewRecord
 {
     protected static string $resource = DeliveryTrackingResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            // Create action removed - deliveries are auto-generated from approved applications
+            Actions\EditAction::make(),
         ];
     }
 }

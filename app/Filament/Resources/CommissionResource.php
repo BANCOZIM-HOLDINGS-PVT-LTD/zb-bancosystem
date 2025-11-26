@@ -38,18 +38,20 @@ class CommissionResource extends Resource
                             ->relationship('agent', 'first_name')
                             ->getOptionLabelFromRecordUsing(fn ($record) => $record->display_name)
                             ->searchable(['first_name', 'last_name', 'agent_code'])
-                            ->required(),
+                            ->disabled()
+                            ->dehydrated(false),
 
                         Forms\Components\Select::make('application_id')
                             ->label('Application')
                             ->relationship('application', 'session_id')
                             ->searchable()
-                            ->nullable(),
+                            ->disabled()
+                            ->dehydrated(false),
 
                         Forms\Components\TextInput::make('reference_number')
                             ->label('Reference Number')
-                            ->unique(ignoreRecord: true)
-                            ->placeholder('Auto-generated if empty'),
+                            ->disabled()
+                            ->dehydrated(false),
 
                         Forms\Components\Select::make('type')
                             ->options([
@@ -58,8 +60,8 @@ class CommissionResource extends Resource
                                 'bonus' => 'Bonus',
                                 'penalty' => 'Penalty',
                             ])
-                            ->default('application')
-                            ->required(),
+                            ->disabled()
+                            ->dehydrated(false),
 
                         Forms\Components\Select::make('status')
                             ->options([
@@ -79,25 +81,28 @@ class CommissionResource extends Resource
                             ->label('Base Amount ($)')
                             ->numeric()
                             ->prefix('$')
-                            ->required(),
+                            ->disabled()
+                            ->dehydrated(false),
 
                         Forms\Components\TextInput::make('rate')
                             ->label('Commission Rate (%)')
                             ->numeric()
                             ->step(0.01)
                             ->suffix('%')
-                            ->required(),
+                            ->disabled()
+                            ->dehydrated(false),
 
                         Forms\Components\TextInput::make('amount')
                             ->label('Commission Amount ($)')
                             ->numeric()
                             ->prefix('$')
-                            ->required(),
+                            ->disabled()
+                            ->dehydrated(false),
 
                         Forms\Components\DatePicker::make('earned_date')
                             ->label('Earned Date')
-                            ->default(now())
-                            ->required(),
+                            ->disabled()
+                            ->dehydrated(false),
 
                         Forms\Components\DatePicker::make('paid_date')
                             ->label('Paid Date')
@@ -332,7 +337,6 @@ class CommissionResource extends Resource
     {
         return [
             'index' => Pages\ListCommissions::route('/'),
-            'create' => Pages\CreateCommission::route('/create'),
             'view' => Pages\ViewCommission::route('/{record}'),
             'edit' => Pages\EditCommission::route('/{record}/edit'),
         ];

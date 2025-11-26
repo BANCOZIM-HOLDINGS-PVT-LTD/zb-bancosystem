@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ApplicationState;
 use App\Models\Agent;
 use App\Models\Commission;
+use App\Models\DeliveryTracking;
 use App\Services\NotificationService;
 use App\Services\PDFGeneratorService;
 use Illuminate\Support\Facades\DB;
@@ -54,6 +55,9 @@ class ApplicationWorkflowService
 
             // Calculate and create commission for referring agent
             $this->processAgentCommission($application);
+
+            // Create delivery tracking record
+            $this->createDeliveryTracking($application);
 
             // Send notifications
             $this->notificationService->sendStatusUpdateNotification($application, $oldStatus, 'approved');
@@ -295,6 +299,76 @@ class ApplicationWorkflowService
                 'status' => 'pending',
                 'earned_date' => now(),
                 'reference_code' => $application->reference_code,
+            ]);
+        }
+    }
+
+    /**
+     * Create delivery tracking record for approved application
+     */
+    private function createDeliveryTracking(ApplicationState $application): void
+    {
+        try {
+            // Check if delivery tracking already exists
+            if ($application->delivery()->exists()) {
+                return;
+            }
+
+            $formData = $application->form_data ?? [];
+            $formResponses = $formData['formResponses'] ?? [];
+            $deliverySelection = $formData['deliverySelection'] ?? [];
+
+            // Extract client information
+            $clientName = trim(
+                ($formResponses['firstName'] ?? '') . ' ' .
+                ($formResponses['surname'] ?? '')
+            );
+            $clientPhone = $formResponses['mobile'] ?? $formResponses['cellNumber'] ?? '';
+            $clientNationalId = $formResponses['nationalIdNumber'] ?? $formResponses['idNumber'] ?? '';
+
+            // Extract product information
+            $product = $formData['business'] ?? $formData['category'] ?? 'N/A';
+
+            // Extract delivery information
+            $depot = '';
+            if (!empty($deliverySelection['city'])) {
+                $depot = $deliverySelection['city'] . ' (' . ($deliverySelection['agent'] ?? 'Swift') . ')';
+            } elseif (!empty($deliverySelection['depot'])) {
+                $depot = $deliverySelection['depot'];
+            }
+
+            // Determine courier type from delivery selection
+            $courierType = $deliverySelection['agent'] ?? 'Swift';
+
+            // Create delivery tracking record
+            DeliveryTracking::create([
+                'application_state_id' => $application->id,
+                'recipient_name' => $clientName,
+                'recipient_phone' => $clientPhone,
+                'client_national_id' => $clientNationalId,
+                'product_type' => $product,
+                'delivery_depot' => $depot,
+                'courier_type' => $courierType,
+                'status' => 'pending',
+                'status_history' => json_encode([
+                    [
+                        'status' => 'pending',
+                        'notes' => 'Delivery tracking created automatically upon application approval',
+                        'updated_at' => now()->toIso8601String(),
+                        'updated_by' => auth()->user()->name ?? 'System',
+                    ]
+                ]),
+            ]);
+
+            Log::info('Delivery tracking created', [
+                'application_id' => $application->id,
+                'reference_code' => $application->reference_code,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Delivery tracking creation failed', [
+                'application_id' => $application->id,
+                'error' => $e->getMessage(),
             ]);
         }
     }

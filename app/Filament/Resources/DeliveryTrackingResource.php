@@ -47,6 +47,8 @@ class DeliveryTrackingResource extends Resource
                             ->searchable(['session_id', 'reference_code'])
                             ->required()
                             ->reactive()
+                            ->disabled(fn ($record) => $record !== null) // Disable if editing existing record
+                            ->dehydrated(fn ($record) => $record === null) // Only hydrate if creating
                             ->afterStateUpdated(function ($state, callable $set) {
                                 if ($state) {
                                     $app = ApplicationState::find($state);
@@ -241,7 +243,39 @@ class DeliveryTrackingResource extends Resource
                             ->required()
                             ->default('pending')
                             ->reactive()
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->rules([
+                                function (Get $get) {
+                                    return function (string $attribute, $value, $fail) use ($get) {
+                                        if (in_array($value, ['dispatched', 'in_transit', 'out_for_delivery'])) {
+                                            $courierType = $get('courier_type');
+
+                                            // Validate Swift
+                                            if ($courierType === 'Swift' && empty($get('swift_tracking_number'))) {
+                                                $fail('Swift tracking number is required before dispatching.');
+                                            }
+
+                                            // Validate Gain Outlet
+                                            if ($courierType === 'Gain Outlet' && empty($get('gain_voucher_number'))) {
+                                                $fail('Gain voucher number is required before dispatching.');
+                                            }
+
+                                            // Validate Bus Courier
+                                            if ($courierType === 'Bus Courier') {
+                                                if (empty($get('bus_registration_number'))) {
+                                                    $fail('Bus registration number is required before dispatching.');
+                                                }
+                                                if (empty($get('bus_driver_name'))) {
+                                                    $fail('Bus driver name is required before dispatching.');
+                                                }
+                                                if (empty($get('bus_driver_phone'))) {
+                                                    $fail('Bus driver phone is required before dispatching.');
+                                                }
+                                            }
+                                        }
+                                    };
+                                },
+                            ]),
 
                         Forms\Components\Select::make('assigned_to')
                             ->label('Admin/Staff Assigned')
@@ -461,6 +495,35 @@ class DeliveryTrackingResource extends Resource
                             ->rows(3),
                     ])
                     ->action(function (DeliveryTracking $record, array $data) {
+                        // Validate required fields before dispatching
+                        if (in_array($data['status'], ['dispatched', 'in_transit', 'out_for_delivery'])) {
+                            $errors = [];
+
+                            if ($record->courier_type === 'Swift' && empty($record->swift_tracking_number)) {
+                                $errors[] = 'Swift tracking number is required before dispatching.';
+                            }
+
+                            if ($record->courier_type === 'Gain Outlet' && empty($record->gain_voucher_number)) {
+                                $errors[] = 'Gain voucher number is required before dispatching.';
+                            }
+
+                            if ($record->courier_type === 'Bus Courier') {
+                                if (empty($record->bus_registration_number)) {
+                                    $errors[] = 'Bus registration number is required before dispatching.';
+                                }
+                                if (empty($record->bus_driver_name)) {
+                                    $errors[] = 'Bus driver name is required before dispatching.';
+                                }
+                                if (empty($record->bus_driver_phone)) {
+                                    $errors[] = 'Bus driver phone is required before dispatching.';
+                                }
+                            }
+
+                            if (!empty($errors)) {
+                                throw new \Exception(implode(' ', $errors));
+                            }
+                        }
+
                         $record->addStatusUpdate($data['status'], $data['notes'] ?? null);
 
                         if ($data['status'] === 'delivered') {
@@ -491,8 +554,8 @@ class DeliveryTrackingResource extends Resource
     {
         return [
             'index' => Pages\ListDeliveryTrackings::route('/'),
-            'create' => Pages\CreateDeliveryTracking::route('/create'),
             'edit' => Pages\EditDeliveryTracking::route('/{record}/edit'),
+            'view' => Pages\ViewDeliveryTracking::route('/{record}'),
         ];
     }
 }

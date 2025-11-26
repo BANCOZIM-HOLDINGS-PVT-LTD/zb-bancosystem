@@ -13,7 +13,7 @@ class ListCommissions extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            // Create action removed - commissions are auto-generated from applications
         ];
     }
 }
