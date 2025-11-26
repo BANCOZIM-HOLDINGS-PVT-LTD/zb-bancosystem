@@ -28,6 +28,13 @@ interface ApplicationData {
     meSystemFee?: number;
     includesTraining?: boolean;
     trainingFee?: number;
+    // Zimparks booking details
+    bookingDetails?: {
+        startDate?: string;
+        endDate?: string;
+        destination?: string;
+    };
+    destinationName?: string;
 }
 
 interface ApplicationSummaryProps {
@@ -162,7 +169,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                             <p className="text-sm text-gray-500 dark:text-gray-400">Application Type</p>
                             <p className="font-medium">
                                 {data.intent === 'hirePurchase' ? 'Hire Purchase Credit' :
-                                 data.intent === 'microBiz' ? 'Micro Biz Loan' : data.intent}
+                                    data.intent === 'microBiz' ? 'Micro Biz Loan' : data.intent}
                             </p>
                         </div>
                     </div>
@@ -204,8 +211,8 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                     <p className="font-medium">{data.category}</p>
                                 </div>
                             )}
-                    </div>
-                                        </Card>
+                        </div>
+                    </Card>
                 )}
 
                 {data.business && (
@@ -228,6 +235,38 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                             <div>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Scale</p>
                                 <p className="font-medium">{data.scale}</p>
+                            </div>
+                        </div>
+                    </Card>
+                )}
+
+                {/* Booking Information for Zimparks */}
+                {data.bookingDetails && (
+                    <Card className="p-6">
+                        <div className="flex items-center mb-4">
+                            <MapPin className="h-6 w-6 text-emerald-600 mr-3" />
+                            <h3 className="text-lg font-semibold">Booking Information</h3>
+                        </div>
+                        <div className="space-y-3">
+                            {data.bookingDetails.destination && (
+                                <div>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Destination</p>
+                                    <p className="font-medium">{data.bookingDetails.destination}</p>
+                                </div>
+                            )}
+                            <div className="grid grid-cols-2 gap-4">
+                                {data.bookingDetails.startDate && (
+                                    <div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Check-in</p>
+                                        <p className="font-medium">{new Date(data.bookingDetails.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                    </div>
+                                )}
+                                {data.bookingDetails.endDate && (
+                                    <div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Check-out</p>
+                                        <p className="font-medium">{new Date(data.bookingDetails.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </Card>
@@ -268,8 +307,8 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Credit Type</p>
                                     <p className="font-medium">
                                         {data.creditType === 'ZDC' ? 'Zero Deposit Credit' :
-                                         data.creditType === 'PDC' ? 'Paid Deposit Credit' :
-                                         data.creditType}
+                                            data.creditType === 'PDC' ? 'Paid Deposit Credit' :
+                                                data.creditType}
                                     </p>
                                 </div>
                             )}
@@ -330,21 +369,22 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                             </div>
 
                             {data.creditTerm && data.monthlyPayment && (
-                            <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Term</p>
-                                    <p className="font-medium">{data.creditTerm} months</p>
+                                <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                    <div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Term</p>
+                                        <p className="font-medium">{data.creditTerm} months</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Monthly Payment</p>
+                                        <p className="font-medium">${data.monthlyPayment}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Monthly Payment</p>
-                                    <p className="font-medium">${data.monthlyPayment}</p>
-                                </div>
-                            </div>
                             )}
                         </div>
                     </Card>
-                )}
-            </div>
+                )
+                }
+            </div >
 
             <div className="flex flex-col items-end gap-3 pt-4">
                 <div className="flex justify-between w-full">
@@ -379,7 +419,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                     </a>
                 </p>
             </div>
-        </div>
+        </div >
     );
 };
 

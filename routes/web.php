@@ -64,6 +64,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/regenerate/{sessionId}', [\App\Http\Controllers\Admin\PDFManagementController::class, 'regenerate'])->name('regenerate');
     });
     
+    // Admin Export Routes
+    Route::prefix('admin/export')->name('admin.export.')->group(function () {
+        Route::get('/holiday-packages', [\App\Http\Controllers\AdminController::class, 'exportHolidayPackages'])->name('holiday-packages');
+    });
+    
     // Admin routes (Filament handles /admin routes)
     /*
     Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(function () {

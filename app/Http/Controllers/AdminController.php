@@ -331,4 +331,70 @@ class AdminController extends Controller
             return ['status' => 'unhealthy', 'message' => 'Queue system not working'];
         }
     }
+
+    /**
+     * Export Holiday Packages (Zimparks) bookings to CSV
+     */
+    public function exportHolidayPackages()
+    {
+        $applications = ApplicationState::where('current_step', 'completed')
+            ->get()
+            ->filter(function ($app) {
+                $formData = $app->form_data ?? [];
+                return isset($formData['business']) && $formData['business'] === 'Zimparks Vacation Package';
+            });
+
+        $csvData = [];
+        $csvData[] = ['Reference Code', 'Applicant Name', 'Package', 'Destination', 'Check-in Date', 'Check-out Date', 'Status'];
+
+        foreach ($applications as $app) {
+            $formData = $app->form_data ?? [];
+            $formResponses = $formData['formResponses'] ?? [];
+            $booking = $formData['bookingDetails'] ?? [];
+            
+            // Get applicant name
+            $applicantName = trim(
+                ($formResponses['firstName'] ?? '') . ' ' . 
+                ($formResponses['lastName'] ?? ($formResponses['surname'] ?? ''))
+            ) ?: 'N/A';
+
+            // Get package name (scale)
+            $packageName = $formData['scale'] ?? 'N/A';
+            
+            // Get destination
+            $destination = $booking['destination'] ?? ($formData['destinationName'] ?? 'N/A');
+            
+            // Get dates
+            $checkIn = isset($booking['startDate']) ? date('M j, Y', strtotime($booking['startDate'])) : 'N/A';
+            $checkOut = isset($booking['endDate']) ? date('M j, Y', strtotime($booking['endDate'])) : 'N/A';
+            
+            // Get status
+            $status = $this->determineApplicationStatus($app);
+
+            $csvData[] = [
+                $app->reference_code ?? 'N/A',
+                $applicantName,
+                $packageName,
+                $destination,
+                $checkIn,
+                $checkOut,
+                ucfirst($status)
+            ];
+        }
+
+        $filename = 'holiday_packages_' . now()->format('Y-m-d_His') . '.csv';
+        
+        $callback = function() use ($csvData) {
+            $file = fopen('php://output', 'w');
+            foreach ($csvData as $row) {
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
 }

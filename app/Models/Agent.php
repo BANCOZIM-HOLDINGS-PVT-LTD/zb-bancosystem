@@ -140,6 +140,21 @@ class Agent extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Get agent's campaigns
+     */
+    public function campaigns(): BelongsToMany
+    {
+        return $this->belongsToMany(Campaign::class, 'agent_campaign')
+            ->withPivot([
+                'applications_count',
+                'sales_total',
+                'conversions_count',
+                'individual_metrics'
+            ])
+            ->withTimestamps();
+    }
+
+    /**
      * Get current month performance
      */
     public function getCurrentMonthPerformance()

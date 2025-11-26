@@ -4,6 +4,17 @@ import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ChevronLeft, ChevronRight, ArrowLeft, DollarSign, Calendar, Loader2, Monitor, GraduationCap, Info } from 'lucide-react';
 import { productService, type BusinessType, type Subcategory, type Category } from '../../../services/productService';
+import { zimparksDestinations, type ZimparksDestination } from '../data/zimparksDestinations';
+import { getPackageDescription } from '../data/packageDescriptions';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Check } from 'lucide-react';
 
 interface ProductSelectionProps {
     data: any;
@@ -12,7 +23,7 @@ interface ProductSelectionProps {
     loading?: boolean;
 }
 
-type ViewMode = 'categories' | 'subcategories' | 'businesses' | 'scales' | 'terms';
+type ViewMode = 'categories' | 'subcategories' | 'businesses' | 'zimparks_destinations' | 'scales' | 'terms';
 
 const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBack, loading }) => {
     const [currentView, setCurrentView] = useState<ViewMode>('categories');
@@ -29,6 +40,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [selectedTermMonths, setSelectedTermMonths] = useState<number | null>(null);
     const [validationError, setValidationError] = useState<string>('');
     const [showZBBankingNotification, setShowZBBankingNotification] = useState<boolean>(false);
+    const [selectedDestination, setSelectedDestination] = useState<ZimparksDestination | null>(null);
+    const [showDestinationModal, setShowDestinationModal] = useState<boolean>(false);
 
     const ME_SYSTEM_PERCENTAGE = 0.10; // 10% of loan amount
     const TRAINING_PERCENTAGE = 0.055; // 5.5%
@@ -65,11 +78,27 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
     const handleSubcategorySelect = (subcategory: Subcategory) => {
         setSelectedSubcategory(subcategory);
+
+        // Special handling for Zimparks: Skip product selection and go straight to destinations
+        if (subcategory.name === 'Zimparks Lodges/Cottages') {
+            const zimparksProduct = subcategory.businesses.find(b => b.name === 'Zimparks Vacation Package');
+            if (zimparksProduct) {
+                setSelectedBusiness(zimparksProduct);
+                setCurrentView('zimparks_destinations');
+                return;
+            }
+        }
+
         setCurrentView('businesses');
     };
 
     const handleBusinessSelect = (business: BusinessType) => {
         setSelectedBusiness(business);
+
+        if (business.name === 'Zimparks Vacation Package') {
+            setCurrentView('zimparks_destinations');
+            return;
+        }
 
         // Show notification for school fees products (Primary, Secondary, Polytech, University)
         const schoolFeeProducts = ['Primary School Fees', 'Secondary School Fees', 'Polytech Fees', 'University Fees'];
@@ -92,6 +121,17 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         setFinalAmount(amount);
         setSelectedTermMonths(null); // Reset term selection
         setValidationError(''); // Clear validation error
+
+        // For Zimparks and MicroBiz, stay on scales view to show description
+        const isZimparks = selectedBusiness?.name === 'Zimparks Vacation Package';
+        if (isMicroBiz || isZimparks) {
+            // Stay on current view
+        } else {
+            setCurrentView('terms');
+        }
+    };
+
+    const handleProceedToTerms = () => {
         setCurrentView('terms');
     };
 
@@ -99,6 +139,16 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         const months = e.target.value ? parseInt(e.target.value) : null;
         setSelectedTermMonths(months);
         setValidationError(''); // Clear validation error when user selects
+    };
+
+    const handleDestinationSelect = (destination: ZimparksDestination) => {
+        setSelectedDestination(destination);
+        setShowDestinationModal(true);
+    };
+
+    const handleDestinationConfirm = () => {
+        setShowDestinationModal(false);
+        setCurrentView('scales');
     };
 
     const handleContinue = () => {
@@ -129,7 +179,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         const monthlyInterestRate = interestRate / 12;
         const monthlyPayment = totalAmount > 0
             ? (totalAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
-              (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
+            (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
             : 0;
 
         onNext({
@@ -143,6 +193,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             monthlyPayment: parseFloat(monthlyPayment.toFixed(2)),
             // New fields with IDs for better tracking
             productId: selectedBusiness?.id,
+            productName: selectedBusiness?.name === 'Zimparks Vacation Package' && selectedDestination
+                ? `Zimparks Package - ${selectedDestination.name}`
+                : selectedBusiness?.name,
+            destinationId: selectedDestination?.id,
+            destinationName: selectedDestination?.name,
             scaleId: (selectedScale as any)?.id,
             categoryId: selectedCategory?.id,
             loanAmount: totalAmount,
@@ -164,8 +219,19 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 setSelectedSubcategory(null);
                 break;
             case 'scales':
-                setCurrentView('businesses');
+                if (selectedBusiness?.name === 'Zimparks Vacation Package') {
+                    setCurrentView('zimparks_destinations');
+                    setSelectedScale(null);
+                } else {
+                    setCurrentView('businesses');
+                    setSelectedBusiness(null);
+                }
+                break;
+            case 'zimparks_destinations':
+                setCurrentView('subcategories');
+                setSelectedSubcategory(null);
                 setSelectedBusiness(null);
+                setSelectedDestination(null);
                 break;
             case 'terms':
                 setCurrentView('scales');
@@ -220,6 +286,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     {currentView === 'categories' && (isPersonalProducts ? 'Select Product Category' : 'Select Business Category')}
                     {currentView === 'subcategories' && `${selectedCategory?.name} - Select Type`}
                     {currentView === 'businesses' && (isPersonalProducts ? `${selectedSubcategory?.name} - Select Product` : `${selectedSubcategory?.name} - Select Business`)}
+                    {currentView === 'zimparks_destinations' && 'Select Your Destination Resort'}
                     {currentView === 'scales' && `${selectedBusiness?.name} - Select ${isPersonalProducts ? 'Quantity' : 'Scale'}`}
                     {currentView === 'terms' && 'Select Credit Terms'}
                 </h2>
@@ -227,6 +294,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     {currentView === 'categories' && (isPersonalProducts ? 'Choose the type of product you want to purchase' : 'Choose the type of business you want to start')}
                     {currentView === 'subcategories' && 'Select a specific category'}
                     {currentView === 'businesses' && (isPersonalProducts ? 'Choose your product' : 'Choose your business type')}
+                    {currentView === 'zimparks_destinations' && 'Choose from our exclusive list of 30 premier destinations'}
                     {currentView === 'scales' && (isPersonalProducts ? 'Select quantity or package size' : 'Select the size of your operation')}
                     {currentView === 'terms' && `Loan Amount: $${finalAmount.toLocaleString()}`}
                 </p>
@@ -245,22 +313,22 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                             .map((category) => {
                                 const totalProducts = category.subcategories.reduce((sum, sub) => sum + sub.businesses.length, 0);
                                 return (
-                                <Card
-                                    key={category.id}
-                                    className="cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg"
-                                    onClick={() => handleCategorySelect(category)}
-                                >
-                                    <div className="text-center">
-                                        <div className="text-4xl mb-3">{category.emoji}</div>
-                                        <h3 className="text-lg font-medium mb-2">{category.name}</h3>
-                                        <p className="text-sm text-gray-500">
-                                            {totalProducts} products available
-                                        </p>
-                                        <ChevronRight className="mx-auto mt-4 h-5 w-5 text-gray-400" />
-                                    </div>
-                                </Card>
-                            );
-                        })}
+                                    <Card
+                                        key={category.id}
+                                        className="cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg"
+                                        onClick={() => handleCategorySelect(category)}
+                                    >
+                                        <div className="text-center">
+                                            <div className="text-4xl mb-3">{category.emoji}</div>
+                                            <h3 className="text-lg font-medium mb-2">{category.name}</h3>
+                                            <p className="text-sm text-gray-500">
+                                                {totalProducts} products available
+                                            </p>
+                                            <ChevronRight className="mx-auto mt-4 h-5 w-5 text-gray-400" />
+                                        </div>
+                                    </Card>
+                                );
+                            })}
                     </div>
                 )}
 
@@ -269,20 +337,20 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                         {selectedCategory.subcategories
                             .filter(subcategory => subcategory.businesses.length > 0)
                             .map((subcategory, index) => (
-                            <Card
-                                key={index}
-                                className="cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg"
-                                onClick={() => handleSubcategorySelect(subcategory)}
-                            >
-                                <div className="text-center">
-                                    <h3 className="text-lg font-medium mb-2">{subcategory.name}</h3>
-                                    <p className="text-sm text-gray-500">
-                                        {subcategory.businesses.length} {isPersonalProducts ? 'products' : 'business types'}
-                                    </p>
-                                    <ChevronRight className="mx-auto mt-4 h-5 w-5 text-gray-400" />
-                                </div>
-                            </Card>
-                        ))}
+                                <Card
+                                    key={index}
+                                    className="cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg"
+                                    onClick={() => handleSubcategorySelect(subcategory)}
+                                >
+                                    <div className="text-center">
+                                        <h3 className="text-lg font-medium mb-2">{subcategory.name}</h3>
+                                        <p className="text-sm text-gray-500">
+                                            {subcategory.businesses.length} {isPersonalProducts ? 'products' : 'business types'}
+                                        </p>
+                                        <ChevronRight className="mx-auto mt-4 h-5 w-5 text-gray-400" />
+                                    </div>
+                                </Card>
+                            ))}
                     </div>
                 )}
 
@@ -308,6 +376,31 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     </div>
                 )}
 
+                {currentView === 'zimparks_destinations' && (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {zimparksDestinations.map((destination) => (
+                            <Card
+                                key={destination.id}
+                                className="cursor-pointer p-4 transition-all hover:border-emerald-600 hover:shadow-lg flex flex-col h-full"
+                                onClick={() => handleDestinationSelect(destination)}
+                            >
+                                <div className="aspect-video w-full bg-gray-200 rounded-md mb-3 overflow-hidden relative">
+                                    <div className="absolute inset-0 flex items-center justify-center bg-emerald-100 text-emerald-800 font-bold text-xl">
+                                        {destination.name.charAt(0)}
+                                    </div>
+                                </div>
+                                <h3 className="text-lg font-medium mb-1">{destination.name}</h3>
+                                <p className="text-sm text-gray-500 line-clamp-2 mb-3 flex-grow">
+                                    {destination.description}
+                                </p>
+                                <Button variant="outline" className="w-full mt-auto text-emerald-600 border-emerald-200 hover:bg-emerald-50">
+                                    View Details
+                                </Button>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+
                 {currentView === 'scales' && selectedBusiness && (
                     <>
                         {showZBBankingNotification && (
@@ -320,24 +413,48 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                         )}
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             {selectedBusiness.scales.map((scale, index) => {
-                            const amount = selectedBusiness.basePrice * scale.multiplier;
-                            return (
-                                <Card
-                                    key={index}
-                                    className="cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg text-center"
-                                    onClick={() => handleScaleSelect(scale)}
-                                >
-                                    <h3 className="text-lg font-medium mb-2">{scale.name}</h3>
-                                    <div className="text-2xl font-bold text-emerald-600 mb-2">
-                                        ${amount.toLocaleString()}
-                                    </div>
-                                    <p className="text-sm text-gray-500">
-                                        {scale.multiplier}x base price
-                                    </p>
-                                </Card>
-                            );
-                        })}
+                                const amount = selectedBusiness.basePrice * scale.multiplier;
+                                const isSelected = selectedScale?.name === scale.name;
+                                return (
+                                    <Card
+                                        key={index}
+                                        className={`cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg text-center ${isSelected ? 'border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
+                                        onClick={() => handleScaleSelect(scale)}
+                                    >
+                                        <h3 className="text-lg font-medium mb-2">{scale.name}</h3>
+                                        <div className="text-2xl font-bold text-emerald-600 mb-2">
+                                            ${amount.toLocaleString()}
+                                        </div>
+                                        <p className="text-sm text-gray-500">
+                                            {scale.multiplier}x base price
+                                        </p>
+                                    </Card>
+                                );
+                            })}
                         </div>
+
+                        {/* Package Description Slide-in for MicroBiz and Zimparks */}
+                        {selectedScale && (isMicroBiz || selectedBusiness.name === 'Zimparks Vacation Package') && (
+                            <div className="mt-8 animate-in slide-in-from-bottom-4 fade-in duration-500">
+                                <Card className="p-6 border-emerald-200 bg-emerald-50/50 dark:bg-emerald-900/10">
+                                    <h3 className="text-lg font-semibold text-emerald-800 dark:text-emerald-400 mb-2">
+                                        Package Details
+                                    </h3>
+                                    <p className="text-gray-700 dark:text-gray-300 mb-6 text-lg">
+                                        {getPackageDescription(selectedBusiness.name, selectedScale.name)}
+                                    </p>
+                                    <div className="flex justify-end">
+                                        <Button
+                                            onClick={handleProceedToTerms}
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
+                                        >
+                                            Continue
+                                            <ChevronRight className="ml-2 h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </Card>
+                            </div>
+                        )}
                     </>
                 )}
 
@@ -455,7 +572,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                     const monthlyInterestRate = interestRate / 12;
                                                     const monthlyPayment = totalAmount > 0
                                                         ? (totalAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
-                                                          (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
+                                                        (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
                                                         : 0;
                                                     return monthlyPayment.toFixed(2);
                                                 })()}
@@ -474,7 +591,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                     const monthlyInterestRate = interestRate / 12;
                                                     const monthlyPayment = totalAmount > 0
                                                         ? (totalAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
-                                                          (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
+                                                        (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
                                                         : 0;
                                                     return (monthlyPayment * selectedTermMonths).toFixed(2);
                                                 })()}
@@ -493,7 +610,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                     const monthlyInterestRate = interestRate / 12;
                                                     const monthlyPayment = totalAmount > 0
                                                         ? (totalAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
-                                                          (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
+                                                        (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
                                                         : 0;
                                                     const totalRepayment = monthlyPayment * selectedTermMonths;
                                                     const totalInterest = totalRepayment - totalAmount;
@@ -545,7 +662,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     </div>
                 )}
             </div>
-            
+
             <div className="flex justify-between pt-4">
                 <Button
                     variant="outline"
@@ -568,6 +685,52 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     </Button>
                 )}
             </div>
+
+            <Dialog open={showDestinationModal} onOpenChange={setShowDestinationModal}>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold text-emerald-700">
+                            {selectedDestination?.name}
+                        </DialogTitle>
+                        <DialogDescription>
+                            Destination Resort Details
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {selectedDestination && (
+                        <div className="space-y-6 py-4">
+                            <div className="aspect-video w-full bg-gray-100 rounded-lg overflow-hidden relative">
+                                <div className="absolute inset-0 flex items-center justify-center bg-emerald-50 text-emerald-800 font-bold text-4xl">
+                                    {selectedDestination.name.charAt(0)}
+                                </div>
+                                {/* <img src={selectedDestination.imageUrl} alt={selectedDestination.name} className="w-full h-full object-cover" /> */}
+                            </div>
+
+                            <div>
+                                <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
+                                <p className="text-gray-600 leading-relaxed">
+                                    {selectedDestination.description}
+                                </p>
+                            </div>
+
+                            <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
+                                <p className="text-sm text-emerald-800 italic">
+                                    * Package inclusions (nights, activities, meals) vary based on the package size selected in the next step.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowDestinationModal(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleDestinationConfirm} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                            Select & Proceed
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };
