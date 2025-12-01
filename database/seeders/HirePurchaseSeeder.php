@@ -120,6 +120,30 @@ class HirePurchaseSeeder extends Seeder
                     'storage' => ['256GB', '512GB']
                 ]
             ],
+            'Itel' => [
+                'A Series' => [
+                    'products' => ['Itel A70', 'Itel A60s'],
+                    'colors' => ['Black', 'Blue', 'Green'],
+                    'storage' => ['64GB', '128GB']
+                ],
+                'P Series' => [
+                    'products' => ['Itel P55', 'Itel P55+'],
+                    'colors' => ['Gold', 'Black', 'Purple'],
+                    'storage' => ['128GB', '256GB']
+                ],
+                'S Series' => [
+                    'products' => ['Itel S23', 'Itel S23+'],
+                    'colors' => ['White', 'Black'],
+                    'storage' => ['128GB', '256GB']
+                ]
+            ],
+            'Google Pixel' => [
+                'Pixel Series' => [
+                    'products' => ['Google Pixel 8 Pro', 'Google Pixel 8', 'Google Pixel 7a'],
+                    'colors' => ['Obsidian', 'Porcelain', 'Bay', 'Hazel'],
+                    'storage' => ['128GB', '256GB', '512GB']
+                ]
+            ],
             'Huawei' => [
                 'Mate Series' => [
                     'products' => ['Huawei Mate 80 Pro Max', 'Huawei Mate 70 Air'],

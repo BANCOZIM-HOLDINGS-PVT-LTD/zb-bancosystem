@@ -362,7 +362,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                         {productCategories
                             .filter(category => category.subcategories.some(sub => sub.businesses.length > 0 || (sub.series && sub.series.length > 0)))
                             .map((category) => {
-                                const totalProducts = category.subcategories.reduce((sum, sub) => sum + sub.businesses.length, 0);
+                                const totalProducts = category.subcategories.reduce((sum, sub) => {
+                                    const businessCount = sub.businesses.length;
+                                    const seriesProductCount = sub.series ? sub.series.reduce((sSum, series) => sSum + series.products.length, 0) : 0;
+                                    return sum + businessCount + seriesProductCount;
+                                }, 0);
                                 return (
                                     <Card
                                         key={category.id}
