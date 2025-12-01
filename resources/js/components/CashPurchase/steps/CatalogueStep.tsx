@@ -85,6 +85,7 @@ export default function CatalogueStep({ purchaseType, selectedProduct, onNext, o
                 // Structure 2: subcategories > businesses > scales
                 if (category.subcategories) {
                     category.subcategories.forEach((subcategory: any) => {
+                        // Handle businesses (Direct products)
                         if (subcategory.businesses && subcategory.businesses.length > 0) {
                             subcategory.businesses.forEach((business: any) => {
                                 if (business.scales && business.scales.length > 0) {
@@ -104,6 +105,51 @@ export default function CatalogueStep({ purchaseType, selectedProduct, onNext, o
                                                 description: business.description || subcategory.description,
                                                 image: business.image || subcategory.image || category.image,
                                             });
+                                        }
+                                    });
+                                }
+                            });
+                        }
+
+                        // Handle Series (Nested products)
+                        if (subcategory.series && subcategory.series.length > 0) {
+                            subcategory.series.forEach((series: any) => {
+                                if (series.products && series.products.length > 0) {
+                                    series.products.forEach((product: any) => {
+                                        // Check for scales/variants
+                                        if (product.scales && product.scales.length > 0) {
+                                            product.scales.forEach((scale: any) => {
+                                                const loanPrice = scale.custom_price || ((product.basePrice || 0) * (scale.multiplier || 1));
+                                                const cashPrice = Math.round(loanPrice * 0.85);
+
+                                                if (loanPrice > 0) {
+                                                    allProducts.push({
+                                                        id: scale.id || Math.random(),
+                                                        name: `${product.name} - ${scale.name}`,
+                                                        cashPrice,
+                                                        loanPrice,
+                                                        category: category.name,
+                                                        description: series.description || subcategory.description,
+                                                        image: product.image_url || series.image_url || category.image,
+                                                    });
+                                                }
+                                            });
+                                        } else {
+                                            // Single product without scales
+                                            const loanPrice = product.basePrice || product.price || 0;
+                                            const cashPrice = Math.round(loanPrice * 0.85);
+
+                                            if (loanPrice > 0) {
+                                                allProducts.push({
+                                                    id: product.id || Math.random(),
+                                                    name: product.name,
+                                                    cashPrice,
+                                                    loanPrice,
+                                                    category: category.name,
+                                                    description: series.description || subcategory.description,
+                                                    image: product.image_url || series.image_url || category.image,
+                                                });
+                                            }
                                         }
                                     });
                                 }
