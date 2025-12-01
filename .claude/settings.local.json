@@ -41,7 +41,9 @@
       "Bash(flyctl secrets unset:*)",
       "Bash(flyctl scale:*)",
       "mcp__ide__getDiagnostics",
-      "Bash(nul)"
+      "Bash(nul)",
+      "Bash(flyctl postgres connect:*)",
+      "WebFetch(domain:bancosystem.fly.dev)"
     ],
     "deny": []
   }
