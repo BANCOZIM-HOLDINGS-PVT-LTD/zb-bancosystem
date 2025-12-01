@@ -7,7 +7,11 @@ cd /var/www/html
 # Ensure storage directories exist (permissions already set in Dockerfile)
 mkdir -p storage/framework/{cache,sessions,views} 2>/dev/null || true
 mkdir -p storage/logs 2>/dev/null || true
+mkdir -p storage/nginx/{client_body,proxy,fastcgi,uwsgi,scgi} 2>/dev/null || true
+mkdir -p storage/app/public 2>/dev/null || true
 mkdir -p bootstrap/cache 2>/dev/null || true
+chown -R www:www storage 2>/dev/null || true
+chmod -R 775 storage 2>/dev/null || true
 
 # Create log files if they don't exist and set proper permissions
 touch storage/logs/nginx-error.log 2>/dev/null || true

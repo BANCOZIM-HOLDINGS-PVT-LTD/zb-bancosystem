@@ -92,6 +92,8 @@ RUN touch .env
 # Create directories and set permissions
 RUN mkdir -p storage/framework/{cache,sessions,views} \
     && mkdir -p storage/logs \
+    && mkdir -p storage/nginx/{client_body,proxy,fastcgi,uwsgi,scgi} \
+    && mkdir -p storage/app/public \
     && mkdir -p bootstrap/cache \
     && chown -R www:www /var/www/html \
     && chmod -R 775 /var/www/html/storage \
@@ -112,6 +114,8 @@ RUN mkdir -p /var/log/nginx \
     && mkdir -p /var/www/html/storage/framework/cache \
     && mkdir -p /var/www/html/storage/framework/sessions \
     && mkdir -p /var/www/html/storage/framework/views \
+    && mkdir -p /var/www/html/storage/nginx/{client_body,proxy,fastcgi,uwsgi,scgi} \
+    && mkdir -p /var/www/html/storage/app/public \
     && chown -R www:www /var/www/html/storage \
     && chown -R www:www /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage \
