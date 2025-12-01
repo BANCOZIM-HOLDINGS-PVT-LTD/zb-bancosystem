@@ -5,16 +5,27 @@ export interface BusinessType {
   id?: number;
   name: string;
   basePrice: number;
+  image_url?: string;
+  colors?: string[];
   scales: {
     id?: number;
     name: string;
     multiplier: number;
+    custom_price?: number;
   }[];
   tenure?: number;
 }
 
+export interface Series {
+  id: number;
+  name: string;
+  image_url?: string;
+  products: BusinessType[];
+}
+
 export interface Subcategory {
   name: string;
+  series?: Series[];
   businesses: BusinessType[];
 }
 
@@ -43,7 +54,7 @@ class ProductService {
   async getProductCategories(intent?: string): Promise<Category[]> {
     // Check cache first
     if (this.cache && this.cacheTimestamp &&
-        (Date.now() - this.cacheTimestamp) < this.cacheExpiry) {
+      (Date.now() - this.cacheTimestamp) < this.cacheExpiry) {
       return this.cache;
     }
 
@@ -67,6 +78,9 @@ class ProductService {
   /**
    * Search products by name or category
    */
+  /**
+   * Search products by name or category
+   */
   async searchProducts(query: string, categoryId?: string): Promise<BusinessType[]> {
     try {
       const params = new URLSearchParams({ query });
@@ -75,21 +89,23 @@ class ProductService {
       }
 
       const response = await axios.get(`${this.baseUrl}/search?${params}`);
-      
+
       if (response.data.success) {
         return response.data.data.map((product: any) => ({
           id: product.id,
           name: product.name,
           basePrice: product.base_price,
+          image_url: product.image_url,
+          colors: product.colors,
           scales: product.package_sizes.map((size: any) => ({
             id: size.id,
             name: size.name,
             multiplier: size.multiplier,
+            custom_price: size.custom_price,
           })),
           tenure: 24,
         }));
       }
-      
       return [];
     } catch (error) {
       console.error('Failed to search products:', error);
@@ -103,22 +119,25 @@ class ProductService {
   async getProduct(productId: number): Promise<BusinessType | null> {
     try {
       const response = await axios.get(`${this.baseUrl}/product/${productId}`);
-      
+
       if (response.data.success) {
         const product = response.data.data;
         return {
           id: product.id,
           name: product.name,
           basePrice: product.base_price,
+          image_url: product.image_url,
+          colors: product.colors,
           scales: product.package_sizes.map((size: any) => ({
             id: size.id,
             name: size.name,
             multiplier: size.multiplier,
+            custom_price: size.custom_price,
           })),
           tenure: 24,
         };
       }
-      
+
       return null;
     } catch (error) {
       console.error('Failed to fetch product:', error);
@@ -132,21 +151,24 @@ class ProductService {
   async getProductsByCategory(categoryId: number): Promise<BusinessType[]> {
     try {
       const response = await axios.get(`${this.baseUrl}/category/${categoryId}`);
-      
+
       if (response.data.success) {
         return response.data.data.map((product: any) => ({
           id: product.id,
           name: product.name,
           basePrice: product.base_price,
+          image_url: product.image_url,
+          colors: product.colors,
           scales: product.package_sizes.map((size: any) => ({
             id: size.id,
             name: size.name,
             multiplier: size.multiplier,
+            custom_price: size.custom_price,
           })),
           tenure: 24,
         }));
       }
-      
+
       return [];
     } catch (error) {
       console.error('Failed to fetch products by category:', error);
@@ -167,7 +189,7 @@ class ProductService {
       const monthlyInterestRate = interestRate / 12;
       const monthlyPayment = amount > 0
         ? (amount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) /
-          (Math.pow(1 + monthlyInterestRate, months) - 1)
+        (Math.pow(1 + monthlyInterestRate, months) - 1)
         : 0;
 
       return {

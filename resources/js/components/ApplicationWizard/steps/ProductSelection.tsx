@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ChevronLeft, ChevronRight, ArrowLeft, DollarSign, Calendar, Loader2, Monitor, GraduationCap, Info } from 'lucide-react';
-import { productService, type BusinessType, type Subcategory, type Category } from '../../../services/productService';
+import { productService, getCreditTermOptions, type BusinessType, type Subcategory, type Category, type Series } from '../../../services/productService';
 import { zimparksDestinations, type ZimparksDestination } from '../data/zimparksDestinations';
 import { getPackageDescription } from '../data/packageDescriptions';
 import {
@@ -23,14 +23,16 @@ interface ProductSelectionProps {
     loading?: boolean;
 }
 
-type ViewMode = 'categories' | 'subcategories' | 'businesses' | 'zimparks_destinations' | 'scales' | 'terms';
+type ViewMode = 'categories' | 'subcategories' | 'series' | 'businesses' | 'product_detail' | 'zimparks_destinations' | 'scales' | 'terms';
 
 const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBack, loading }) => {
     const [currentView, setCurrentView] = useState<ViewMode>('categories');
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
     const [selectedSubcategory, setSelectedSubcategory] = useState<Subcategory | null>(null);
+    const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
     const [selectedBusiness, setSelectedBusiness] = useState<BusinessType | null>(null);
-    const [selectedScale, setSelectedScale] = useState<{ name: string; multiplier: number } | null>(null);
+    const [selectedScale, setSelectedScale] = useState<{ name: string; multiplier: number; custom_price?: number } | null>(null);
+    const [selectedColor, setSelectedColor] = useState<string | null>(null);
     const [finalAmount, setFinalAmount] = useState<number>(0);
     const [includesMESystem, setIncludesMESystem] = useState<boolean>(false);
     const [includesTraining, setIncludesTraining] = useState<boolean>(false);
@@ -89,22 +91,33 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             }
         }
 
+        // Check if subcategory has series
+        if (subcategory.series && subcategory.series.length > 0) {
+            setCurrentView('series');
+        } else {
+            setCurrentView('businesses');
+        }
+    };
+
+    const handleSeriesSelect = (series: Series) => {
+        setSelectedSeries(series);
         setCurrentView('businesses');
     };
 
     const handleBusinessSelect = (business: BusinessType) => {
         setSelectedBusiness(business);
+        setSelectedColor(null); // Reset color
+        setSelectedScale(null); // Reset scale/storage
 
         if (business.name === 'Zimparks Vacation Package') {
             setCurrentView('zimparks_destinations');
             return;
         }
 
-        // Show notification for school fees products (Primary, Secondary, Polytech, University)
+        // Show notification for school fees products
         const schoolFeeProducts = ['Primary School Fees', 'Secondary School Fees', 'Polytech Fees', 'University Fees'];
         if (schoolFeeProducts.includes(business.name)) {
             setShowZBBankingNotification(true);
-            // Auto-hide notification after 8 seconds
             setTimeout(() => {
                 setShowZBBankingNotification(false);
             }, 8000);
@@ -112,19 +125,38 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             setShowZBBankingNotification(false);
         }
 
-        setCurrentView('scales');
+        if (isPersonalProducts) {
+            // For personal products, go to product detail view
+            // Select default scale if available (e.g. for phones with only one storage option)
+            if (business.scales.length === 1) {
+                handleScaleSelect(business.scales[0]);
+            }
+            setCurrentView('product_detail');
+        } else {
+            setCurrentView('scales');
+        }
     };
 
-    const handleScaleSelect = (scale: { name: string; multiplier: number }) => {
+    const handleScaleSelect = (scale: { name: string; multiplier: number; custom_price?: number }) => {
         setSelectedScale(scale);
-        const amount = (selectedBusiness?.basePrice || 0) * scale.multiplier;
+
+        let amount = 0;
+        if (scale.custom_price) {
+            amount = scale.custom_price;
+        } else {
+            amount = (selectedBusiness?.basePrice || 0) * scale.multiplier;
+        }
+
         setFinalAmount(amount);
         setSelectedTermMonths(null); // Reset term selection
         setValidationError(''); // Clear validation error
 
         // For Zimparks and MicroBiz, stay on scales view to show description
         const isZimparks = selectedBusiness?.name === 'Zimparks Vacation Package';
-        if (isMicroBiz || isZimparks) {
+
+        if (isPersonalProducts) {
+            // Stay on product detail view
+        } else if (isMicroBiz || isZimparks) {
             // Stay on current view
         } else {
             setCurrentView('terms');
@@ -214,9 +246,24 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 setCurrentView('categories');
                 setSelectedCategory(null);
                 break;
-            case 'businesses':
+            case 'series':
                 setCurrentView('subcategories');
                 setSelectedSubcategory(null);
+                break;
+            case 'businesses':
+                if (selectedSeries) {
+                    setCurrentView('series');
+                    setSelectedSeries(null);
+                } else {
+                    setCurrentView('subcategories');
+                    setSelectedSubcategory(null);
+                }
+                break;
+            case 'product_detail':
+                setCurrentView('businesses');
+                setSelectedBusiness(null);
+                setSelectedScale(null);
+                setSelectedColor(null);
                 break;
             case 'scales':
                 if (selectedBusiness?.name === 'Zimparks Vacation Package') {
@@ -234,15 +281,19 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 setSelectedDestination(null);
                 break;
             case 'terms':
-                setCurrentView('scales');
-                setSelectedScale(null);
+                if (isPersonalProducts) {
+                    setCurrentView('product_detail');
+                } else {
+                    setCurrentView('scales');
+                    setSelectedScale(null);
+                }
                 break;
             default:
                 onBack();
         }
     };
 
-    const creditTerms = selectedBusiness ? productService.getCreditTermOptions(finalAmount) : [];
+    const creditTerms = selectedBusiness ? getCreditTermOptions(finalAmount) : [];
 
     // Show loading state
     if (isLoadingProducts) {
@@ -309,7 +360,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 {currentView === 'categories' && (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {productCategories
-                            .filter(category => category.subcategories.some(sub => sub.businesses.length > 0))
+                            .filter(category => category.subcategories.some(sub => sub.businesses.length > 0 || (sub.series && sub.series.length > 0)))
                             .map((category) => {
                                 const totalProducts = category.subcategories.reduce((sum, sub) => sum + sub.businesses.length, 0);
                                 return (
@@ -335,7 +386,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 {currentView === 'subcategories' && selectedCategory && (
                     <div className="grid gap-4 sm:grid-cols-2">
                         {selectedCategory.subcategories
-                            .filter(subcategory => subcategory.businesses.length > 0)
+                            .filter(subcategory => subcategory.businesses.length > 0 || (subcategory.series && subcategory.series.length > 0))
                             .map((subcategory, index) => (
                                 <Card
                                     key={index}
@@ -345,7 +396,10 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                     <div className="text-center">
                                         <h3 className="text-lg font-medium mb-2">{subcategory.name}</h3>
                                         <p className="text-sm text-gray-500">
-                                            {subcategory.businesses.length} {isPersonalProducts ? 'products' : 'business types'}
+                                            {subcategory.series && subcategory.series.length > 0
+                                                ? `${subcategory.series.length} series available`
+                                                : `${subcategory.businesses.length} ${isPersonalProducts ? 'products' : 'business types'}`
+                                            }
                                         </p>
                                         <ChevronRight className="mx-auto mt-4 h-5 w-5 text-gray-400" />
                                     </div>
@@ -354,23 +408,79 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     </div>
                 )}
 
+                {currentView === 'series' && selectedSubcategory && selectedSubcategory.series && (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {selectedSubcategory.series.map((series) => (
+                            <Card
+                                key={series.id}
+                                className="cursor-pointer p-0 overflow-hidden transition-all hover:border-emerald-600 hover:shadow-lg group"
+                                onClick={() => handleSeriesSelect(series)}
+                            >
+                                <div className="aspect-video w-full bg-gray-100 relative overflow-hidden">
+                                    {series.image_url ? (
+                                        <img
+                                            src={`/storage/${series.image_url}`}
+                                            alt={series.name}
+                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                        />
+                                    ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
+                                            <span className="text-4xl">📦</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-4 text-center">
+                                    <h3 className="text-lg font-medium mb-1">{series.name}</h3>
+                                    <p className="text-sm text-gray-500">
+                                        {series.products.length} models available
+                                    </p>
+                                    <ChevronRight className="mx-auto mt-3 h-5 w-5 text-gray-400" />
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+
                 {currentView === 'businesses' && selectedSubcategory && (
                     <div className="grid gap-4 sm:grid-cols-2">
-                        {selectedSubcategory.businesses.map((business, index) => (
+                        {(selectedSeries ? selectedSeries.products : selectedSubcategory.businesses).map((business, index) => (
                             <Card
                                 key={index}
-                                className="cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg"
+                                className="cursor-pointer p-4 transition-all hover:border-emerald-600 hover:shadow-lg flex flex-row items-center gap-4"
                                 onClick={() => handleBusinessSelect(business)}
                             >
-                                <h3 className="text-lg font-medium mb-2">{business.name}</h3>
-                                <div className="flex items-center text-sm text-gray-500 mb-2">
-                                    <DollarSign className="h-4 w-4 mr-1" />
-                                    Base: ${business.basePrice.toLocaleString()}
+                                {business.image_url && (
+                                    <div className="w-24 h-24 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
+                                        <img
+                                            src={`/storage/${business.image_url}`}
+                                            alt={business.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                )}
+                                <div className="flex-grow">
+                                    <h3 className="text-lg font-medium mb-1">{business.name}</h3>
+                                    <div className="flex items-center text-sm text-gray-500 mb-1">
+                                        <DollarSign className="h-4 w-4 mr-1" />
+                                        From ${business.basePrice.toLocaleString()}
+                                    </div>
+                                    {business.colors && business.colors.length > 0 && (
+                                        <div className="flex gap-1 mt-2">
+                                            {business.colors.slice(0, 3).map((color, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="w-4 h-4 rounded-full border border-gray-200"
+                                                    style={{ backgroundColor: color.toLowerCase() }}
+                                                    title={color}
+                                                />
+                                            ))}
+                                            {business.colors.length > 3 && (
+                                                <span className="text-xs text-gray-400">+{business.colors.length - 3}</span>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
-                                <p className="text-sm text-gray-500">
-                                    {business.scales.length} scale options available
-                                </p>
-                                <ChevronRight className="mt-4 h-5 w-5 text-gray-400" />
+                                <ChevronRight className="h-5 w-5 text-gray-400" />
                             </Card>
                         ))}
                     </div>
@@ -398,6 +508,112 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 </Button>
                             </Card>
                         ))}
+                    </div>
+                )}
+
+                {currentView === 'product_detail' && selectedBusiness && (
+                    <div className="grid md:grid-cols-2 gap-8">
+                        {/* Product Image */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center min-h-[300px]">
+                            {selectedBusiness.image_url ? (
+                                <img
+                                    src={`/storage/${selectedBusiness.image_url}`}
+                                    alt={selectedBusiness.name}
+                                    className="max-w-full max-h-[400px] object-contain"
+                                />
+                            ) : (
+                                <div className="text-center text-gray-400">
+                                    <div className="text-6xl mb-4">📱</div>
+                                    <p>No image available</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Product Details */}
+                        <div className="space-y-6">
+                            <div>
+                                <h2 className="text-3xl font-bold text-gray-900 mb-2">{selectedBusiness.name}</h2>
+                                <div className="text-2xl font-bold text-emerald-600">
+                                    ${finalAmount > 0 ? finalAmount.toLocaleString() : selectedBusiness.basePrice.toLocaleString()}
+                                </div>
+                            </div>
+
+                            {/* Storage / Variant Selection */}
+                            {selectedBusiness.scales.length > 0 && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {selectedBusiness.name.toLowerCase().includes('phone') || selectedBusiness.name.toLowerCase().includes('iphone') || selectedBusiness.name.toLowerCase().includes('samsung') ? 'Storage' : 'Options'}
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {selectedBusiness.scales.map((scale) => (
+                                            <button
+                                                key={scale.name}
+                                                onClick={() => handleScaleSelect(scale)}
+                                                className={`
+                                                    px-4 py-3 rounded-lg border text-sm font-medium transition-all
+                                                    ${selectedScale?.name === scale.name
+                                                        ? 'border-emerald-600 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600'
+                                                        : 'border-gray-200 text-gray-700 hover:border-emerald-300'
+                                                    }
+                                                `}
+                                            >
+                                                {scale.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Color Selection */}
+                            {selectedBusiness.colors && selectedBusiness.colors.length > 0 && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Color: <span className="text-gray-500 font-normal">{selectedColor || 'Select a color'}</span>
+                                    </label>
+                                    <div className="flex flex-wrap gap-3">
+                                        {selectedBusiness.colors.map((color) => (
+                                            <button
+                                                key={color}
+                                                onClick={() => setSelectedColor(color)}
+                                                className={`
+                                                    w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all
+                                                    ${selectedColor === color
+                                                        ? 'border-emerald-600 ring-2 ring-emerald-100 scale-110'
+                                                        : 'border-transparent hover:scale-105'
+                                                    }
+                                                `}
+                                                style={{ backgroundColor: color.toLowerCase(), boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                                                title={color}
+                                            >
+                                                {selectedColor === color && (
+                                                    <Check className={`h-5 w-5 ${['white', 'yellow', 'cream'].includes(color.toLowerCase()) ? 'text-black' : 'text-white'}`} />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Action Button */}
+                            <div className="pt-6">
+                                <Button
+                                    onClick={handleProceedToTerms}
+                                    disabled={!selectedScale || (selectedBusiness.colors && selectedBusiness.colors.length > 0 && !selectedColor)}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg"
+                                >
+                                    Continue to Payment Terms
+                                    <ChevronRight className="ml-2 h-5 w-5" />
+                                </Button>
+                                <p className="text-xs text-gray-500 text-center mt-3">
+                                    {!selectedScale
+                                        ? "Please select an option to continue"
+                                        : (selectedBusiness.colors && selectedBusiness.colors.length > 0 && !selectedColor)
+                                            ? "Please select a color to continue"
+                                            : "Next: Choose your repayment plan"
+                                    }
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 )}
 

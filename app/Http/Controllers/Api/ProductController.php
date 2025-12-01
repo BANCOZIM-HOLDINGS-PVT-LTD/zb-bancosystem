@@ -194,6 +194,7 @@ class ProductController extends Controller
                 'name' => $product->name,
                 'base_price' => $product->base_price,
                 'image_url' => $product->image_url,
+                'colors' => $product->colors,
                 'category' => [
                     'id' => $product->category->id,
                     'name' => $product->category->name,
@@ -203,6 +204,10 @@ class ProductController extends Controller
                     'id' => $product->subCategory->id,
                     'name' => $product->subCategory->name,
                 ],
+                'series' => $product->series ? [
+                    'id' => $product->series->id,
+                    'name' => $product->series->name,
+                ] : null,
                 'full_category_path' => $product->full_category_path,
                 'price_range' => $product->price_range,
                 'formatted_price_range' => $product->formatted_price_range,
@@ -289,21 +294,60 @@ class ProductController extends Controller
                 'name' => $category->name,
                 'emoji' => $category->emoji,
                 'subcategories' => $category->subCategories->map(function ($subCategory) {
+                    // Fetch series for this subcategory
+                    $series = \App\Models\ProductSeries::where('product_sub_category_id', $subCategory->id)
+                        ->with(['products.packageSizes'])
+                        ->get();
+
+                    // Fetch products directly under subcategory (no series)
+                    $directProducts = $subCategory->products()
+                        ->whereNull('product_series_id')
+                        ->with('packageSizes')
+                        ->get();
+
                     return [
                         'name' => $subCategory->name,
-                        'businesses' => $subCategory->products->map(function ($product) {
+                        'series' => $series->map(function ($s) {
+                            return [
+                                'id' => $s->id,
+                                'name' => $s->name,
+                                'image_url' => $s->image_url,
+                                'products' => $s->products->map(function ($product) {
+                                    return [
+                                        'id' => $product->id,
+                                        'name' => $product->name,
+                                        'basePrice' => (float) $product->base_price,
+                                        'image_url' => $product->image_url,
+                                        'colors' => $product->colors,
+                                        'scales' => $product->packageSizes->map(function ($size) {
+                                            return [
+                                                'id' => $size->id,
+                                                'name' => $size->name,
+                                                'multiplier' => (float) $size->multiplier,
+                                                'custom_price' => isset($size->custom_price) ? (float) $size->custom_price : null,
+                                            ];
+                                        })->toArray(),
+                                        'tenure' => 24,
+                                    ];
+                                })->toArray(),
+                            ];
+                        })->toArray(),
+                        'businesses' => $directProducts->map(function ($product) {
                             return [
                                 'id' => $product->id,
                                 'name' => $product->name,
                                 'basePrice' => (float) $product->base_price,
+                                'image_url' => $product->image_url,
+                                'colors' => $product->colors,
                                 'scales' => $product->packageSizes->map(function ($size) {
                                     return [
                                         'id' => $size->id,
                                         'name' => $size->name,
                                         'multiplier' => (float) $size->multiplier,
+                                        'custom_price' => isset($size->custom_price) ? (float) $size->custom_price : null,
                                     ];
                                 })->toArray(),
-                                'tenure' => 24, // Default tenure in months
+                                'tenure' => 24,
                             ];
                         })->toArray(),
                     ];

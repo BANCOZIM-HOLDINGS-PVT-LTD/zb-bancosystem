@@ -10,6 +10,7 @@ class ProductPackageSize extends Model
     protected $fillable = [
         'product_id',
         'name',
+        'description',
         'multiplier',
         'custom_price',
     ];

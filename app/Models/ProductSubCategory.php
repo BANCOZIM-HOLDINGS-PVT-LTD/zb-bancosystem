@@ -30,6 +30,14 @@ class ProductSubCategory extends Model
     }
 
     /**
+     * Get the series in this subcategory
+     */
+    public function series(): HasMany
+    {
+        return $this->hasMany(ProductSeries::class);
+    }
+
+    /**
      * Get the total number of products in this subcategory
      */
     public function getProductCountAttribute(): int

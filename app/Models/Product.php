@@ -11,13 +11,16 @@ class Product extends Model
 {
     protected $fillable = [
         'product_sub_category_id',
+        'product_series_id',
         'name',
         'base_price',
         'image_url',
+        'colors',
     ];
 
     protected $casts = [
         'base_price' => 'decimal:2',
+        'colors' => 'array',
     ];
 
     /**
@@ -26,6 +29,14 @@ class Product extends Model
     public function subCategory(): BelongsTo
     {
         return $this->belongsTo(ProductSubCategory::class, 'product_sub_category_id');
+    }
+
+    /**
+     * Get the series this product belongs to
+     */
+    public function series(): BelongsTo
+    {
+        return $this->belongsTo(ProductSeries::class, 'product_series_id');
     }
 
     /**

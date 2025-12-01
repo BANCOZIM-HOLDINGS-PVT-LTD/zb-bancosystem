@@ -44,7 +44,22 @@ class ProductResource extends Resource
                                     });
                             })
                             ->searchable()
-                            ->required(),
+                            ->required()
+                            ->reactive(),
+
+                        Forms\Components\Select::make('product_series_id')
+                            ->label('Series / Type')
+                            ->options(function (Forms\Get $get) {
+                                $subCategoryId = $get('product_sub_category_id');
+                                if (!$subCategoryId) {
+                                    return [];
+                                }
+                                return \App\Models\ProductSeries::where('product_sub_category_id', $subCategoryId)
+                                    ->pluck('name', 'id');
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->placeholder('Select Series (Optional)'),
 
                         Forms\Components\TextInput::make('name')
                             ->required()
@@ -55,6 +70,14 @@ class ProductResource extends Resource
                             ->numeric()
                             ->required()
                             ->prefix('$'),
+
+                        Forms\Components\TagsInput::make('colors')
+                            ->label('Available Colors')
+                            ->placeholder('Add color and press Enter')
+                            ->separator(',')
+                            ->suggestions([
+                                'Black', 'White', 'Grey', 'Silver', 'Gold', 'Blue', 'Red', 'Green', 'Brown', 'Beige'
+                            ]),
 
                         Forms\Components\FileUpload::make('image_url')
                             ->label('Product Image')
@@ -79,6 +102,12 @@ class ProductResource extends Resource
                                 Forms\Components\TextInput::make('name')
                                     ->required()
                                     ->placeholder('e.g., Small, Medium, Large'),
+
+                                Forms\Components\Textarea::make('description')
+                                    ->label('Description')
+                                    ->placeholder('Package description (optional)')
+                                    ->rows(2)
+                                    ->columnSpanFull(),
 
                                 Forms\Components\TextInput::make('multiplier')
                                     ->label('Price Multiplier')
