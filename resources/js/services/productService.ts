@@ -84,6 +84,26 @@ class ProductService {
    * Search products by name or category
    */
   /**
+   * Helper to parse colors safely
+   */
+  private parseColors(colors: any): string[] {
+    if (Array.isArray(colors)) return colors;
+    if (typeof colors === 'string') {
+      // Handle comma-separated string or JSON string
+      if (colors.startsWith('[') && colors.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(colors);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          return [];
+        }
+      }
+      return colors.split(',').map(c => c.trim()).filter(c => c.length > 0);
+    }
+    return [];
+  }
+
+  /**
    * Search products by name or category
    */
   async searchProducts(query: string, categoryId?: string): Promise<BusinessType[]> {
@@ -101,7 +121,7 @@ class ProductService {
           name: product.name,
           basePrice: product.base_price,
           image_url: product.image_url,
-          colors: product.colors,
+          colors: this.parseColors(product.colors),
           scales: product.package_sizes.map((size: any) => ({
             id: size.id,
             name: size.name,
@@ -132,7 +152,7 @@ class ProductService {
           name: product.name,
           basePrice: product.base_price,
           image_url: product.image_url,
-          colors: product.colors,
+          colors: this.parseColors(product.colors),
           scales: product.package_sizes.map((size: any) => ({
             id: size.id,
             name: size.name,
@@ -163,7 +183,7 @@ class ProductService {
           name: product.name,
           basePrice: product.base_price,
           image_url: product.image_url,
-          colors: product.colors,
+          colors: this.parseColors(product.colors),
           scales: product.package_sizes.map((size: any) => ({
             id: size.id,
             name: size.name,

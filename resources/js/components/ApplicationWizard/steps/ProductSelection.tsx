@@ -330,6 +330,60 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         );
     }
 
+    const getColorHex = (colorName: string): string => {
+        const map: Record<string, string> = {
+            'phantom black': '#000000',
+            'phantom silver': '#C0C0C0',
+            'awesome black': '#111111',
+            'awesome white': '#F0F0F0',
+            'awesome blue': '#0070BB',
+            'black titanium': '#1E1E1E',
+            'white titanium': '#E3E3E3',
+            'blue titanium': '#2F3C53',
+            'midnight black': '#000000',
+            'polar white': '#F8F9FA',
+            'obsidian': '#1C1C1C',
+            'porcelain': '#FDFDFD',
+            'bay': '#87CEEB',
+            'hazel': '#8E7618',
+            'white gloss': '#FFFFFF',
+            'oak': '#DEB887',
+            'metallic': '#D4AF37',
+            'elephant grey': '#4A4A4A',
+            'savanna beige': '#F5F5DC',
+            'buffalo brown': '#8B4513',
+            'deep blue': '#00008B',
+            'sunset orange': '#FD5E53',
+            'sand': '#C2B280',
+            'genuine leather brown': '#5D4037',
+            'velvet green': '#006400',
+            'teak': '#8B5A2B',
+            'white wash': '#F0EAD6',
+            'grey velvet': '#808080',
+            'cream linen': '#FFFDD0',
+            'black leather': '#000000',
+            'natural black': '#1A1A1A',
+            'dark brown': '#654321',
+            'burgundy': '#800020',
+            'neutral': '#D3D3D3',
+            'navy': '#000080',
+            'cream': '#FFFDD0',
+            'gold': '#FFD700',
+            'silver': '#C0C0C0',
+            'grey': '#808080',
+            'black': '#000000',
+            'white': '#FFFFFF',
+            'blue': '#0000FF',
+            'red': '#FF0000',
+            'green': '#008000',
+            'pink': '#FFC0CB',
+            'purple': '#800080',
+            'brown': '#A52A2A',
+            'beige': '#F5F5DC'
+        };
+        return map[colorName.toLowerCase()] || colorName.toLowerCase();
+    };
+
     return (
         <div className="space-y-6">
             <div className="text-center">
@@ -468,13 +522,13 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                         <DollarSign className="h-4 w-4 mr-1" />
                                         From ${business.basePrice.toLocaleString()}
                                     </div>
-                                    {business.colors && business.colors.length > 0 && (
+                                    {business.colors && Array.isArray(business.colors) && business.colors.length > 0 && (
                                         <div className="flex gap-1 mt-2">
                                             {business.colors.slice(0, 3).map((color, i) => (
                                                 <div
                                                     key={i}
                                                     className="w-4 h-4 rounded-full border border-gray-200"
-                                                    style={{ backgroundColor: color.toLowerCase() }}
+                                                    style={{ backgroundColor: getColorHex(color) }}
                                                     title={color}
                                                 />
                                             ))}
@@ -569,7 +623,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                             )}
 
                             {/* Color Selection */}
-                            {selectedBusiness.colors && selectedBusiness.colors.length > 0 && (
+                            {selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Color: <span className="text-gray-500 font-normal">{selectedColor || 'Select a color'}</span>
@@ -586,11 +640,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                         : 'border-transparent hover:scale-105'
                                                     }
                                                 `}
-                                                style={{ backgroundColor: color.toLowerCase(), boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                                                style={{ backgroundColor: getColorHex(color), boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
                                                 title={color}
                                             >
                                                 {selectedColor === color && (
-                                                    <Check className={`h-5 w-5 ${['white', 'yellow', 'cream'].includes(color.toLowerCase()) ? 'text-black' : 'text-white'}`} />
+                                                    <Check className={`h-5 w-5 ${['white', 'yellow', 'cream', 'polar white', 'white titanium', 'porcelain', 'white gloss', 'savanna beige', 'white wash', 'cream linen', 'beige'].includes(color.toLowerCase()) ? 'text-black' : 'text-white'}`} />
                                                 )}
                                             </button>
                                         ))}
@@ -602,7 +656,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                             <div className="pt-6">
                                 <Button
                                     onClick={handleProceedToTerms}
-                                    disabled={!selectedScale || (selectedBusiness.colors && selectedBusiness.colors.length > 0 && !selectedColor)}
+                                    disabled={!selectedScale || (selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && !selectedColor)}
                                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg"
                                 >
                                     Continue to Payment Terms
@@ -611,7 +665,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 <p className="text-xs text-gray-500 text-center mt-3">
                                     {!selectedScale
                                         ? "Please select an option to continue"
-                                        : (selectedBusiness.colors && selectedBusiness.colors.length > 0 && !selectedColor)
+                                        : (selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && !selectedColor)
                                             ? "Please select a color to continue"
                                             : "Next: Choose your repayment plan"
                                     }
