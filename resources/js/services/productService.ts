@@ -43,8 +43,7 @@ export interface CreditTermOption {
 
 class ProductService {
   private baseUrl = '/api/products';
-  private cache: Category[] | null = null;
-  private cacheTimestamp: number | null = null;
+  private cache: Map<string, { data: Category[], timestamp: number }> = new Map();
   private cacheExpiry = 5 * 60 * 1000; // 5 minutes
 
   /**
@@ -52,10 +51,12 @@ class ProductService {
    * @param intent - Optional intent type ('hirePurchase' or 'microBiz') to filter products
    */
   async getProductCategories(intent?: string): Promise<Category[]> {
+    const cacheKey = intent || 'all';
+    const cached = this.cache.get(cacheKey);
+
     // Check cache first
-    if (this.cache && this.cacheTimestamp &&
-      (Date.now() - this.cacheTimestamp) < this.cacheExpiry) {
-      return this.cache;
+    if (cached && (Date.now() - cached.timestamp) < this.cacheExpiry) {
+      return cached.data;
     }
 
     try {
@@ -64,8 +65,12 @@ class ProductService {
         : `${this.baseUrl}/frontend-catalog`;
       const response = await axios.get<Category[]>(url);
       const categories = response.data ?? [];
-      this.cache = categories;
-      this.cacheTimestamp = Date.now();
+
+      this.cache.set(cacheKey, {
+        data: categories,
+        timestamp: Date.now()
+      });
+
       return categories;
     } catch (error) {
       console.error('Failed to fetch product categories:', error);
@@ -203,8 +208,7 @@ class ProductService {
    * Clear cache (useful for admin updates)
    */
   clearCache(): void {
-    this.cache = null;
-    this.cacheTimestamp = null;
+    this.cache.clear();
   }
 
   /**
