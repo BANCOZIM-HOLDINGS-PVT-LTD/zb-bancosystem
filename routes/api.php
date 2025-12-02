@@ -64,37 +64,30 @@ Route::prefix('documents')->group(function () {
                 return response()->json(['success' => false, 'message' => 'Invalid file'], 400);
             }
             
-            // Get file info before moving
+            // Get file info
             $originalName = $file->getClientOriginalName();
             $fileSize = $file->getSize();
             $mimeType = $file->getMimeType();
             $extension = $file->getClientOriginalExtension();
             
-            // Create storage directory if it doesn't exist
-            $uploadPath = public_path('storage/documents/' . $sessionId);
-            if (!file_exists($uploadPath)) {
-                mkdir($uploadPath, 0755, true);
-            }
-            
             // Generate unique filename
             $filename = $documentType . '_' . time() . '_' . uniqid() . '.' . $extension;
             
-            // Move file to storage
-            $destinationPath = $uploadPath . '/' . $filename;
-            if (!$file->move($uploadPath, $filename)) {
-                return response()->json(['success' => false, 'message' => 'Failed to move uploaded file'], 500);
+            // Store file using Laravel Storage (will use the configured disk)
+            // This handles directory creation and permissions automatically
+            $storagePath = 'documents/' . $sessionId;
+            $path = $file->storeAs($storagePath, $filename, 'public');
+            
+            if (!$path) {
+                return response()->json(['success' => false, 'message' => 'Failed to store uploaded file'], 500);
             }
             
-            // Verify file was moved successfully
-            if (!file_exists($destinationPath)) {
-                return response()->json(['success' => false, 'message' => 'File upload verification failed'], 500);
-            }
-            
-            $filePath = 'storage/documents/' . $sessionId . '/' . $filename;
+            // Generate public URL
+            $publicPath = \Storage::disk('public')->url($path);
             
             return response()->json([
                 'success' => true,
-                'path' => $filePath,
+                'path' => $publicPath,
                 'filename' => $filename,
                 'originalName' => $originalName,
                 'size' => $fileSize,
@@ -103,7 +96,9 @@ Route::prefix('documents')->group(function () {
             ]);
             
         } catch (\Exception $e) {
-            \Log::error('File upload error: ' . $e->getMessage());
+            \Log::error('File upload error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false, 
                 'message' => 'Upload failed: ' . $e->getMessage()
