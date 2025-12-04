@@ -44,6 +44,16 @@ class WelcomeController extends Controller
                         $subQuery->orWhereJsonContains('form_data->formResponses->nationalIdNumber', $user->national_id)
                                  ->orWhereJsonContains('form_data->formResponses->idNumber', $user->national_id)
                                  ->orWhereJsonContains('form_data->formResponses->nationalId', $user->national_id);
+                        
+                        // Also check for unformatted National ID (no dashes/spaces)
+                        $cleanId = preg_replace('/[^a-zA-Z0-9]/', '', $user->national_id);
+                        if ($cleanId && $cleanId !== $user->national_id) {
+                            $subQuery->orWhere('user_identifier', $cleanId)
+                                     ->orWhere('user_identifier', 'id_' . $cleanId)
+                                     ->orWhereJsonContains('form_data->formResponses->nationalIdNumber', $cleanId)
+                                     ->orWhereJsonContains('form_data->formResponses->idNumber', $cleanId)
+                                     ->orWhereJsonContains('form_data->formResponses->nationalId', $cleanId);
+                        }
                     }
 
                     // Check email in JSON form_data
@@ -63,9 +73,25 @@ class WelcomeController extends Controller
 
                 // Check if user has any COMPLETED applications (submitted, not just in-progress)
                 if ($hasApplications) {
-                    $hasCompletedApplications = $applicationQuery
-                        ->where('current_step', 'documents')
-                        ->where('is_completed', true)
+                    // We need to clone the query or create a new one because the previous one was already executed/modified
+                    // But since we are just appending, it's fine, EXCEPT that exists() might have side effects on some versions?
+                    // Safer to just check the status.
+                    $hasCompletedApplications = ApplicationState::where(function($query) use ($user) {
+                            // Re-apply the user identifier logic or just trust that if hasApplications is true, we can check for status
+                            // But we need to filter by THIS user's applications.
+                            // Let's just re-use the logic but simpler:
+                             $query->where('user_identifier', $user->email)
+                                   ->orWhere('user_identifier', $user->phone)
+                                   ->orWhere('user_identifier', $user->national_id);
+                             
+                             if ($user->national_id) {
+                                 $cleanId = preg_replace('/[^a-zA-Z0-9]/', '', $user->national_id);
+                                 if ($cleanId) {
+                                     $query->orWhere('user_identifier', $cleanId);
+                                 }
+                             }
+                        })
+                        ->whereIn('current_step', ['completed', 'approved', 'in_review', 'processing', 'pending_documents'])
                         ->exists();
                 }
 

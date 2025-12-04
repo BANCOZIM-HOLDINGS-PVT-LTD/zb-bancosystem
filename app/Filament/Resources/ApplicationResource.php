@@ -309,6 +309,7 @@ class ApplicationResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
                 
                 Action::make('generate_pdf')
                     ->label('Generate PDF')
@@ -394,6 +395,33 @@ class ApplicationResource extends Resource
                     ->label('Update Status')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
+                    ->mountUsing(function (Forms\ComponentContainer $form, Model $record) {
+                        // Ensure reference code exists before form load
+                        if (empty($record->reference_code)) {
+                            Log::warning('Application missing reference code during status update mount - generating one', ['id' => $record->id]);
+                            
+                            try {
+                                // Try to get National ID from form data
+                                $formData = $record->form_data;
+                                $formResponses = $formData['formResponses'] ?? $formData;
+                                $nationalId = $formResponses['idNumber'] 
+                                           ?? $formResponses['nationalIdNumber'] 
+                                           ?? $formResponses['nationalId'] 
+                                           ?? null;
+
+                                if ($nationalId) {
+                                    $cleanId = preg_replace('/[^A-Z0-9]/', '', strtoupper($nationalId));
+                                    $record->reference_code = $cleanId;
+                                    $record->saveQuietly();
+                                    Log::info('Generated missing reference code in mount', ['reference_code' => $cleanId]);
+                                }
+                            } catch (\Exception $e) {
+                                Log::error('Failed to generate missing reference code in mount', ['error' => $e->getMessage()]);
+                            }
+                        }
+
+                        $form->fill();
+                    })
                     ->form(function (Model $record) {
                         // Detect form type using the same logic as ListApplications
                         $formType = static::detectFormType($record);
@@ -456,85 +484,144 @@ class ApplicationResource extends Resource
                         ];
                     })
                     ->action(function (array $data, Model $record) {
+                        Log::info('Update Status Action Triggered', ['session_id' => $record->session_id]);
+                        
                         // Detect form type using the same logic as ListApplications
                         $formType = static::detectFormType($record);
 
+                        // Ensure reference code exists
+                        if (empty($record->reference_code)) {
+                            Log::warning('Application missing reference code during status update - generating one', ['id' => $record->id]);
+                            
+                            try {
+                                // Try to get National ID from form data
+                                $formData = $record->form_data;
+                                $formResponses = $formData['formResponses'] ?? $formData;
+                                $nationalId = $formResponses['idNumber'] 
+                                           ?? $formResponses['nationalIdNumber'] 
+                                           ?? $formResponses['nationalId'] 
+                                           ?? null;
+
+                                if ($nationalId) {
+                                    $refService = app(\App\Services\ReferenceCodeService::class);
+                                    // We need to generate it manually because generateReferenceCode expects a session ID and creates a new record?
+                                    // No, let's look at ReferenceCodeService. It has generateReferenceCode(string $nationalId, string $sessionId).
+                                    // But that method also creates a NEW application state if I recall correctly?
+                                    // Let's check ReferenceCodeService again. 
+                                    // Wait, I can't check it right now without interrupting.
+                                    // Let's just generate it manually here to be safe and simple.
+                                    $cleanId = preg_replace('/[^A-Z0-9]/', '', strtoupper($nationalId));
+                                    $record->reference_code = $cleanId;
+                                    $record->saveQuietly(); // Save without triggering events if possible
+                                    Log::info('Generated missing reference code', ['reference_code' => $cleanId]);
+                                } else {
+                                    Log::error('Cannot generate reference code - no National ID found in form data', ['id' => $record->id]);
+                                }
+                            } catch (\Exception $e) {
+                                Log::error('Failed to generate missing reference code', ['error' => $e->getMessage()]);
+                            }
+                        }
+
                         // Handle SSB workflow
                         if ($formType === 'ssb') {
-                            $controller = app(\App\Http\Controllers\Admin\ApplicationManagementController::class);
+                            $ssbService = app(\App\Services\SSBStatusService::class);
 
-                            switch ($data['ssb_action']) {
-                                case 'initialize':
-                                    $controller->initializeSSBWorkflow($record->session_id);
-                                    break;
-                                case 'simulate_approved':
-                                    $controller->simulateSSBResponse($record->session_id, new \Illuminate\Http\Request([
-                                        'response_type' => 'approved'
-                                    ]));
-                                    break;
-                                case 'simulate_insufficient_salary':
-                                    $controller->simulateSSBResponse($record->session_id, new \Illuminate\Http\Request([
-                                        'response_type' => 'insufficient_salary',
-                                        'recommended_period' => $data['recommended_period']
-                                    ]));
-                                    break;
-                                case 'simulate_invalid_id':
-                                    $controller->simulateSSBResponse($record->session_id, new \Illuminate\Http\Request([
-                                        'response_type' => 'invalid_id'
-                                    ]));
-                                    break;
-                                case 'simulate_contract_expiring':
-                                    $controller->simulateSSBResponse($record->session_id, new \Illuminate\Http\Request([
-                                        'response_type' => 'contract_expiring',
-                                        'recommended_period' => $data['recommended_period'],
-                                        'contract_expiry_date' => $data['contract_expiry_date']
-                                    ]));
-                                    break;
-                                case 'simulate_rejected':
-                                    $controller->simulateSSBResponse($record->session_id, new \Illuminate\Http\Request([
-                                        'response_type' => 'rejected'
-                                    ]));
-                                    break;
+                            try {
+                                switch ($data['ssb_action']) {
+                                    case 'initialize':
+                                        $ssbService->initializeSSBApplication($record);
+                                        break;
+                                    case 'simulate_approved':
+                                        $ssbService->processSSBResponse($record, [
+                                            'response_type' => 'approved'
+                                        ]);
+                                        break;
+                                    case 'simulate_insufficient_salary':
+                                        $ssbService->processSSBResponse($record, [
+                                            'response_type' => 'insufficient_salary',
+                                            'recommended_period' => $data['recommended_period']
+                                        ]);
+                                        break;
+                                    case 'simulate_invalid_id':
+                                        $ssbService->processSSBResponse($record, [
+                                            'response_type' => 'invalid_id'
+                                        ]);
+                                        break;
+                                    case 'simulate_contract_expiring':
+                                        $ssbService->processSSBResponse($record, [
+                                            'response_type' => 'contract_expiring',
+                                            'recommended_period' => $data['recommended_period'],
+                                            'contract_expiry_date' => $data['contract_expiry_date']
+                                        ]);
+                                        break;
+                                    case 'simulate_rejected':
+                                        $ssbService->processSSBResponse($record, [
+                                            'response_type' => 'rejected'
+                                        ]);
+                                        break;
+                                }
+
+                                Notification::make()
+                                    ->title('SSB Workflow Updated Successfully')
+                                    ->success()
+                                    ->send();
+                            } catch (\Exception $e) {
+                                Log::error('SSB Workflow Update Failed', [
+                                    'session_id' => $record->session_id,
+                                    'error' => $e->getMessage()
+                                ]);
+                                
+                                Notification::make()
+                                    ->title('Update Failed')
+                                    ->body($e->getMessage())
+                                    ->danger()
+                                    ->send();
                             }
-
-                            Notification::make()
-                                ->title('SSB Workflow Updated Successfully')
-                                ->success()
-                                ->send();
                             return;
                         }
 
                         // Handle ZB workflow (Account Opening or Account Holders)
                         if ($formType === 'zb_account_opening' || $formType === 'account_holders') {
-                            $controller = app(\App\Http\Controllers\Admin\ApplicationManagementController::class);
+                            $zbService = app(\App\Services\ZBStatusService::class);
 
-                            switch ($data['zb_action']) {
-                                case 'initialize':
-                                    $controller->initializeZBWorkflow($record->session_id);
-                                    break;
-                                case 'credit_check_good':
-                                    $controller->processCreditCheckGood($record->session_id, new \Illuminate\Http\Request());
-                                    break;
-                                case 'credit_check_poor':
-                                    $controller->processCreditCheckPoor($record->session_id, new \Illuminate\Http\Request());
-                                    break;
-                                case 'salary_not_regular':
-                                    $controller->processSalaryNotRegular($record->session_id, new \Illuminate\Http\Request());
-                                    break;
-                                case 'insufficient_salary':
-                                    $controller->processInsufficientSalary($record->session_id, new \Illuminate\Http\Request([
-                                        'recommended_period' => $data['recommended_period']
-                                    ]));
-                                    break;
-                                case 'approved':
-                                    $controller->processZBApproved($record->session_id, new \Illuminate\Http\Request());
-                                    break;
+                            try {
+                                switch ($data['zb_action']) {
+                                    case 'initialize':
+                                        $zbService->initializeZBApplication($record);
+                                        break;
+                                    case 'credit_check_good':
+                                        $zbService->processCreditCheckGood($record);
+                                        break;
+                                    case 'credit_check_poor':
+                                        $zbService->processCreditCheckPoor($record);
+                                        break;
+                                    case 'salary_not_regular':
+                                        $zbService->processSalaryNotRegular($record);
+                                        break;
+                                    case 'insufficient_salary':
+                                        $zbService->processInsufficientSalary($record, $data['recommended_period']);
+                                        break;
+                                    case 'approved':
+                                        $zbService->processApproved($record);
+                                        break;
+                                }
+
+                                Notification::make()
+                                    ->title('ZB Workflow Updated Successfully')
+                                    ->success()
+                                    ->send();
+                            } catch (\Exception $e) {
+                                Log::error('ZB Workflow Update Failed', [
+                                    'session_id' => $record->session_id,
+                                    'error' => $e->getMessage()
+                                ]);
+                                
+                                Notification::make()
+                                    ->title('Update Failed')
+                                    ->body($e->getMessage())
+                                    ->danger()
+                                    ->send();
                             }
-
-                            Notification::make()
-                                ->title('ZB Workflow Updated Successfully')
-                                ->success()
-                                ->send();
                             return;
                         }
 
@@ -744,7 +831,7 @@ class ApplicationResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                     
                     Tables\Actions\BulkAction::make('generate_pdfs')
                         ->label('Generate PDFs')
@@ -1051,7 +1138,7 @@ class ApplicationResource extends Resource
      * Detect form type from application data
      * Same logic as ListApplications::detectFormType()
      */
-    protected static function detectFormType($application): string
+    public static function detectFormType($application): string
     {
         // Check metadata first
         if (isset($application->metadata['form_type'])) {

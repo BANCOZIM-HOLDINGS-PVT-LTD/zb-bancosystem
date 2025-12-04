@@ -84,16 +84,16 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
         }
     ];
 
-    // Filter intents based on whether user has COMPLETED applications
+    // Filter intents based on whether user has ANY applications
     const intents = useMemo(() => {
-        if (hasCompletedApplications) {
-            // Returning user with completed applications - show only tracking options
+        if (hasApplications) {
+            // Returning user with applications - show only tracking options
             return allIntents.filter(intent => !intent.forNewUsers);
         } else {
-            // New user or user with incomplete applications - show application options
+            // New user - show application options
             return allIntents.filter(intent => intent.forNewUsers);
         }
-    }, [hasCompletedApplications]);
+    }, [hasApplications]);
 
     const handleLanguageSelect = (language: string) => {
         setSelectedLanguage(language);
@@ -181,7 +181,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                         />
                                         <h1 className="text-3xl font-bold mb-4">Hello there! I am Adala</h1>
                                         <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                            Consider me your digital uncle, here to assist you to get the best digital credit application experience, because we are family.
+                                            Consider me your digital uncle, here to assist you to get the best digital application experience, because we are family.
                                         </p>
                                     </div>
 

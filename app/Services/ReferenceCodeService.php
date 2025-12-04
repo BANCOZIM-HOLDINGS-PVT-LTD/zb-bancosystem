@@ -63,13 +63,22 @@ class ReferenceCodeService
         $code = preg_replace('/[^A-Z0-9]/', '', $code);
 
         // Check if this national ID is already used by another application
-        $existingApplication = ApplicationState::where('reference_code', $code)
+        // Include trashed records to prevent unique constraint violations
+        $existingApplication = ApplicationState::withTrashed()
+            ->where('reference_code', $code)
             ->where('session_id', '!=', $sessionId)
             ->first();
 
         if ($existingApplication) {
-            Log::error("National ID {$code} is already associated with another application");
-            throw new \Exception("This national ID number is already associated with an existing application. Each ID can only be used for one application.");
+            // If the existing application is soft-deleted (trashed), force delete it to free up the code
+            if ($existingApplication->trashed()) {
+                Log::warning("Force deleting soft-deleted application {$existingApplication->id} with reference code {$code} to allow new application");
+                $existingApplication->forceDelete();
+            } else {
+                // If it's an active application, throw an error
+                Log::error("National ID {$code} is already associated with another active application");
+                throw new \Exception("This national ID number is already associated with an existing application. Each ID can only be used for one application.");
+            }
         }
 
         // Store the reference code with the application state

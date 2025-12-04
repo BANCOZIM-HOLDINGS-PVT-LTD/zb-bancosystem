@@ -47,7 +47,53 @@ class ClientLoginController extends Controller
         // Log the user in directly with National ID only
         Auth::login($user);
 
-        // Redirect to home page - will show tracking options for returning users
+        // Check if the user has an existing application
+        // We need to check both formatted and unformatted ID, and also email/phone
+        $nationalId = $user->national_id;
+        $cleanId = preg_replace('/[^a-zA-Z0-9]/', '', $nationalId);
+        $email = $user->email;
+        $phone = $user->phone;
+
+        $hasApplication = \App\Models\ApplicationState::where(function ($query) use ($nationalId, $cleanId, $email, $phone) {
+            // Check Reference Code (Clean ID)
+            $query->where('reference_code', $cleanId);
+
+            // Check User Identifier (could be ID, Email, or Phone)
+            $query->orWhere('user_identifier', $nationalId)
+                  ->orWhere('user_identifier', $cleanId);
+            
+            if ($email) {
+                $query->orWhere('user_identifier', $email);
+            }
+            if ($phone) {
+                $query->orWhere('user_identifier', $phone);
+            }
+
+            // Check JSON Data for National ID (various keys)
+            $query->orWhereJsonContains('form_data->formResponses->nationalIdNumber', $nationalId)
+                  ->orWhereJsonContains('form_data->formResponses->idNumber', $nationalId)
+                  ->orWhereJsonContains('form_data->formResponses->nationalId', $nationalId)
+                  ->orWhereJsonContains('form_data->formResponses->nationalIdNumber', $cleanId)
+                  ->orWhereJsonContains('form_data->formResponses->idNumber', $cleanId)
+                  ->orWhereJsonContains('form_data->formResponses->nationalId', $cleanId);
+            
+            // Check JSON Data for Email and Phone
+            if ($email) {
+                $query->orWhereJsonContains('form_data->formResponses->emailAddress', $email)
+                      ->orWhereJsonContains('form_data->formResponses->email', $email);
+            }
+            if ($phone) {
+                $query->orWhereJsonContains('form_data->formResponses->mobile', $phone)
+                      ->orWhereJsonContains('form_data->formResponses->phone', $phone);
+            }
+        })->exists();
+
+        if ($hasApplication) {
+            // Redirect to home page (welcome page) which will show tracking/status options
+            return redirect()->intended(route('home', absolute: false));
+        }
+
+        // Redirect to home page (welcome page) for new applications
         return redirect()->intended(route('home', absolute: false));
     }
 }
