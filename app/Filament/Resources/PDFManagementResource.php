@@ -300,7 +300,7 @@ class PDFManagementResource extends Resource
                         return $controller->exportForBank($request);
                     }),
                 
-                Tables\Actions\DeleteBulkAction::make()
+                Tables\Actions\ForceDeleteBulkAction::make('forceDelete')
                     ->label('Delete Applications')
                     ->requiresConfirmation(),
             ])

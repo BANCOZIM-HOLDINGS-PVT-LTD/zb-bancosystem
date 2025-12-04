@@ -1122,8 +1122,169 @@
         </div>
     </div>
 
-    <div class="page-footer">Page 4 of 4</div>
+    <div class="page-footer">Page 4 of 5</div>
+</div>
+
+{{-- PAGE 5: INVOICE --}}
+<div class="page" style="padding: 20px;">
+    <style>
+        .invoice-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+        }
+        .invoice-logo {
+            height: 60px;
+            margin-bottom: 10px;
+        }
+        .invoice-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+        .invoice-subtitle {
+            font-size: 12px;
+            color: #666;
+        }
+        .invoice-details {
+            margin: 20px 0;
+        }
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .invoice-table th,
+        .invoice-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .invoice-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+        .invoice-row-highlight {
+            background-color: #e8f5e9;
+        }
+        .invoice-total {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+        .invoice-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 10px;
+            color: #666;
+        }
+        .invoice-date {
+            font-size: 12px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+    </style>
+
+    <div class="invoice-header">
+        @if(file_exists(public_path('assets/images/bancozim_logo.png')))
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim_logo.png'))) }}" alt="Bancozim Logo" class="invoice-logo">
+        @elseif(file_exists(public_path('assets/images/zb_logo.png')))
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/zb_logo.png'))) }}" alt="ZB Logo" class="invoice-logo">
+        @endif
+        <div class="invoice-title">LOAN APPLICATION INVOICE</div>
+        <div class="invoice-subtitle">Bancozim Microfinance - A Division of ZB Bank</div>
+    </div>
+
+    <div class="invoice-date">
+        <strong>Invoice Date:</strong> {{ date('d F Y') }}<br>
+        <strong>Reference No:</strong> BZ-{{ date('YmdHis') }}
+    </div>
+
+    <div class="invoice-details">
+        <table class="invoice-table">
+            <tr>
+                <th colspan="2" style="background-color: #2e7d32; color: white;">Applicant Details</th>
+            </tr>
+            <tr>
+                <td><strong>Full Name:</strong></td>
+                <td>{{ $get('firstName') }} {{ $get('surname') }}</td>
+            </tr>
+            <tr>
+                <td><strong>National ID:</strong></td>
+                <td>{{ $get('nationalIdNumber') }}</td>
+            </tr>
+            <tr>
+                <td><strong>Employer:</strong></td>
+                <td>{{ $get('employerName') }}</td>
+            </tr>
+        </table>
+
+        <table class="invoice-table">
+            <tr>
+                <th colspan="2" style="background-color: #2e7d32; color: white;">Loan Details</th>
+            </tr>
+            <tr>
+                <td><strong>Product/Category:</strong></td>
+                <td>{{ $formResponses['category'] ?? 'N/A' }}</td>
+            </tr>
+            <tr>
+                <td><strong>Description:</strong></td>
+                <td>{{ $formResponses['business'] ?? $formResponses['productName'] ?? 'N/A' }} {{ isset($formResponses['scale']) ? '- ' . $formResponses['scale'] : '' }}</td>
+            </tr>
+            <tr>
+                <td><strong>Net Loan (Selling Price):</strong></td>
+                <td>${{ number_format(($formResponses['netLoan'] ?? $formResponses['sellingPrice'] ?? $formResponses['amount'] ?? 0) / 1.06, 2) }}</td>
+            </tr>
+            <tr>
+                <td><strong>Bank Admin Fee (6%):</strong></td>
+                <td>${{ number_format(($formResponses['bankAdminFee'] ?? (($formResponses['amount'] ?? 0) - (($formResponses['amount'] ?? 0) / 1.06))), 2) }}</td>
+            </tr>
+            <tr class="invoice-row-highlight">
+                <td><strong>Gross Loan (incl. 6% admin fee):</strong></td>
+                <td class="invoice-total">${{ number_format($formResponses['grossLoan'] ?? $formResponses['amount'] ?? 0, 2) }}</td>
+            </tr>
+        </table>
+
+        <table class="invoice-table">
+            <tr>
+                <th colspan="2" style="background-color: #1565c0; color: white;">Payment Schedule</th>
+            </tr>
+            <tr>
+                <td><strong>Loan Term:</strong></td>
+                <td>{{ $formResponses['creditTerm'] ?? 'N/A' }} months</td>
+            </tr>
+            <tr>
+                <td><strong>Monthly Payment:</strong></td>
+                <td class="invoice-total">${{ number_format($formResponses['monthlyPayment'] ?? 0, 2) }}</td>
+            </tr>
+            <tr>
+                <td><strong>First Payment Date:</strong></td>
+                <td>{{ isset($formResponses['firstPaymentDate']) ? date('F Y', strtotime($formResponses['firstPaymentDate'])) : date('F Y', strtotime('first day of next month')) }}</td>
+            </tr>
+            <tr>
+                <td><strong>Last Payment Date:</strong></td>
+                <td>{{ isset($formResponses['lastPaymentDate']) ? date('F Y', strtotime($formResponses['lastPaymentDate'])) : date('F Y', strtotime('+' . ($formResponses['creditTerm'] ?? 12) . ' months')) }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="invoice-footer">
+        <p><strong>Terms & Conditions:</strong></p>
+        <ul style="margin: 5px 0; padding-left: 20px;">
+            <li>Interest Rate: 96% per annum</li>
+            <li>A 6% bank administration fee is included in the Gross Loan amount</li>
+            <li>Payments are due on the 1st of each month</li>
+            <li>Late payments may incur additional charges</li>
+        </ul>
+        <p style="margin-top: 15px;"><em>This invoice is generated automatically by the Bancozim loan management system.</em></p>
+        <p><strong>Contact:</strong> info@bancozim.co.zw | +263 24 2785 080</p>
+    </div>
+    <div class="page-footer">Page 5 of 5</div>
 </div>
 
 </body>
 </html>
+

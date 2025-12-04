@@ -167,6 +167,31 @@ class SSBStatusService
             'Application approved by SSB',
             ['approved_at' => now()->toISOString()]
         );
+
+        // Create Delivery Tracking Record
+        $formData = $application->form_data ?? [];
+        $formResponses = $formData['formResponses'] ?? [];
+        $deliverySelection = $formData['deliverySelection'] ?? [];
+
+        // Determine depot
+        $depot = '';
+        if (!empty($deliverySelection['city'])) {
+            $depot = $deliverySelection['city'] . ' (' . ($deliverySelection['agent'] ?? 'Swift') . ')';
+        } elseif (!empty($deliverySelection['depot'])) {
+            $depot = $deliverySelection['depot'];
+        }
+
+        \App\Models\DeliveryTracking::create([
+            'application_state_id' => $application->id,
+            'status' => 'pending',
+            'recipient_name' => trim(($formResponses['firstName'] ?? '') . ' ' . ($formResponses['surname'] ?? '')),
+            'recipient_phone' => $formResponses['mobile'] ?? $formResponses['cellNumber'] ?? null,
+            'client_national_id' => $formResponses['idNumber'] ?? $formResponses['nationalIdNumber'] ?? null,
+            'product_type' => $formData['business'] ?? $formData['category'] ?? 'SSB Loan Product',
+            'courier_type' => $deliverySelection['agent'] ?? 'Swift',
+            'delivery_depot' => $depot,
+            'delivery_address' => $depot,
+        ]);
     }
 
     /**

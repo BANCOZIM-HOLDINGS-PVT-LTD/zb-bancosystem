@@ -254,6 +254,31 @@ class ZBStatusService
                 ['approved_at' => now()->toISOString()]
             );
 
+            // Create Delivery Tracking Record
+            $formData = $application->form_data ?? [];
+            $formResponses = $formData['formResponses'] ?? [];
+            $deliverySelection = $formData['deliverySelection'] ?? [];
+
+            // Determine depot
+            $depot = '';
+            if (!empty($deliverySelection['city'])) {
+                $depot = $deliverySelection['city'] . ' (' . ($deliverySelection['agent'] ?? 'Swift') . ')';
+            } elseif (!empty($deliverySelection['depot'])) {
+                $depot = $deliverySelection['depot'];
+            }
+
+            \App\Models\DeliveryTracking::create([
+                'application_state_id' => $application->id,
+                'status' => 'pending',
+                'recipient_name' => trim(($formResponses['firstName'] ?? '') . ' ' . ($formResponses['surname'] ?? '')),
+                'recipient_phone' => $formResponses['mobile'] ?? $formResponses['cellNumber'] ?? null,
+                'client_national_id' => $formResponses['nationalIdNumber'] ?? $formResponses['idNumber'] ?? null,
+                'product_type' => $formData['business'] ?? $formData['category'] ?? 'N/A',
+                'courier_type' => $deliverySelection['agent'] ?? 'Swift',
+                'delivery_depot' => $depot,
+                'delivery_address' => $depot, // Use depot as address for now
+            ]);
+
             $this->sendStatusNotification($application);
             return true;
 

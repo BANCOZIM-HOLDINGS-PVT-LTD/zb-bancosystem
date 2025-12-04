@@ -204,15 +204,27 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
         const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
         const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
-        const totalAmount = finalAmount + meSystemFee + trainingFee;
 
-        // Calculate monthly payment using amortization formula
-        const interestRate = 0.10;
+        // Net Loan = selling price + optional fees (what user sees)
+        const netLoan = finalAmount + meSystemFee + trainingFee;
+
+        // Gross Loan = Net Loan + 6% bank admin fee (used for backend calculation)
+        const ADMIN_FEE_PERCENTAGE = 0.06;
+        const bankAdminFee = netLoan * ADMIN_FEE_PERCENTAGE;
+        const grossLoan = netLoan + bankAdminFee;
+
+        // Calculate monthly payment using amortization formula (based on Gross Loan)
+        const interestRate = 0.96; // 96% annual interest rate
         const monthlyInterestRate = interestRate / 12;
-        const monthlyPayment = totalAmount > 0
-            ? (totalAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
+        const monthlyPayment = grossLoan > 0
+            ? (grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
             (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
             : 0;
+
+        // Calculate first and last payment dates
+        const today = new Date();
+        const firstPaymentDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        const lastPaymentDate = new Date(today.getFullYear(), today.getMonth() + selectedTermMonths, 1);
 
         onNext({
             // Legacy fields for backward compatibility
@@ -220,7 +232,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             subcategory: selectedSubcategory?.name,
             business: selectedBusiness?.name,
             scale: selectedScale?.name,
-            amount: totalAmount,
+            amount: grossLoan, // Total for backend calculation
             creditTerm: selectedTermMonths,
             monthlyPayment: parseFloat(monthlyPayment.toFixed(2)),
             // New fields with IDs for better tracking
@@ -232,7 +244,16 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             destinationName: selectedDestination?.name,
             scaleId: (selectedScale as any)?.id,
             categoryId: selectedCategory?.id,
-            loanAmount: totalAmount,
+            // New loan amount fields
+            loanAmount: grossLoan,
+            netLoan: netLoan,
+            grossLoan: grossLoan,
+            bankAdminFee: parseFloat(bankAdminFee.toFixed(2)),
+            sellingPrice: finalAmount,
+            // Payment dates
+            firstPaymentDate: firstPaymentDate.toISOString(),
+            lastPaymentDate: lastPaymentDate.toISOString(),
+            // ME System and Training
             includesMESystem: includesMESystem,
             meSystemFee: meSystemFee,
             includesTraining: includesTraining,
@@ -401,7 +422,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     {currentView === 'businesses' && (isPersonalProducts ? 'Choose your product' : 'Choose your business type')}
                     {currentView === 'zimparks_destinations' && 'Choose from our exclusive list of 30 premier destinations'}
                     {currentView === 'scales' && (isPersonalProducts ? 'Select quantity or package size' : 'Select the size of your operation')}
-                    {currentView === 'terms' && `Loan Amount: $${finalAmount.toLocaleString()}`}
+                    {currentView === 'terms' && `Net Loan (selling price): $${finalAmount.toLocaleString()}`}
                 </p>
                 {currentView === 'categories' && (
                     <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
@@ -685,23 +706,37 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 </AlertDescription>
                             </Alert>
                         )}
+                        {selectedBusiness.name === 'Starlink Internet Kit' && (
+                            <Alert className="mb-4 border-amber-500 bg-amber-50 dark:bg-amber-950">
+                                <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                <AlertDescription className="text-amber-800 dark:text-amber-200">
+                                    <strong>Note:</strong> Available for areas outside Harare and Chitungwiza
+                                </AlertDescription>
+                            </Alert>
+                        )}
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             {selectedBusiness.scales.map((scale, index) => {
-                                const amount = selectedBusiness.basePrice * scale.multiplier;
+                                // Use custom_price if available, otherwise calculate from multiplier
+                                const amount = scale.custom_price || (selectedBusiness.basePrice * scale.multiplier);
                                 const isSelected = selectedScale?.name === scale.name;
+                                // Format scale name: add "Package" suffix for Lite, Standard, Full house
+                                const formatScaleName = (name: string) => {
+                                    const packageScales = ['Lite', 'Standard', 'Full house'];
+                                    if (packageScales.includes(name)) {
+                                        return `${name === 'Full house' ? 'Full House' : name} Package`;
+                                    }
+                                    return name;
+                                };
                                 return (
                                     <Card
                                         key={index}
                                         className={`cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg text-center ${isSelected ? 'border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
                                         onClick={() => handleScaleSelect(scale)}
                                     >
-                                        <h3 className="text-lg font-medium mb-2">{scale.name}</h3>
-                                        <div className="text-2xl font-bold text-emerald-600 mb-2">
-                                            ${amount.toLocaleString()}
+                                        <h3 className="text-lg font-medium mb-2">{formatScaleName(scale.name)}</h3>
+                                        <div className="text-xl font-bold text-emerald-600 mb-2">
+                                            Cost: ${amount.toLocaleString()}
                                         </div>
-                                        <p className="text-sm text-gray-500">
-                                            {scale.multiplier}x base price
-                                        </p>
                                     </Card>
                                 );
                             })}
@@ -791,15 +826,15 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
                         {/* Total Amount Display */}
                         <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Loan Amount</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Gross Loan (inclusive of bank admin fee of 6%)</p>
                             <p className="text-3xl font-bold text-emerald-600">
-                                ${(finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)).toLocaleString()}
+                                ${((finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)) * 1.06).toLocaleString()}
                             </p>
                             {(includesMESystem || includesTraining) && (
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Includes ${finalAmount.toLocaleString()} product
-                                    {includesMESystem && ` + $${(finalAmount * ME_SYSTEM_PERCENTAGE).toFixed(2)} M&E`}
-                                    {includesTraining && ` + $${(finalAmount * TRAINING_PERCENTAGE).toFixed(2)} Training`}
+                                    Net Loan: ${(finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)).toLocaleString()}
+                                    {includesMESystem && ` (incl. M&E)`}
+                                    {includesTraining && ` (incl. Training)`}
                                 </p>
                             )}
                         </div>
@@ -834,61 +869,49 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                     </h3>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {/* Monthly Payment */}
+                                        {/* Net Loan (Selling Price) */}
                                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Monthly Payment</p>
-                                            <p className="text-2xl font-bold text-emerald-600">
-                                                ${(() => {
-                                                    const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
-                                                    const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
-                                                    const totalAmount = finalAmount + meSystemFee + trainingFee;
-                                                    const interestRate = 0.10;
-                                                    const monthlyInterestRate = interestRate / 12;
-                                                    const monthlyPayment = totalAmount > 0
-                                                        ? (totalAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
-                                                        (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
-                                                        : 0;
-                                                    return monthlyPayment.toFixed(2);
-                                                })()}
-                                            </p>
-                                        </div>
-
-                                        {/* Total Repayment */}
-                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Repayment</p>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Net Loan (selling price)</p>
                                             <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                                                 ${(() => {
                                                     const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
                                                     const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
-                                                    const totalAmount = finalAmount + meSystemFee + trainingFee;
-                                                    const interestRate = 0.10;
-                                                    const monthlyInterestRate = interestRate / 12;
-                                                    const monthlyPayment = totalAmount > 0
-                                                        ? (totalAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
-                                                        (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
-                                                        : 0;
-                                                    return (monthlyPayment * selectedTermMonths).toFixed(2);
+                                                    const netLoan = finalAmount + meSystemFee + trainingFee;
+                                                    return netLoan.toFixed(2);
                                                 })()}
                                             </p>
                                         </div>
 
-                                        {/* Total Interest */}
+                                        {/* Gross Loan */}
                                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Interest</p>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Gross Loan (incl. 6% admin fee)</p>
+                                            <p className="text-2xl font-bold text-emerald-600">
+                                                ${(() => {
+                                                    const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
+                                                    const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
+                                                    const netLoan = finalAmount + meSystemFee + trainingFee;
+                                                    const grossLoan = netLoan * 1.06;
+                                                    return grossLoan.toFixed(2);
+                                                })()}
+                                            </p>
+                                        </div>
+
+                                        {/* Monthly Payment */}
+                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Monthly Payment</p>
                                             <p className="text-2xl font-bold text-blue-600">
                                                 ${(() => {
                                                     const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
                                                     const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
-                                                    const totalAmount = finalAmount + meSystemFee + trainingFee;
-                                                    const interestRate = 0.10;
+                                                    const netLoan = finalAmount + meSystemFee + trainingFee;
+                                                    const grossLoan = netLoan * 1.06;
+                                                    const interestRate = 0.96; // 96% annual
                                                     const monthlyInterestRate = interestRate / 12;
-                                                    const monthlyPayment = totalAmount > 0
-                                                        ? (totalAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
+                                                    const monthlyPayment = grossLoan > 0
+                                                        ? (grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
                                                         (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
                                                         : 0;
-                                                    const totalRepayment = monthlyPayment * selectedTermMonths;
-                                                    const totalInterest = totalRepayment - totalAmount;
-                                                    return totalInterest.toFixed(2);
+                                                    return monthlyPayment.toFixed(2);
                                                 })()}
                                             </p>
                                         </div>
@@ -899,7 +922,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                                                 {(() => {
                                                     const today = new Date();
-                                                    // Get the first day of next month
                                                     const firstPaymentDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
                                                     return firstPaymentDate.toLocaleDateString('en-US', {
                                                         month: 'short',

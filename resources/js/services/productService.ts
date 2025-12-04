@@ -207,7 +207,7 @@ class ProductService {
   getCreditTermOptions(amount: number): CreditTermOption[] {
     // Generate terms from 3 to 18 months
     const terms = Array.from({ length: 16 }, (_, i) => i + 3); // [3, 4, 5, ..., 18]
-    const interestRate = 0.10; // 10% annual interest rate
+    const interestRate = 0.96; // 96% annual interest rate
 
     return terms.map(months => {
       // Calculate monthly payment using amortization formula

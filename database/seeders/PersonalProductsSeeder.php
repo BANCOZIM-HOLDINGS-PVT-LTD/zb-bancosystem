@@ -168,6 +168,37 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $vacationId, 'name' => 'Full house', 'multiplier' => 3.32, 'custom_price' => 930.00, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
+        // 19. Starlink Internet Kit
+        $starlinkCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Starlink Internet',
+            'emoji' => '📡',
+            'type' => 'hire_purchase',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $starlinkSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $starlinkCategory,
+            'name' => 'Starlink Kit',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $starlinkId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $starlinkSubcategory,
+            'name' => 'Starlink Internet Kit',
+            'base_price' => 500.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $starlinkId, 'name' => 'Residential', 'multiplier' => 1.00, 'custom_price' => 500.00, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $starlinkId, 'name' => 'Roam (Mobile Regional)', 'multiplier' => 1.00, 'custom_price' => 500.00, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $starlinkId, 'name' => 'Mobile Priority', 'multiplier' => 5.69, 'custom_price' => 2846.00, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
         $this->command->info('Personal Products (Services) seeded successfully!');
     }
 }

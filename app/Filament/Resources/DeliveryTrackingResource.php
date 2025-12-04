@@ -537,7 +537,8 @@ class DeliveryTrackingResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make('forceDelete')
+                        ->label('Delete'),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

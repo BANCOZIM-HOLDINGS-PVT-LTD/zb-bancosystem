@@ -28,6 +28,14 @@ interface ApplicationData {
     meSystemFee?: number;
     includesTraining?: boolean;
     trainingFee?: number;
+    // New loan amount fields
+    netLoan?: number;
+    grossLoan?: number;
+    bankAdminFee?: number;
+    sellingPrice?: number;
+    loanAmount?: number;
+    firstPaymentDate?: string;
+    lastPaymentDate?: string;
     // Zimparks booking details
     bookingDetails?: {
         startDate?: string;
@@ -322,10 +330,10 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                     <span className="text-gray-600 dark:text-gray-400">Product/Business</span>
                                     <span className="font-medium">
                                         ${(() => {
-                                            const total = data.totalLoanAmount || data.amount || 0;
+                                            const netLoan = data.netLoan || data.amount || 0;
                                             const meSystem = data.meSystemFee || 0;
                                             const training = data.trainingFee || 0;
-                                            const base = total - meSystem - training;
+                                            const base = netLoan - meSystem - training;
                                             return base.toLocaleString();
                                         })()}
                                     </span>
@@ -357,13 +365,33 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                     </div>
                                 )}
 
-                                {/* Total Line */}
+                                {/* Net Loan Line */}
                                 <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
                                     <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                        {data.totalLoanAmount ? 'Total Loan Amount' : 'Loan Amount'}
+                                        Net Loan (selling price)
+                                    </span>
+                                    <span className="font-bold text-lg text-gray-900 dark:text-gray-100">
+                                        ${(data.netLoan || data.amount)?.toLocaleString()}
+                                    </span>
+                                </div>
+
+                                {/* Bank Admin Fee */}
+                                {data.bankAdminFee && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600 dark:text-gray-400">Bank Admin Fee (6%)</span>
+                                        <span className="font-medium text-blue-600">
+                                            +${data.bankAdminFee.toLocaleString()}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Gross Loan Line */}
+                                <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                        Gross Loan (incl. 6% admin fee)
                                     </span>
                                     <span className="font-bold text-xl text-emerald-600">
-                                        ${(data.totalLoanAmount || data.amount)?.toLocaleString()}
+                                        ${(data.grossLoan || data.loanAmount || data.amount)?.toLocaleString()}
                                     </span>
                                 </div>
                             </div>

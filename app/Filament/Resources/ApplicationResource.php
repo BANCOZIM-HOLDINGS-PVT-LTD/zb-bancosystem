@@ -1094,6 +1094,9 @@ class ApplicationResource extends Resource
                             }
                         })
                         ->deselectRecordsAfterCompletion(),
+
+                    Tables\Actions\ForceDeleteBulkAction::make('forceDelete')
+                        ->label('Delete'),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -1140,34 +1143,69 @@ class ApplicationResource extends Resource
      */
     public static function detectFormType($application): string
     {
-        // Check metadata first
-        if (isset($application->metadata['form_type'])) {
-            return $application->metadata['form_type'];
-        }
+        try {
+            if (!$application) {
+                return 'unknown';
+            }
 
-        // Detect from form data
-        $formData = $application->form_data;
-        $formResponses = $formData['formResponses'] ?? $formData;
+            // Check metadata first
+            if (isset($application->metadata['form_type'])) {
+                return $application->metadata['form_type'];
+            }
 
-        // SSB Form: Has responsibleMinistry field
-        if (isset($formData['responsibleMinistry']) || isset($formResponses['responsibleMinistry'])) {
-            return 'ssb';
-        }
+            // Detect from form data
+            $formData = $application->form_data;
+            
+            if (empty($formData) || !is_array($formData)) {
+                return 'unknown';
+            }
 
-        // SME Business Form: Has businessName or businessRegistration
-        elseif (isset($formData['businessName']) || isset($formData['businessRegistration']) ||
-                isset($formResponses['businessName']) || isset($formResponses['businessRegistration'])) {
-            return 'sme_business';
-        }
+            // Get relevant fields
+            $employer = $formData['employer'] ?? null;
+            $hasAccount = $formData['hasAccount'] ?? false;
+            $wantsAccount = $formData['wantsAccount'] ?? false;
+            
+            // Logic ported from ApplicationSummary.tsx
+            if ($employer === 'government-ssb') {
+                return 'ssb';
+            }
+            
+            if ($employer === 'entrepreneur') {
+                return 'sme_business';
+            }
 
-        // ZB Account Opening: Has accountType field
-        elseif (isset($formData['accountType']) || isset($formResponses['accountType'])) {
-            return 'zb_account_opening';
-        }
+            if ($hasAccount) {
+                return 'account_holders';
+            }
 
-        // Account Holders: Default
-        else {
+            if ($wantsAccount) {
+                return 'zb_account_opening';
+            }
+
+            // Fallback: Check form responses for specific fields if the above flags are missing
+            $formResponses = $formData['formResponses'] ?? $formData;
+            
+            if (isset($formResponses['responsibleMinistry'])) {
+                return 'ssb';
+            }
+
+            if (isset($formResponses['businessName']) || isset($formResponses['businessRegistration'])) {
+                return 'sme_business';
+            }
+
+            if (isset($formResponses['accountType'])) {
+                return 'zb_account_opening';
+            }
+
+            // Default to account holders (ZB loan) if nothing else matches
             return 'account_holders';
+            
+        } catch (\Exception $e) {
+            Log::error('Error detecting form type', [
+                'id' => $application->id ?? 'unknown',
+                'error' => $e->getMessage()
+            ]);
+            return 'unknown';
         }
     }
 }

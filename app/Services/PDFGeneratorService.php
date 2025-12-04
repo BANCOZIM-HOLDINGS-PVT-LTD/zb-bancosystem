@@ -587,6 +587,36 @@ class PDFGeneratorService implements PDFGeneratorInterface
         // Add document summary for easy access in templates
         $pdfData['documentSummary'] = $this->generateDocumentSummary($pdfData);
         
+        // Map documents to specific variables expected by templates
+        // This ensures backward compatibility with templates expecting $idImageData, $payslipImageData, etc.
+        
+        // 1. ID Document
+        $idKeys = ['national_id', 'nationalId', 'id', 'id_document', 'identity_document'];
+        foreach ($idKeys as $key) {
+            if (isset($pdfData['documentsByType'][$key][0]['embeddedData'])) {
+                $pdfData['idImageData'] = $pdfData['documentsByType'][$key][0]['embeddedData'];
+                break;
+            }
+        }
+        
+        // 2. Payslip
+        $payslipKeys = ['payslip', 'pay_slip', 'current_payslip', 'salary_slip'];
+        foreach ($payslipKeys as $key) {
+            if (isset($pdfData['documentsByType'][$key][0]['embeddedData'])) {
+                $pdfData['payslipImageData'] = $pdfData['documentsByType'][$key][0]['embeddedData'];
+                break;
+            }
+        }
+        
+        // 3. Proof of Residence
+        $porKeys = ['proof_of_residence', 'proofOfResidence', 'residence_proof', 'address_proof'];
+        foreach ($porKeys as $key) {
+            if (isset($pdfData['documentsByType'][$key][0]['embeddedData'])) {
+                $pdfData['proofOfResidenceImageData'] = $pdfData['documentsByType'][$key][0]['embeddedData'];
+                break;
+            }
+        }
+        
         return $pdfData;
     }
     

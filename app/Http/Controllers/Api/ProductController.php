@@ -51,9 +51,35 @@ class ProductController extends Controller
                 foreach ($products as $product) {
                     $packageSizes = DB::table('product_package_sizes')->where('product_id', $product->id)->get();
 
+                    // Build proper image URL
+                    $imageUrl = null;
+                    if ($product->image_url) {
+                        // If it's already a full URL, use it as is
+                        if (str_starts_with($product->image_url, 'http')) {
+                            $imageUrl = $product->image_url;
+                        } else {
+                            // Images are stored in public/uploads/products/ directory
+                            // The image_url contains just the filename or 'products/filename'
+                            $path = $product->image_url;
+                            // If path doesn't include 'products/', prepend it
+                            if (!str_starts_with($path, 'products/')) {
+                                $path = 'products/' . $path;
+                            }
+                            $imageUrl = url('uploads/' . $path);
+                        }
+                    }
+
+                    // Parse colors if stored as JSON string
+                    $colors = null;
+                    if ($product->colors) {
+                        $colors = is_string($product->colors) ? json_decode($product->colors, true) : $product->colors;
+                    }
+
                     $productData = [
                         'name' => $product->name,
                         'basePrice' => (float) $product->base_price,
+                        'imageUrl' => $imageUrl,
+                        'colors' => $colors,
                         'scales' => [],
                     ];
 
