@@ -41,7 +41,11 @@ return [
         'api_key_sid' => env('TWILIO_API_KEY_SID'),
         'api_key_secret' => env('TWILIO_API_KEY_SECRET'),
         'from' => env('TWILIO_FROM'),
-        'whatsapp_from' => env('TWILIO_WHATSAPP_FROM'),
+    ],
+
+    'rapiwha' => [
+        'api_key' => env('RAPIWHA_API_KEY'),
+        'api_url' => env('RAPIWHA_API_URL', 'https://panel.rapiwha.com'),
     ],
 
     'didit' => [

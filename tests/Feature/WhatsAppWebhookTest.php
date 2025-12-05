@@ -6,7 +6,7 @@ use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\ApplicationState;
 use App\Services\ReferenceCodeService;
-use App\Services\TwilioWhatsAppService;
+use App\Services\RapiWhaService;
 use App\Http\Controllers\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Config;
 use Mockery;
@@ -19,10 +19,9 @@ class WhatsAppWebhookTest extends TestCase
     {
         parent::setUp();
         
-        // Mock Twilio configuration
-        Config::set('services.twilio.auth_token', 'test_auth_token');
-        Config::set('services.twilio.account_sid', 'test_account_sid');
-        Config::set('services.twilio.whatsapp_number', 'whatsapp:+1234567890');
+        // Mock RapiWha configuration
+        Config::set('services.rapiwha.api_key', 'test_api_key');
+        Config::set('services.rapiwha.api_url', 'https://panel.rapiwha.com');
     }
 
     public function test_reference_code_service_validates_codes_correctly()
@@ -86,15 +85,12 @@ class WhatsAppWebhookTest extends TestCase
             'expires_at' => now()->addHours(24),
         ]);
 
-        // Mock the Twilio service
-        $twilioMock = Mockery::mock(TwilioWhatsAppService::class);
-        $twilioMock->shouldReceive('extractPhoneNumber')
-                   ->with('whatsapp:+1234567890')
-                   ->andReturn('1234567890');
-        $twilioMock->shouldReceive('sendMessage')
+        // Mock the RapiWha service
+        $rapiWhaMock = Mockery::mock(RapiWhaService::class);
+        $rapiWhaMock->shouldReceive('sendMessage')
                    ->once();
 
-        $this->app->instance(TwilioWhatsAppService::class, $twilioMock);
+        $this->app->instance(RapiWhaService::class, $rapiWhaMock);
 
         $controller = app(WhatsAppWebhookController::class);
         
@@ -123,19 +119,16 @@ class WhatsAppWebhookTest extends TestCase
             'expires_at' => now()->addHours(24),
         ]);
 
-        // Mock the Twilio service
-        $twilioMock = Mockery::mock(TwilioWhatsAppService::class);
-        $twilioMock->shouldReceive('extractPhoneNumber')
-                   ->with('whatsapp:+1234567890')
-                   ->andReturn('1234567890');
-        $twilioMock->shouldReceive('sendMessage')
+        // Mock the RapiWha service
+        $rapiWhaMock = Mockery::mock(RapiWhaService::class);
+        $rapiWhaMock->shouldReceive('sendMessage')
                    ->once()
                    ->with('whatsapp:+1234567890', Mockery::on(function ($message) {
                        return str_contains($message, 'Application Status') && 
                               str_contains($message, 'STATUS');
                    }));
 
-        $this->app->instance(TwilioWhatsAppService::class, $twilioMock);
+        $this->app->instance(RapiWhaService::class, $rapiWhaMock);
 
         $controller = app(WhatsAppWebhookController::class);
         
@@ -147,19 +140,16 @@ class WhatsAppWebhookTest extends TestCase
 
     public function test_invalid_reference_code_handling()
     {
-        // Mock the Twilio service
-        $twilioMock = Mockery::mock(TwilioWhatsAppService::class);
-        $twilioMock->shouldReceive('extractPhoneNumber')
-                   ->with('whatsapp:+1234567890')
-                   ->andReturn('1234567890');
-        $twilioMock->shouldReceive('sendMessage')
+        // Mock the RapiWha service
+        $rapiWhaMock = Mockery::mock(RapiWhaService::class);
+        $rapiWhaMock->shouldReceive('sendMessage')
                    ->once()
                    ->with('whatsapp:+1234567890', Mockery::on(function ($message) {
                        return str_contains($message, 'Invalid Reference Code') && 
                               str_contains($message, 'INVALID');
                    }));
 
-        $this->app->instance(TwilioWhatsAppService::class, $twilioMock);
+        $this->app->instance(RapiWhaService::class, $rapiWhaMock);
 
         $controller = app(WhatsAppWebhookController::class);
         
@@ -169,6 +159,32 @@ class WhatsAppWebhookTest extends TestCase
         $this->assertTrue(true); // If we get here, the method executed successfully
     }
 
+    public function test_webhook_endpoint_accepts_rapiwha_format()
+    {
+        // Mock the RapiWha service to prevent actual API calls
+        $rapiWhaMock = Mockery::mock(RapiWhaService::class);
+        $rapiWhaMock->shouldReceive('sendMessage')->andReturn(true);
+        $this->app->instance(RapiWhaService::class, $rapiWhaMock);
 
+        // Test RapiWha webhook format
+        $response = $this->postJson('/api/whatsapp/webhook', [
+            'number' => '+1234567890',
+            'message' => 'start',
+            'type' => 'text'
+        ]);
 
+        $response->assertStatus(200);
+        $response->assertJson(['status' => 'ok']);
+    }
+
+    public function test_webhook_rejects_missing_sender()
+    {
+        $response = $this->postJson('/api/whatsapp/webhook', [
+            'message' => 'start',
+            'type' => 'text'
+        ]);
+
+        $response->assertStatus(400);
+        $response->assertJson(['status' => 'error']);
+    }
 }

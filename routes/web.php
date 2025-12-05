@@ -125,6 +125,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         */
 });
 
+// Agent Portal Routes
+Route::prefix('agent')->name('agent.')->group(function () {
+    Route::get('/login', [\App\Http\Controllers\AgentPortalController::class, 'showLogin'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\AgentPortalController::class, 'login'])->name('login.submit');
+    Route::get('/dashboard', [\App\Http\Controllers\AgentPortalController::class, 'dashboard'])->name('dashboard');
+    Route::get('/logout', [\App\Http\Controllers\AgentPortalController::class, 'logout'])->name('logout');
+});
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/test.php';
+

@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use App\Models\ApplicationState;
 use App\Services\StateManager;
 use App\Services\WhatsAppConversationService;
-use App\Services\TwilioWhatsAppService;
+use App\Services\RapiWhaService;
 use Illuminate\Console\Command;
 
 class TestWhatsAppFlow extends Command

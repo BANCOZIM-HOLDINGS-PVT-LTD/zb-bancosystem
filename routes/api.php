@@ -7,6 +7,13 @@ use App\Http\Controllers\Api\StateController;
 use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\ReferenceCodeController;
 use App\Http\Controllers\Api\IDVerificationController;
+use App\Http\Controllers\WhatsAppWebhookController;
+
+// WhatsApp Webhook routes (RapiWha)
+Route::prefix('whatsapp')->group(function () {
+    Route::post('/webhook', [WhatsAppWebhookController::class, 'handleWebhook'])->name('whatsapp.webhook');
+    Route::post('/status', [WhatsAppWebhookController::class, 'handleStatusUpdate'])->name('whatsapp.status');
+});
 
 // Product API routes
 Route::prefix('products')->group(function () {
