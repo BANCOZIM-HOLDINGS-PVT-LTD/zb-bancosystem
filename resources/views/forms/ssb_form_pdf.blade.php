@@ -1175,162 +1175,161 @@
 </div>
 
 {{-- PAGE 6: INVOICE --}}
-<div class="page" style="padding: 20px;">
+<div class="page" style="padding: 30px;">
     <style>
-        .invoice-header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
+        .invoice-container {
+            font-family: 'Times New Roman', serif;
+            font-size: 14px;
         }
-        .invoice-logo {
-            height: 60px;
+        .invoice-logo-header {
+            text-align: center;
             margin-bottom: 10px;
         }
-        .invoice-title {
-            font-size: 24px;
+        .invoice-logo-header img {
+            height: 60px;
+        }
+        .invoice-logo-text {
+            color: #e63946;
+            font-size: 32px;
             font-weight: bold;
-            color: #333;
-            margin: 10px 0;
+            font-style: italic;
+            font-family: 'Times New Roman', serif;
         }
-        .invoice-subtitle {
-            font-size: 12px;
-            color: #666;
+        .invoice-title-main {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 25px 0 35px 0;
         }
-        .invoice-details {
-            margin: 20px 0;
-        }
-        .invoice-table {
-            width: 100%;
+        .invoice-info-table {
+            width: 75%;
+            margin: 0 auto 35px auto;
             border-collapse: collapse;
-            margin: 20px 0;
         }
-        .invoice-table th,
-        .invoice-table td {
+        .invoice-info-table td {
+            padding: 8px 12px;
+            border: 1px solid #000;
+            font-size: 14px;
+        }
+        .invoice-info-table td:first-child {
+            width: 130px;
+            font-weight: bold;
+        }
+        .invoice-product-table {
+            width: 70%;
+            margin: 35px auto;
+            border-collapse: collapse;
+        }
+        .invoice-product-table th,
+        .invoice-product-table td {
             padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
+            border: 1px solid #000;
+            text-align: center;
+            font-size: 14px;
         }
-        .invoice-table th {
+        .invoice-product-table th {
+            font-weight: bold;
             background-color: #f5f5f5;
+            font-size: 13px;
+        }
+        .invoice-product-table td {
+            height: 45px;
+        }
+        .invoice-total-row td {
             font-weight: bold;
+            font-size: 15px;
         }
-        .invoice-row-highlight {
-            background-color: #e8f5e9;
+        .invoice-payment-section {
+            margin-top: 45px;
+            font-size: 14px;
         }
-        .invoice-total {
-            font-size: 18px;
+        .invoice-payment-title {
             font-weight: bold;
-            color: #2e7d32;
+            text-decoration: underline;
+            margin-bottom: 12px;
+            font-size: 15px;
         }
-        .invoice-footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            font-size: 10px;
-            color: #666;
+        .invoice-payment-details {
+            margin-left: 25px;
         }
-        .invoice-date {
-            font-size: 12px;
-            color: #333;
-            margin-bottom: 20px;
+        .invoice-payment-details p {
+            margin: 6px 0;
         }
     </style>
 
-    <div class="invoice-header">
-        @if(file_exists(public_path('assets/images/bancozim_logo.png')))
-            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim_logo.png'))) }}" alt="Bancozim Logo" class="invoice-logo">
-        @elseif(file_exists(public_path('assets/images/zb_logo.png')))
-            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/zb_logo.png'))) }}" alt="ZB Logo" class="invoice-logo">
-        @endif
-        <div class="invoice-title">LOAN APPLICATION INVOICE</div>
-        <div class="invoice-subtitle">Bancozim Microfinance - A Division of ZB Bank</div>
-    </div>
+    <div class="invoice-container">
+        {{-- Logo Header --}}
+        <div class="invoice-logo-header">
+            @if(file_exists(public_path('assets/images/bancozim.png')))
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="Bancozim Logo">
+            @else
+                <div class="invoice-logo-text">BancoZim</div>
+            @endif
+        </div>
 
-    <div class="invoice-date">
-        <strong>Invoice Date:</strong> {{ date('d F Y') }}<br>
-        <strong>Reference No:</strong> {{ $formResponses['referenceNumber'] ?? $formData['referenceNumber'] ?? 'BZ-' . date('YmdHis') }}
-    </div>
+        {{-- Invoice Title --}}
+        <div class="invoice-title-main">INVOICE</div>
 
-    <div class="invoice-details">
-        <table class="invoice-table">
+        {{-- Invoice Info Table --}}
+        <table class="invoice-info-table">
             <tr>
-                <th colspan="2" style="background-color: #2e7d32; color: white;">Applicant Details</th>
+                <td>DATE</td>
+                <td>{{ date('d/m/Y') }}</td>
             </tr>
             <tr>
-                <td><strong>Full Name:</strong></td>
-                <td>{{ $get('firstName') }} {{ $get('surname') }}</td>
+                <td>TO</td>
+                <td>QUPA MICROFINANCE</td>
             </tr>
             <tr>
-                <td><strong>National ID:</strong></td>
-                <td>{{ $get('idNumber') ?: $get('nationalIdNumber') }}</td>
+                <td>On Behalf Of</td>
+                <td>{{ $get('firstName') }} {{ $getAny(['lastName', 'surname']) }}</td>
             </tr>
             <tr>
-                <td><strong>Employer:</strong></td>
-                <td>{{ $get('employerName') }}</td>
+                <td>INVOICE NO</td>
+                <td>{{ $getAny(['idNumber', 'nationalIdNumber']) }}</td>
             </tr>
         </table>
 
-        <table class="invoice-table">
-            <tr>
-                <th colspan="2" style="background-color: #2e7d32; color: white;">Loan Details</th>
-            </tr>
-            <tr>
-                <td><strong>Product/Category:</strong></td>
-                <td>{{ $formData['category'] ?? $get('category') ?? 'N/A' }}</td>
-            </tr>
-            <tr>
-                <td><strong>Description:</strong></td>
-                <td>{{ $formData['business'] ?? $get('productName') ?? 'N/A' }} {{ $formData['scale'] ? '- ' . $formData['scale'] : '' }}</td>
-            </tr>
-            <tr>
-                <td><strong>Net Loan (Selling Price):</strong></td>
-                <td>${{ number_format(($formData['netLoan'] ?? $formData['sellingPrice'] ?? $formData['amount'] ?? 0) / 1.06, 2) }}</td>
-            </tr>
-            <tr>
-                <td><strong>Bank Admin Fee (6%):</strong></td>
-                <td>${{ number_format(($formData['bankAdminFee'] ?? (($formData['amount'] ?? 0) - (($formData['amount'] ?? 0) / 1.06))), 2) }}</td>
-            </tr>
-            <tr class="invoice-row-highlight">
-                <td><strong>Gross Loan (incl. 6% admin fee):</strong></td>
-                <td class="invoice-total">${{ number_format($formData['grossLoan'] ?? $formData['amount'] ?? 0, 2) }}</td>
-            </tr>
+        {{-- Product Table --}}
+        <table class="invoice-product-table">
+            <thead>
+                <tr>
+                    <th style="width: 50%;">PRODUCT DESCRIPTION</th>
+                    <th style="width: 25%;">PRODUCT CODE</th>
+                    <th style="width: 25%;">PRICE (USD)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ $getAny(['creditFacilityType', 'business', 'productName', 'loanPurpose', 'category']) }}</td>
+                    <td>{{ $getAny(['productCode']) }}</td>
+                    <td>${{ number_format((float)str_replace(',', '', $getAny(['loanAmount', 'amount', 'finalPrice', 'netLoan', 'sellingPrice'], '0')), 2) }}</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr class="invoice-total-row">
+                    <td colspan="2" style="text-align: right;">TOTAL DUE:</td>
+                    <td>${{ number_format((float)str_replace(',', '', $getAny(['loanAmount', 'amount', 'finalPrice', 'netLoan', 'sellingPrice'], '0')), 2) }}</td>
+                </tr>
+            </tbody>
         </table>
 
-        <table class="invoice-table">
-            <tr>
-                <th colspan="2" style="background-color: #1565c0; color: white;">Payment Schedule</th>
-            </tr>
-            <tr>
-                <td><strong>Loan Term:</strong></td>
-                <td>{{ $formData['creditTerm'] ?? 'N/A' }} months</td>
-            </tr>
-            <tr>
-                <td><strong>Monthly Payment:</strong></td>
-                <td class="invoice-total">${{ number_format($formData['monthlyPayment'] ?? 0, 2) }}</td>
-            </tr>
-            <tr>
-                <td><strong>First Payment Date:</strong></td>
-                <td>{{ isset($formData['firstPaymentDate']) ? date('F Y', strtotime($formData['firstPaymentDate'])) : date('F Y', strtotime('first day of next month')) }}</td>
-            </tr>
-            <tr>
-                <td><strong>Last Payment Date:</strong></td>
-                <td>{{ isset($formData['lastPaymentDate']) ? date('F Y', strtotime($formData['lastPaymentDate'])) : date('F Y', strtotime('+' . ($formData['creditTerm'] ?? 12) . ' months')) }}</td>
-            </tr>
-        </table>
+        {{-- Method of Payment Section --}}
+        <div class="invoice-payment-section">
+            <div class="invoice-payment-title">METHOD OF PAYMENT :</div>
+            <div class="invoice-payment-details">
+                <p>Please remit amount to the following bank account</p>
+                <p><strong>Account Name</strong> : BancoZim Holdings (Pvt) Ltd</p>
+                <p><strong>Bank & Branch</strong> : Z.B-Westend</p>
+                <p><strong>Account No</strong> : 4151092423405</p>
+            </div>
+        </div>
     </div>
 
-    <div class="invoice-footer">
-        <p><strong>Terms & Conditions:</strong></p>
-        <ul style="margin: 5px 0; padding-left: 20px;">
-            <li>Interest Rate: 96% per annum</li>
-            <li>A 6% bank administration fee is included in the Gross Loan amount</li>
-            <li>Payments are due on the 1st of each month</li>
-            <li>Late payments may incur additional charges</li>
-        </ul>
-        <p style="margin-top: 15px;"><em>This invoice is generated automatically by the Bancozim loan management system.</em></p>
-        <p><strong>Contact:</strong> info@bancozim.co.zw | +263 24 2785 080</p>
-    </div>
     <div class="page-number">Page 6 of 6</div>
 </div>
 
