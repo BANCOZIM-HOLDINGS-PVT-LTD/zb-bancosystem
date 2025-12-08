@@ -8,51 +8,60 @@ use Illuminate\Support\Facades\Log;
 use App\Services\WhatsAppConversationService;
 use App\Services\ReferenceCodeService;
 use App\Services\StateManager;
-use App\Services\RapiWhaService;
+use App\Services\TwilioWhatsAppService;
+// use App\Services\RapiWhaService; // DEPRECATED: Switched to Twilio 2025-12-06
 
 class WhatsAppWebhookController extends Controller
 {
     private $conversationService;
     private $referenceCodeService;
     private $stateManager;
-    private $rapiWhaService;
+    private TwilioWhatsAppService $whatsAppService;
 
     public function __construct(
         WhatsAppConversationService $conversationService,
         ReferenceCodeService $referenceCodeService,
         StateManager $stateManager,
-        RapiWhaService $rapiWhaService
+        TwilioWhatsAppService $whatsAppService
     ) {
         $this->conversationService = $conversationService;
         $this->referenceCodeService = $referenceCodeService;
         $this->stateManager = $stateManager;
-        $this->rapiWhaService = $rapiWhaService;
+        $this->whatsAppService = $whatsAppService;
     }
 
     /**
-     * Handle incoming WhatsApp webhooks from RapiWha
+     * Handle incoming WhatsApp webhooks from Twilio
+     * 
+     * Twilio sends webhooks with these fields:
+     * - From: whatsapp:+1234567890
+     * - Body: message text
+     * - NumMedia: number of media attachments
+     * - MediaUrl0, MediaUrl1, etc: media URLs
+     * - MessageSid: unique message ID
      */
     public function handleWebhook(Request $request)
     {
         Log::info('WhatsApp webhook received', $request->all());
 
-        // RapiWha webhook payload typically contains:
-        // - number: sender phone number
-        // - message: message content
-        // - type: message type (text, image, document, etc.)
+        // Twilio webhook payload
+        // - From: sender phone number (whatsapp:+1234567890)
+        // - Body: message content
+        // - NumMedia: number of media attachments
+        // - MediaUrl0, MediaContentType0, etc: media info
         
-        // Extract message details - support multiple payload formats
-        $from = $request->input('number') 
-             ?? $request->input('from') 
-             ?? $request->input('From');
+        // Extract message details - support Twilio format (primary) and fallback formats
+        $from = $request->input('From') 
+             ?? $request->input('from')
+             ?? $request->input('number');
         
-        $body = $request->input('message') 
-             ?? $request->input('text') 
-             ?? $request->input('body') 
-             ?? $request->input('Body', '');
+        $body = $request->input('Body') 
+             ?? $request->input('body')
+             ?? $request->input('message')
+             ?? $request->input('text', '');
         
-        $messageType = $request->input('type') 
-                    ?? $request->input('MessageType', 'text');
+        $numMedia = (int) $request->input('NumMedia', 0);
+        $messageSid = $request->input('MessageSid');
 
         if (empty($from)) {
             Log::warning('WhatsApp webhook received without sender number');
@@ -60,34 +69,51 @@ class WhatsAppWebhookController extends Controller
         }
 
         // Format the from number for consistency
-        $from = RapiWhaService::formatWhatsAppNumber($from);
+        $from = TwilioWhatsAppService::formatWhatsAppNumber($from);
+        
+        Log::info('WhatsApp processing message', [
+            'from' => $from,
+            'body' => $body,
+            'numMedia' => $numMedia
+        ]);
 
-        // Handle media messages (ID uploads)
-        if (in_array($messageType, ['image', 'document', 'media'])) {
+        // Handle media messages (ID uploads) - Twilio sends NumMedia > 0
+        if ($numMedia > 0) {
             return $this->handleMediaMessage($from, $request);
         }
 
         // Handle text messages
-        if ($messageType === 'text' || $messageType === 'chat') {
-            try {
-                // Check for specific reference code commands first
-                if ($this->handleReferenceCodeCommands($from, $body)) {
-                    return response()->json(['status' => 'ok'], 200);
-                }
-
-                // Process the message through conversation service
-                $this->conversationService->processIncomingMessage($from, $body);
-                
-                return response()->json(['status' => 'ok'], 200);
-            } catch (\Exception $e) {
-                Log::error('Error processing WhatsApp message: ' . $e->getMessage());
-                return response()->json(['status' => 'error', 'message' => 'Internal Server Error'], 500);
+        try {
+            // DEBUG: Test direct message sending first
+            if (strtolower(trim($body)) === 'test') {
+                Log::info('WhatsApp TEST: Attempting direct message send');
+                $result = $this->whatsAppService->sendMessage($from, 'Test message received! Bot is working.');
+                Log::info('WhatsApp TEST: Send result', ['success' => $result]);
+                return response()->json(['status' => 'ok', 'test' => 'sent'], 200);
             }
-        }
+            
+            // Check for specific reference code commands first
+            if ($this->handleReferenceCodeCommands($from, $body)) {
+                return response()->json(['status' => 'ok'], 200);
+            }
 
-        // Other message types - acknowledge but don't process
-        Log::info("Ignoring message type: {$messageType}");
-        return response()->json(['status' => 'ok'], 200);
+            Log::info('WhatsApp: Calling processIncomingMessage');
+            
+            // Process the message through conversation service
+            $this->conversationService->processIncomingMessage($from, $body);
+            
+            Log::info('WhatsApp: processIncomingMessage completed');
+            
+            return response()->json(['status' => 'ok'], 200);
+        } catch (\Exception $e) {
+            Log::error('Error processing WhatsApp message', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['status' => 'error', 'message' => 'Internal Server Error'], 500);
+        }
     }
     
     /**
@@ -96,14 +122,14 @@ class WhatsAppWebhookController extends Controller
     private function handleMediaMessage(string $from, Request $request)
     {
         try {
-            $phoneNumber = RapiWhaService::extractPhoneNumber($from);
+            $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
             
             // Get current state
             $state = $this->stateManager->retrieveState('whatsapp_' . $phoneNumber, 'whatsapp');
             
             if (!$state) {
                 Log::warning('Media message received but no active session', ['from' => $from]);
-                $this->rapiWhaService->sendMessage($from, "Please start a conversation first by sending 'Hi' or 'Hello'.");
+                $this->whatsAppService->sendMessage($from, "Please start a conversation first by sending 'Hi' or 'Hello'.");
                 return response()->json(['status' => 'ok'], 200);
             }
             
@@ -113,19 +139,19 @@ class WhatsAppWebhookController extends Controller
                     'from' => $from,
                     'current_step' => $state->current_step
                 ]);
-                $this->rapiWhaService->sendMessage($from, "I wasn't expecting a photo right now. Please continue with the conversation.");
+                $this->whatsAppService->sendMessage($from, "I wasn't expecting a photo right now. Please continue with the conversation.");
                 return response()->json(['status' => 'ok'], 200);
             }
             
-            // Extract media URL from various possible fields
-            $mediaUrl = $request->input('url') 
+            // Extract media URL - Twilio uses MediaUrl0, MediaUrl1, etc.
+            $mediaUrl = $request->input('MediaUrl0') 
+                     ?? $request->input('url') 
                      ?? $request->input('media_url')
-                     ?? $request->input('mediaUrl')
-                     ?? $request->input('fileUrl');
+                     ?? $request->input('mediaUrl');
             
             if (empty($mediaUrl)) {
                 Log::warning('Media message received without URL', ['request' => $request->all()]);
-                $this->rapiWhaService->sendMessage($from, "Sorry, I couldn't receive your photo. Please try sending it again.");
+                $this->whatsAppService->sendMessage($from, "Sorry, I couldn't receive your photo. Please try sending it again.");
                 return response()->json(['status' => 'error', 'message' => 'No media URL'], 400);
             }
             
@@ -150,7 +176,7 @@ class WhatsAppWebhookController extends Controller
                 $msg = "✅ Front of ID received!\n\n";
                 $msg .= "Now please send a clear photo of the *back* of your ID card.";
                 
-                $this->rapiWhaService->sendMessage($from, $msg);
+                $this->whatsAppService->sendMessage($from, $msg);
             } else {
                 // Back of ID received - complete application
                 $formData['id_back_url'] = $mediaUrl;
@@ -174,7 +200,7 @@ class WhatsAppWebhookController extends Controller
      */
     private function saveAgentApplication(string $from, $state, array $formData): void
     {
-        $phoneNumber = RapiWhaService::extractPhoneNumber($from);
+        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
         
         try {
             $application = \App\Models\AgentApplication::create([
@@ -213,7 +239,7 @@ class WhatsAppWebhookController extends Controller
             $msg .= "• WhatsApp: {$formData['whatsapp_contact']}\n\n";
             $msg .= "Thank you for joining Microbiz Zimbabwe! 🚀";
             
-           $this->rapiWhaService->sendMessage($from, $msg);
+           $this->whatsAppService->sendMessage($from, $msg);
             
             Log::info('Agent application submitted via webhook', [
                 'application_id' => $application->id,
@@ -224,7 +250,7 @@ class WhatsAppWebhookController extends Controller
             Log::error('Failed to save agent application in webhook: ' . $e->getMessage());
             
             $msg = "❌ Sorry, there was an error saving your application. Please try again later or contact support.";
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
         }
     }
 
@@ -276,7 +302,7 @@ class WhatsAppWebhookController extends Controller
      */
     public function resumeApplication(string $from, string $referenceCode): void
     {
-        $phoneNumber = RapiWhaService::extractPhoneNumber($from);
+        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
         
         try {
             // Get application state by reference code
@@ -309,7 +335,7 @@ class WhatsAppWebhookController extends Controller
                 'reference_code' => $referenceCode
             ]);
             
-            $this->rapiWhaService->sendMessage($from, 
+            $this->whatsAppService->sendMessage($from, 
                 "❌ Sorry, there was an issue resuming your application. Please try again later or contact support."
             );
         }
@@ -323,7 +349,7 @@ class WhatsAppWebhookController extends Controller
      */
     public function checkApplicationStatus(string $from, string $referenceCode): void
     {
-        $phoneNumber = RapiWhaService::extractPhoneNumber($from);
+        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
         
         try {
             // Get application status by reference code
@@ -357,7 +383,7 @@ class WhatsAppWebhookController extends Controller
                 'reference_code' => $referenceCode
             ]);
             
-            $this->rapiWhaService->sendMessage($from, 
+            $this->whatsAppService->sendMessage($from, 
                 "❌ Sorry, there was an issue checking your application status. Please try again later or contact support."
             );
         }
@@ -379,7 +405,7 @@ class WhatsAppWebhookController extends Controller
         $message .= "• Type *'start'* to begin a new application\n\n";
         $message .= "Please check your reference code and try again.";
         
-        $this->rapiWhaService->sendMessage($from, $message);
+        $this->whatsAppService->sendMessage($from, $message);
     }
 
     /**
@@ -443,7 +469,7 @@ class WhatsAppWebhookController extends Controller
         $message .= "• Type *'resume {$referenceCode}'* to continue\n";
         $message .= "• Type *'start'* for a new application";
         
-        $this->rapiWhaService->sendMessage($from, $message);
+        $this->whatsAppService->sendMessage($from, $message);
     }
 
     /**
@@ -471,7 +497,7 @@ class WhatsAppWebhookController extends Controller
         $message .= config('app.url') . "/application/status\n\n";
         $message .= "Type *'start'* to begin a new application.";
         
-        $this->rapiWhaService->sendMessage($from, $message);
+        $this->whatsAppService->sendMessage($from, $message);
     }
 
     /**

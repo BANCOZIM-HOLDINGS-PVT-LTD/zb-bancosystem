@@ -3,51 +3,72 @@
 namespace App\Services;
 
 use App\Services\StateManager;
-use App\Services\RapiWhaService;
+use App\Services\TwilioWhatsAppService;
+use App\Services\WhatsAppStateMachine;
+// use App\Services\RapiWhaService; // DEPRECATED: Switched to Twilio 2025-12-06
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 
 class WhatsAppConversationService
 {
-    private $rapiWhaService;
+    private TwilioWhatsAppService $whatsAppService;
+    private WhatsAppStateMachine $stateMachine;
     private $stateManager;
     private $syncService;
 
     public function __construct(
-        RapiWhaService $rapiWhaService, 
+        TwilioWhatsAppService $whatsAppService, 
         StateManager $stateManager,
         CrossPlatformSyncService $syncService
     ) {
-        $this->rapiWhaService = $rapiWhaService;
+        $this->whatsAppService = $whatsAppService;
         $this->stateManager = $stateManager;
         $this->syncService = $syncService;
+        // Create state machine internally to avoid DI issues
+        $this->stateMachine = new WhatsAppStateMachine($whatsAppService, $stateManager);
     }
 
     /**
-     * Process incoming WhatsApp message
+     * Process incoming WhatsApp message using State Machine
      */
     public function processIncomingMessage(string $from, string $message): void
     {
-        $phoneNumber = RapiWhaService::extractPhoneNumber($from);
+        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
         $message = trim(strtolower($message));
+        
+        // Greetings that should always restart the conversation
+        $greetings = ['hi', 'hie', 'hallo', 'hello', 'hey', 'hesi', 'start', 'begin', 'restart', 'menu'];
 
         Log::info("WhatsApp message received from {$phoneNumber}: {$message}");
 
         try {
+            // If user sends a greeting, ALWAYS start fresh conversation
+            if (in_array($message, $greetings)) {
+                Log::info("Greeting received, starting fresh conversation", ['message' => $message]);
+                $this->stateMachine->startConversation($from);
+                return;
+            }
+            
             // Try to get existing conversation state
             $state = $this->stateManager->retrieveState('whatsapp_' . $phoneNumber, 'whatsapp');
             
             if (!$state) {
-                // New conversation
-                $this->handleNewConversation($from, $message);
+                // New conversation without greeting
+                $this->sendWelcomeMessage($from);
             } else {
-                // Continue existing conversation
-                $this->handleExistingConversation($from, $message, $state);
+                // Continue existing conversation using state machine
+                Log::info("Processing existing conversation", [
+                    'currentStep' => $state->current_step,
+                    'sessionId' => $state->session_id
+                ]);
+                $this->stateMachine->process($from, $message, $state);
             }
         } catch (\Exception $e) {
-            Log::error("Error processing WhatsApp message: " . $e->getMessage());
-            $this->rapiWhaService->sendMessage($from, "Sorry, something went wrong. Please try again or say 'hi' to start.");
+            Log::error("Error processing WhatsApp message: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            $this->whatsAppService->sendMessage($from, "Sorry, something went wrong. Please try again or say 'hi' to start.");
         }
     }
 
@@ -56,13 +77,14 @@ class WhatsAppConversationService
      */
     private function handleNewConversation(string $from, string $message): void
     {
-        $phoneNumber = RapiWhaService::extractPhoneNumber($from);
+        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
 
         // Microbiz greetings - main entry point
         $microbizGreetings = ['hi', 'hie', 'hallo', 'hello', 'hey', 'hesi', 'start', 'begin'];
         
         if (in_array($message, $microbizGreetings)) {
-            $this->showMicrobizMainMenu($from);
+            // Use state machine to start conversation
+            $this->stateMachine->startConversation($from);
         }
         elseif (preg_match('/^resume\s+([a-z0-9]{6})$/i', $message, $matches)) {
             $this->resumeApplication($from, $matches[1]);
@@ -153,13 +175,13 @@ class WhatsAppConversationService
      */
     public function resumeApplication(string $from, string $resumeCode): void
     {
-        $phoneNumber = RapiWhaService::extractPhoneNumber($from);
+        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
         
         // Find session by resume code
         $linkedState = $this->stateManager->getStateByResumeCode($resumeCode);
         
         if (!$linkedState) {
-            $this->rapiWhaService->sendMessage($from, "❌ Invalid resume code. Please check and try again or type 'start' to begin a new application.");
+            $this->whatsAppService->sendMessage($from, "❌ Invalid resume code. Please check and try again or type 'start' to begin a new application.");
             return;
         }
 
@@ -173,7 +195,7 @@ class WhatsAppConversationService
             $message .= "📍 *Current Step:* " . ucfirst($syncResult['current_step']) . "\n\n";
             $message .= $this->getCurrentStepMessage($syncResult['current_step'], $linkedState->form_data);
 
-            $this->rapiWhaService->sendMessage($from, $message);
+            $this->whatsAppService->sendMessage($from, $message);
             
             Log::info('Application resumed via WhatsApp', [
                 'phone_number' => $phoneNumber,
@@ -184,7 +206,7 @@ class WhatsAppConversationService
             
         } catch (\Exception $e) {
             Log::error('Failed to resume application via WhatsApp: ' . $e->getMessage());
-            $this->rapiWhaService->sendMessage($from, "❌ Sorry, there was an issue resuming your application. Please try again or contact support.");
+            $this->whatsAppService->sendMessage($from, "❌ Sorry, there was an issue resuming your application. Please try again or contact support.");
         }
     }
 
@@ -198,7 +220,7 @@ class WhatsAppConversationService
         $message .= "Say *'hi'* or *'hello'* to get started!\n\n";
         $message .= "Or type *'resume XXXXXX'* to continue a saved application.";
 
-        $this->rapiWhaService->sendMessage($from, $message);
+        $this->whatsAppService->sendMessage($from, $message);
     }
 
     /**
@@ -207,7 +229,7 @@ class WhatsAppConversationService
     private function sendInvalidInput(string $from, string $customMessage = null): void
     {
         $message = $customMessage ?? "❌ Invalid input. Please try again.";
-        $this->rapiWhaService->sendMessage($from, $message);
+        $this->whatsAppService->sendMessage($from, $message);
     }
 
     // =====================================================
@@ -219,8 +241,10 @@ class WhatsAppConversationService
      */
     private function showMicrobizMainMenu(string $from): void
     {
-        $phoneNumber = RapiWhaService::extractPhoneNumber($from);
+        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
         $sessionId = 'whatsapp_' . $phoneNumber;
+        
+        Log::info("showMicrobizMainMenu called", ['from' => $from, 'phoneNumber' => $phoneNumber]);
         
         // Initialize Microbiz state
         $this->stateManager->saveState(
@@ -231,6 +255,8 @@ class WhatsAppConversationService
             [],
             ['phone_number' => $phoneNumber, 'started_at' => now(), 'flow_type' => 'microbiz']
         );
+        
+        Log::info("State saved for Microbiz menu", ['sessionId' => $sessionId]);
         
         // TODO: Get user's name from WhatsApp API if possible
         $userName = "there"; // Default fallback
@@ -244,7 +270,11 @@ class WhatsAppConversationService
         $message .= "5. Purchase gadgets, furniture, solar systems, laptops, cellphones, kitchenware for credit\n\n";
         $message .= "Reply with the number of your choice (1-5).";
         
-        $this->rapiWhaService->sendMessage($from, $message);
+        Log::info("Attempting to send WhatsApp message", ['to' => $from, 'messageLength' => strlen($message)]);
+        
+        $result = $this->whatsAppService->sendMessage($from, $message);
+        
+        Log::info("WhatsApp sendMessage result", ['to' => $from, 'success' => $result]);
     }
     
     /**
@@ -252,16 +282,22 @@ class WhatsAppConversationService
      */
     private function handleMicrobizMainMenu(string $from, string $message, $state): void
     {
+        Log::info("handleMicrobizMainMenu called", ['from' => $from, 'message' => $message, 'currentStep' => $state->current_step]);
+        
         if (!in_array($message, ['1', '2', '3', '4', '5'])) {
+            Log::info("handleMicrobizMainMenu: invalid input", ['message' => $message]);
             $this->sendInvalidInput($from, "Please select a number from 1-5.");
             return;
         }
         
         $formData = array_merge($state->form_data ?? [], ['main_menu_choice' => $message]);
         
+        Log::info("handleMicrobizMainMenu: processing choice", ['choice' => $message]);
+        
         switch ($message) {
             case '1':
                 // Agent application flow
+                Log::info("handleMicrobizMainMenu: calling startAgentApplication");
                 $this->startAgentApplication($from, $state);
                 break;
                 
@@ -291,7 +327,7 @@ class WhatsAppConversationService
         $message .= "🌐 *" . config('app.url', 'https://bancosystem.fly.dev') . "*\n\n";
         $message .= "Or tap the link below to get started! 👇";
         
-        $this->rapiWhaService->sendMessage($from, $message);
+        $this->whatsAppService->sendMessage($from, $message);
         
         // End session
         $this->stateManager->saveState(
@@ -331,7 +367,7 @@ class WhatsAppConversationService
         $message .= "• *YES* if you are employed\n";
         $message .= "• *NO* if you are not employed";
         
-        $this->rapiWhaService->sendMessage($from, $message);
+        $this->whatsAppService->sendMessage($from, $message);
     }
     
     /**
@@ -364,7 +400,7 @@ class WhatsAppConversationService
             $msg .= "• *YES* if formally employed (receiving salary into a bank account)\n";
             $msg .= "• *NO* if informally employed";
             
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
         } else {
             // Not employed - check category
             $this->stateManager->saveState(
@@ -383,7 +419,7 @@ class WhatsAppConversationService
             $msg .= "4. School leaver\n\n";
             $msg .= "Reply with the number (1-4).";
             
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
         }
     }
     
@@ -426,7 +462,7 @@ class WhatsAppConversationService
                 $state->metadata ?? []
             );
             
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
         }
     }
     
@@ -450,7 +486,7 @@ class WhatsAppConversationService
             $msg .= "Kindly come back to us at a later date to check if the scope of the program has expanded.\n\n";
             $msg .= "Thank you for your interest in our program. Please revisit us in 6 months time.";
             
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
             
             // Mark as completed
             $this->stateManager->saveState(
@@ -481,7 +517,7 @@ class WhatsAppConversationService
             $msg .= "6. SME\n\n";
             $msg .= "Reply with the number (1-6).";
             
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
         }
     }
     
@@ -523,7 +559,7 @@ class WhatsAppConversationService
             $msg .= "2. Deposited in a bank\n\n";
             $msg .= "Reply with 1 or 2.";
             
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
         } else {
             // Proceed to beneficiary question
             $this->askBeneficiaryQuestion($from, $state, $formData);
@@ -548,7 +584,7 @@ class WhatsAppConversationService
             $msg .= "Kindly come back to us at a later date to check if the scope of the program has expanded.\n\n";
             $msg .= "Thank you for your interest in our program. Please revisit us in 6 months time.";
             
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
             
             $this->stateManager->saveState(
                 $state->session_id,
@@ -583,7 +619,7 @@ class WhatsAppConversationService
         $msg .= "• *SELF* - for yourself\n";
         $msg .= "• *OTHER* - for spouse, child, or relative";
         
-        $this->rapiWhaService->sendMessage($from, $msg);
+        $this->whatsAppService->sendMessage($from, $msg);
     }
     
     /**
@@ -614,7 +650,7 @@ class WhatsAppConversationService
             $msg = "Do you want us to monitor the business on your behalf?\n\n";
             $msg .= "Reply with YES or NO.";
             
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
         } else {
             // Skip monitoring, go to training
             $this->askTrainingQuestion($from, $state, $formData);
@@ -654,7 +690,7 @@ class WhatsAppConversationService
         $msg = "Do you want to receive practical and business enterprise training in the chosen micro business?\n\n";
         $msg .= "Reply with YES or NO.";
         
-        $this->rapiWhaService->sendMessage($from, $msg);
+        $this->whatsAppService->sendMessage($from, $msg);
     }
     
     /**
@@ -694,7 +730,7 @@ class WhatsAppConversationService
         $msg .= "🌐 *" . config('app.url', 'https://bancosystem.fly.dev') . "/application*\n\n";
         $msg .= "Our team will guide you through the process. Good luck! 🎉";
         
-        $this->rapiWhaService->sendMessage($from, $msg);
+        $this->whatsAppService->sendMessage($from, $msg);
     }
     
     /**
@@ -721,7 +757,7 @@ class WhatsAppConversationService
             $state->metadata ?? []
         );
         
-        $this->rapiWhaService->sendMessage($from, $msg);
+        $this->whatsAppService->sendMessage($from, $msg);
     }
     
     /**
@@ -742,7 +778,7 @@ class WhatsAppConversationService
             $msg = "Thank you for your time. Feel free to reach out if you change your mind!\n\n";
             $msg .= "Have a great day! 👋";
             
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
             
             $formData = array_merge($state->form_data ?? [], ['outcome' => 'declined_agent_offer']);
             $this->stateManager->saveState(
@@ -783,7 +819,7 @@ class WhatsAppConversationService
         $msg .= "2. 17 and under\n\n";
         $msg .= "Reply with 1 or 2.";
         
-        $this->rapiWhaService->sendMessage($from, $msg);
+        $this->whatsAppService->sendMessage($from, $msg);
     }
     
     /**
@@ -804,7 +840,7 @@ class WhatsAppConversationService
             $msg .= "Unfortunately, you must be 18 years or older to become an agent.\n\n";
             $msg .= "Please come back when you turn 18. We'd love to have you on board then! 🎉";
             
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
             
             $this->stateManager->saveState(
                 $state->session_id,
@@ -840,7 +876,7 @@ class WhatsAppConversationService
             $msg .= "10. Midlands\n\n";
             $msg .= "Reply with the number (1-10).";
             
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
         }
     }
     
@@ -881,7 +917,7 @@ class WhatsAppConversationService
         $msg = "Great! Now let's get your personal details.\n\n";
         $msg .= "Please provide your *First Name*:";
         
-        $this->rapiWhaService->sendMessage($from, $msg);
+        $this->whatsAppService->sendMessage($from, $msg);
     }
     
    /**
@@ -905,7 +941,7 @@ class WhatsAppConversationService
             );
             
             $msg = "Thank you! Now please provide your *Surname*:";
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
         }
     }
     
@@ -931,7 +967,7 @@ class WhatsAppConversationService
         $msg .= "• *FEMALE*\n";
         $msg .= "• *OTHER*";
         
-        $this->rapiWhaService->sendMessage($from, $msg);
+        $this->whatsAppService->sendMessage($from, $msg);
     }
     
     /**
@@ -966,7 +1002,7 @@ class WhatsAppConversationService
         $msg .= "6. 60+\n\n";
         $msg .= "Reply with the number (1-6).";
         
-        $this->rapiWhaService->sendMessage($from, $msg);
+        $this->whatsAppService->sendMessage($from, $msg);
     }
     
     /**
@@ -1003,7 +1039,7 @@ class WhatsAppConversationService
         $msg .= "📞 Please provide your *voice number* (to receive SMS):\n\n";
         $msg .= "Example: 0771234567";
         
-        $this->rapiWhaService->sendMessage($from, $msg);
+        $this->whatsAppService->sendMessage($from, $msg);
     }
     
     /**
@@ -1032,7 +1068,7 @@ class WhatsAppConversationService
         $msg = "📱 Please provide your *WhatsApp number* (to receive links):\n\n";
         $msg .= "Example: 0771234567";
         
-        $this->rapiWhaService->sendMessage($from, $msg);
+        $this->whatsAppService->sendMessage($from, $msg);
     }
     
     /**
@@ -1061,7 +1097,7 @@ class WhatsAppConversationService
         $msg = "💳 Finally, please provide your *EcoCash number* (to receive your commission):\n\n";
         $msg .= "Example: 0771234567";
         
-        $this->rapiWhaService->sendMessage($from, $msg);
+        $this->whatsAppService->sendMessage($from, $msg);
     }
     
     /**
@@ -1090,7 +1126,7 @@ class WhatsAppConversationService
         $msg = "📄 Almost done! Please upload your ID document.\n\n";
         $msg .= "Send a clear photo of the *front* of your ID card.";
         
-        $this->rapiWhaService->sendMessage($from, $msg);
+        $this->whatsAppService->sendMessage($from, $msg);
     }
     
     /**
@@ -1115,7 +1151,7 @@ class WhatsAppConversationService
             $msg = "✅ Front of ID received!\n\n";
             $msg .= "Now please send a clear photo of the *back* of your ID card.";
             
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
         } else {
             // Back of ID received - complete application
             $formData['id_back_url'] = $mediaUrl;
@@ -1130,7 +1166,7 @@ class WhatsAppConversationService
      */
     private function saveAgentApplication(string $from, $state, array $formData): void
     {
-        $phoneNumber = RapiWhaService::extractPhoneNumber($from);
+        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
         
         try {
             $application = \App\Models\AgentApplication::create([
@@ -1169,7 +1205,7 @@ class WhatsAppConversationService
             $msg .= "• WhatsApp: {$formData['whatsapp_contact']}\n\n";
             $msg .= "Thank you for joining Microbiz Zimbabwe! 🚀";
             
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
             
             Log::info('Agent application submitted', [
                 'application_id' => $application->id,
@@ -1180,7 +1216,7 @@ class WhatsAppConversationService
             Log::error('Failed to save agent application: ' . $e->getMessage());
             
             $msg = "❌ Sorry, there was an error saving your application. Please try again later or contact support.";
-            $this->rapiWhaService->sendMessage($from, $msg);
+            $this->whatsAppService->sendMessage($from, $msg);
         }
     }
     
