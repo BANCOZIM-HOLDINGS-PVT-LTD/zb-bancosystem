@@ -16,10 +16,14 @@ class Product extends Model
         'base_price',
         'image_url',
         'colors',
+        'purchase_price', // Added
+        'markup_percentage', // Added
     ];
 
     protected $casts = [
         'base_price' => 'decimal:2',
+        'purchase_price' => 'decimal:2',
+        'markup_percentage' => 'decimal:2',
         'colors' => 'array',
     ];
 
@@ -68,6 +72,14 @@ class Product extends Model
     public function inventory(): HasOne
     {
         return $this->hasOne(ProductInventory::class);
+    }
+
+    /**
+     * Get sales for this product
+     */
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class);
     }
 
     /**

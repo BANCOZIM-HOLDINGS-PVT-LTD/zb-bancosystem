@@ -14,6 +14,14 @@ class User extends Authenticatable implements FilamentUser
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
+    public const ROLE_SUPER_ADMIN = 'super_admin';
+    public const ROLE_ZB_ADMIN = 'zb_admin';
+    public const ROLE_ACCOUNTING = 'accounting';
+    public const ROLE_HR = 'hr';
+    public const ROLE_STORES = 'stores';
+    public const ROLE_PARTNER = 'partner';
+
+
     /**
      * The attributes that are mass assignable.
      *
@@ -29,7 +37,9 @@ class User extends Authenticatable implements FilamentUser
         'phone_verified_at',
         'otp_code',
         'otp_expires_at',
+        'otp_expires_at',
         'is_admin',
+        'role',
     ];
 
     /**
@@ -100,14 +110,32 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         // Allow access if user is marked as admin
-        if ($this->is_admin) {
-            return true;
+        // Allow access based on role and panel
+        if ($panel->getId() === 'admin') {
+            return $this->is_admin || $this->role === self::ROLE_SUPER_ADMIN || ($this->email && str_ends_with($this->email, '@bancosystem.fly.dev'));
         }
 
-        // Allow access if user has an admin email domain
-        if ($this->email && str_ends_with($this->email, '@bancosystem.fly.dev')) {
-            return true;
+        if ($panel->getId() === 'zb_admin') {
+            return $this->role === self::ROLE_ZB_ADMIN || $this->role === self::ROLE_SUPER_ADMIN;
         }
+
+        if ($panel->getId() === 'accounting') {
+            return $this->role === self::ROLE_ACCOUNTING || $this->role === self::ROLE_SUPER_ADMIN;
+        }
+
+        if ($panel->getId() === 'hr') {
+            return $this->role === self::ROLE_HR || $this->role === self::ROLE_SUPER_ADMIN;
+        }
+
+        if ($panel->getId() === 'stores') {
+            return $this->role === self::ROLE_STORES || $this->role === self::ROLE_SUPER_ADMIN;
+        }
+
+        if ($panel->getId() === 'partner') {
+            return $this->role === self::ROLE_PARTNER || $this->role === self::ROLE_SUPER_ADMIN;
+        }
+
+        return false;
 
         return false;
     }

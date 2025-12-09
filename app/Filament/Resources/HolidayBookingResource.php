@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Filament\Notifications\Notification;
 
-class HolidayBookingResource extends Resource
+class HolidayBookingResource extends BaseResource
 {
     protected static ?string $model = ApplicationState::class;
     

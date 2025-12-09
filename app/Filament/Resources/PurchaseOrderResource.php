@@ -14,7 +14,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class PurchaseOrderResource extends Resource
+class PurchaseOrderResource extends BaseResource
 {
     protected static ?string $model = PurchaseOrder::class;
 

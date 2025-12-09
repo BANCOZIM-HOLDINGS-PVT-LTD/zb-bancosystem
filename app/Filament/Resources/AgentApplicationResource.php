@@ -19,7 +19,7 @@ use Filament\Infolists\Infolist;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
 
-class AgentApplicationResource extends Resource
+class AgentApplicationResource extends BaseResource
 {
     protected static ?string $model = AgentApplication::class;
 

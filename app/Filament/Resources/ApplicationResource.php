@@ -14,7 +14,7 @@ use App\Enums\SSBLoanStatus;
 use App\Enums\ZBLoanStatus;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
+use App\Filament\Resources\BaseResource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Actions\Action;
@@ -26,8 +26,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Filament\Facades\Filament;
 
-class ApplicationResource extends Resource
+class ApplicationResource extends BaseResource
 {
     protected static ?string $model = ApplicationState::class;
     
@@ -395,6 +396,7 @@ class ApplicationResource extends Resource
                     ->label('Update Status')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
+                    ->visible(fn () => \Filament\Facades\Filament::getCurrentPanel()->getId() !== 'partner')
                     ->mountUsing(function (Forms\ComponentContainer $form, Model $record) {
                         // Ensure reference code exists before form load
                         if (empty($record->reference_code)) {
@@ -644,7 +646,7 @@ class ApplicationResource extends Resource
                     ->label('SSB Loan Status')
                     ->icon('heroicon-o-banknotes')
                     ->color('info')
-                    ->visible(fn (Model $record) => ($record->form_data['employer'] ?? '') === 'SSB' || ($record->metadata['workflow_type'] ?? '') === 'ssb')
+                    ->visible(fn (Model $record) => (($record->form_data['employer'] ?? '') === 'SSB' || ($record->metadata['workflow_type'] ?? '') === 'ssb') && \Filament\Facades\Filament::getCurrentPanel()->getId() !== 'partner')
                     ->modalHeading('Update SSB Loan Status')
                     ->modalWidth('2xl')
                     ->form([
@@ -737,7 +739,7 @@ class ApplicationResource extends Resource
                     ->label('ZB Loan Status')
                     ->icon('heroicon-o-building-library')
                     ->color('success')
-                    ->visible(fn (Model $record) => ($record->form_data['employer'] ?? '') === 'ZB' || ($record->metadata['workflow_type'] ?? '') === 'zb')
+                    ->visible(fn (Model $record) => (($record->form_data['employer'] ?? '') === 'ZB' || ($record->metadata['workflow_type'] ?? '') === 'zb') && \Filament\Facades\Filament::getCurrentPanel()->getId() !== 'partner')
                     ->modalHeading('Update ZB Loan Status')
                     ->modalWidth('2xl')
                     ->form([

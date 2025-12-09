@@ -15,7 +15,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 
-class InventoryManagementResource extends Resource
+class InventoryManagementResource extends BaseResource
 {
     protected static ?string $model = ProductInventory::class;
 

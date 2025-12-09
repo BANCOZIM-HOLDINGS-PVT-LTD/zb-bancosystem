@@ -13,7 +13,7 @@ use Filament\Tables\Table;
 use Filament\Forms\Get;
 use Illuminate\Database\Eloquent\Builder;
 
-class DeliveryTrackingResource extends Resource
+class DeliveryTrackingResource extends BaseResource
 {
     protected static ?string $model = DeliveryTracking::class;
 

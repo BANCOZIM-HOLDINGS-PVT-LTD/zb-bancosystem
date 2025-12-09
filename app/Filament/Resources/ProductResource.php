@@ -14,7 +14,7 @@ use Filament\Tables\Table;
 use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 
-class ProductResource extends Resource
+class ProductResource extends BaseResource
 {
     protected static ?string $model = Product::class;
 

@@ -13,7 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
-class CampaignResource extends Resource
+class CampaignResource extends BaseResource
 {
     protected static ?string $model = Campaign::class;
     

@@ -15,7 +15,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 
-class AgentResource extends Resource
+class AgentResource extends BaseResource
 {
     protected static ?string $model = Agent::class;
 

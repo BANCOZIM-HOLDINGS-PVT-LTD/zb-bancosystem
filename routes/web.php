@@ -23,6 +23,12 @@ Route::get('/download-zb-account-form', [PdfController::class, 'downloadZbAccoun
 Route::get('/download-account-holders-form', [PdfController::class, 'downloadAccountHoldersForm'])->name('download.account.holders.form');
 Route::get('/download-sme-account-opening-form', [PdfController::class, 'downloadSmeAccountOpeningForm'])->name('download.sme.account.opening.form');
 
+// Admin Portal Landing Page
+Route::get('/admin/portal', function () {
+    return view('admin.portal');
+})->name('admin.portal');
+
+
 // Application Wizard Routes
 Route::get('/application', [ApplicationWizardController::class, 'show'])->name('application.wizard');
 Route::get('/apply', [ApplicationWizardController::class, 'showWithReferral'])->name('application.apply'); // Agent referral entry point

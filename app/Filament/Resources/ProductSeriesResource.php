@@ -12,7 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
-class ProductSeriesResource extends Resource
+class ProductSeriesResource extends BaseResource
 {
     protected static ?string $model = ProductSeries::class;
 

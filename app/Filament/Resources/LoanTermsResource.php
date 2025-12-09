@@ -13,7 +13,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 
-class LoanTermsResource extends Resource
+class LoanTermsResource extends BaseResource
 {
     protected static ?string $model = LoanTerm::class;
 

@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Response;
 use Carbon\Carbon;
 
-class PDFManagementResource extends Resource
+class PDFManagementResource extends BaseResource
 {
     protected static ?string $model = ApplicationState::class;
     

@@ -10,7 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class ProductCategoryResource extends Resource
+class ProductCategoryResource extends BaseResource
 {
     protected static ?string $model = ProductCategory::class;
 
