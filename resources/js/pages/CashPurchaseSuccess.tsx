@@ -97,7 +97,7 @@ export default function CashPurchaseSuccess({ purchase }: CashPurchaseSuccessPro
                                         Track Your Delivery Within 24 Hours
                                     </h3>
                                     <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
-                                        Your order will be processed and ready for tracking within 24 hours.
+                                        You may track your delivery within 24 hours.
                                         You can track your delivery status using your National ID number.
                                     </p>
                                     <Link
@@ -177,7 +177,7 @@ export default function CashPurchaseSuccess({ purchase }: CashPurchaseSuccessPro
                                 <div className="flex justify-between mb-2">
                                     <p className="text-[#706f6c] dark:text-[#A1A09A]">Method</p>
                                     <p className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">
-                                        {purchase.delivery_type === 'swift' ? 'Swift Home Delivery' : 'Collect from Depot'}
+                                        {purchase.delivery_type === 'gain_outlet' ? 'Collect from Gain Depot' : 'Collect from Post Office'}
                                     </p>
                                 </div>
                                 {purchase.delivery_type === 'gain_outlet' ? (
@@ -194,12 +194,12 @@ export default function CashPurchaseSuccess({ purchase }: CashPurchaseSuccessPro
                                 ) : (
                                     <>
                                         <div className="flex justify-between mb-2">
-                                            <p className="text-[#706f6c] dark:text-[#A1A09A]">City</p>
+                                            <p className="text-[#706f6c] dark:text-[#A1A09A]">Branch</p>
                                             <p className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{purchase.city}</p>
                                         </div>
                                         <div className="pt-2">
                                             <p className="text-sm text-[#706f6c] dark:text-[#A1A09A] mb-1">Address</p>
-                                            <p className="text-sm text-[#1b1b18] dark:text-[#EDEDEC]">{purchase.delivery_address}</p>
+                                            <p className="text-sm text-[#1b1b18] dark:text-[#EDEDEC]">{purchase.delivery_address || 'Collection at Post Office'}</p>
                                         </div>
                                     </>
                                 )}
@@ -245,9 +245,9 @@ export default function CashPurchaseSuccess({ purchase }: CashPurchaseSuccessPro
                             </h4>
                             <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1">
                                 <li>• Keep your purchase confirmation number safe for tracking and reference</li>
-                                <li>• {purchase.delivery_type === 'swift'
-                                    ? 'Your order will be delivered within 2-3 business days'
-                                    : 'Your order will be ready for collection within 2-3 business days'}
+                                <li>• {purchase.delivery_type === 'gain_outlet'
+                                    ? 'Your order will be ready for collection within 2-3 business days'
+                                    : 'Your order will be ready for collection at your nearest Post Office within 48-72 hours'}
                                 </li>
                                 <li>• You will be notified via SMS when your order is ready</li>
                                 <li>• For any queries, contact our support team with your purchase number</li>

@@ -577,12 +577,20 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
 
 
                 if (changed) {
-                    const updated = { ...prev, formResponses: newResponses };
-                    // We should also save this to local state so it persists
-                    if (sessionId) {
-                        localStateManager.debouncedSave(sessionId, currentStep, updated);
+                    if (Object.keys(newResponses).length > 0) {
+                        const mobileNumber = authenticatedUser.phone;
+                        // Only carry forward +263 numbers to the form
+                        if (mobileNumber && mobileNumber.startsWith('+263')) {
+                            newResponses.mobile = mobileNumber;
+                        }
+
+                        const updated = { ...prev, formResponses: newResponses };
+                        // We should also save this to local state so it persists
+                        if (sessionId) {
+                            localStateManager.debouncedSave(sessionId, currentStep, updated);
+                        }
+                        return updated;
                     }
-                    return updated;
                 }
                 return prev;
             });

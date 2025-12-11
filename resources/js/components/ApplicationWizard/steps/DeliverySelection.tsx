@@ -158,73 +158,191 @@ const GAIN_DEPOTS = [
 // Zimpost Offices
 const ZIMPOST_OFFICES = [
     // Harare
-    'Harare Main Post Office (Cnr Inez Terrace)',
+    'Amby Post Office',
     'Avondale Post Office',
     'Belvedere Post Office',
     'Borrowdale Post Office',
     'Causeway Post Office',
     'Chisipite Post Office',
+    'Chitungwiza Post Office',
     'Dzivarasekwa Post Office',
     'Emerald Hill Post Office',
     'Glen Norah Post Office',
     'Glen View Post Office',
+    'Graniteside Post Office',
     'Greendale Post Office',
+    'Harare Main Post Office (Cnr Inez Terrace)',
+    'Hatfield Post Office',
+    'Highfield Post Office',
     'Highlands Post Office',
     'Kambuzuma Post Office',
     'Mabelreign Post Office',
+    'Mabvuku Post Office',
     'Machipisa Post Office',
     'Marlborough Post Office',
     'Mbare Musika Post Office',
     'Mbare West Post Office',
-    'Mabvuku Post Office',
-    'Mufakose Post Office',
     'Mt Pleasant Post Office',
+    'Mufakose Post Office',
+    'Norton Post Office',
+    'Ruwa Post Office',
+    'Seke Post Office',
     'Southerton Post Office',
     'Tafara Post Office',
+    'Waterfalls Post Office',
     'Zimpost Central Sorting Office',
 
-    // Bulawayo
+    // Bulawayo & Matabeleland
+    'Ascot Post Office',
+    'Beitbridge Post Office',
+    'Belmont Post Office',
+    'Binga Post Office',
     'Bulawayo Main Post Office',
+    'Chinotimba Post Office',
+    'Dete Post Office',
+    'Entumbane Post Office',
+    'Esigodini Post Office',
+    'Famona Post Office',
+    'Figtree Post Office',
+    'Filabusi Post Office',
+    'Gwanda Post Office',
+    'Hillside Post Office',
+    'Hwange Post Office',
+    'Llewellin Barracks Post Office',
+    'Lupane Post Office',
+    'Luveve Post Office',
+    'Magwegwe Post Office',
+    'Maphisa Post Office',
+    'Matabisa Post Office',
+    'Mbalabala Post Office',
+    'Mpopoma Post Office',
+    'Morningside Post Office',
+    'Mzilikazi Post Office',
+    'Nkayi Post Office',
     'Nkulumane Post Office',
+    'Northend Post Office',
     'Plumtree Post Office',
+    'Pumula Post Office',
+    'Raylton Post Office',
+    'Shangani Post Office',
+    'Solusi Post Office',
+    'Tsholotsho Post Office',
+    'Turkmine Post Office',
+    'Victoria Falls Post Office',
+    'West Nicholson Post Office',
 
     // Manicaland
-    'Rusape Post Office',
-    'Mutare Main Post Office',
+    'Birchenough Post Office',
+    'Checheche Post Office',
+    'Chimanimani Post Office',
     'Chipinge Post Office',
-    'Nyanga Post Office',
+    'Dangamvura Post Office',
+    'Dorowa Post Office',
+    'Hauna Post Office',
+    'Headlands Post Office',
+    'Marange Post Office',
+    'Mt Selinda Post Office',
     'Murambinda Post Office',
+    'Mutare Main Post Office',
+    'Mutasa Post Office',
+    'Nhedziwa Post Office',
+    'Nyamaropa Post Office',
+    'Nyanga Post Office',
+    'Nyanyadzi Post Office',
+    'Nyazura Post Office',
+    'Odzi Post Office',
+    'Penhalonga Post Office',
+    'Rusape Post Office',
+    'Sakubva Post Office',
+    'Watsomba Post Office',
 
-    // Midlands
-    'Gweru Main Post Office',
-    'Kwekwe (Mbizo) Post Office',
-    'Zvishavane Post Office',
-    'Mvuma Post Office',
-    'Gokwe Post Office',
-
-    // Mashonaland
-    'Chinhoyi Post Office',
-    'Bindura Post Office',
-    'Marondera Post Office',
-    'Karoi Post Office',
-    'Kariba Post Office',
-    'Mt Darwin Post Office',
-
-    // Masvingo
-    'Masvingo Main Post Office',
+    // Midlands & Masvingo
+    'Charandura Post Office',
+    'Chatsworth Post Office',
+    'Chikato Post Office',
+    'Chikombedzi Post Office',
     'Chiredzi Post Office',
-    'Gutu Post Office',
+    'Chivhu Post Office',
+    'Donga Post Office',
+    'Gokwe Post Office',
+    'Gweru Main Post Office',
+    'Jerera Post Office',
+    'Kadoma Post Office',
+    'Kwekwe Main Post Office',
+    'Kwekwe (Mbizo) Post Office',
+    'Makuvatsine Post Office',
+    'Manoti Post Office',
+    'Masase Post Office',
+    'Mashava Post Office',
+    'Masvingo Main Post Office',
+    'Mataga Post Office',
+    'Mberengwa Post Office',
+    'Mkoba Post Office',
+    'Morgenster Post Office',
+    'Mpandawana Post Office',
+    'Mvuma Post Office',
+    'Mwenezi Post Office',
+    'Nembudziya Post Office',
+    'Ngundu Post Office',
+    'Nyika Post Office',
+    'Renco Post Office',
+    'Rimuka Post Office',
+    'Rutenga Post Office',
+    'Sanyati Post Office',
+    'Shurugwi Post Office',
+    'Triangle Post Office',
+    'Zhombe Post Office',
+    'Zvishavane Post Office',
 
-    // Matabeleland
-    'Victoria Falls Post Office',
-    'Hwange Post Office',
-    'Gwanda Post Office',
-    'Beitbridge Post Office'
+    // Mashonaland (West, Central, East)
+    'Acturus Post Office',
+    'Banket Post Office',
+    'Beatrice Post Office',
+    'Bindura Post Office',
+    'Bromley Post Office',
+    'Centenary Post Office',
+    'Chakari Post Office',
+    'Chegutu Post Office',
+    'Chikonohono Post Office',
+    'Chinhoyi Post Office',
+    'Chirundu Post Office',
+    'Concession Post Office',
+    'Darwendale Post Office',
+    'Glendale Post Office',
+    'Goromonzi Post Office',
+    'Guruve Post Office',
+    'Juru Post Office',
+    'Kariba Post Office',
+    'Karoi Post Office',
+    'Macheke Post Office',
+    'Magunje Post Office',
+    'Marondera Post Office',
+    'Mazowe Post Office',
+    'Mhangura Post Office',
+    'Mhondoro-Ngezi Post Office',
+    'Mt Darwin Post Office',
+    'Mubayira Post Office',
+    'Mudzi Post Office',
+    'Murewa Post Office',
+    'Murombedzi Post Office',
+    'Mutawatawa Post Office',
+    'Mutoko Post Office',
+    'Mutorashanga Post Office',
+    'Muzarabani Post Office',
+    'Mvurwi Post Office',
+    'Nyamhunga Post Office',
+    'Raffingora Post Office',
+    'Rushinga Post Office',
+    'Sadza Post Office',
+    'Selous Post Office',
+    'Shamva Post Office',
+    'Wedza Post Office',
+    'Zengeza Post Office'
 ].sort();
 
 // Determine delivery agent based on product category/subcategory
 const determineDeliveryAgent = (category?: string, subcategory?: string, business?: string): {
-    agent: 'Swift' | 'Gain Cash & Carry' | 'Zim Post Office';
+    agent: 'Gain Cash & Carry' | 'Zim Post Office';
     isEditable: boolean;
     reason: string;
 } => {
@@ -232,23 +350,6 @@ const determineDeliveryAgent = (category?: string, subcategory?: string, busines
     const subcategoryLower = (subcategory || '').toLowerCase();
     const businessLower = (business || '').toLowerCase();
     const combinedText = `${categoryLower} ${subcategoryLower} ${businessLower}`;
-
-    // Check for Phones, Laptops, ICT gadgets - Zim Post Office
-    if (
-        combinedText.includes('phone') ||
-        combinedText.includes('laptop') ||
-        combinedText.includes('tablet') ||
-        combinedText.includes('gadget') ||
-        combinedText.includes('ict') ||
-        combinedText.includes('computer') ||
-        combinedText.includes('mobile')
-    ) {
-        return {
-            agent: 'Zim Post Office',
-            isEditable: false,
-            reason: 'Phones, Laptops and ICT gadgets are delivered through the Zim Post Office'
-        };
-    }
 
     // Check for tuckshops, groceries, airtime, candy, books, stationary, back to school and live broilers ONLY - Gain Cash & Carry
     if (
@@ -275,11 +376,11 @@ const determineDeliveryAgent = (category?: string, subcategory?: string, busines
         };
     }
 
-    // All other products - Swift (default for everything else)
+    // Default to Zim Post Office for EVERYTHING else (replaces Swift)
     return {
-        agent: 'Swift',
+        agent: 'Zim Post Office',
         isEditable: false,
-        reason: 'All products are delivered through Swift depot service'
+        reason: 'Products are delivered through the Zim Post Office'
     };
 };
 
@@ -349,11 +450,6 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
         }
 
         // Standard Delivery Validation
-        if (selectedAgent === 'Swift' && !selectedCity) {
-            setError('Please select a city for Swift delivery');
-            return;
-        }
-
         if (selectedAgent === 'Gain Cash & Carry' && !selectedDepot) {
             setError('Please select a Gain Cash & Carry depot for collection');
             return;
@@ -369,7 +465,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
             ...data,
             deliverySelection: {
                 agent: selectedAgent,
-                city: (selectedAgent === 'Swift' || selectedAgent === 'Zim Post Office') ? selectedCity : undefined,
+                city: selectedAgent === 'Zim Post Office' ? selectedCity : undefined,
                 depot: selectedAgent === 'Gain Cash & Carry' ? selectedDepot : undefined,
                 isAgentEditable: deliveryAgentInfo.isEditable
             }
@@ -450,22 +546,6 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                 <div>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         {/* Swift Option */}
-                                        {!isSwiftDisabled && (
-                                            <div
-                                                className={`p-4 border-2 rounded-lg ${selectedAgent === 'Swift'
-                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                                    : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-50'
-                                                    }`}
-                                            >
-                                                <Truck className={`h-6 w-6 mb-2 ${selectedAgent === 'Swift' ? 'text-emerald-600' : 'text-gray-400'
-                                                    }`} />
-                                                <p className="font-medium text-gray-900 dark:text-white">Swift</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    Courier delivery
-                                                </p>
-                                            </div>
-                                        )}
-
                                         {/* Gain Cash & Carry Option */}
                                         {!isGainDisabled && (
                                             <div
@@ -571,8 +651,8 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                                 </option>
                                             ))}
                                         </select>
-                                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                            You will collect your product from the selected Zim Post Office branch.
+                                        <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                            {selectedAgent === 'Zim Post Office' ? 'You will collect at your nearest post office.' : 'You will collect your product from the Gain Cash & Carry depot in the selected location.'}
                                         </p>
                                     </div>
                                 )}

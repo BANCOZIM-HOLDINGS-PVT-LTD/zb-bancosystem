@@ -18,7 +18,7 @@ type ClientRegisterForm = {
 export default function ClientRegister() {
     const { data, setData, post, processing, errors, reset } = useForm<Required<ClientRegisterForm>>({
         national_id: '',
-        phone: '+263',
+        phone: '+263', // Default country code
     });
 
     const [idValidationError, setIdValidationError] = useState<string>('');
@@ -151,18 +151,46 @@ export default function ClientRegister() {
 
                     <div className="grid gap-2">
                         <Label htmlFor="phone">Phone Number</Label>
-                        <Input
-                            id="phone"
-                            type="tel"
-                            required
-                            tabIndex={2}
-                            value={data.phone}
-                            onChange={handlePhoneChange}
-                            disabled={processing}
-                            placeholder="+263771234567"
-                        />
+                        <div className="flex gap-2">
+                            <div className="w-[110px] shrink-0">
+                                <select
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    value={data.phone.startsWith('+') ? data.phone.slice(0, 4) : '+263'}
+                                    onChange={(e) => {
+                                        const code = e.target.value;
+                                        // Update phone start with new code while keeping the rest
+                                        const currentNumber = data.phone.replace(/^\+\d{3}/, ''); // Strip existing code if any
+                                        setData('phone', code + currentNumber);
+                                    }}
+                                    disabled={processing}
+                                >
+                                    <option value="+263">🇿🇼 +263</option>
+                                    <option value="+27">🇿🇦 +27</option>
+                                    <option value="+44">🇬🇧 +44</option>
+                                    <option value="+1">🇺🇸 +1</option>
+                                    <option value="+267">🇧🇼 +267</option>
+                                    <option value="+260">🇿🇲 +260</option>
+                                    {/* Add generic option for others if needed, strictly text input next */}
+                                </select>
+                            </div>
+                            <Input
+                                id="phone"
+                                type="tel"
+                                required
+                                tabIndex={2}
+                                value={data.phone.replace(/^\+\d{3}/, '')} // Display only the number part
+                                onChange={(e) => {
+                                    const number = e.target.value.replace(/\D/g, ''); // Numeric only for the body
+                                    const currentCode = data.phone.startsWith('+') ? data.phone.slice(0, 4) : '+263';
+                                    setData('phone', currentCode + number);
+                                }}
+                                disabled={processing}
+                                placeholder="771234567"
+                                className="flex-1"
+                            />
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                            Enter your Zimbabwe phone number (we'll send you a verification code)
+                            Enter your phone number starting with the country code on the left.
                         </p>
                         <InputError message={errors.phone} />
                     </div>

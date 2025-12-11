@@ -556,7 +556,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                     <SelectItem value="Youth, Sport, Arts and Recreation">Youth, Sport, Arts and Recreation</SelectItem>
                                     <SelectItem value="Zimbabwe National Army">Zimbabwe National Army</SelectItem>
                                     <SelectItem value="Air Force of Zimbabwe">Air Force of Zimbabwe</SelectItem>
-                                    
+
                                 </SelectContent>
                             </Select>
                         </div>
@@ -681,8 +681,14 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                 <Card className="p-6" id="spouse-section">
                     <div className="flex items-center mb-4">
                         <Users className="h-6 w-6 text-emerald-600 mr-3" />
-                        <h3 className="text-lg font-semibold">Spouse and Next of Kin Details *</h3>
+                        <h3 className="text-lg font-semibold">
+                            {formData.gender === 'Male' ? "Wife's" : formData.gender === 'Female' ? "Husband's" : "Spouse"} and Next of Kin Details *
+                        </h3>
                     </div>
+                    <p className="text-xs text-gray-500 italic mb-4">
+                        *this is for statistical and record keeping purposes only*
+                    </p>
+
 
                     {spouseError && (
                         <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -982,7 +988,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                     </Button>
                 </div>
             </form>
-        </div>
+        </div >
     );
 };
 

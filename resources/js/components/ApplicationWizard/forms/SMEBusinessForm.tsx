@@ -1059,13 +1059,20 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 {/* Spouse and Next of Kin Details */}
                 <Card className="p-6">
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
-                        <h3 className="text-lg font-semibold text-emerald-800">SPOUSE AND NEXT OF KIN DETAILS</h3>
+                        <h3 className="text-lg font-semibold text-emerald-800">
+                             {formData.directorsPersonalDetails.gender === 'Male' ? "WIFE'S" : formData.directorsPersonalDetails.gender === 'Female' ? "HUSBAND'S" : "SPOUSE"} AND NEXT OF KIN DETAILS
+                        </h3>
                     </div>
+                    <p className="text-xs text-gray-500 italic mb-4">
+                        *this is for statistical and record keeping purposes only*
+                    </p>
 
                     <div className="grid gap-6 md:grid-cols-2">
                         {/* Spouse Details */}
                         <div>
-                            <h4 className="font-semibold mb-3 text-emerald-700">SPOUSE DETAILS</h4>
+                            <h4 className="font-semibold mb-3 text-emerald-700">
+                                {formData.directorsPersonalDetails.gender === 'Male' ? "WIFE'S" : formData.directorsPersonalDetails.gender === 'Female' ? "HUSBAND'S" : "SPOUSE"} DETAILS
+                            </h4>
                             <div className="space-y-3">
                                 <div>
                                     <FormField

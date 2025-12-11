@@ -96,6 +96,41 @@ class DeliveryTracking extends Model
     }
 
     /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::updated(function ($tracking) {
+            if ($tracking->wasChanged('status') && $tracking->status === 'dispatched') {
+                try {
+                    $smsService = app(\App\Services\SMSService::class);
+                    $mobile = $tracking->recipient_phone;
+                    
+                    if ($mobile) {
+                        $reference = $tracking->applicationState ? $tracking->applicationState->reference_code : 'N/A';
+                        $message = "Your BancoZim order ({$reference}) has been dispatched via {$tracking->courier_type}.";
+                        
+                        if ($tracking->courier_type === 'Zim Post Office') {
+                             $message .= " You will be notified when it is ready for collection at your nearest post office.";
+                        } elseif ($tracking->courier_type === 'Gain Cash & Carry') {
+                             $message .= " Collection at Gain Depot: {$tracking->delivery_depot}.";
+                        } else {
+                             $message .= " Track delivery for updates.";
+                        }
+
+                        $smsService->sendSMS($mobile, $message);
+                        \Illuminate\Support\Facades\Log::info("Dispatch SMS sent to {$mobile} for tracking ID {$tracking->id}");
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to send dispatch SMS for tracking ID {$tracking->id}: " . $e->getMessage());
+                }
+            }
+        });
+    }
+
+    /**
      * Get status badge color
      */
     public function getStatusColorAttribute(): string

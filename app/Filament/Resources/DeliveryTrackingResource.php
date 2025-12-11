@@ -151,6 +151,12 @@ class DeliveryTrackingResource extends BaseResource
                             ->reactive()
                             ->columnSpanFull(),
 
+                        Forms\Components\TextInput::make('product_serial_number')
+                            ->label('Product Serial Number')
+                            ->placeholder('Enter Product Serial Number')
+                            ->maxLength(255)
+                            ->columnSpanFull(),
+
                         // Swift Details
                         Forms\Components\TextInput::make('swift_tracking_number')
                             ->label('Swift Tracking Number')
@@ -370,6 +376,11 @@ class DeliveryTrackingResource extends BaseResource
                     ->label('National ID')
                     ->searchable()
                     ->toggleable(),
+
+                Tables\Columns\TextColumn::make('product_serial_number')
+                    ->label('Serial Number')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('product_type')
                     ->label('Product')

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { ChevronLeft, CheckCircle, ShoppingCart, Truck, FileText, CreditCard, Package } from 'lucide-react';
 
 // Step components
@@ -87,6 +87,43 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en' }: Ca
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
+    // Pre-fill user data from auth
+    const { props } = usePage<any>();
+    const user = props.auth?.user;
+
+    useEffect(() => {
+        if (user) {
+            setWizardData(prev => {
+                const currentCustomer = prev.customer || { nationalId: '', fullName: '', phone: '' };
+                let changed = false;
+
+                // Pre-fill National ID (Strict)
+                if (user.national_id && currentCustomer.nationalId !== user.national_id) {
+                    currentCustomer.nationalId = user.national_id;
+                    changed = true;
+                }
+
+                // Pre-fill Phone (+263 Only)
+                if (user.phone && user.phone.startsWith('+263')) {
+                    if (currentCustomer.phone !== user.phone) {
+                        currentCustomer.phone = user.phone;
+                        changed = true;
+                    }
+                }
+
+                // Pre-fill Name if available logic (optional, but good for UX)
+                if (user.name && !currentCustomer.fullName) {
+                    currentCustomer.fullName = user.name;
+                    changed = true;
+                }
+
+                if (changed) {
+                    return { ...prev, customer: currentCustomer };
+                }
+                return prev;
+            });
+        }
+    }, [user]);
     // Save to localStorage for recovery
     useEffect(() => {
         const savedData = localStorage.getItem('cashPurchaseData');

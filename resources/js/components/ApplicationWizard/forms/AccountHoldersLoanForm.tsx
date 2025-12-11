@@ -196,10 +196,11 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
 
     // Set default values for GOZ Non-SSB
     React.useEffect(() => {
-        if (data.employer === 'government-non-ssb') {
+        if (data.employer === 'government-non-ssb' && !formData.employerName) {
+            // Default to Ministry of Defence if not set
             setFormData(prev => ({
                 ...prev,
-                employerName: 'Ministry of Defense'
+                employerName: 'Ministry of Defence'
             }));
         }
     }, [data.employer]);
@@ -534,31 +535,57 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <Label htmlFor="employerName">{data.employer === 'government-non-ssb' ? 'Ministry' : 'Name of Institution *'}</Label>
-                            <Input
-                                id="employerName"
-                                value={formData.employerName}
-                                onChange={(e) => handleInputChange('employerName', e.target.value)}
-                                required
-                                readOnly={data.employer === 'government-non-ssb'}
-                            />
+                            {data.employer === 'government-non-ssb' ? (
+                                <Select
+                                    value={formData.employerName}
+                                    onValueChange={(value) => {
+                                        // Reset department when ministry changes
+                                        handleInputChange('employerName', value);
+                                        handleInputChange('department', '');
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select Ministry" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Ministry of Defence">Ministry of Defence</SelectItem>
+                                        <SelectItem value="Other Security Sector">Other Security Sector</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <Input
+                                    id="employerName"
+                                    value={formData.employerName}
+                                    onChange={(e) => handleInputChange('employerName', e.target.value)}
+                                    required
+                                />
+                            )}
                         </div>
 
                         {data.employer === 'government-non-ssb' && (
                             <div>
                                 <Label htmlFor="department">Department</Label>
-                                <Select
-                                    value={formData.department}
-                                    onValueChange={(value) => handleInputChange('department', value)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select department" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Zimbabwe National Army">Zimbabwe National Army</SelectItem>
-                                        <SelectItem value="Airforce of Zimbabwe">Airforce of Zimbabwe</SelectItem>
-                                        <SelectItem value="Other Security Sector">Other Security Sector</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                {formData.employerName === 'Other Security Sector' ? (
+                                    <Input
+                                        id="department"
+                                        value={formData.department}
+                                        onChange={(e) => handleInputChange('department', e.target.value)}
+                                        placeholder="Specify Security Sector"
+                                    />
+                                ) : (
+                                    <Select
+                                        value={formData.department}
+                                        onValueChange={(value) => handleInputChange('department', value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select department" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Zimbabwe National Army">Zimbabwe National Army</SelectItem>
+                                            <SelectItem value="Air Force of Zimbabwe">Air Force of Zimbabwe</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
                             </div>
                         )}
 
@@ -647,10 +674,15 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 <Card className="p-6">
                     <div className="flex items-center mb-4">
                         <Users className="h-6 w-6 text-emerald-600 mr-3" />
-                        <h3 className="text-lg font-semibold">Spouse and Next of Kin Details *</h3>
+                        <h3 className="text-lg font-semibold">
+                            {formData.gender === 'Male' ? "Wife's" : formData.gender === 'Female' ? "Husband's" : "Spouse"} and Next of Kin Details *
+                        </h3>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                         At least one next of kin is required
+                    </p>
+                    <p className="text-xs text-gray-500 italic mb-4">
+                        *this is for statistical and record keeping purposes only*
                     </p>
 
                     {formData.spouseDetails.map((spouse, index) => (
