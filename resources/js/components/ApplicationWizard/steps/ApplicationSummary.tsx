@@ -50,6 +50,7 @@ interface ApplicationSummaryProps {
     onNext: (data: { formId: string; proceedToForm: boolean; hasAccount: boolean; wantsAccount: boolean; accountType?: string }) => void;
     onBack: () => void;
     loading?: boolean;
+    hasAccount?: boolean;
 }
 
 const getFormIdByEmployer = (employerId: string, hasAccount: boolean, wantsAccount: boolean) => {
