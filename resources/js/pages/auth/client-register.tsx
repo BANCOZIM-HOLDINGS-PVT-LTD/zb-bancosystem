@@ -42,19 +42,41 @@ export default function ClientRegister() {
         // Remove any non-alphanumeric characters
         const cleaned = value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
 
-        // Format as XX-XXXXXXX-Y-XX (Zimbabwe ID format)
-        let formatted = '';
+        // Format logic to handle both 6 and 7 digit middle sections
+        // We'll rely on the validator for final correctness, here we just try to insert dashes intelligently
 
+        let formatted = '';
         if (cleaned.length <= 2) {
             formatted = cleaned;
-        } else if (cleaned.length <= 9) {
-            formatted = `${cleaned.slice(0, 2)}-${cleaned.slice(2)}`;
-        } else if (cleaned.length <= 10) {
-            formatted = `${cleaned.slice(0, 2)}-${cleaned.slice(2, 9)}-${cleaned.slice(9)}`;
-        } else if (cleaned.length <= 12) {
-            formatted = `${cleaned.slice(0, 2)}-${cleaned.slice(2, 9)}-${cleaned.slice(9, 10)}-${cleaned.slice(10)}`;
         } else {
-            formatted = `${cleaned.slice(0, 2)}-${cleaned.slice(2, 9)}-${cleaned.slice(9, 10)}-${cleaned.slice(10, 12)}`;
+            // First 2 digits
+            formatted = cleaned.slice(0, 2) + '-';
+
+            // The rest
+            const rest = cleaned.slice(2);
+
+            if (rest.length > 0) {
+                // Try to find the letter which marks the end of the middle section
+                const letterMatch = rest.match(/[A-Z]/);
+
+                if (letterMatch && letterMatch.index !== undefined) {
+                    // Digits before letter
+                    const middleDigits = rest.slice(0, letterMatch.index);
+                    // The letter
+                    const letter = rest[letterMatch.index];
+                    // Digits after letter
+                    const endDigits = rest.slice(letterMatch.index + 1);
+
+                    formatted += middleDigits + '-' + letter;
+
+                    if (endDigits.length > 0) {
+                        formatted += '-' + endDigits.slice(0, 2);
+                    }
+                } else {
+                    // No letter yet, just dump the rest
+                    formatted += rest;
+                }
+            }
         }
 
         return formatted;

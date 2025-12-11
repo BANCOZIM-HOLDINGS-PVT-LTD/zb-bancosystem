@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import EmployerSelection from './steps/EmployerSelection';
 import ProductSelection from './steps/ProductSelection';
 import CreditTypeSelection from './steps/CreditTypeSelection';
@@ -381,20 +381,20 @@ export interface WizardData {
 
     // Delivery selection (new)
     deliverySelection?: {
-        agent: 'Swift' | 'Gain Outlet' | 'Bancozim';
+        agent: 'Swift' | 'Gain Cash & Carry' | 'Zim Post Office';
         city?: string;  // For Swift deliveries
         depot?: string; // For Gain Outlet deliveries
         isAgentEditable: boolean;
     };
 
     // Delivery details (old - for backward compatibility)
-   /* deliveryDetails?: {
-        deliveryAddress: string;
-        recipientName: string;
-        recipientPhone: string;
-        alternativePhone?: string;
-        deliveryInstructions?: string;
-    }; */
+    /* deliveryDetails?: {
+         deliveryAddress: string;
+         recipientName: string;
+         recipientPhone: string;
+         alternativePhone?: string;
+         deliveryInstructions?: string;
+     }; */
 
     // Document data with improved typing
     documents?: {
@@ -536,6 +536,58 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
     useEffect(() => {
         setIsStateRestored(true);
     }, []);
+
+    // Effect to pre-fill user data from auth context
+    const { props } = usePage<any>();
+    const authenticatedUser = props.auth?.user;
+
+    useEffect(() => {
+        if (authenticatedUser && isStateRestored) {
+            setWizardData(prev => {
+                const currentResponses = prev.formResponses || {};
+                let changed = false;
+                const newResponses = { ...currentResponses };
+
+                // Pre-fill National ID if not present
+                if (!newResponses.nationalIdNumber && authenticatedUser.national_id) {
+                    newResponses.nationalIdNumber = authenticatedUser.national_id;
+                    changed = true;
+                }
+
+                // Pre-fill Phone if not present
+                if (!newResponses.mobile && authenticatedUser.phone) {
+                    newResponses.mobile = authenticatedUser.phone;
+                    changed = true;
+                }
+
+                // Pre-fill Surname/First Name if available (assuming split logic or raw fields)
+                // Note: user model might have 'name' or separate fields. Using safe defaults if unsure.
+                // If user model has 'name', we can try to split it.
+                if (authenticatedUser.name && (!newResponses.firstName || !newResponses.surname)) {
+                    const parts = authenticatedUser.name.split(' ');
+                    if (parts.length > 0) {
+                        if (!newResponses.firstName) {
+                            newResponses.firstName = parts.slice(1).join(' '); // All parts except first as first names (standard Shona/English naming often puts Surname first? No, usually First Last). 
+                            // Wait, Zimbabwe usually adheres to Firstname Surname or Surname Firstname. 
+                            // Let's assume standard "First Last" for now, or just leave it if ambiguous.
+                            // Actually, let's just stick to ID and Phone as explicitly requested.
+                        }
+                    }
+                }
+
+
+                if (changed) {
+                    const updated = { ...prev, formResponses: newResponses };
+                    // We should also save this to local state so it persists
+                    if (sessionId) {
+                        localStateManager.debouncedSave(sessionId, currentStep, updated);
+                    }
+                    return updated;
+                }
+                return prev;
+            });
+        }
+    }, [authenticatedUser, isStateRestored, sessionId, currentStep]);
 
     // Enhanced validation state
     const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
@@ -801,7 +853,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             case 'depositPayment':
                 return <DepositPaymentStep {...commonProps} />;
             case 'summary':
-                return <ApplicationSummary {...commonProps} />;
+                return <ApplicationSummary {...commonProps} hasAccount={wizardData.hasAccount ?? false} />;
             case 'account':
                 return <AccountVerification {...commonProps} />;
             case 'form':

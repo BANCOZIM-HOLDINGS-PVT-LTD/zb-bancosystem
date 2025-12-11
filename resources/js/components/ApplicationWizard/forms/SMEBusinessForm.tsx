@@ -23,7 +23,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
         const businessName = data.business; // string from ProductSelection
         const finalPrice = data.amount || 0; // number from ProductSelection
         const intent = data.intent || 'hirePurchase';
-        
+
         let facilityType = '';
         if (intent === 'hirePurchase' && businessName) {
             facilityType = `Hire Purchase Credit - ${businessName}`;
@@ -33,21 +33,21 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
             // Fallback if intent doesn't match
             facilityType = `Credit Facility - ${businessName}`;
         }
-        
+
         // Calculate tenure based on amount
         let tenure = 12; // default
         if (finalPrice <= 1000) tenure = 6;
         else if (finalPrice <= 5000) tenure = 12;
         else if (finalPrice <= 15000) tenure = 18;
         else tenure = 24;
-        
+
         // Calculate monthly payment (10% annual interest)
         const interestRate = 0.10;
         const monthlyInterestRate = interestRate / 12;
-        const monthlyPayment = finalPrice > 0 ? 
+        const monthlyPayment = finalPrice > 0 ?
             (finalPrice * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenure)) /
             (Math.pow(1 + monthlyInterestRate, tenure) - 1) : 0;
-        
+
         return {
             creditFacilityType: facilityType,
             loanAmount: finalPrice.toFixed(2),
@@ -56,19 +56,19 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
             interestRate: '10.0'
         };
     };
-    
+
     const creditDetails = calculateCreditFacilityDetails();
     const businessName = data.business;
     const currentDate = new Date().toISOString().split('T')[0];
-    
+
     const [formData, setFormData] = useState<Record<string, any>>({
         // Credit Facility Details (pre-populated)
         ...creditDetails,
-        
+
         // Business Type
         businessType: '', // Company, PBC, Informal body
         loanType: '',
-        
+
         // Business Information
         registeredName: '',
         tradingName: '',
@@ -90,7 +90,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
         postalAddress: '',
         monthlyTurnover: '',
         positionInBusiness: 'Director',
-        
+
         // Capital Sources
         capitalSources: {
             ownSavings: false,
@@ -99,7 +99,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
             other: false,
             otherSpecify: ''
         },
-        
+
         // Customer Base
         customerBase: {
             individuals: false,
@@ -107,7 +107,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
             other: false,
             otherSpecify: ''
         },
-        
+
         // Financial Information
         estimatedAnnualSales: '',
         netProfit: '',
@@ -115,7 +115,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
         netCashFlow: '',
         mainProducts: '',
         mainProblems: '',
-        
+
         // Other Business Interests
         otherBusinessName: '',
         otherBusinessAddress: '',
@@ -132,17 +132,17 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
             other: false,
             otherSpecify: ''
         },
-        
+
         // Purpose of loan (auto-populated from product selection)
         purposeOfLoan: businessName ? `${businessName} - ${data.scale || 'Standard Scale'}` : '',
-        
+
         // Budget Breakdown
         budgetItems: [
             { item: '', cost: '' },
             { item: '', cost: '' },
             { item: '', cost: '' }
         ],
-        
+
         // Directors' Personal Details
         directorsPersonalDetails: {
             title: '',
@@ -164,7 +164,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
             periodAtCurrentAddress: { years: '', months: '' },
             periodAtPreviousAddress: { years: '', months: '' }
         },
-        
+
         // Spouse and Next of Kin
         spouseAndNextOfKin: {
             spouse: {
@@ -188,7 +188,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 address: JSON.stringify({})
             }
         },
-        
+
         // Employment Details
         employmentDetails: {
             businessEmployerName: '',
@@ -198,42 +198,42 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
             immediateManager: '',
             phoneNumberOfManager: ''
         },
-        
+
         // Property Ownership
         propertyOwnership: '',
-        
+
         // Banking Details
         bankingDetails: {
             bank: '',
             branch: '',
             accountNumber: ''
         },
-        
+
         // Loans with Other Institutions
         otherLoans: [
             { institution: '', monthlyInstallment: '', currentBalance: '', maturityDate: '' },
             { institution: '', monthlyInstallment: '', currentBalance: '', maturityDate: '' }
         ],
-        
+
         // References
         references: [
             { name: '', phoneNumber: '' },
             { name: '', phoneNumber: '' },
             { name: '', phoneNumber: '' }
         ],
-        
+
         // Security (Assets Pledged)
         securityAssets: [
             { description: '', serialNumber: '', estimatedValue: '' },
             { description: '', serialNumber: '', estimatedValue: '' },
             { description: '', serialNumber: '', estimatedValue: '' }
         ],
-        
+
         // Declaration
         declaration: {
             acknowledged: false
         },
-        
+
         // Directors Signatures
         directorsSignatures: [
             { name: '', signature: '', date: '' },
@@ -242,7 +242,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
             { name: '', signature: '', date: '' },
             { name: '', signature: '', date: '' }
         ],
-        
+
         // KYC Documents
         kycDocuments: {
             copyOfId: false,
@@ -264,7 +264,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
         const processedValue = field.toLowerCase().includes('idnumber')
             ? formatZimbabweId(value)
             : value;
-        
+
         setFormData(prev => ({
             ...prev,
             [field]: processedValue
@@ -276,7 +276,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
             typeof value === 'string' && field.toLowerCase().includes('idnumber')
                 ? formatZimbabweId(value)
                 : value;
-        
+
         setFormData(prev => {
             const sectionData = (prev[section] ?? {}) as Record<string, any>;
             return {
@@ -288,7 +288,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
             };
         });
     };
-    
+
     const handleArrayChange = (section: string, index: number, field: string, value: string) => {
         setFormData(prev => {
             const sectionArray = Array.isArray(prev[section])
@@ -297,7 +297,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
             const updatedSection = sectionArray.map((item: Record<string, any>, i: number) =>
                 i === index ? { ...item, [field]: value } : item
             );
-            
+
             return {
                 ...prev,
                 [section]: updatedSection
@@ -307,7 +307,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Map SME form fields to match PDF template expectations
         const directors = formData.directorsPersonalDetails || {};
         const references = Array.isArray(formData.references) ? formData.references : [];
@@ -322,11 +322,11 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
         const computedEmployeeTotal =
             typeof formData.numberOfEmployees === 'object' && formData.numberOfEmployees !== null
                 ? formData.numberOfEmployees.total ||
-                  (
+                (
                     parseInt(formData.numberOfEmployees.fullTime || '0', 10) +
                     parseInt(formData.numberOfEmployees.partTime || '0', 10) +
                     parseInt(formData.numberOfEmployees.nonPaid || '0', 10)
-                  ).toString()
+                ).toString()
                 : formData.numberOfEmployees;
 
         const normalizedFormResponses = {
@@ -406,7 +406,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
             formType: 'sme_business',
             formId: 'smes_business_account_opening.json'
         };
-        
+
         onNext(mappedData);
     };
 
@@ -429,7 +429,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                         <Building className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Business Type</h3>
                     </div>
-                    
+
                     <div className="mb-4">
                         <Label className="text-base font-medium mb-3 block">Business Type *</Label>
                         <div className="grid gap-4 md:grid-cols-3">
@@ -441,7 +441,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 />
                                 <Label htmlFor="company">Company</Label>
                             </div>
-                            
+
                             <div className="flex items-center space-x-2">
                                 <Checkbox
                                     id="pbc"
@@ -450,7 +450,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 />
                                 <Label htmlFor="pbc">PBC</Label>
                             </div>
-                            
+
                             <div className="flex items-center space-x-2">
                                 <Checkbox
                                     id="informal"
@@ -460,7 +460,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 <Label htmlFor="informal">Informal body</Label>
                             </div>
                         </div>
-                        
+
                         <div className="md:col-span-3">
                             <Label htmlFor="loanType">Loan Type</Label>
                             <Input
@@ -479,7 +479,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                         <Building className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Business Information</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <FormField
@@ -492,7 +492,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 autoCapitalize={true}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="tradingName"
@@ -503,7 +503,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 autoCapitalize={true}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="businessRegistration">Business Registration Number *</Label>
                             <Input
@@ -514,7 +514,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="typeOfBusiness">Type of Business *</Label>
                             <Input
@@ -524,7 +524,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="businessAddress"
@@ -535,7 +535,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="periodAtLocation">Period at Current Business Location</Label>
                             <Input
@@ -544,7 +544,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(e) => handleInputChange('periodAtLocation', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="initialCapital">Amount of Initial Capital</Label>
                             <Input
@@ -554,7 +554,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(e) => handleInputChange('initialCapital', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="incorporationDate"
@@ -566,7 +566,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 defaultAge={0}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="incorporationNumber">Certificate of Incorporation Number</Label>
                             <Input
@@ -575,7 +575,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(e) => handleInputChange('incorporationNumber', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="contactPhone"
@@ -586,7 +586,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="emailAddress"
@@ -596,7 +596,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(value) => handleInputChange('emailAddress', value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="yearsInBusiness">Number of Years in Business *</Label>
                             <Input
@@ -616,7 +616,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                         <DollarSign className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Sources of Capital</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="flex items-center space-x-2">
                             <Checkbox
@@ -626,7 +626,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                             />
                             <Label htmlFor="ownSavings">Own Savings</Label>
                         </div>
-                        
+
                         <div className="flex items-center space-x-2">
                             <Checkbox
                                 id="familyGift"
@@ -635,7 +635,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                             />
                             <Label htmlFor="familyGift">Family Gift</Label>
                         </div>
-                        
+
                         <div className="flex items-center space-x-2">
                             <Checkbox
                                 id="loan"
@@ -644,7 +644,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                             />
                             <Label htmlFor="loan">Loan</Label>
                         </div>
-                        
+
                         <div className="flex items-center space-x-2">
                             <Checkbox
                                 id="capitalOther"
@@ -653,7 +653,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                             />
                             <Label htmlFor="capitalOther">Other</Label>
                         </div>
-                        
+
                         {formData.capitalSources.other && (
                             <div className="md:col-span-2">
                                 <Label htmlFor="capitalOtherSpecify">Please specify</Label>
@@ -673,7 +673,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                         <DollarSign className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Financial Information</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <Label htmlFor="estimatedAnnualSales">Estimated Annual Sales *</Label>
@@ -685,7 +685,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="netProfit">Net Pay Range (USD)</Label>
                             <Select value={formData.netProfit} onValueChange={(value) => handleInputChange('netProfit', value)}>
@@ -702,7 +702,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="totalLiabilities">Total Liabilities</Label>
                             <Input
@@ -712,7 +712,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(e) => handleInputChange('totalLiabilities', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="netCashFlow">Net Cash Flow</Label>
                             <Input
@@ -722,7 +722,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(e) => handleInputChange('netCashFlow', e.target.value)}
                             />
                         </div>
-                        
+
                         <div className="md:col-span-2">
                             <Label htmlFor="mainProducts">Main Product/Services</Label>
                             <Textarea
@@ -732,7 +732,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 rows={3}
                             />
                         </div>
-                        
+
                         <div className="md:col-span-2">
                             <Label htmlFor="mainProblems">Main Problems Faced by Business</Label>
                             <Textarea
@@ -751,20 +751,20 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                         <DollarSign className="h-6 w-6 text-green-600 mr-3" />
                         <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Hire Purchase Application Details</h3>
                     </div>
-                    
+
                     {/* Pre-populated readonly fields */}
                     <div className="grid gap-4 mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg border">
                         <div className="text-sm text-green-600 dark:text-green-400 font-medium mb-2">
                             ✅ The following details have been automatically filled based on your product selection:
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label className="text-gray-700 dark:text-gray-300">Hire Purchase Facility Type</Label>
                                 <Input
                                     value={formData.creditFacilityType}
                                     readOnly
-                                    className="bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                                    className="bg-transparent border-gray-200 dark:border-gray-600"
                                 />
                             </div>
                             <div>
@@ -783,7 +783,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 <Input
                                     value={`${formData.loanTenure} months`}
                                     readOnly
-                                    className="bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                                    className="bg-transparent border-gray-200 dark:border-gray-600"
                                 />
                             </div>
                             <div>
@@ -803,12 +803,12 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                     value={`${formData.interestRate}%`}
                                     readOnly
                                     type="hidden"
-                                    className="bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                                    className="bg-transparent border-gray-200 dark:border-gray-600"
                                 />
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Editable purpose field */}
                     <div>
                         <Label htmlFor="purposeOfLoan">Purpose/Asset Applied For</Label>
@@ -829,7 +829,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                         <Users className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">References</h3>
                     </div>
-                    
+
                     {Array.isArray(formData.references) && formData.references.map((reference: Record<string, any>, index: number) => (
                         <div key={index} className="grid gap-4 md:grid-cols-2 mb-4 p-4 border rounded-lg">
                             <div>
@@ -843,7 +843,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                     autoCapitalize={true}
                                 />
                             </div>
-                            
+
                             <div>
                                 <FormField
                                     id={`ref-${index}-phone`}
@@ -863,7 +863,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">DIRECTORS' PERSONAL DETAILS</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <div>
                             <Label htmlFor="directorTitle">Title (Mr./Mrs./Dr/Prof)</Label>
@@ -873,7 +873,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(e) => handleNestedChange('directorsPersonalDetails', 'title', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="directorFirstName"
@@ -885,7 +885,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 autoCapitalize={true}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="directorSurname"
@@ -897,7 +897,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 autoCapitalize={true}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="directorMaidenName"
@@ -908,7 +908,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 autoCapitalize={true}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="directorGender">Gender *</Label>
                             <Select value={formData.directorsPersonalDetails.gender} onValueChange={(value) => handleNestedChange('directorsPersonalDetails', 'gender', value)}>
@@ -921,7 +921,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="directorDateOfBirth"
@@ -935,7 +935,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 defaultAge={20}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="directorMaritalStatus">Marital Status</Label>
                             <Input
@@ -944,7 +944,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(e) => handleNestedChange('directorsPersonalDetails', 'maritalStatus', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="directorNationality">Nationality</Label>
                             <Input
@@ -953,7 +953,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(e) => handleNestedChange('directorsPersonalDetails', 'nationality', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="directorIdNumber"
@@ -967,7 +967,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 title="Zimbabwe ID format: 12-345678 A 12"
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="directorCellNumber"
@@ -978,7 +978,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="directorWhatsApp"
@@ -988,7 +988,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(value) => handleNestedChange('directorsPersonalDetails', 'whatsApp', value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="directorEducation">Highest Educational Qualification</Label>
                             <Input
@@ -997,7 +997,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(e) => handleNestedChange('directorsPersonalDetails', 'highestEducation', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="directorCitizenship">Citizenship</Label>
                             <Input
@@ -1006,7 +1006,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(e) => handleNestedChange('directorsPersonalDetails', 'citizenship', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="directorEmail"
@@ -1016,7 +1016,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(value) => handleNestedChange('directorsPersonalDetails', 'emailAddress', value)}
                             />
                         </div>
-                        
+
                         <div className="lg:col-span-2">
                             <FormField
                                 id="directorAddress"
@@ -1026,14 +1026,14 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(value) => handleNestedChange('directorsPersonalDetails', 'residentialAddress', value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label>Passport Photo</Label>
                             <div className="h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500">
                                 Photo Area
                             </div>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-2">
                             <div>
                                 <Label>Period at Current Address</Label>
@@ -1043,7 +1043,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-2">
                             <div>
                                 <Label>Period at Previous Address</Label>
@@ -1061,7 +1061,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">SPOUSE AND NEXT OF KIN DETAILS</h3>
                     </div>
-                    
+
                     <div className="grid gap-6 md:grid-cols-2">
                         {/* Spouse Details */}
                         <div>
@@ -1150,7 +1150,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* Next of Kin 1 */}
                         <div>
                             <h4 className="font-semibold mb-3 text-emerald-700">NEXT OF KIN 1</h4>
@@ -1267,7 +1267,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Next of Kin 2 */}
                     <div className="mt-6">
                         <h4 className="font-semibold mb-3 text-emerald-700">NEXT OF KIN 2</h4>
@@ -1390,7 +1390,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">EMPLOYMENT DETAILS</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <FormField
@@ -1459,7 +1459,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">PROPERTY OWNERSHIP</h3>
                     </div>
-                    
+
                     <div className="flex gap-4">
                         {['Rented', 'Employer Owned', 'Mortgaged', 'Owned Without Mortgage', 'Parents owned'].map((option) => (
                             <label key={option} className="flex items-center space-x-2">
@@ -1478,7 +1478,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">BANKING/MOBILE ACCOUNT DETAILS</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-3">
                         <div>
                             <FormField
@@ -1517,7 +1517,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">LOANS WITH OTHER INSTITUTIONS (ALSO INCLUDE QUPA LOAN)</h3>
                     </div>
-                    
+
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse border border-gray-300">
                             <thead>
@@ -1571,7 +1571,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">OTHER BUSINESS INTERESTS</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <div>
                             <FormField
@@ -1583,7 +1583,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 autoCapitalize={true}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="otherBusinessPhone"
@@ -1593,7 +1593,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 onChange={(value) => handleInputChange('otherBusinessPhone', value)}
                             />
                         </div>
-                        
+
                         <div className="lg:col-span-3">
                             <FormField
                                 id="otherBusinessAddress"
@@ -1604,7 +1604,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                             />
                         </div>
                     </div>
-                    
+
                     <div className="mt-4">
                         <h4 className="font-semibold mb-3">Number of Employees</h4>
                         <div className="grid gap-4 md:grid-cols-4">
@@ -1617,7 +1617,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                     onChange={(value) => handleNestedChange('numberOfEmployees', 'fullTime', value)}
                                 />
                             </div>
-                            
+
                             <div>
                                 <FormField
                                     id="partTimeEmployees"
@@ -1627,7 +1627,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                     onChange={(value) => handleNestedChange('numberOfEmployees', 'partTime', value)}
                                 />
                             </div>
-                            
+
                             <div>
                                 <FormField
                                     id="nonPaidEmployees"
@@ -1637,7 +1637,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                     onChange={(value) => handleNestedChange('numberOfEmployees', 'nonPaid', value)}
                                 />
                             </div>
-                            
+
                             <div>
                                 <FormField
                                     id="totalEmployees"
@@ -1656,12 +1656,12 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">DECLARATION</h3>
                     </div>
-                    
+
                     <div className="space-y-4">
                         <p className="text-sm text-gray-700">
                             We declare that the information given above is accurate and correct. We are aware that falsifying information automatically leads to decline of our loan application. We authorise Qupa Microfinance to obtain and use the information obtained for the purposes of this application with any recognised credit bureau. We authorise Qupa microfinance to references from friends, relatives, neighbours and business partners including visits to our homes and verification of my assets. We have read and fully understood the above together with all the conditions, and We agree to be bound by Qupa Micro-Finance terms and conditions.
                         </p>
-                        
+
                         <div>
                             <FormField
                                 id="declarationAcknowledged"
@@ -1682,7 +1682,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">DIRECTORS SIGNATURE</h3>
                     </div>
-                    
+
                     {Array.isArray(formData.directorsSignatures) && formData.directorsSignatures.map((director: Record<string, any>, index: number) => (
                         <div key={index} className="grid gap-4 md:grid-cols-4 mb-4 p-4 border rounded-lg">
                             <div>
@@ -1695,14 +1695,14 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                     autoCapitalize={true}
                                 />
                             </div>
-                            
+
                             <div>
                                 <Label htmlFor={`director-${index}-signature`}>Signature</Label>
                                 <div className="h-10 border-2 border-dashed border-gray-300 rounded flex items-center justify-center text-gray-500 text-sm">
                                     Signature Area
                                 </div>
                             </div>
-                            
+
                             <div>
                                 <FormField
                                     id={`director-${index}-date`}
@@ -1723,7 +1723,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">KYC CHECKLIST</h3>
                     </div>
-                    
+
                     <div className="grid gap-3 md:grid-cols-2">
                         <div className="space-y-2">
                             <div className="flex items-center space-x-2">
@@ -1751,7 +1751,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 <Label htmlFor="certificateOfIncorporation">Certificate of Incorporation</Label>
                             </div>
                         </div>
-                        
+
                         <div className="space-y-2">
                             <div className="flex items-center space-x-2">
                                 <Checkbox id="ecocashStatements" />
@@ -1761,7 +1761,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 <Checkbox id="resolutionToBorrow" />
                                 <Label htmlFor="resolutionToBorrow">Resolution to borrow</Label>
                             </div>
-                            
+
                             <div className="mt-4">
                                 <p className="font-medium mb-2">Company documents:</p>
                                 <div className="space-y-2">
@@ -1785,7 +1785,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="mt-6 flex justify-end">
                         <div className="w-40 h-20 border-2 border-gray-300 rounded flex items-center justify-center text-gray-500">
                             Qupa Date Stamp:
@@ -1799,7 +1799,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                         <Shield className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Security (Assets Pledged)</h3>
                     </div>
-                    
+
                     {Array.isArray(formData.securityAssets) && formData.securityAssets.map((asset: Record<string, any>, index: number) => (
                         <div key={index} className="grid gap-4 md:grid-cols-3 mb-4 p-4 border rounded-lg">
                             <div>
@@ -1810,7 +1810,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                     onChange={(e) => handleArrayChange('securityAssets', index, 'description', e.target.value)}
                                 />
                             </div>
-                            
+
                             <div>
                                 <Label htmlFor={`asset-${index}-serial`}>Serial/Reg Number</Label>
                                 <Input
@@ -1819,7 +1819,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                     onChange={(e) => handleArrayChange('securityAssets', index, 'serialNumber', e.target.value)}
                                 />
                             </div>
-                            
+
                             <div>
                                 <Label htmlFor={`asset-${index}-value`}>Estimated Asset Value</Label>
                                 <Input
@@ -1844,7 +1844,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                         <ChevronLeft className="h-4 w-4" />
                         Back
                     </Button>
-                    
+
                     <Button
                         type="submit"
                         disabled={loading}

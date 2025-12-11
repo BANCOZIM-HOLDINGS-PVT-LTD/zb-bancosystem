@@ -5,12 +5,13 @@ import { convertUSDtoZIG, formatCurrency } from '@/utils/currency';
 
 interface EcoCashPaymentProps {
     amount: number;
+    email?: string; // Added email prop
     onSuccess: (paymentData: any) => void;
     onCancel: () => void;
     loading?: boolean;
 }
 
-export default function EcoCashPayment({ amount, onSuccess, onCancel, loading }: EcoCashPaymentProps) {
+export default function EcoCashPayment({ amount, email, onSuccess, onCancel, loading }: EcoCashPaymentProps) {
     const [mobileNumber, setMobileNumber] = useState('');
     const [currency, setCurrency] = useState<'USD' | 'ZIG'>('USD');
     const [paymentInitiated, setPaymentInitiated] = useState(false);
@@ -36,39 +37,79 @@ export default function EcoCashPayment({ amount, onSuccess, onCancel, loading }:
         return Object.keys(newErrors).length === 0;
     };
 
+    const [pollUrl, setPollUrl] = useState<string | null>(null);
+    const [reference, setReference] = useState<string | null>(null);
+
     const handleInitiatePayment = async () => {
         if (!validateForm()) return;
 
         setProcessing(true);
-        try {
-            // Simulate API call to initiate EcoCash payment
-            // In production, this would send a push notification to the user's phone
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+        setErrors({});
 
-            setPaymentInitiated(true);
-            setProcessing(false);
+        try {
+            const response = await fetch('/api/paynow/mobile-initiate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    phone: mobileNumber,
+                    amount: paymentAmount,
+                    method: 'ecocash',
+                    email: email || 'customer@example.com', // Fallback email
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setPollUrl(data.poll_url);
+                setReference(data.reference);
+                setPaymentInitiated(true);
+            } else {
+                setErrors({ submit: data.message || 'Failed to initiate payment.' });
+            }
         } catch (error) {
-            setErrors({ submit: 'Failed to initiate payment. Please try again.' });
+            setErrors({ submit: 'Network error. Please try again.' });
+            console.error(error);
+        } finally {
             setProcessing(false);
         }
     };
 
     const handleConfirmPayment = async () => {
+        if (!pollUrl) return;
+
         setProcessing(true);
         try {
-            // In production, this would check payment status from backend
-            const paymentData = {
-                method: 'ecocash',
-                amount: paymentAmount,
-                currency,
-                mobileNumber,
-                paymentStatus: 'pending',
-                transactionId: `ECOCASH-${Date.now()}`,
-            };
+            const response = await fetch('/api/paynow/status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ poll_url: pollUrl }),
+            });
 
-            onSuccess(paymentData);
+            const data = await response.json();
+
+            if (data.success && data.is_paid) {
+                const paymentData = {
+                    method: 'ecocash',
+                    amount: paymentAmount,
+                    currency,
+                    mobileNumber,
+                    paymentStatus: 'success',
+                    transactionId: reference,
+                    paynowReference: data.paynow_reference,
+                };
+                onSuccess(paymentData);
+            } else {
+                setErrors({ submit: 'Payment not yet confirmed. Please perform the transaction on your phone and try again.' });
+            }
         } catch (error) {
-            setErrors({ submit: 'Payment confirmation failed. Please try again.' });
+            setErrors({ submit: 'Verification failed. Please check connection.' });
         } finally {
             setProcessing(false);
         }

@@ -20,8 +20,7 @@ import {
     FileWarning,
     CheckCircle2
 } from 'lucide-react';
-import { validateZimbabweanID } from '@/utils/zimbabwean-id-validator';
-import IDCardVerifier, { IDVerificationResult } from '@/components/ui/id-card-verifier';
+
 
 interface DocumentUploadStepProps {
     data: any;
@@ -67,9 +66,7 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
     const [activeDocumentCamera, setActiveDocumentCamera] = useState<string | null>(null);
     const [capturedDocumentPhotos, setCapturedDocumentPhotos] = useState<Record<string, string>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [nationalIdNumber, setNationalIdNumber] = useState<string>('');
-    const [nationalIdValidated, setNationalIdValidated] = useState<boolean>(false);
-    const [idVerificationData, setIdVerificationData] = useState<IDVerificationResult | null>(null);
+
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -85,7 +82,7 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
             {
                 id: 'national_id',
                 name: 'National ID',
-                description: 'Upload a clear photo or scan of your National ID (both sides if applicable)',
+                description: 'Take a pic of your ID or upload it',
                 icon: <CreditCard className="h-6 w-6 text-emerald-600" />,
                 required: true,
                 acceptedTypes: ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'],
@@ -113,7 +110,7 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
     };
 
     // Enhanced file validation with content inspection
-    const validateFile = async (file: File): Promise<{errors: string[], metadata: any}> => {
+    const validateFile = async (file: File): Promise<{ errors: string[], metadata: any }> => {
         const errors: string[] = [];
         const metadata: any = {
             mimeType: file.type,
@@ -186,7 +183,7 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
     };
 
     // Helper function to get image dimensions
-    const getImageDimensions = (file: File): Promise<{width: number, height: number}> => {
+    const getImageDimensions = (file: File): Promise<{ width: number, height: number }> => {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => {
@@ -349,6 +346,7 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                         }
 
                         // Add national ID number for national_id documents
+                        const nationalIdNumber = data.formResponses?.nationalIdNumber;
                         if (documentType === 'national_id' && nationalIdNumber) {
                             formData.append('national_id_number', nationalIdNumber);
                         }
@@ -604,14 +602,14 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                     },
                     body: JSON.stringify({ path: fileToRemove.path })
                 })
-                .then(response => {
-                    if (!response.ok) {
-                        console.error('Failed to delete file from server:', response.statusText);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error deleting file from server:', error);
-                });
+                    .then(response => {
+                        if (!response.ok) {
+                            console.error('Failed to delete file from server:', response.statusText);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error deleting file from server:', error);
+                    });
             } catch (error) {
                 console.error('Error deleting file:', error);
             }
@@ -1158,64 +1156,9 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                     </div>
                 </div>
 
-                {/* National ID Card Verification (only for national_id documents) */}
-                {requirement.id === 'national_id' && !idVerificationData && (
-                    <div className="mb-4">
-                        <IDCardVerifier
-                            id="national_id_verifier"
-                            label="Verify National ID Card"
-                            required={true}
-                            onVerificationComplete={(data) => {
-                                setIdVerificationData(data);
-                                setNationalIdNumber(data.idNumber);
-                                setNationalIdValidated(true);
-                                setErrors(prev => ({ ...prev, national_id_input: '' }));
-                            }}
-                            onVerificationFailed={(error) => {
-                                setErrors(prev => ({ ...prev, national_id_input: error }));
-                            }}
-                            error={errors.national_id_input}
-                        />
-                    </div>
-                )}
 
-                {/* Show verification success for national_id */}
-                {requirement.id === 'national_id' && idVerificationData && (
-                    <div className="mb-4 p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                        <div className="flex items-start gap-3">
-                            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-green-900 dark:text-green-100">
-                                    ID Card Verified Successfully
-                                </p>
-                                <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                                    <div>
-                                        <span className="text-gray-600 dark:text-gray-400">ID Number:</span>
-                                        <p className="font-medium text-green-900 dark:text-green-100">{idVerificationData.idNumber}</p>
-                                    </div>
-                                    <div>
-                                        <span className="text-gray-600 dark:text-gray-400">Name:</span>
-                                        <p className="font-medium text-green-900 dark:text-green-100">
-                                            {idVerificationData.firstName} {idVerificationData.lastName}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <span className="text-gray-600 dark:text-gray-400">Card Type:</span>
-                                        <p className="font-medium text-green-900 dark:text-green-100">
-                                            {idVerificationData.cardType === 'metal' ? 'Metal Card' : 'Plastic Card'}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <span className="text-gray-600 dark:text-gray-400">Confidence:</span>
-                                        <p className="font-medium text-green-900 dark:text-green-100">
-                                            {(idVerificationData.confidence * 100).toFixed(0)}%
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+
+
 
                 {/* Dropzone / Camera / Preview */}
                 {capturedDocumentPhotos[requirement.id] ? (
@@ -1252,43 +1195,42 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                     </div>
                 ) : activeDocumentCamera !== requirement.id ? (
                     <div>
-                            <div
-                                {...getRootProps()}
-                                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                                    isDragActive
-                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                        : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400'
+                        <div
+                            {...getRootProps()}
+                            className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragActive
+                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400'
                                 }`}
-                            >
-                                <input {...getInputProps()} />
-                                <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    Drag & drop files here, or click to select from phone gallery
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Max size: {requirement.maxSize}MB | Formats: JPG, PNG, PDF
-                                </p>
-                            </div>
-
-                            {/* Camera capture option for ALL documents */}
-                            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-3">
-                                    Or capture with camera
-                                </p>
-                                <Button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        startDocumentCamera(requirement.id);
-                                    }}
-                                    variant="outline"
-                                    className="w-full"
-                                    type="button"
-                                >
-                                    <Camera className="h-4 w-4 mr-2" />
-                                    Take Photo
-                                </Button>
-                            </div>
+                        >
+                            <input {...getInputProps()} />
+                            <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Drag & drop files here, or click to select from phone gallery
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Max size: {requirement.maxSize}MB | Formats: JPG, PNG, PDF
+                            </p>
                         </div>
+
+                        {/* Camera capture option for ALL documents */}
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-3">
+                                Or capture with camera
+                            </p>
+                            <Button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    startDocumentCamera(requirement.id);
+                                }}
+                                variant="outline"
+                                className="w-full"
+                                type="button"
+                            >
+                                <Camera className="h-4 w-4 mr-2" />
+                                Take Photo
+                            </Button>
+                        </div>
+                    </div>
                 ) : (
                     /* Camera View */
                     <div className="space-y-4">
@@ -1303,11 +1245,11 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                             />
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                 <div className="border-2 border-emerald-500 rounded-lg"
-                                     style={{
-                                         width: '85%',
-                                         height: '60%',
-                                         boxShadow: '0 0 0 9999px rgba(0,0,0,0.3)'
-                                     }}>
+                                    style={{
+                                        width: '85%',
+                                        height: '60%',
+                                        boxShadow: '0 0 0 9999px rgba(0,0,0,0.3)'
+                                    }}>
                                 </div>
                             </div>
                         </div>
@@ -1381,7 +1323,7 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                                                 )}
                                                 {file.securityHash && (
                                                     <span className="text-xs bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded"
-                                                          title={`Security hash: ${file.securityHash}`}>
+                                                        title={`Security hash: ${file.securityHash}`}>
                                                         <span className="flex items-center gap-1">
                                                             <Info className="h-3 w-3" />
                                                             Verified
@@ -1506,11 +1448,10 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                     <h4 className="font-semibold">Upload Selfie Photo</h4>
                     <div
                         {...getRootProps()}
-                        className={`border-2 border-dashed rounded-lg p-8 cursor-pointer transition-colors ${
-                            isDragActive
-                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400'
-                        }`}
+                        className={`border-2 border-dashed rounded-lg p-8 cursor-pointer transition-colors ${isDragActive
+                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400'
+                            }`}
                     >
                         <input {...getInputProps()} />
                         <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />

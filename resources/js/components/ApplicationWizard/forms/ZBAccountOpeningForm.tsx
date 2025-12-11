@@ -58,7 +58,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
         const businessName = data.business || ''; // string from ProductSelection
         const finalPrice = data.amount || 0; // number from ProductSelection
         const intent = data.intent || 'hirePurchase';
-        
+
         let facilityType = '';
         if (intent === 'hirePurchase' && businessName) {
             facilityType = `Hire Purchase Credit - ${businessName}`;
@@ -70,21 +70,21 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
         } else {
             facilityType = 'Credit Facility';
         }
-        
+
         // Calculate tenure based on amount
         let tenure = 12; // default
         if (finalPrice <= 1000) tenure = 6;
         else if (finalPrice <= 5000) tenure = 12;
         else if (finalPrice <= 15000) tenure = 18;
         else tenure = 24;
-        
+
         // Calculate monthly payment (10% annual interest)
         const interestRate = 0.10;
         const monthlyInterestRate = interestRate / 12;
-        const monthlyPayment = finalPrice > 0 ? 
+        const monthlyPayment = finalPrice > 0 ?
             (finalPrice * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenure)) /
             (Math.pow(1 + monthlyInterestRate, tenure) - 1) : 0;
-        
+
         return {
             creditFacilityType: facilityType,
             loanAmount: finalPrice.toFixed(2),
@@ -93,22 +93,22 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
             interestRate: '10.0'
         };
     };
-    
+
     const creditDetails = calculateCreditFacilityDetails();
     const businessName = data.business || '';
     const currentDate = new Date().toISOString().split('T')[0];
-    
+
     const [formData, setFormData] = useState({
         // Credit Facility Details (pre-populated)
         ...creditDetails,
-        
+
         // Account Specifications
         accountNumber: '',
         accountType: '', // Account type selection
         accountCurrency: '',
         initialDeposit: '', // Initial deposit amount
         serviceCenter: '',
-        
+
         // Personal Details
         title: '',
         firstName: '',
@@ -122,22 +122,23 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
         maritalStatus: '',
         citizenship: '',
         dependents: '',
-        nationalIdNumber: '',
+        nationalIdNumber: data.formResponses?.nationalIdNumber || '',
         driversLicense: '',
         passportNumber: '',
         passportExpiry: '',
         countryOfResidence: '',
         highestEducation: '',
         hobbies: '',
-        
+
         // Contact Details
         residentialAddress: '',
         telephoneRes: '',
-        mobile: '',
+        mobile: data.formResponses?.mobile || '',
         bus: '',
         emailAddress: '',
-        
+
         // Employment Details
+        department: '', // Added for GOZ Non-SSB
         employerName: '',
         occupation: '',
         employmentStatus: '',
@@ -154,7 +155,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
         employerContact: '',
         grossMonthlySalary: '',
         otherIncome: '',
-        
+
         // Spouse/Next of Kin
         spouseTitle: '',
         spouseFirstName: '',
@@ -165,7 +166,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
         spouseRelationship: '',
         spouseGender: '',
         spouseEmail: '',
-        
+
         // ZB Life Funeral Cash Cover
         funeralCover: {
             dependents: Array.from({ length: 8 }, () => createEmptyDependent()),
@@ -177,19 +178,19 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 personalAccidentBenefit: ''
             }
         },
-        
+
         // Personal Accident Benefit
         personalAccidentBenefit: {
             surname: '',
             forenames: ''
         },
-        
+
         // Other Services
         smsAlerts: false,
         smsNumber: '',
         eStatements: false,
         eStatementsEmail: '',
-        
+
         // Digital Banking
         mobileMoneyEcocash: false,
         mobileMoneyNumber: '',
@@ -197,7 +198,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
         eWalletNumber: '',
         whatsappBanking: false,
         internetBanking: false,
-        
+
         // Supporting Documents
         supportingDocs: {
             passportPhotos: false,
@@ -207,7 +208,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
             passport: false,
             driversLicense: false
         },
-        
+
         // Declaration
         declaration: {
             fullName: '',
@@ -252,7 +253,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
 
             const updatedData = { ...prev };
             let currentLevel: any = updatedData;
-            
+
 
             for (let i = 0; i < pathSegments.length - 1; i++) {
                 const segment = pathSegments[i];
@@ -273,9 +274,19 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
         });
     };
 
+    // Set default values for GOZ Non-SSB
+    React.useEffect(() => {
+        if (data.employer === 'government-non-ssb') {
+            setFormData(prev => ({
+                ...prev,
+                employerName: 'Ministry of Defence'
+            }));
+        }
+    }, [data.employer]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Map ZB form fields to match validation expectations
         const mappedData = {
             formResponses: {
@@ -292,7 +303,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 countryOfResidence: formData.countryOfResidence,
                 accountCurrency: formData.accountCurrency,
                 serviceCenter: formData.serviceCenter,
-                
+
                 // Spouse/Next of Kin details (map to spouseDetails array)
                 spouseDetails: [
                     {
@@ -306,7 +317,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         emailAddress: formData.spouseEmail  // PDF template expects both email and emailAddress
                     }
                 ],
-                
+
                 // Declaration
                 declaration: {
                     fullName: formData.declaration.fullName,
@@ -314,7 +325,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                     date: formData.declaration.date,
                     acknowledged: formData.declaration.acknowledged
                 },
-                
+
                 // Additional form fields (avoid duplicates by omitting already mapped fields)
                 title: formData.title,
                 maidenName: formData.maidenName,
@@ -339,6 +350,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 employerContact: formData.employerContact,
                 grossMonthlySalary: formData.grossMonthlySalary,
                 otherIncome: formData.otherIncome,
+                department: formData.department, // Map department field
                 accountNumber: formData.accountNumber,
                 accountType: formData.accountType,
                 initialDeposit: formData.initialDeposit,
@@ -381,7 +393,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
             formType: 'zb_account_opening',
             formId: 'individual_account_opening.json'
         };
-        
+
         onNext(mappedData);
     };
 
@@ -404,20 +416,20 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         <CreditCard className="h-6 w-6 text-green-600 mr-3" />
                         <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Hire Purchase Application Details</h3>
                     </div>
-                    
+
                     {/* Pre-populated readonly fields */}
                     <div className="grid gap-4 mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg border">
                         <div className="text-sm text-green-600 dark:text-green-400 font-medium mb-2">
                             ✅ The following details have been automatically filled based on your product selection:
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label className="text-gray-700 dark:text-gray-300">Hire Purchase Facility Type</Label>
                                 <Input
                                     value={formData.creditFacilityType}
                                     readOnly
-                                    className="bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                                    className="border-gray-200 dark:border-gray-600"
                                 />
                             </div>
                             <div>
@@ -427,7 +439,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                     <Input
                                         value={formData.loanAmount}
                                         readOnly
-                                        className="pl-8 bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                                        className="pl-8 border-gray-200 dark:border-gray-600"
                                     />
                                 </div>
                             </div>
@@ -436,7 +448,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 <Input
                                     value={`${formData.loanTenure} months`}
                                     readOnly
-                                    className="bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                                    className="border-gray-200 dark:border-gray-600"
                                 />
                             </div>
                             <div>
@@ -446,19 +458,15 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                     <Input
                                         value={formData.monthlyPayment}
                                         readOnly
-                                        className="pl-8 bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                                        className="pl-8 border-gray-200 dark:border-gray-600"
                                     />
                                 </div>
                             </div>
-                            <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Interest Rate (%)</Label>
-                                <Input
-                                    value={`${formData.interestRate}%`}
-                                    readOnly
-                                    type="hidden"
-                                    className="bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
-                                />
-                            </div>
+                            <Input
+                                value={`${formData.interestRate}%`}
+                                readOnly
+                                type="hidden"
+                            />
                         </div>
                     </div>
                 </Card>
@@ -469,25 +477,25 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         <CreditCard className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Account Specifications</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-3">
                         <div>
                             <Label htmlFor="accountNumber">Account Number (Pre-Official Use Only)</Label>
                             <div className="flex gap-1">
-                                {[...Array(4)].map((_, i) => (
+                                {Array(4).fill(0).map((_, i) => (
                                     <Input key={i} className="w-12 text-center" maxLength={1} />
                                 ))}
                                 <span className="mx-2">-</span>
-                                {[...Array(6)].map((_, i) => (
+                                {Array(6).fill(0).map((_, i) => (
                                     <Input key={i + 4} className="w-12 text-center" maxLength={1} />
                                 ))}
                                 <span className="mx-2">-</span>
-                                {[...Array(2)].map((_, i) => (
+                                {Array(2).fill(0).map((_, i) => (
                                     <Input key={i + 10} className="w-12 text-center" maxLength={1} />
                                 ))}
                             </div>
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="accountType">Account Type</Label>
                             <Select value={formData.accountType} onValueChange={(value) => handleInputChange('accountType', value)}>
@@ -502,7 +510,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="initialDeposit">Initial Deposit Amount (USD)</Label>
                             <Input
@@ -515,7 +523,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 step="0.01"
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="serviceCenter">Service Centre for Card Collection *</Label>
                             <Input
@@ -527,7 +535,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                             />
                         </div>
                     </div>
-                    
+
                     <div className="mt-4">
                         <Label>Currency of Account (Please mark (X) the appropriate boxes) *</Label>
                         <div className="flex gap-4 mt-2">
@@ -550,7 +558,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         <User className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Personal Details</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <div>
                             <Label htmlFor="title">Title</Label>
@@ -567,7 +575,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="firstName"
@@ -580,7 +588,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="surname"
@@ -593,7 +601,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="maidenName"
@@ -605,7 +613,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 autoCapitalize={true}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="gender">Gender *</Label>
                             <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)} required>
@@ -618,7 +626,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="dateOfBirth"
@@ -633,7 +641,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 defaultAge={20}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="placeOfBirth">Place of Birth</Label>
                             <Input
@@ -642,7 +650,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 onChange={(e) => handleInputChange('placeOfBirth', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="nationality">Nationality *</Label>
                             <Input
@@ -653,7 +661,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="maritalStatus">Marital Status *</Label>
                             <Select value={formData.maritalStatus} onValueChange={(value) => handleInputChange('maritalStatus', value)} required>
@@ -667,7 +675,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="nationalIdNumber"
@@ -680,9 +688,11 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 placeholder="e.g. 12-345678 A 12"
                                 title="Zimbabwe ID format: 12-345678 A 12"
                                 required
+                                readOnly={!!data.formResponses?.nationalIdNumber}
+
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="driversLicense">Driver's License No</Label>
                             <Input
@@ -691,7 +701,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 onChange={(e) => handleInputChange('driversLicense', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="passportNumber">Passport Number (if applicable)</Label>
                             <Input
@@ -700,7 +710,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 onChange={(e) => handleInputChange('passportNumber', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="passportExpiry"
@@ -714,7 +724,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 defaultAge={0}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="countryOfResidence">Country of Residence *</Label>
                             <Input
@@ -724,7 +734,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="highestEducation">Highest Educational Qualification</Label>
                             <Input
@@ -733,7 +743,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 onChange={(e) => handleInputChange('highestEducation', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="hobbies">Hobbies</Label>
                             <Input
@@ -742,7 +752,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 onChange={(e) => handleInputChange('hobbies', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="citizenship">Citizenship</Label>
                             <Input
@@ -751,7 +761,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 onChange={(e) => handleInputChange('citizenship', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="dependents">Dependents</Label>
                             <Input
@@ -761,7 +771,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 onChange={(e) => handleInputChange('dependents', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="otherNames"
@@ -782,7 +792,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         <Smartphone className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Contact Details</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="md:col-span-2">
                             <FormField
@@ -795,7 +805,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="telephoneRes"
@@ -806,7 +816,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 onChange={(value) => handleInputChange('telephoneRes', value)}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="mobile"
@@ -819,7 +829,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="emailAddress">Email Address</Label>
                             <Input
@@ -838,18 +848,38 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         <Building className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Employment Details</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                            <Label htmlFor="employerName">Name of Institution</Label>
+                            <Label htmlFor="employerName">{data.employer === 'government-non-ssb' ? 'Ministry' : 'Name of Institution'}</Label>
                             <Input
                                 id="employerName"
                                 value={formData.employerName}
                                 onChange={(e) => handleInputChange('employerName', e.target.value)}
                                 required
+                                readOnly={data.employer === 'government-non-ssb'}
                             />
                         </div>
-                        
+
+                        {data.employer === 'government-non-ssb' && (
+                            <div>
+                                <Label htmlFor="department">Department</Label>
+                                <Select
+                                    value={formData.department}
+                                    onValueChange={(value) => handleInputChange('department', value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select department" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Zimbabwe National Army">Zimbabwe National Army</SelectItem>
+                                        <SelectItem value="Airforce of Zimbabwe">Airforce of Zimbabwe</SelectItem>
+                                        <SelectItem value="Other Security Sector">Other Security Sector</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+
                         <div>
                             <Label htmlFor="occupation">Occupation</Label>
                             <Input
@@ -859,7 +889,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="employmentStatus">Employment Status</Label>
                             <Select value={formData.employmentStatus} onValueChange={(value) => handleInputChange('employmentStatus', value)}>
@@ -875,7 +905,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="grossMonthlySalary">Net Pay Range (USD)</Label>
                             <Select value={formData.grossMonthlySalary} onValueChange={(value) => handleInputChange('grossMonthlySalary', value)}>
@@ -901,7 +931,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         <Users className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Spouse/Next of Kin</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <div>
                             <Label htmlFor="spouseTitle">Title</Label>
@@ -918,7 +948,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="spouseFirstName"
@@ -931,7 +961,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="spouseRelationship">Nature of Relationship</Label>
                             <Select value={formData.spouseRelationship} onValueChange={(value) => handleInputChange('spouseRelationship', value)}>
@@ -948,7 +978,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="spouseIdNumber"
@@ -960,7 +990,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 capitalizeCheckLetter={true}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="spouseContact"
@@ -979,11 +1009,11 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">H - ZB LIFE FUNERAL CASH COVER</h3>
                         <p className="text-sm text-emerald-700">
-                            Details of dependents to be covered by this application is up to eight (8) dependents. 
+                            Details of dependents to be covered by this application is up to eight (8) dependents.
                             <em>Please tick (√) the appropriate box to show supplementary benefits to be included.</em>
                         </p>
                     </div>
-                    
+
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse border border-gray-300">
                             <thead>
@@ -1067,7 +1097,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <div className="mt-4 grid gap-4 md:grid-cols-2">
                         <div>
                             <h4 className="font-semibold mb-2">Principal Member</h4>
@@ -1094,7 +1124,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div>
                             <h4 className="font-semibold mb-2">Supplementary Benefits (Tick (√) appropriate box)</h4>
                             <div className="space-y-2 text-sm">
@@ -1128,7 +1158,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">I - PERSONAL ACCIDENT BENEFIT</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <Label htmlFor="accidentSurname">Surname</Label>
@@ -1138,7 +1168,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 onChange={(e) => handleInputChange('personalAccidentBenefit.surname', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="accidentForenames">Forename(s)</Label>
                             <Input
@@ -1156,7 +1186,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         <Smartphone className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Digital Banking Services</h3>
                     </div>
-                    
+
                     <div className="space-y-4">
                         <div className="flex items-center space-x-3">
                             <Checkbox
@@ -1166,7 +1196,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                             />
                             <Label htmlFor="mobileMoneyEcocash">Mobile money e.g. Ecocash Services</Label>
                         </div>
-                        
+
                         {formData.mobileMoneyEcocash && (
                             <div className="ml-6">
                                 <FormField
@@ -1180,7 +1210,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 />
                             </div>
                         )}
-                        
+
                         <div className="flex items-center space-x-3">
                             <Checkbox
                                 id="whatsappBanking"
@@ -1189,7 +1219,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                             />
                             <Label htmlFor="whatsappBanking">WhatsApp Banking</Label>
                         </div>
-                        
+
                         <div className="flex items-center space-x-3">
                             <Checkbox
                                 id="internetBanking"
@@ -1207,7 +1237,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         <h3 className="text-lg font-semibold text-emerald-800">SUPPORTING KYC CHECKLIST</h3>
                         <p className="text-sm text-emerald-700">Please attach certified copies of the following and indicate by marking:</p>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-3">
                             <div className="flex items-center space-x-2">
@@ -1218,7 +1248,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 />
                                 <Label htmlFor="passportPhotos">(i) Two (2) recent passport-sized photos</Label>
                             </div>
-                            
+
                             <div className="flex items-center space-x-2">
                                 <Checkbox
                                     id="proofOfResidence"
@@ -1227,7 +1257,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 />
                                 <Label htmlFor="proofOfResidence">(ii) Proof of residence (within 3-months)</Label>
                             </div>
-                            
+
                             <div className="flex items-center space-x-2">
                                 <Checkbox
                                     id="payslip"
@@ -1237,7 +1267,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 <Label htmlFor="payslip">(iii) Payslip (where applicable)</Label>
                             </div>
                         </div>
-                        
+
                         <div className="space-y-3">
                             <p className="font-medium">Current Identification Documents: (mark applicable):</p>
                             <div className="flex items-center space-x-2">
@@ -1248,7 +1278,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 />
                                 <Label htmlFor="nationalIdCard">National ID Card</Label>
                             </div>
-                            
+
                             <div className="flex items-center space-x-2">
                                 <Checkbox
                                     id="passportDoc"
@@ -1257,7 +1287,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 />
                                 <Label htmlFor="passportDoc">Passport</Label>
                             </div>
-                            
+
                             <div className="flex items-center space-x-2">
                                 <Checkbox
                                     id="driversLicenseDoc"
@@ -1278,7 +1308,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                             I confirm that to the best of my knowledge, the above information is true and correct and that all the persons registered above are not on medication for any disease or illness. Should anything change, I undertake to advise ZB Bank immediately.
                         </p>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-3">
                         <div>
                             <Label htmlFor="declarationName">Full Name</Label>
@@ -1288,14 +1318,14 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 onChange={(e) => handleInputChange('declaration.fullName', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="declarationSignature">Applicant's Signature</Label>
                             <div className="h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500">
                                 Signature Area
                             </div>
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="declarationDate"
@@ -1309,7 +1339,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                             />
                         </div>
                     </div>
-                    
+
                     <div className="mt-4">
                         <FormField
                             id="declarationAcknowledged"
@@ -1335,7 +1365,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         <ChevronLeft className="h-4 w-4" />
                         Back
                     </Button>
-                    
+
                     <Button
                         type="submit"
                         disabled={loading}

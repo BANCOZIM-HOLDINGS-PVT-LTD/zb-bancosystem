@@ -17,7 +17,8 @@ const FormStep: React.FC<FormStepProps> = ({ data, onNext, onBack, loading }) =>
         formId: data.formId,
         hasAccount: data.hasAccount,
         wantsAccount: data.wantsAccount,
-        employer: data.employer
+        employer: data.employer,
+        data: data // Full data debug
     });
 
     // Determine which form to show based on the form ID from ApplicationSummary
@@ -25,54 +26,54 @@ const FormStep: React.FC<FormStepProps> = ({ data, onNext, onBack, loading }) =>
         switch (data.formId) {
             case 'account_holder_loan_application.json':
                 return (
-                    <AccountHoldersLoanForm 
-                        data={data} 
-                        onNext={onNext} 
-                        onBack={onBack} 
-                        loading={loading} 
+                    <AccountHoldersLoanForm
+                        data={data}
+                        onNext={onNext}
+                        onBack={onBack}
+                        loading={loading}
                     />
                 );
-            
+
             case 'ssb_account_opening_form.json':
                 return (
-                    <SSBLoanForm 
-                        data={data} 
-                        onNext={onNext} 
-                        onBack={onBack} 
-                        loading={loading} 
+                    <SSBLoanForm
+                        data={data}
+                        onNext={onNext}
+                        onBack={onBack}
+                        loading={loading}
                     />
                 );
-            
+
             case 'individual_account_opening.json':
                 return (
-                    <ZBAccountOpeningForm 
-                        data={data} 
-                        onNext={onNext} 
-                        onBack={onBack} 
-                        loading={loading} 
+                    <ZBAccountOpeningForm
+                        data={data}
+                        onNext={onNext}
+                        onBack={onBack}
+                        loading={loading}
                     />
                 );
-            
+
             case 'smes_business_account_opening.json':
                 return (
-                    <SMEBusinessForm 
-                        data={data} 
-                        onNext={onNext} 
-                        onBack={onBack} 
-                        loading={loading} 
+                    <SMEBusinessForm
+                        data={data}
+                        onNext={onNext}
+                        onBack={onBack}
+                        loading={loading}
                     />
                 );
-            
+
             case 'pensioners_loan_account.json':
                 return (
-                    <AccountHoldersLoanForm 
-                        data={data} 
-                        onNext={onNext} 
-                        onBack={onBack} 
-                        loading={loading} 
+                    <AccountHoldersLoanForm
+                        data={data}
+                        onNext={onNext}
+                        onBack={onBack}
+                        loading={loading}
                     />
                 );
-            
+
             default:
                 return (
                     <div className="text-center space-y-4">

@@ -45,7 +45,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
         const businessName = data.business || ''; // string from ProductSelection
         const finalPrice = data.amount || 0; // number from ProductSelection
         const intent = data.intent || 'hirePurchase';
-        
+
         let facilityType = '';
         if (intent === 'hirePurchase' && businessName) {
             facilityType = `Hire Purchase Credit - ${businessName}`;
@@ -57,21 +57,21 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
         } else {
             facilityType = 'Credit Facility';
         }
-        
+
         // Calculate tenure based on amount
         let tenure = 12; // default
         if (finalPrice <= 1000) tenure = 6;
         else if (finalPrice <= 5000) tenure = 12;
         else if (finalPrice <= 15000) tenure = 18;
         else tenure = 24;
-        
+
         // Calculate monthly payment (10% annual interest)
         const interestRate = 0.10;
         const monthlyInterestRate = interestRate / 12;
-        const monthlyPayment = finalPrice > 0 ? 
+        const monthlyPayment = finalPrice > 0 ?
             (finalPrice * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenure)) /
             (Math.pow(1 + monthlyInterestRate, tenure) - 1) : 0;
-        
+
         return {
             creditFacilityType: facilityType,
             loanAmount: finalPrice.toFixed(2),
@@ -80,7 +80,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             interestRate: '10.0'
         };
     };
-    
+
     const creditDetails = calculateCreditFacilityDetails();
     const currentDate = new Date().toISOString().split('T')[0];
 
@@ -123,6 +123,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
         headOfInstitution: '',
         headOfInstitutionCell: '',
         currentNetSalary: '',
+        department: '', // Added for GOZ Non-SSB
 
         // Spouse and Next of Kin
         spouseDetails: [
@@ -134,13 +135,13 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
         bankName: data.hasAccount && data.accountType === 'ZB Bank Account' ? 'ZB Bank' : '',
         branch: '',
         accountNumber: '',
-        
+
         // Other Loans
         otherLoans: [
             { institution: '', repayment: '', currentBalance: '', maturityDate: '' },
             { institution: '', repayment: '', currentBalance: '', maturityDate: '' }
         ],
-        
+
         // Purpose/Asset (auto-populated from product selection)
         purposeAsset: data.business ? `${data.business} - ${data.scale || 'Standard Scale'}` : '',
         purposeOfLoan: data.business ? `${data.business} - ${data.scale || 'Standard Scale'}` : ''
@@ -178,7 +179,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
     const handleSpouseChange = (index: number, field: string, value: string) => {
         setFormData(prev => ({
             ...prev,
-            spouseDetails: prev.spouseDetails.map((spouse, i) => 
+            spouseDetails: prev.spouseDetails.map((spouse, i) =>
                 i === index ? { ...spouse, [field]: value } : spouse
             )
         }));
@@ -187,11 +188,21 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
     const handleLoanChange = (index: number, field: string, value: string) => {
         setFormData(prev => ({
             ...prev,
-            otherLoans: prev.otherLoans.map((loan, i) => 
+            otherLoans: prev.otherLoans.map((loan, i) =>
                 i === index ? { ...loan, [field]: value } : loan
             )
         }));
     };
+
+    // Set default values for GOZ Non-SSB
+    React.useEffect(() => {
+        if (data.employer === 'government-non-ssb') {
+            setFormData(prev => ({
+                ...prev,
+                employerName: 'Ministry of Defense'
+            }));
+        }
+    }, [data.employer]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -224,35 +235,36 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 emailAddress: formData.emailAddress,
                 maritalStatus: formData.maritalStatus,
                 nationality: formData.nationality,
-                
+
                 // Address mappings - PDF template expects residentialAddress
-                residentialAddress: typeof formData.permanentAddress === 'string' ? formData.permanentAddress : 
-                    (formData.permanentAddress && typeof formData.permanentAddress === 'object' ? 
+                residentialAddress: typeof formData.permanentAddress === 'string' ? formData.permanentAddress :
+                    (formData.permanentAddress && typeof formData.permanentAddress === 'object' ?
                         JSON.stringify(formData.permanentAddress) : ''),
-                
+
                 // Property and residence details - convert values for PDF compatibility
                 propertyOwnership: convertPropertyOwnership(formData.propertyOwnership),
                 periodAtAddress: convertPeriodToText(formData.periodAtAddress),
                 employmentStatus: formData.employmentStatus,
-                
+
                 // Employment details
                 employerName: formData.employerName,
+                department: formData.department, // Map department field
                 currentNetSalary: formData.currentNetSalary,
                 jobTitle: formData.jobTitle,
-                employerAddress: typeof formData.employerAddress === 'string' ? formData.employerAddress : 
-                    (formData.employerAddress && typeof formData.employerAddress === 'object' ? 
+                employerAddress: typeof formData.employerAddress === 'string' ? formData.employerAddress :
+                    (formData.employerAddress && typeof formData.employerAddress === 'object' ?
                         JSON.stringify(formData.employerAddress) : ''),
                 dateOfEmployment: formData.dateOfEmployment,
                 employmentNumber: formData.employmentNumber,
                 headOfInstitution: formData.headOfInstitution,
                 headOfInstitutionCell: formData.headOfInstitutionCell,
                 responsiblePaymaster: formData.responsiblePaymaster,
-                
+
                 // Banking details
                 bankName: formData.bankName,
                 branch: formData.branch,
                 accountNumber: formData.accountNumber,
-                
+
                 // Loan details
                 loanAmount: formData.loanAmount,
                 loanTenure: formData.loanTenure,
@@ -261,18 +273,18 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 creditFacilityType: formData.creditFacilityType,
                 purposeAsset: formData.purposeAsset,
                 purposeOfLoan: formData.purposeAsset,
-                
+
                 // Spouse/Next of Kin details - ensure addresses are properly formatted
                 spouseDetails: formData.spouseDetails.map(spouse => ({
                     ...spouse,
-                    residentialAddress: typeof spouse.residentialAddress === 'string' ? spouse.residentialAddress : 
-                        (spouse.residentialAddress && typeof spouse.residentialAddress === 'object' ? 
+                    residentialAddress: typeof spouse.residentialAddress === 'string' ? spouse.residentialAddress :
+                        (spouse.residentialAddress && typeof spouse.residentialAddress === 'object' ?
                             JSON.stringify(spouse.residentialAddress) : '')
                 })),
-                
+
                 // Other loans
                 otherLoans: formData.otherLoans,
-                
+
                 // Header fields for PDF
                 deliveryStatus: formData.deliveryStatus,
                 province: formData.province,
@@ -299,7 +311,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             },
             formType: 'account_holder_loan_application'
         };
-        
+
         onNext(mappedData);
     };
 
@@ -316,14 +328,14 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                
+
                 {/* Personal Details */}
                 <Card className="p-6">
                     <div className="flex items-center mb-4">
                         <User className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Personal Details</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <div>
                             <Label htmlFor="title">Title</Label>
@@ -340,7 +352,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="surname"
@@ -352,7 +364,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 autoCapitalize={true}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="firstName"
@@ -364,7 +376,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 autoCapitalize={true}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="gender">Gender *</Label>
                             <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)} required>
@@ -377,7 +389,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="dateOfBirth"
@@ -392,7 +404,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 showAgeValidation={true}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="maritalStatus">Marital Status</Label>
                             <Select value={formData.maritalStatus} onValueChange={(value) => handleInputChange('maritalStatus', value)}>
@@ -407,7 +419,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="idNumber"
@@ -421,7 +433,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 title="Zimbabwe ID format: 12-345678 A 12"
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="cellNumber"
@@ -432,7 +444,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="emailAddress"
@@ -442,17 +454,17 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 onChange={(value) => handleInputChange('emailAddress', value)}
                                 required
                             />
-                        </div>                    
+                        </div>
                         <div className="md:col-span-2 lg:col-span-3">
                             <FormField
                                 id="permanentAddress"
-                                label="Permanent Address"
+                                label="Residential Address"
                                 type="address"
                                 value={formData.permanentAddress || '{}'}
                                 onChange={(value) => handleInputChange('permanentAddress', value)}
                             />
                         </div>
-                        
+
                         <div className="md:col-span-2 lg:col-span-3">
                             <Label>Accommodation Status</Label>
                             <div className="flex gap-4 mt-2">
@@ -471,7 +483,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 ))}
                             </div>
                         </div>
-                        
+
                         <div className="md:col-span-2 lg:col-span-3">
                             <Label>Period at current address</Label>
                             <div className="flex gap-4 mt-2">
@@ -490,7 +502,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 ))}
                             </div>
                         </div>
-                        
+
                         <div className="md:col-span-2 lg:col-span-3">
                             <Label>Status of employment</Label>
                             <div className="flex gap-4 mt-2">
@@ -518,18 +530,38 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                         <Building className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Employment Details</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                            <Label htmlFor="employerName">Name of Institution *</Label>
+                            <Label htmlFor="employerName">{data.employer === 'government-non-ssb' ? 'Ministry' : 'Name of Institution *'}</Label>
                             <Input
                                 id="employerName"
                                 value={formData.employerName}
                                 onChange={(e) => handleInputChange('employerName', e.target.value)}
                                 required
+                                readOnly={data.employer === 'government-non-ssb'}
                             />
                         </div>
-                        
+
+                        {data.employer === 'government-non-ssb' && (
+                            <div>
+                                <Label htmlFor="department">Department</Label>
+                                <Select
+                                    value={formData.department}
+                                    onValueChange={(value) => handleInputChange('department', value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select department" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Zimbabwe National Army">Zimbabwe National Army</SelectItem>
+                                        <SelectItem value="Airforce of Zimbabwe">Airforce of Zimbabwe</SelectItem>
+                                        <SelectItem value="Other Security Sector">Other Security Sector</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+
                         <div>
                             <FormField
                                 id="employerAddress"
@@ -540,7 +572,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="jobTitle">Job Title *</Label>
                             <Input
@@ -550,7 +582,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="dateOfEmployment"
@@ -563,7 +595,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="employmentNumber">Employment Number</Label>
                             <Input
@@ -572,7 +604,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 onChange={(e) => handleInputChange('employmentNumber', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="currentNetSalary">Net Pay Range (USD) *</Label>
                             <Select value={formData.currentNetSalary} onValueChange={(value) => handleInputChange('currentNetSalary', value)} required>
@@ -589,7 +621,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="headOfInstitution">Name of Immediate Supervisor</Label>
                             <Input
@@ -598,7 +630,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 onChange={(e) => handleInputChange('headOfInstitution', e.target.value)}
                             />
                         </div>
-                        
+
                         <div>
                             <FormField
                                 id="headOfInstitutionCell"
@@ -620,7 +652,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                         At least one next of kin is required
                     </p>
-                    
+
                     {formData.spouseDetails.map((spouse, index) => (
                         <div key={index} className="grid gap-4 md:grid-cols-4 mb-4 p-4 border rounded-lg">
                             <div>
@@ -634,7 +666,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                     autoCapitalize={true}
                                 />
                             </div>
-                            
+
                             <div>
                                 <Label htmlFor={`spouse-${index}-relationship`}>Relationship{index === 0 && spouse.fullName ? ' *' : ''}</Label>
                                 <Select value={spouse.relationship} onValueChange={(value) => handleSpouseChange(index, 'relationship', value)}>
@@ -651,18 +683,18 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                     </SelectContent>
                                 </Select>
                             </div>
-                            
+
                             <div>
                                 <FormField
-                            id={`spouse-${index}-phone`}
-                            label={`Phone Numbers${index === 0 && spouse.fullName ? ' *' : ''}`}
-                            type="phone"
-                            value={spouse.phoneNumber}
-                            onChange={(value) => handleSpouseChange(index, 'phoneNumber', value)}
-                            required={index === 0 && !!spouse.fullName}
-                        />
-                    </div>
-                            
+                                    id={`spouse-${index}-phone`}
+                                    label={`Phone Numbers${index === 0 && spouse.fullName ? ' *' : ''}`}
+                                    type="phone"
+                                    value={spouse.phoneNumber}
+                                    onChange={(value) => handleSpouseChange(index, 'phoneNumber', value)}
+                                    required={index === 0 && !!spouse.fullName}
+                                />
+                            </div>
+
                             <div>
                                 <FormField
                                     id={`spouse-${index}-address`}
@@ -682,7 +714,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                         <CreditCard className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Banking/Mobile Account Details</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-3">
                         <div>
                             <Label htmlFor="bankName">
@@ -867,13 +899,13 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                         <CreditCard className="h-6 w-6 text-green-600 mr-3" />
                         <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Hire Purchase Application Details</h3>
                     </div>
-                    
+
                     {/* Pre-populated readonly fields */}
                     <div className="grid gap-4 mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg border">
                         <div className="text-sm text-green-600 dark:text-green-400 font-medium mb-2">
                             ✅ The following details have been automatically filled based on your product selection:
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label className="text-gray-700 dark:text-gray-300">Hire Purchase Facility Type</Label>
@@ -921,7 +953,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                             />
                         </div>
                     </div>
-                    
+
                     {/* Editable purpose field */}
                     <div>
                         <Label htmlFor="purposeAsset">Purpose/Asset Applied For *</Label>
@@ -947,7 +979,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                         <ChevronLeft className="h-4 w-4" />
                         Back
                     </Button>
-                    
+
                     <Button
                         type="submit"
                         disabled={loading}

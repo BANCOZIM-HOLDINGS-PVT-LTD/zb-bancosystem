@@ -19,10 +19,10 @@ export const formatFieldName = (field: string): string => {
   // Handle nested fields like 'spouseDetails[0].fullName'
   const parts = field.split('.');
   const lastPart = parts[parts.length - 1];
-  
+
   // Handle array notation like 'spouseDetails[0]'
   const cleanField = lastPart.replace(/\[\d+\]/g, '');
-  
+
   // Convert camelCase to Title Case with spaces
   return cleanField
     .replace(/([A-Z])/g, ' $1')
@@ -45,27 +45,27 @@ export const validationRules = {
     if (typeof value === 'object') return Object.keys(value).length > 0;
     return !!value;
   },
-  
+
   // Validate that a field matches another field (useful for password confirmation)
   matches: (value: any, matchValue: any): boolean => {
     if (!value) return true; // Skip if empty
     return value === matchValue;
   },
-  
+
   email: (value: string): boolean => {
     if (!value) return true; // Skip if empty (use required rule separately)
     // More comprehensive email regex that handles most valid email formats
     const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     return emailRegex.test(value.toLowerCase());
   },
-  
+
   phone: (value: string): boolean => {
     if (!value) return true; // Skip if empty
     // Zimbabwe phone number format with flexibility - matches backend validation
     const phoneRegex = /^(\+263|0)?[0-9\s\-\(\)]{7,15}$/;
     return phoneRegex.test(value.trim());
   },
-  
+
   idNumber: (value: string): boolean => {
     if (!value) return true; // Skip if empty
     // Zimbabwe ID format: Multiple variations accepted
@@ -76,34 +76,34 @@ export const validationRules = {
     const idRegex = /^[0-9]{2}[0-9]{6,7}[A-Z]?[0-9]{2}$/i;
     return idRegex.test(cleaned);
   },
-  
+
   minLength: (value: string, length: number): boolean => {
     if (!value) return true; // Skip if empty
     return value.length >= length;
   },
-  
+
   maxLength: (value: string, length: number): boolean => {
     if (!value) return true; // Skip if empty
     return value.length <= length;
   },
-  
+
   numeric: (value: string): boolean => {
     if (!value) return true; // Skip if empty
     return /^[0-9]+$/.test(value);
   },
-  
+
   decimal: (value: string): boolean => {
     if (!value) return true; // Skip if empty
     // Allow up to 2 decimal places
     return /^[0-9]+(\.[0-9]{1,2})?$/.test(value);
   },
-  
+
   currency: (value: string): boolean => {
     if (!value) return true; // Skip if empty
     // Currency format with optional $ symbol and thousands separators
     return /^(\$)?([0-9]{1,3},([0-9]{3},)*[0-9]{3}|[0-9]+)(\.[0-9]{1,2})?$/.test(value);
   },
-  
+
   salaryRange: (value: string): boolean => {
     if (!value) return true; // Skip if empty
     // Accept salary range dropdown values
@@ -113,13 +113,13 @@ export const validationRules = {
     ];
     return validRanges.includes(value);
   },
-  
+
   date: (value: string): boolean => {
     if (!value) return true; // Skip if empty
     const dateObj = new Date(value);
     return !isNaN(dateObj.getTime());
   },
-  
+
   futureDate: (value: string): boolean => {
     if (!value) return true; // Skip if empty
     const dateObj = new Date(value);
@@ -127,7 +127,7 @@ export const validationRules = {
     today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
     return !isNaN(dateObj.getTime()) && dateObj >= today;
   },
-  
+
   pastDate: (value: string): boolean => {
     if (!value) return true; // Skip if empty
     const dateObj = new Date(value);
@@ -135,93 +135,93 @@ export const validationRules = {
     today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
     return !isNaN(dateObj.getTime()) && dateObj < today;
   },
-  
+
   minAge: (value: string, age: number): boolean => {
     if (!value) return true; // Skip if empty
     const dateObj = new Date(value);
     if (isNaN(dateObj.getTime())) return false;
-    
+
     const today = new Date();
     const birthDate = new Date(value);
     let calculatedAge = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
-    
+
     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
       calculatedAge--;
     }
-    
+
     return calculatedAge >= age;
   },
-  
+
   maxAge: (value: string, age: number): boolean => {
     if (!value) return true; // Skip if empty
     const dateObj = new Date(value);
     if (isNaN(dateObj.getTime())) return false;
-    
+
     const today = new Date();
     const birthDate = new Date(value);
     let calculatedAge = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
-    
+
     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
       calculatedAge--;
     }
-    
+
     return calculatedAge <= age;
   },
-  
+
   maxValue: (value: number, max: number): boolean => {
     if (value === undefined || value === null) return true;
     return value <= max;
   },
-  
+
   minValue: (value: number, min: number): boolean => {
     if (value === undefined || value === null) return true;
     return value >= min;
   },
-  
+
   pattern: (value: string, regex: RegExp): boolean => {
     if (!value) return true; // Skip if empty
     return regex.test(value);
   },
-  
+
   // Validate business registration number (format varies by country)
   businessRegNumber: (value: string): boolean => {
     if (!value) return true; // Skip if empty
     // Simple pattern for Zimbabwe business registration numbers
     return /^[A-Z0-9]{1,15}\/[0-9]{4}$|^[0-9]{1,10}\/[0-9]{4}$|^[A-Z0-9\/-]{5,20}$/.test(value);
   },
-  
+
   // Validate account numbers (general format)
   accountNumber: (value: string): boolean => {
     if (!value) return true; // Skip if empty
     // Most bank account numbers are 8-17 digits
     return /^[0-9]{8,17}$/.test(value);
   },
-  
+
   // Validate postal codes (Zimbabwe format)
   postalCode: (value: string): boolean => {
     if (!value) return true; // Skip if empty
     // Zimbabwe postal codes are typically 4-5 digits
     return /^[0-9]{4,5}$/.test(value);
   },
-  
+
   // Validate that a string contains only letters (and optionally spaces)
   alpha: (value: string, allowSpaces: boolean = true): boolean => {
     if (!value) return true; // Skip if empty
-    return allowSpaces 
-      ? /^[A-Za-z\s]+$/.test(value) 
+    return allowSpaces
+      ? /^[A-Za-z\s]+$/.test(value)
       : /^[A-Za-z]+$/.test(value);
   },
-  
+
   // Validate that a string contains only letters and numbers (and optionally spaces)
   alphanumeric: (value: string, allowSpaces: boolean = true): boolean => {
     if (!value) return true; // Skip if empty
-    return allowSpaces 
-      ? /^[A-Za-z0-9\s]+$/.test(value) 
+    return allowSpaces
+      ? /^[A-Za-z0-9\s]+$/.test(value)
       : /^[A-Za-z0-9]+$/.test(value);
   },
-  
+
   // Validate a URL
   url: (value: string): boolean => {
     if (!value) return true; // Skip if empty
@@ -232,33 +232,33 @@ export const validationRules = {
       return false;
     }
   },
-  
+
   // Validate a credit card number using Luhn algorithm
   creditCard: (value: string): boolean => {
     if (!value) return true; // Skip if empty
-    
+
     // Remove spaces and dashes
     const sanitized = value.replace(/[\s-]/g, '');
-    
+
     // Check if contains only digits
     if (!/^\d+$/.test(sanitized)) return false;
-    
+
     // Luhn algorithm
     let sum = 0;
     let shouldDouble = false;
-    
+
     for (let i = sanitized.length - 1; i >= 0; i--) {
       let digit = parseInt(sanitized.charAt(i));
-      
+
       if (shouldDouble) {
         digit *= 2;
         if (digit > 9) digit -= 9;
       }
-      
+
       sum += digit;
       shouldDouble = !shouldDouble;
     }
-    
+
     return sum % 10 === 0;
   },
 };
@@ -267,16 +267,16 @@ export const validationRules = {
 export const validateLanguageStep = (data: Partial<WizardData>): ValidationResult => {
   const errors: ValidationError[] = [];
   const fieldErrors: Record<string, string> = {};
-  
+
   const languageFields = [
-    { 
-      field: 'language', 
+    {
+      field: 'language',
       rules: [
         { rule: 'required', message: 'Please select a language to continue' }
-      ] 
+      ]
     }
   ];
-  
+
   languageFields.forEach(({ field, rules }) => {
     const value = data[field as keyof WizardData];
     const error = validateField(field, value, rules);
@@ -285,7 +285,7 @@ export const validateLanguageStep = (data: Partial<WizardData>): ValidationResul
       fieldErrors[field] = error.message;
     }
   });
-  
+
   return {
     isValid: errors.length === 0,
     errors,
@@ -296,16 +296,16 @@ export const validateLanguageStep = (data: Partial<WizardData>): ValidationResul
 export const validateIntentStep = (data: Partial<WizardData>): ValidationResult => {
   const errors: ValidationError[] = [];
   const fieldErrors: Record<string, string> = {};
-  
+
   const intentFields = [
-    { 
-      field: 'intent', 
+    {
+      field: 'intent',
       rules: [
         { rule: 'required', message: 'Please select your intent to continue' }
-      ] 
+      ]
     }
   ];
-  
+
   intentFields.forEach(({ field, rules }) => {
     const value = data[field as keyof WizardData];
     const error = validateField(field, value, rules);
@@ -314,7 +314,7 @@ export const validateIntentStep = (data: Partial<WizardData>): ValidationResult 
       fieldErrors[field] = error.message;
     }
   });
-  
+
   return {
     isValid: errors.length === 0,
     errors,
@@ -358,41 +358,41 @@ export const validateEmployerStep = (data: Partial<WizardData>): ValidationResul
 export const validateProductStep = (data: Partial<WizardData>): ValidationResult => {
   const errors: ValidationError[] = [];
   const fieldErrors: Record<string, string> = {};
-  
+
   const productFields = [
-    { 
-      field: 'category', 
+    {
+      field: 'category',
       rules: [
         { rule: 'required', message: 'Please select a product category' }
-      ] 
+      ]
     },
-    { 
-      field: 'subcategory', 
+    {
+      field: 'subcategory',
       rules: [
         { rule: 'required', message: 'Please select a product subcategory' }
-      ] 
+      ]
     },
-    { 
-      field: 'business', 
+    {
+      field: 'business',
       rules: [
         { rule: 'required', message: 'Please select a business' }
-      ] 
+      ]
     },
-    { 
-      field: 'scale', 
+    {
+      field: 'scale',
       rules: [
         { rule: 'required', message: 'Please select a scale' }
-      ] 
+      ]
     },
-    { 
-      field: 'amount', 
+    {
+      field: 'amount',
       rules: [
         { rule: 'required', message: 'Please enter an amount' },
         { rule: 'minValue', params: 1, message: 'Amount must be greater than 0' }
-      ] 
+      ]
     }
   ];
-  
+
   productFields.forEach(({ field, rules }) => {
     const value = data[field as keyof WizardData];
     const error = validateField(field, value, rules);
@@ -401,7 +401,7 @@ export const validateProductStep = (data: Partial<WizardData>): ValidationResult
       fieldErrors[field] = error.message;
     }
   });
-  
+
   return {
     isValid: errors.length === 0,
     errors,
@@ -452,85 +452,85 @@ export const validateFormStep = (data: Partial<WizardData>): ValidationResult =>
   const errors: ValidationError[] = [];
   const fieldErrors: Record<string, string> = {};
   const formResponses = data.formResponses || {};
-  
+
   // Common validations for all form types
   const commonFields = [
     { field: 'firstName', rules: [{ rule: 'required' }, { rule: 'alpha', params: true }] },
     { field: 'surname', rules: [{ rule: 'required' }, { rule: 'alpha', params: true }] },
-    { 
-      field: 'dateOfBirth', 
+    {
+      field: 'dateOfBirth',
       rules: [
         { rule: 'required', message: 'Date of birth is required' },
         { rule: 'pastDate', message: 'Date of birth must be in the past' },
         { rule: 'minAge', params: 18, message: 'You must be at least 18 years old' }
-      ] 
+      ]
     },
     { field: 'gender', rules: [{ rule: 'required' }] },
-    { 
-      field: 'nationalIdNumber', 
+    {
+      field: 'nationalIdNumber',
       rules: [
         { rule: 'required', message: 'National ID number is required' },
         { rule: 'idNumber', message: 'Please enter a valid ID number format (e.g., 12-345678-A-90)' }
-      ] 
+      ]
     },
-    { 
-      field: 'mobile', 
+    {
+      field: 'mobile',
       rules: [
         { rule: 'required', message: 'Mobile number is required' },
         { rule: 'phone', message: 'Please enter a valid mobile number (e.g., 0771234567 or +263771234567)' }
-      ] 
+      ]
     },
-    { 
-      field: 'emailAddress', 
+    {
+      field: 'emailAddress',
       rules: [
         { rule: 'email', message: 'Please enter a valid email address' }
       ],
       optional: true
     }
   ];
-  
+
   // Validate common fields
   commonFields.forEach(({ field, rules, optional }) => {
     // Skip validation for optional fields if they're not provided
     if (optional && !formResponses[field]) return;
-    
+
     const error = validateField(field, formResponses[field], rules);
     if (error) {
       errors.push(error);
       fieldErrors[field] = error.message;
     }
   });
-  
+
   // Form-specific validations based on formId
   if (data.formId) {
     switch (data.formId) {
       case 'account_holder_loan_application.json':
         // Account holders loan form validations
         const accountHolderFields = [
-          { 
-            field: 'employerName', 
+          {
+            field: 'employerName',
             rules: [
               { rule: 'required', message: 'Employer name is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'currentNetSalary', 
+          {
+            field: 'currentNetSalary',
             rules: [
               { rule: 'required', message: 'Current net salary is required' },
               { rule: 'salaryRange', message: 'Please select a valid salary range' }
-            ] 
+            ]
           },
-          { 
-            field: 'jobTitle', 
+          {
+            field: 'jobTitle',
             rules: [
               { rule: 'required', message: 'Job title is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'employerAddress', 
+          {
+            field: 'employerAddress',
             rules: [
               { rule: 'required', message: 'Employer address is required' }
-            ] 
+            ]
           },
           {
             field: 'dateOfEmployment',
@@ -538,28 +538,28 @@ export const validateFormStep = (data: Partial<WizardData>): ValidationResult =>
               { rule: 'required', message: 'Date of employment is required' }
             ]
           },
-          { 
-            field: 'loanAmount', 
+          {
+            field: 'loanAmount',
             rules: [
               { rule: 'required', message: 'Loan amount is required' },
               { rule: 'decimal', message: 'Please enter a valid loan amount' }
-            ] 
+            ]
           },
-          { 
-            field: 'loanTenure', 
+          {
+            field: 'loanTenure',
             rules: [
               { rule: 'required', message: 'Loan tenure is required' },
               { rule: 'numeric', message: 'Please enter a valid loan tenure' }
-            ] 
+            ]
           },
-          { 
-            field: 'purposeOfLoan', 
+          {
+            field: 'purposeOfLoan',
             rules: [
               { rule: 'required', message: 'Purpose of loan is required' }
-            ] 
+            ]
           }
         ];
-        
+
         // Validate account holder fields
         accountHolderFields.forEach(({ field, rules }) => {
           const error = validateField(field, formResponses[field], rules);
@@ -568,11 +568,11 @@ export const validateFormStep = (data: Partial<WizardData>): ValidationResult =>
             fieldErrors[field] = error.message;
           }
         });
-        
+
         // Validate next of kin (spouse details)
-        if (!formResponses.spouseDetails || 
-            !formResponses.spouseDetails[0] || 
-            !validationRules.required(formResponses.spouseDetails[0].fullName)) {
+        if (!formResponses.spouseDetails ||
+          !formResponses.spouseDetails[0] ||
+          !validationRules.required(formResponses.spouseDetails[0].fullName)) {
           const error = {
             field: 'spouseDetails[0].fullName',
             message: 'At least one next of kin is required'
@@ -580,11 +580,11 @@ export const validateFormStep = (data: Partial<WizardData>): ValidationResult =>
           errors.push(error);
           fieldErrors['spouseDetails[0].fullName'] = error.message;
         }
-        
-        if (formResponses.spouseDetails && 
-            formResponses.spouseDetails[0] && 
-            validationRules.required(formResponses.spouseDetails[0].fullName)) {
-            
+
+        if (formResponses.spouseDetails &&
+          formResponses.spouseDetails[0] &&
+          validationRules.required(formResponses.spouseDetails[0].fullName)) {
+
           // Validate relationship
           if (!validationRules.required(formResponses.spouseDetails[0].relationship)) {
             const error = {
@@ -594,7 +594,7 @@ export const validateFormStep = (data: Partial<WizardData>): ValidationResult =>
             errors.push(error);
             fieldErrors['spouseDetails[0].relationship'] = error.message;
           }
-          
+
           // Validate phone number
           if (!validationRules.required(formResponses.spouseDetails[0].phoneNumber)) {
             const error = {
@@ -613,58 +613,58 @@ export const validateFormStep = (data: Partial<WizardData>): ValidationResult =>
           }
         }
         break;
-        
+
       case 'ssb_account_opening_form.json':
         // SSB loan form validations
         const ssbFields = [
-          { 
-            field: 'employeeNumber', 
+          {
+            field: 'employeeNumber',
             rules: [
               { rule: 'required', message: 'Employee number is required' },
               { rule: 'alphanumeric', params: false, message: 'Employee number must contain only letters and numbers' }
-            ] 
+            ]
           },
-          { 
-            field: 'ministry', 
+          {
+            field: 'ministry',
             rules: [
               { rule: 'required', message: 'Ministry is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'netSalary', 
+          {
+            field: 'netSalary',
             rules: [
               { rule: 'required', message: 'Net salary is required' },
               { rule: 'salaryRange', message: 'Please select a valid salary range' }
-            ] 
+            ]
           },
-          { 
-            field: 'responsiblePaymaster', 
+          {
+            field: 'responsiblePaymaster',
             rules: [
               { rule: 'required', message: 'Responsible paymaster is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'responsibleMinistry', 
+          {
+            field: 'responsibleMinistry',
             rules: [
               { rule: 'required', message: 'Responsible ministry is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'loanAmount', 
+          {
+            field: 'loanAmount',
             rules: [
               { rule: 'required', message: 'Loan amount is required' },
               { rule: 'decimal', message: 'Please enter a valid loan amount' }
-            ] 
+            ]
           },
-          { 
-            field: 'loanTenure', 
+          {
+            field: 'loanTenure',
             rules: [
               { rule: 'required', message: 'Loan tenure is required' },
               { rule: 'numeric', message: 'Please enter a valid loan tenure' }
-            ] 
+            ]
           }
         ];
-        
+
         // Validate SSB fields
         ssbFields.forEach(({ field, rules }) => {
           const error = validateField(field, formResponses[field], rules);
@@ -674,55 +674,55 @@ export const validateFormStep = (data: Partial<WizardData>): ValidationResult =>
           }
         });
         break;
-        
+
       case 'individual_account_opening.json':
         // ZB account opening form validations
         const zbFields = [
-          { 
-            field: 'residentialAddress', 
+          {
+            field: 'residentialAddress',
             rules: [
               { rule: 'required', message: 'Residential address is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'maritalStatus', 
+          {
+            field: 'maritalStatus',
             rules: [
               { rule: 'required', message: 'Marital status is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'nationality', 
+          {
+            field: 'nationality',
             rules: [
               { rule: 'required', message: 'Nationality is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'countryOfResidence', 
+          {
+            field: 'countryOfResidence',
             rules: [
               { rule: 'required', message: 'Country of residence is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'accountCurrency', 
+          {
+            field: 'accountCurrency',
             rules: [
               { rule: 'required', message: 'Account currency is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'serviceCenter', 
+          {
+            field: 'serviceCenter',
             rules: [
               { rule: 'required', message: 'Service center is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'grossMonthlySalary', 
+          {
+            field: 'grossMonthlySalary',
             rules: [
               { rule: 'required', message: 'Monthly salary is required' },
               { rule: 'salaryRange', message: 'Please select a valid salary range' }
-            ] 
+            ]
           }
         ];
-        
+
         // Validate ZB fields
         zbFields.forEach(({ field, rules }) => {
           const error = validateField(field, formResponses[field], rules);
@@ -731,11 +731,11 @@ export const validateFormStep = (data: Partial<WizardData>): ValidationResult =>
             fieldErrors[field] = error.message;
           }
         });
-        
+
         // Validate next of kin
-        if (!formResponses.spouseDetails || 
-            !formResponses.spouseDetails[0] || 
-            !validationRules.required(formResponses.spouseDetails[0].fullName)) {
+        if (!formResponses.spouseDetails ||
+          !formResponses.spouseDetails[0] ||
+          !validationRules.required(formResponses.spouseDetails[0].fullName)) {
           const error = {
             field: 'spouseDetails[0].fullName',
             message: 'At least one next of kin is required'
@@ -743,7 +743,7 @@ export const validateFormStep = (data: Partial<WizardData>): ValidationResult =>
           errors.push(error);
           fieldErrors['spouseDetails[0].fullName'] = error.message;
         }
-        
+
         // Validate declaration
         if (!formResponses.declaration || !formResponses.declaration.acknowledged) {
           const error = {
@@ -754,132 +754,132 @@ export const validateFormStep = (data: Partial<WizardData>): ValidationResult =>
           fieldErrors['declaration.acknowledged'] = error.message;
         }
         break;
-        
+
       case 'smes_business_account_opening.json':
         // SME business form validations
         const smeFields = [
-          { 
-            field: 'businessName', 
+          {
+            field: 'businessName',
             rules: [
               { rule: 'required', message: 'Business name is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'businessRegistrationNumber', 
+          {
+            field: 'businessRegistrationNumber',
             rules: [
               { rule: 'required', message: 'Business registration number is required' },
               { rule: 'businessRegNumber', message: 'Please enter a valid business registration number format (e.g., ABC123/2023)' }
-            ] 
+            ]
           },
-          { 
-            field: 'businessType', 
+          {
+            field: 'businessType',
             rules: [
               { rule: 'required', message: 'Business type is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'businessAddress', 
+          {
+            field: 'businessAddress',
             rules: [
               { rule: 'required', message: 'Business address is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'businessPhone', 
+          {
+            field: 'businessPhone',
             rules: [
               { rule: 'required', message: 'Business phone is required' },
               { rule: 'phone', message: 'Please enter a valid phone number (e.g., 0771234567 or +263771234567)' }
-            ] 
+            ]
           },
-          { 
-            field: 'businessEmail', 
+          {
+            field: 'businessEmail',
             rules: [
               { rule: 'email', message: 'Please enter a valid email address' }
             ],
             optional: true
           },
-          { 
-            field: 'businessIndustry', 
+          {
+            field: 'businessIndustry',
             rules: [
               { rule: 'required', message: 'Business industry is required' }
-            ] 
+            ]
           },
-          { 
-            field: 'businessYearsOperating', 
+          {
+            field: 'businessYearsOperating',
             rules: [
               { rule: 'required', message: 'Years operating is required' },
               { rule: 'numeric', message: 'Please enter a valid number of years' }
-            ] 
+            ]
           },
-          { 
-            field: 'businessAnnualRevenue', 
+          {
+            field: 'businessAnnualRevenue',
             rules: [
               { rule: 'required', message: 'Annual revenue is required' },
               { rule: 'salaryRange', message: 'Please select a valid revenue range' }
-            ] 
+            ]
           },
-          { 
-            field: 'netProfit', 
+          {
+            field: 'netProfit',
             rules: [
               { rule: 'required', message: 'Net profit is required' },
               { rule: 'salaryRange', message: 'Please select a valid profit range' }
-            ] 
+            ]
           }
         ];
-        
+
         // Validate SME fields
         smeFields.forEach(({ field, rules, optional }) => {
           // Skip validation for optional fields if they're not provided
           if (optional && !formResponses[field]) return;
-          
+
           const error = validateField(field, formResponses[field], rules);
           if (error) {
             errors.push(error);
             fieldErrors[field] = error.message;
           }
         });
-        
+
         // Validate directors' personal details
         const directorFields = [
-          { 
-            field: 'directorsPersonalDetails.firstName', 
+          {
+            field: 'directorsPersonalDetails.firstName',
             rules: [
               { rule: 'required', message: 'Director\'s first name is required' },
               { rule: 'alpha', params: true, message: 'Director\'s first name must contain only letters' }
-            ] 
+            ]
           },
-          { 
-            field: 'directorsPersonalDetails.surname', 
+          {
+            field: 'directorsPersonalDetails.surname',
             rules: [
               { rule: 'required', message: 'Director\'s surname is required' },
               { rule: 'alpha', params: true, message: 'Director\'s surname must contain only letters' }
-            ] 
+            ]
           },
-          { 
-            field: 'directorsPersonalDetails.idNumber', 
+          {
+            field: 'directorsPersonalDetails.idNumber',
             rules: [
               { rule: 'required', message: 'Director\'s ID number is required' },
               { rule: 'idNumber', message: 'Please enter a valid ID number format (e.g., 12-345678-A-90)' }
-            ] 
+            ]
           }
         ];
-        
+
         // Validate director fields
         directorFields.forEach(({ field, rules }) => {
           const fieldParts = field.split('.');
           const directorDetails = formResponses.directorsPersonalDetails as Record<string, unknown> | undefined;
           const value = directorDetails ? directorDetails[fieldParts[1]] : undefined;
-          
+
           const error = validateField(field, value, rules);
           if (error) {
             errors.push(error);
             fieldErrors[field] = error.message;
           }
         });
-        
+
         // Validate at least one reference
-        if (!formResponses.references || 
-            !formResponses.references[0] || 
-            !validationRules.required(formResponses.references[0].name)) {
+        if (!formResponses.references ||
+          !formResponses.references[0] ||
+          !validationRules.required(formResponses.references[0].name)) {
           const error = {
             field: 'references[0].name',
             message: 'At least one reference is required'
@@ -887,21 +887,21 @@ export const validateFormStep = (data: Partial<WizardData>): ValidationResult =>
           errors.push(error);
           fieldErrors['references[0].name'] = error.message;
         }
-        
-        if (formResponses.references && 
-            formResponses.references[0] && 
-            validationRules.required(formResponses.references[0].name) &&
-            !validationRules.required(formResponses.references[0].phoneNumber)) {
+
+        if (formResponses.references &&
+          formResponses.references[0] &&
+          validationRules.required(formResponses.references[0].name) &&
+          !validationRules.required(formResponses.references[0].phoneNumber)) {
           const error = {
             field: 'references[0].phoneNumber',
             message: 'Phone number is required for reference'
           };
           errors.push(error);
           fieldErrors['references[0].phoneNumber'] = error.message;
-        } else if (formResponses.references && 
-                  formResponses.references[0] && 
-                  formResponses.references[0].phoneNumber &&
-                  !validationRules.phone(formResponses.references[0].phoneNumber as string)) {
+        } else if (formResponses.references &&
+          formResponses.references[0] &&
+          formResponses.references[0].phoneNumber &&
+          !validationRules.phone(formResponses.references[0].phoneNumber as string)) {
           const error = {
             field: 'references[0].phoneNumber',
             message: 'Please enter a valid phone number for reference'
@@ -912,7 +912,7 @@ export const validateFormStep = (data: Partial<WizardData>): ValidationResult =>
         break;
     }
   }
-  
+
   return {
     isValid: errors.length === 0,
     errors,
@@ -923,7 +923,7 @@ export const validateFormStep = (data: Partial<WizardData>): ValidationResult =>
 export const validateDocumentsStep = (data: Partial<WizardData>): ValidationResult => {
   const errors: ValidationError[] = [];
   const fieldErrors: Record<string, string> = {};
-  
+
   // Check if documents object exists
   if (!data.documents) {
     errors.push({
@@ -937,7 +937,7 @@ export const validateDocumentsStep = (data: Partial<WizardData>): ValidationResu
       fieldErrors
     };
   }
-  
+
   // Check for selfie
   if (!data.documents.selfie) {
     errors.push({
@@ -946,7 +946,7 @@ export const validateDocumentsStep = (data: Partial<WizardData>): ValidationResu
     });
     fieldErrors['selfie'] = 'Selfie photo is required';
   }
-  
+
   // Check for signature
   if (!data.documents.signature) {
     errors.push({
@@ -955,24 +955,24 @@ export const validateDocumentsStep = (data: Partial<WizardData>): ValidationResu
     });
     fieldErrors['signature'] = 'Digital signature is required';
   }
-  
+
   // Check for required documents based on application type
   const uploadedDocs = data.documents.uploadedDocuments || {};
-  
+
   // Always required documents
   const requiredDocTypes = ['national_id'];
-  
+
   // Add employer-specific required documents
   if (data.employer === 'entrepreneur') {
     requiredDocTypes.push('business_license');
   }
 
   // Note: Employment letter requirement removed - verification handled by admin/backend
-  
+
   // Validate each required document type
   requiredDocTypes.forEach(docType => {
     const docs = uploadedDocs[docType] || [];
-    
+
     if (docs.length === 0) {
       const docName = formatDocumentName(docType);
       errors.push({
@@ -993,7 +993,7 @@ export const validateDocumentsStep = (data: Partial<WizardData>): ValidationResu
       }
     }
   });
-  
+
   return {
     isValid: errors.length === 0,
     errors,
@@ -1012,7 +1012,7 @@ const formatDocumentName = (docType: string): string => {
 export const validateDocuments = (data: Partial<WizardData>): ValidationResult => {
   const errors: ValidationError[] = [];
   const fieldErrors: Record<string, string> = {};
-  
+
   if (!data.documents || !data.documents.uploadedDocuments) {
     const error = {
       field: 'documents',
@@ -1020,17 +1020,17 @@ export const validateDocuments = (data: Partial<WizardData>): ValidationResult =
     };
     errors.push(error);
     fieldErrors['documents'] = error.message;
-    
+
     return {
       isValid: false,
       errors,
       fieldErrors
     };
   }
-  
+
   // Determine required document types based on form type
   const requiredDocTypes = ['national_id'];
-  
+
   // Add form-specific required documents
   if (data.formId) {
     switch (data.formId) {
@@ -1048,14 +1048,14 @@ export const validateDocuments = (data: Partial<WizardData>): ValidationResult =
         break;
     }
   }
-  
+
   // Check if required document types are uploaded
   for (const docType of requiredDocTypes) {
     if (!data.documents.uploadedDocuments[docType] || data.documents.uploadedDocuments[docType].length === 0) {
       const formattedDocType = docType
         .replace(/_/g, ' ')
         .replace(/\b\w/g, l => l.toUpperCase());
-        
+
       const error = {
         field: docType,
         message: `Please upload your ${formattedDocType}`
@@ -1064,7 +1064,7 @@ export const validateDocuments = (data: Partial<WizardData>): ValidationResult =
       fieldErrors[docType] = error.message;
     }
   }
-  
+
   // Check for failed uploads
   for (const docType in data.documents.uploadedDocuments) {
     const docs = data.documents.uploadedDocuments[docType];
@@ -1077,7 +1077,7 @@ export const validateDocuments = (data: Partial<WizardData>): ValidationResult =
         errors.push(error);
         fieldErrors[`${docType}_${doc.id}`] = error.message;
       }
-      
+
       // Validate file size (max 5MB)
       if (doc.size > 5 * 1024 * 1024) {
         const error = {
@@ -1087,11 +1087,11 @@ export const validateDocuments = (data: Partial<WizardData>): ValidationResult =
         errors.push(error);
         fieldErrors[`${docType}_${doc.id}`] = error.message;
       }
-      
+
       // Validate file type based on document type
       const allowedImageTypes = ['image/jpeg', 'image/png', 'image/jpg'];
       const allowedDocTypes = ['application/pdf', ...allowedImageTypes];
-      
+
       if (!allowedDocTypes.includes(doc.type)) {
         const error = {
           field: `${docType}_${doc.id}`,
@@ -1102,7 +1102,7 @@ export const validateDocuments = (data: Partial<WizardData>): ValidationResult =
       }
     }
   }
-  
+
   // Check for selfie and signature
   if (!data.documents?.selfie) {
     const error = {
@@ -1112,7 +1112,7 @@ export const validateDocuments = (data: Partial<WizardData>): ValidationResult =
     errors.push(error);
     fieldErrors['selfie'] = error.message;
   }
-  
+
   if (!data.documents?.signature) {
     const error = {
       field: 'signature',
@@ -1121,7 +1121,7 @@ export const validateDocuments = (data: Partial<WizardData>): ValidationResult =
     errors.push(error);
     fieldErrors['signature'] = error.message;
   }
-  
+
   return {
     isValid: errors.length === 0,
     errors,
@@ -1134,11 +1134,11 @@ export const validateDocuments = (data: Partial<WizardData>): ValidationResult =
 // Validate a complete form based on field definitions
 export const validateForm = (
   formData: Record<string, any>,
-  fieldDefinitions: Record<string, Array<{rule: string, params?: any}>>
+  fieldDefinitions: Record<string, Array<{ rule: string, params?: any }>>
 ): ValidationResult => {
   const errors: ValidationError[] = [];
   const warnings: ValidationError[] = [];
-  
+
   for (const [field, rules] of Object.entries(fieldDefinitions)) {
     const error = validateField(field, formData[field], rules);
     if (error) {
@@ -1149,7 +1149,7 @@ export const validateForm = (
       }
     }
   }
-  
+
   return {
     isValid: errors.length === 0,
     errors,
@@ -1160,7 +1160,7 @@ export const validateForm = (
 // Main validation function that selects the appropriate validator based on step
 export const validateStep = (step: string, data: Partial<WizardData>): ValidationResult => {
   let validationResult: ValidationResult;
-  
+
   switch (step) {
     case 'language':
       validationResult = validateLanguageStep(data);
@@ -1177,6 +1177,9 @@ export const validateStep = (step: string, data: Partial<WizardData>): Validatio
     case 'account':
       validationResult = validateAccountStep(data);
       break;
+    case 'creditType':
+      validationResult = { isValid: true, errors: [] };
+      break;
     case 'form':
       validationResult = validateFormStep(data);
       break;
@@ -1190,7 +1193,7 @@ export const validateStep = (step: string, data: Partial<WizardData>): Validatio
     default:
       validationResult = { isValid: true, errors: [] };
   }
-  
+
   // Convert errors to fieldErrors format for easier consumption by form components
   if (validationResult.errors && validationResult.errors.length > 0) {
     const fieldErrors: Record<string, string> = {};
@@ -1199,12 +1202,12 @@ export const validateStep = (step: string, data: Partial<WizardData>): Validatio
     });
     validationResult.fieldErrors = fieldErrors;
   }
-  
+
   return validationResult;
 };
 
 // Enhanced field validation function with better error messages
-export const validateField = (field: string, value: any, rules: Array<{rule: string, params?: any, message?: string}>): ValidationError | null => {
+export const validateField = (field: string, value: any, rules: Array<{ rule: string, params?: any, message?: string }>): ValidationError | null => {
   for (const { rule, params, message } of rules) {
     // Skip empty validation for required rule as it's handled differently
     if (rule === 'required') {
@@ -1220,7 +1223,7 @@ export const validateField = (field: string, value: any, rules: Array<{rule: str
       if (value !== undefined && value !== null && value !== '') {
         // @ts-ignore - Dynamic access to validation rules
         const isValid = params !== undefined ? validationRules[rule](value, params) : validationRules[rule](value);
-        
+
         if (!isValid) {
           return {
             field,
@@ -1231,14 +1234,14 @@ export const validateField = (field: string, value: any, rules: Array<{rule: str
       }
     }
   }
-  
+
   return null;
 };
 
 // Helper function to generate default error messages based on validation rule
 export const getDefaultErrorMessage = (field: string, rule: string, params?: any): string => {
   const fieldName = formatFieldName(field);
-  
+
   switch (rule) {
     case 'required':
       return `${fieldName} is required`;
@@ -1302,10 +1305,10 @@ export const getDefaultErrorMessage = (field: string, rule: string, params?: any
 // Function to convert validation errors to field errors for form display
 export const errorsToFieldErrors = (errors: ValidationError[]): Record<string, string> => {
   const fieldErrors: Record<string, string> = {};
-  
+
   errors.forEach(error => {
     fieldErrors[error.field] = error.message;
   });
-  
+
   return fieldErrors;
 };

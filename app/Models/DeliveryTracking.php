@@ -32,6 +32,9 @@ class DeliveryTracking extends Model
         'delivery_photo',
         'status_history',
         'assigned_to',
+        // Post Office fields
+        'post_office_tracking_number',
+        'post_office_vehicle_registration',
         // Gain Outlet fields
         'gain_voucher_number',
         'gain_depot_location',

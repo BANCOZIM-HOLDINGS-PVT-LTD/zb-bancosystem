@@ -112,6 +112,63 @@ class PaynowService
     }
 
     /**
+     * Initiate a mobile transaction (EcoCash/OneMoney)
+     *
+     * @param string $pollUrl Poll URL from createPayment response
+     * @param string $phone Mobile number
+     * @param string $method Payment method (ecocash, onemoney)
+     * @return array ['success' => bool, 'error' => string|null]
+     */
+    public function initiateMobile(string $pollUrl, string $phone, string $method = 'ecocash'): array
+    {
+        try {
+            $response = Http::asForm()->post($pollUrl, [
+                'phone' => $phone,
+                'method' => $method,
+            ]);
+
+            if (!$response->successful()) {
+                Log::error('Paynow mobile initiation failed', [
+                    'poll_url' => $pollUrl,
+                    'phone' => $phone,
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return [
+                    'success' => false,
+                    'error' => 'Failed to initiate mobile payment',
+                ];
+            }
+
+            $result = $this->parseResponse($response->body());
+
+            if (strtolower($result['status'] ?? '') === 'error') {
+                return [
+                    'success' => false,
+                    'error' => $result['error'] ?? 'Mobile initiation failed',
+                ];
+            }
+
+            return [
+                'success' => true,
+                'error' => null,
+                'instructions' => $result['instructions'] ?? null,
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Paynow mobile initiation error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'An error occurred while initiating mobile payment',
+            ];
+        }
+    }
+
+    /**
      * Verify payment status using transaction ID or poll URL
      *
      * @param string $transactionIdOrReference Transaction ID or purchase reference

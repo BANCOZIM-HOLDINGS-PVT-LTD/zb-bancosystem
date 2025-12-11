@@ -110,94 +110,75 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({ referenceCode, 
             <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4 py-12">
                 <div className="max-w-2xl w-full">
                     {/* Success Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
                         {/* Success Icon */}
-                        <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-8 py-12 text-center">
-                            <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-full mb-6">
-                                <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                        <div className="bg-white dark:bg-gray-800 pt-12 pb-8 text-center">
+                            <div className="inline-flex items-center justify-center w-24 h-24 bg-green-50 dark:bg-green-900/30 rounded-full mb-6 relative">
+                                <svg className="w-12 h-12 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
                                 </svg>
+                                <div className="absolute inset-0 rounded-full border-4 border-green-100 dark:border-green-800 animate-pulse"></div>
                             </div>
-                            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
                                 Thank You for Your Application!
                             </h1>
-                            <p className="text-emerald-100 text-lg">
+                            <p className="text-gray-500 dark:text-gray-400 text-lg">
                                 Your application has been submitted successfully
                             </p>
                         </div>
 
                         {/* Content */}
-                        <div className="px-8 py-10">
+                        <div className="px-8 pb-10">
                             {/* Reference Code Display */}
-                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-8">
-                                <div className="text-center">
-                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                                        Please Note: Your National ID is your Reference Code
-                                    </p>
-                                    <div className="bg-white dark:bg-gray-900 rounded-lg px-6 py-4 inline-block shadow-sm">
-                                        <p className="text-3xl font-bold text-gray-900 dark:text-white font-mono tracking-wider">
-                                            {referenceCode}
-                                        </p>
-                                    </div>
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-8 mb-8 text-center border border-gray-200 dark:border-gray-700">
+                                <p className="text-gray-600 dark:text-gray-400 mb-4 font-medium">
+                                    Please Note - Your application reference number is
+                                </p>
+                                <div className="text-4xl font-bold text-gray-900 dark:text-white font-mono tracking-widest">
+                                    {referenceCode}
                                 </div>
                             </div>
 
-                            {/* Important Information */}
-                            <div className="space-y-6">
-                                {/* Main Message */}
-                                <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-5 rounded-r-lg">
-                                    <div className="flex items-start">
-                                        <div className="flex-shrink-0">
-                                            <svg className="h-6 w-6 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                            </svg>
-                                        </div>
-                                        <div className="ml-4">
-                                            <h3 className="text-lg font-semibold text-amber-800 dark:text-amber-300 mb-2">
-                                                Application Under Review
-                                            </h3>
-                                            <p className="text-amber-700 dark:text-amber-400 text-base leading-relaxed">
-                                                You can track your application after <strong>48 hours</strong>. Use your National ID number to track your application status.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
+                            {/* Tracking Info */}
+                            <div className="text-center mb-10">
+                                <p className="text-gray-600 dark:text-gray-400 leading-relaxed max-w-lg mx-auto">
+                                    You can track your application status after <span className="font-bold text-gray-900 dark:text-white">48 hours</span> by simply using the login menu instead of register selection.
+                                </p>
+                            </div>
 
-                                {/* What Happens Next */}
-                                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                                        <svg className="w-5 h-5 mr-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        What Happens Next?
-                                    </h3>
-                                    <ol className="space-y-3 text-gray-700 dark:text-gray-300">
-                                        <li className="flex items-start">
-                                            <span className="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900 text-emerald-600 dark:text-emerald-300 rounded-full flex items-center justify-center text-sm font-semibold mr-3">1</span>
-                                            <span>Your application is now under review</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900 text-emerald-600 dark:text-emerald-300 rounded-full flex items-center justify-center text-sm font-semibold mr-3">2</span>
-                                            <span>Please come back to this app to check the application status after 48 hours via the login menu</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900 text-emerald-600 dark:text-emerald-300 rounded-full flex items-center justify-center text-sm font-semibold mr-3">3</span>
-                                            <span>Once approved, delivery will be effected 14 days after approval</span>
-                                        </li>
-                                        <li className="flex items-start">
-                                            <span className="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900 text-emerald-600 dark:text-emerald-300 rounded-full flex items-center justify-center text-sm font-semibold mr-3">4</span>
-                                            <span>You can track your delivery status on the login menu</span>
-                                        </li>
-                                    </ol>
-                                </div>
+                            {/* What Happens Next */}
+                            <div className="bg-blue-50 dark:bg-blue-900/10 rounded-xl p-6 mb-8 border border-blue-100 dark:border-blue-900/30">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                                    What Happens Next
+                                </h3>
+                                <ol className="space-y-4">
+                                    <li className="flex gap-4">
+                                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-bold mt-0.5">1</div>
+                                        <p className="text-gray-700 dark:text-gray-300">
+                                            Your application has been sent to SSB/ZB for review
+                                        </p>
+                                    </li>
+                                    <li className="flex gap-4">
+                                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-bold mt-0.5">2</div>
+                                        <p className="text-gray-700 dark:text-gray-300">
+                                            You will be notified of the ZB/SSB response when you revisit this app within a 48 hours period
+                                        </p>
+                                    </li>
+                                    <li className="flex gap-4">
+                                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-bold mt-0.5">3</div>
+                                        <p className="text-gray-700 dark:text-gray-300">
+                                            Once ZB/SSB has approved your application then your product will be delivered to the depot you have selected within a 7 day period.
+                                        </p>
+                                    </li>
+                                </ol>
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="mt-10 flex flex-col gap-4">
+                            <div className="flex flex-col gap-4">
                                 <button
                                     onClick={handleCompleteApplication}
                                     disabled={loading}
-                                    className="w-full inline-flex items-center justify-center px-6 py-4 border-2 border-transparent text-base font-medium rounded-lg text-white bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full inline-flex items-center justify-center px-6 py-4 text-base font-semibold rounded-xl text-white bg-green-600 hover:bg-green-700 transition-all shadow-lg shadow-green-200 dark:shadow-none hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed group"
                                 >
                                     {loading ? (
                                         <>
@@ -205,26 +186,18 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({ referenceCode, 
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                             </svg>
-                                            Sending SMS...
+                                            Processing...
                                         </>
                                     ) : (
                                         <>
-                                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                            Click here to complete your application
+                                            <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                                             </svg>
-                                            Complete Application
                                         </>
                                     )}
                                 </button>
-                                <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-                                    {phoneNumber ? 'Click to receive a confirmation SMS and complete your application' : 'Click to complete your application'}
-                                </p>
                             </div>
-
-                            {/* Note */}
-                            <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
-                                Please note your reference code is you National ID number
-                            </p>
                         </div>
                     </div>
                 </div>

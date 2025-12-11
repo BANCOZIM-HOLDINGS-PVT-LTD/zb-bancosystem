@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChevronLeft, CreditCard, Smartphone, Wallet, Check, Loader2, AlertCircle, DollarSign } from 'lucide-react';
@@ -13,42 +14,40 @@ interface DepositPaymentStepProps {
 type PaymentMethod = 'ecocash' | 'onemoney' | 'card';
 
 const DepositPaymentStep: React.FC<DepositPaymentStepProps> = ({ data, onNext, onBack, loading }) => {
-    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
+    const [processing, setProcessing] = useState(false);
     const [paymentInitiated, setPaymentInitiated] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
-    const [processing, setProcessing] = useState(false);
+    // Removed paymentMethod state as it's now just Paynow
 
     // Calculate 25% deposit
     const loanAmount = data.amount || data.loanAmount || 0;
     const depositAmount = (loanAmount * 0.25).toFixed(2);
 
     const handleInitiatePayment = async () => {
-        if (!paymentMethod) return;
-
         setProcessing(true);
         setPaymentError(null);
 
         try {
-            // Simulate payment initiation
-            // In production, this would call your Paynow API
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Initiate payment via backend
+            const response = await axios.post('/api/loan-deposits/initiate', {
+                amount: parseFloat(depositAmount),
+                email: data.personalDetails?.email, // Make sure we have email or fallback
+                phone: data.personalDetails?.phone,
+                loanAmount: loanAmount,
+                purchaseType: 'loan_deposit'
+            });
 
-            setPaymentInitiated(true);
+            if (response.data.success && response.data.redirectUrl) {
+                // Redirect to Paynow
+                window.location.href = response.data.redirectUrl;
+                setPaymentInitiated(true);
+            } else {
+                setPaymentError('Failed to generate payment link.');
+            }
 
-            // Auto-proceed after payment confirmation (in production, this would be triggered by Paynow webhook)
-            setTimeout(() => {
-                onNext({
-                    depositPaid: true,
-                    depositAmount: parseFloat(depositAmount),
-                    paymentMethod: paymentMethod,
-                    paymentStatus: 'paid',
-                    // In production, you'd get these from Paynow
-                    transactionId: `TXN${Date.now()}`,
-                    paidAt: new Date().toISOString(),
-                });
-            }, 2000);
         } catch (error: any) {
-            setPaymentError(error.message || 'Payment failed. Please try again.');
+            console.error('Payment initiation error:', error);
+            setPaymentError(error.response?.data?.message || error.message || 'Payment initiation failed.');
         } finally {
             setProcessing(false);
         }
@@ -88,116 +87,66 @@ const DepositPaymentStep: React.FC<DepositPaymentStepProps> = ({ data, onNext, o
             {!paymentInitiated ? (
                 <div className="max-w-2xl mx-auto space-y-6">
                     {/* Payment Method Selection */}
-                    <div>
-                        <h4 className="font-semibold text-sm mb-3 text-[#1b1b18] dark:text-[#EDEDEC]">
+                    {/* Payment Method Selection */}
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+                        <h4 className="font-semibold text-lg text-[#1b1b18] dark:text-[#EDEDEC] mb-4 text-center">
                             Select Payment Method
                         </h4>
-                        <div className="grid grid-cols-1 gap-3">
+                        <div className="grid grid-cols-2 gap-4 mb-6">
                             {/* EcoCash */}
                             <button
-                                onClick={() => setPaymentMethod('ecocash')}
-                                className={`
-                                    p-4 rounded-lg border-2 text-left transition-all
-                                    ${paymentMethod === 'ecocash'
-                                        ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/20'
-                                        : 'border-gray-200 dark:border-gray-700 hover:border-emerald-400'
-                                    }
-                                `}
-                                disabled={processing || paymentInitiated}
+                                onClick={handleInitiatePayment}
+                                disabled={processing}
+                                className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700"
                             >
-                                <div className="flex items-center gap-3">
-                                    <Smartphone className={`h-6 w-6 ${paymentMethod === 'ecocash' ? 'text-emerald-600' : 'text-gray-400'}`} />
-                                    <div className="flex-1">
-                                        <h5 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">EcoCash</h5>
-                                        <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                            Pay with your EcoCash mobile wallet
-                                        </p>
-                                    </div>
-                                    {paymentMethod === 'ecocash' && (
-                                        <Check className="h-5 w-5 text-emerald-600" />
-                                    )}
-                                </div>
+                                <div className="bg-blue-600 text-white font-bold p-2 rounded mb-2 w-full text-center">EcoCash</div>
+                                <span className="text-sm font-medium">EcoCash</span>
                             </button>
 
                             {/* OneMoney */}
                             <button
-                                onClick={() => setPaymentMethod('onemoney')}
-                                className={`
-                                    p-4 rounded-lg border-2 text-left transition-all
-                                    ${paymentMethod === 'onemoney'
-                                        ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/20'
-                                        : 'border-gray-200 dark:border-gray-700 hover:border-emerald-400'
-                                    }
-                                `}
-                                disabled={processing || paymentInitiated}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <Wallet className={`h-6 w-6 ${paymentMethod === 'onemoney' ? 'text-emerald-600' : 'text-gray-400'}`} />
-                                    <div className="flex-1">
-                                        <h5 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">OneMoney</h5>
-                                        <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                            Pay with your OneMoney mobile wallet
-                                        </p>
-                                    </div>
-                                    {paymentMethod === 'onemoney' && (
-                                        <Check className="h-5 w-5 text-emerald-600" />
-                                    )}
-                                </div>
-                            </button>
-
-                            {/* Card */}
-                            <button
-                                onClick={() => setPaymentMethod('card')}
-                                className={`
-                                    p-4 rounded-lg border-2 text-left transition-all
-                                    ${paymentMethod === 'card'
-                                        ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/20'
-                                        : 'border-gray-200 dark:border-gray-700 hover:border-emerald-400'
-                                    }
-                                `}
-                                disabled={processing || paymentInitiated}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <CreditCard className={`h-6 w-6 ${paymentMethod === 'card' ? 'text-emerald-600' : 'text-gray-400'}`} />
-                                    <div className="flex-1">
-                                        <h5 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">Debit/Credit Card</h5>
-                                        <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                            Pay with Visa, Mastercard, or other cards
-                                        </p>
-                                    </div>
-                                    {paymentMethod === 'card' && (
-                                        <Check className="h-5 w-5 text-emerald-600" />
-                                    )}
-                                </div>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Payment Button */}
-                    {paymentMethod && (
-                        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                            <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
-                                All payments are processed securely via Paynow gateway
-                            </p>
-                            <Button
                                 onClick={handleInitiatePayment}
                                 disabled={processing}
-                                className="w-full bg-emerald-600 hover:bg-emerald-700"
+                                className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700"
                             >
-                                {processing ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                        Processing Payment...
-                                    </>
-                                ) : (
-                                    <>
-                                        <CreditCard className="mr-2 h-5 w-5" />
-                                        Pay ${parseFloat(depositAmount).toLocaleString()} Deposit
-                                    </>
-                                )}
-                            </Button>
+                                <div className="bg-orange-500 text-white font-bold p-2 rounded mb-2 w-full text-center">OneMoney</div>
+                                <span className="text-sm font-medium">OneMoney</span>
+                            </button>
+
+                            {/* Visa */}
+                            <button
+                                onClick={handleInitiatePayment}
+                                disabled={processing}
+                                className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700"
+                            >
+                                <div className="bg-blue-900 text-white font-bold p-2 rounded mb-2 w-full text-center">VISA</div>
+                                <span className="text-sm font-medium">Visa</span>
+                            </button>
+
+                            {/* Mastercard */}
+                            <button
+                                onClick={handleInitiatePayment}
+                                disabled={processing}
+                                className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700"
+                            >
+                                <div className="bg-red-600 text-white font-bold p-2 rounded mb-2 w-full text-center">Mastercard</div>
+                                <span className="text-sm font-medium">Mastercard</span>
+                            </button>
                         </div>
-                    )}
+
+                        {processing && (
+                            <div className="flex justify-center items-center gap-2 mb-4 text-emerald-600">
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                <span>Processing Payment...</span>
+                            </div>
+                        )}
+
+                        <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                            Security provided by Paynow. You will be redirected to complete payment.
+                        </p>
+                    </div>
+
+
 
                     {/* Error Display */}
                     {paymentError && (

@@ -341,6 +341,11 @@ Route::post('/paynow/webhook', function (Request $request) {
     }
 })->name('paynow.webhook');
 
+// Paynow Routes
+Route::post('/paynow/mobile-initiate', [App\Http\Controllers\PaynowController::class, 'initiateMobile']);
+Route::post('/paynow/status', [App\Http\Controllers\PaynowController::class, 'checkStatus']);
+Route::post('/loan-deposits/initiate', [App\Http\Controllers\LoanController::class, 'initiateDeposit']);
+
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });

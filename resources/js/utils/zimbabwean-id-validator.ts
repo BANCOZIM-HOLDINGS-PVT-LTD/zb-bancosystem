@@ -46,13 +46,10 @@ export function validateZimbabweanID(id: string): ZimbabweanIDValidationResult {
   // Remove spaces and convert to uppercase
   const cleanedId = id.trim().replace(/\s+/g, '').toUpperCase();
 
-  // Pattern 1: With dashes (XX-XXXXXXX-Y-ZZ)
-  const patternWithDashes = /^(\d{2})-(\d{6,7})-([A-Z])-(\d{2})$/;
+  // Combined pattern for IDs with or without dashes, allowing 6 or 7 digits for registration number
+  const NATIONAL_ID_REGEX = /^(\d{2})[-]?(\d{6,7})[-]?([A-Za-z])[-]?(\d{2})$/;
 
-  // Pattern 2: Without dashes (XXXXXXXXXXXX or XXXXXXXXXXX)
-  const patternWithoutDashes = /^(\d{2})(\d{6,7})([A-Z])(\d{2})$/;
-
-  let match = cleanedId.match(patternWithDashes) || cleanedId.match(patternWithoutDashes);
+  let match = cleanedId.match(NATIONAL_ID_REGEX);
 
   if (!match) {
     return {

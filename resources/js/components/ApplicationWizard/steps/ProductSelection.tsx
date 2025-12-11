@@ -791,7 +791,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             </p>
                                             <div className="mt-2 flex items-center gap-2">
                                                 <span className="text-xl font-bold text-emerald-600">+${(finalAmount * ME_SYSTEM_PERCENTAGE).toFixed(2)}</span>
-                                                <span className="text-sm text-gray-500">(10% of loan amount)</span>
+                                                <span className="text-sm text-gray-500">(10% of selling price)</span>
                                             </div>
                                         </div>
                                     </div>
@@ -816,7 +816,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             </p>
                                             <div className="mt-2 flex items-center gap-2">
                                                 <span className="text-xl font-bold text-purple-600">+${(finalAmount * TRAINING_PERCENTAGE).toFixed(2)}</span>
-                                                <span className="text-sm text-gray-500">(5.5% of loan price)</span>
+                                                <span className="text-sm text-gray-500">(5.5% of selling price)</span>
                                             </div>
                                         </div>
                                     </div>
@@ -826,13 +826,13 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
                         {/* Total Amount Display */}
                         <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Gross Loan (inclusive of bank admin fee of 6%)</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">New Selling Price</p>
                             <p className="text-3xl font-bold text-emerald-600">
                                 ${((finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)) * 1.06).toLocaleString()}
                             </p>
                             {(includesMESystem || includesTraining) && (
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Net Loan: ${(finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)).toLocaleString()}
+                                    Base Price: ${(finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)).toLocaleString()}
                                     {includesMESystem && ` (incl. M&E)`}
                                     {includesTraining && ` (incl. Training)`}
                                 </p>
@@ -884,7 +884,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
                                         {/* Gross Loan */}
                                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Gross Loan (incl. 6% admin fee)</p>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">New Selling Price</p>
                                             <p className="text-2xl font-bold text-emerald-600">
                                                 ${(() => {
                                                     const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;

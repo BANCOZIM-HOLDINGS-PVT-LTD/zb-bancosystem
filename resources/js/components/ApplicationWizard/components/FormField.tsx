@@ -25,6 +25,7 @@ interface FormFieldProps {
   name?: string;
   title?: string;
   checked?: boolean;
+  readOnly?: boolean;
   rows?: number;
   autoCapitalize?: boolean;
   capitalizeCheckLetter?: boolean;
@@ -42,6 +43,7 @@ const FormField: React.FC<FormFieldProps> = ({
   type = 'text',
   value,
   checked,
+  readOnly,
   onChange,
   error,
   required = false,
@@ -65,12 +67,12 @@ const FormField: React.FC<FormFieldProps> = ({
 }) => {
   const inputValue = value ?? '';
   const hasError = !!error;
-  
+
   // Helper function to capitalize names
   const capitalizeWords = (str: string) => {
     return str.replace(/\b\w/g, (char) => char.toUpperCase());
   };
-  
+
   // Helper function to capitalize ID check letter
   const capitalizeIDCheckLetter = (str: string) => {
     // Zimbabwe ID format: XX-XXXXXX X XX (the check letter is the 9th character after removing spaces/dashes)
@@ -84,21 +86,21 @@ const FormField: React.FC<FormFieldProps> = ({
     }
     return str;
   };
-  
+
   const handleChange = (newValue: string) => {
     let processedValue = newValue;
-    
+
     if (autoCapitalize) {
       processedValue = capitalizeWords(newValue);
     }
-    
+
     if (capitalizeCheckLetter) {
       processedValue = capitalizeIDCheckLetter(newValue);
     }
-    
+
     onChange(processedValue);
   };
-  
+
   const renderInput = () => {
     switch (type) {
       case 'select':
@@ -116,7 +118,7 @@ const FormField: React.FC<FormFieldProps> = ({
             </SelectContent>
           </Select>
         );
-      
+
       case 'textarea':
         return (
           <Textarea
@@ -128,7 +130,7 @@ const FormField: React.FC<FormFieldProps> = ({
             className={hasError ? 'border-red-500 focus:ring-red-500' : ''}
           />
         );
-      
+
       case 'phone':
         return (
           <PhoneInput
@@ -141,7 +143,7 @@ const FormField: React.FC<FormFieldProps> = ({
             className={className}
           />
         );
-      
+
       case 'dial-date':
         return (
           <DialDatePicker
@@ -158,7 +160,7 @@ const FormField: React.FC<FormFieldProps> = ({
             className={className}
           />
         );
-      
+
       case 'address':
         return (
           <AddressInput
@@ -171,7 +173,7 @@ const FormField: React.FC<FormFieldProps> = ({
             isInstitutionAddress={label === 'Institution Address'}
           />
         );
-      
+
       case 'checkbox':
         return (
           <EnhancedCheckbox
@@ -186,7 +188,7 @@ const FormField: React.FC<FormFieldProps> = ({
             className={className}
           />
         );
-      
+
       default:
         return (
           <Input
@@ -201,12 +203,13 @@ const FormField: React.FC<FormFieldProps> = ({
             max={max}
             pattern={pattern}
             title={title}
+            readOnly={readOnly}
             className={hasError ? 'border-red-500 focus:ring-red-500' : ''}
           />
         );
     }
   };
-  
+
   // For components that render their own labels
   if (type === 'dial-date' || type === 'address' || type === 'checkbox') {
     return (

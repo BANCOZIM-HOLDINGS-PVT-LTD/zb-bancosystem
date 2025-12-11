@@ -6,24 +6,10 @@ import {
     AlertCircle,
     User,
     CreditCard,
-    Smartphone,
-    Check,
-    Wallet,
-    Hash,
-    ChevronLeft,
-    Loader2,
     DollarSign,
     Shield,
-    MessageSquare
+    ChevronLeft
 } from 'lucide-react';
-
-// Import payment components
-import VisaPayment from '../payments/VisaPayment';
-import ZimswitchPayment from '../payments/ZimswitchPayment';
-import EcoCashPayment from '../payments/EcoCashPayment';
-import OneMoneyPayment from '../payments/OneMoneyPayment';
-import InnBucksPayment from '../payments/InnBucksPayment';
-import OmariPayment from '../payments/OmariPayment';
 
 interface CheckoutStepProps {
     data: CashPurchaseData;
@@ -33,17 +19,14 @@ interface CheckoutStepProps {
     error?: string;
 }
 
-type PaymentMethod = 'visa' | 'zimswitch' | 'ecocash' | 'onemoney' | 'innbucks' | 'omari';
-
 const ME_SYSTEM_PERCENTAGE = 0.10; // 10% of cash price
 const TRAINING_PERCENTAGE = 0.055; // 5.5%
 
 export default function CheckoutStep({ data, onComplete, onBack, loading, error }: CheckoutStepProps) {
-    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
-    const [nationalId, setNationalId] = useState('');
-    const [fullName, setFullName] = useState('');
-    const [phone, setPhone] = useState('');
-    const [email, setEmail] = useState('');
+    const [nationalId, setNationalId] = useState(data.customer?.nationalId || '');
+    const [fullName, setFullName] = useState(data.customer?.fullName || '');
+    const [phone, setPhone] = useState(data.customer?.phone || '');
+    const [email, setEmail] = useState(data.customer?.email || '');
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -59,6 +42,87 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
     const trainingFee = includesTraining ? (product.cashPrice * TRAINING_PERCENTAGE) : 0;
     const deliveryFee = delivery.type === 'swift' ? 10 : 0;
     const totalAmount = product.cashPrice + meSystemFee + trainingFee + deliveryFee;
+
+    const handleNationalIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let value = e.target.value.toUpperCase();
+
+        // Remove invalid characters
+        value = value.replace(/[^A-Z0-9-]/g, '');
+
+        // Auto-masking logic
+        // Remove existing dashes to re-process
+        const clean = value.replace(/-/g, '');
+
+        let formatted = '';
+        if (clean.length > 0) {
+            // First 2 digits (District)
+            formatted += clean.substring(0, 2);
+
+            if (clean.length > 2) {
+                formatted += '-';
+
+                // Find index of the letter after district code
+                const remaining = clean.substring(2);
+                const letterMatch = remaining.match(/[A-Z]/);
+
+                if (letterMatch && letterMatch.index !== undefined) {
+                    // We found the letter
+                    const letterIndex = letterMatch.index;
+                    // Digits before letter (Registration Number)
+                    formatted += remaining.substring(0, letterIndex);
+                    // Add dash before letter
+                    formatted += '-';
+                    // The Letter
+                    formatted += remaining.charAt(letterIndex);
+
+                    // Digits after letter (Check Digits)
+                    if (remaining.length > letterIndex + 1) {
+                        formatted += '-';
+                        formatted += remaining.substring(letterIndex + 1, letterIndex + 3); // Max 2 digits
+                    }
+                } else {
+                    // No letter yet, just append remaining digits (up to 7 for reg number)
+                    formatted += remaining.substring(0, 7);
+                }
+            }
+        }
+
+        setNationalId(formatted);
+        setErrors((prev) => ({ ...prev, nationalId: '' }));
+    };
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let value = e.target.value;
+
+        // If user clears input, allow it
+        if (!value) {
+            setPhone('');
+            return;
+        }
+
+        // Ensure starts with +263
+        if (!value.startsWith('+263')) {
+            if (value.startsWith('0')) {
+                // simple replace 0 with +263
+                value = '+263' + value.substring(1);
+            } else if (value.startsWith('263')) {
+                value = '+' + value;
+            } else {
+                // If arbitrary typing, force prefix
+                value = '+263' + value.replace(/[^0-9]/g, '');
+            }
+        }
+
+        // Remove non-digits/plus
+        const parts = value.split('+');
+        const numberPart = parts[1] ? parts[1].replace(/[^0-9]/g, '') : '';
+
+        // Limit length if needed (Zimbabwe numbers are usually 9 digits after country code -> +263 7X XXX XXXX = 12 digits total excluding +)
+        // Usually +263 771 234 567
+
+        setPhone('+' + numberPart);
+        setErrors((prev) => ({ ...prev, phone: '' }));
+    };
 
     const validateCustomerInfo = () => {
         const newErrors: Record<string, string> = {};
@@ -90,18 +154,14 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
         // Validate Phone
         if (!phone.trim()) {
             newErrors.phone = 'Phone number is required';
-        } else if (!/^\+263-[0-9]{9}$/.test(phone.replace(/\s/g, ''))) {
-            newErrors.phone = 'Invalid Zimbabwe phone number (e.g., +263-771234567)';
+        } else if (!/^\+263[0-9]{9}$/.test(phone.replace(/[\s-]/g, ''))) {
+            // Adjusted regex to matching the storing format (+263XXXXXXXXX)
+            newErrors.phone = 'Invalid Zimbabwe phone number (e.g., +263771234567)';
         }
 
         // Validate Email (optional but must be valid if provided)
         if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             newErrors.email = 'Invalid email address';
-        }
-
-        // Validate Payment Method Selection
-        if (!paymentMethod) {
-            newErrors.paymentMethod = 'Please select a payment method';
         }
 
         // Validate Terms
@@ -113,29 +173,34 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleContinueToPayment = () => {
+    const handleProceedToPayment = () => {
         if (validateCustomerInfo()) {
-            setShowPaymentForm(true);
+            // Submit with 'paynow' method
+            onComplete({
+                customer: {
+                    nationalId: validateZimbabweanID(nationalId).formatted || nationalId,
+                    fullName,
+                    phone,
+                    email: email || undefined,
+                },
+                payment: {
+                    method: 'paynow',
+                    amount: totalAmount,
+                    currency: 'USD',
+                },
+            });
         }
-    };
-
-    const handlePaymentSuccess = (paymentData: any) => {
-        onComplete({
-            customer: {
-                nationalId: validateZimbabweanID(nationalId).formatted || nationalId,
-                fullName,
-                phone,
-                email: email || undefined,
-            },
-            payment: {
-                ...paymentData,
-                amount: totalAmount,
-            },
-        });
     };
 
     const handlePaymentCancel = () => {
         setShowPaymentForm(false);
+    };
+
+    const handlePaynowRedirect = () => {
+        const queryParams = `id=20549&amount=${totalAmount.toFixed(2)}&amount_quantity=0.00&l=1`;
+        const base64Query = btoa(queryParams);
+        const paynowUrl = `https://www.paynow.co.zw/Payment/BillPaymentLink/?q=${base64Query}`;
+        window.open(paynowUrl, '_blank');
     };
 
     const formatCurrency = (amount: number) => {
@@ -183,17 +248,16 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
                         <input
                             type="text"
                             value={nationalId}
-                            onChange={(e) => {
-                                setNationalId(e.target.value.toUpperCase());
-                                setErrors((prev) => ({ ...prev, nationalId: '' }));
-                            }}
+                            onChange={handleNationalIdChange}
                             placeholder="XX-XXXXXXX-Y-ZZ"
                             className={`
                                 w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500
                                 dark:bg-gray-800 dark:text-white
                                 ${errors.nationalId ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}
+                                ${data.customer?.nationalId ? 'bg-transparent' : ''}
                             `}
                             disabled={loading || showPaymentForm}
+                            readOnly={!!data.customer?.nationalId}
                         />
                         {errors.nationalId && (
                             <p className="mt-1 text-sm text-red-600">{errors.nationalId}</p>
@@ -262,11 +326,8 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
                         <input
                             type="tel"
                             value={phone}
-                            onChange={(e) => {
-                                setPhone(e.target.value);
-                                setErrors((prev) => ({ ...prev, phone: '' }));
-                            }}
-                            placeholder="+263-771234567"
+                            onChange={handlePhoneChange}
+                            placeholder="+263771234567"
                             className={`
                                 w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500
                                 dark:bg-gray-800 dark:text-white
@@ -339,7 +400,7 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
                             )}
 
                             {includesTraining && (
-                            <div className="flex justify-between text-sm">
+                                <div className="flex justify-between text-sm">
                                     <span className="text-[#706f6c] dark:text-[#A1A09A]">Training:</span>
                                     <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">
                                         {formatCurrency(trainingFee)}
@@ -365,242 +426,73 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
                         </div>
                     </div>
 
-                    {!showPaymentForm ? (
+                    {/* Payment Method Selection & Confirmation */}
+                    {showPaymentForm ? (
                         <div className="space-y-4">
-                            <div>
-                                <h4 className="font-semibold text-sm mb-3 text-[#1b1b18] dark:text-[#EDEDEC]">
-                                    Select Payment Method <span className="text-red-600">*</span>
+                            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+                                <h4 className="font-semibold text-lg text-[#1b1b18] dark:text-[#EDEDEC] mb-4 text-center">
+                                    Select Payment Method
                                 </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {/* Visa */}
-                                    <button
-                                        onClick={() => {
-                                            setPaymentMethod('visa');
-                                            setErrors((prev) => ({ ...prev, paymentMethod: '' }));
-                                        }}
-                                        className={`
-                                            p-4 rounded-lg border-2 text-left transition-all
-                                            ${paymentMethod === 'visa'
-                                                ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-emerald-400'
-                                            }
-                                        `}
-                                        disabled={loading}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <CreditCard className={`h-6 w-6 ${paymentMethod === 'visa' ? 'text-emerald-600' : 'text-gray-400'}`} />
-                                            <div className="flex-1">
-                                                <h5 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">Visa/Mastercard</h5>
-                                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                                    International cards • 3D Secure
-                                                </p>
-                                            </div>
-                                            {paymentMethod === 'visa' && (
-                                                <Check className="h-5 w-5 text-emerald-600" />
-                                            )}
-                                        </div>
-                                    </button>
-
-                                    {/* Zimswitch */}
-                                    <button
-                                        onClick={() => {
-                                            setPaymentMethod('zimswitch');
-                                            setErrors((prev) => ({ ...prev, paymentMethod: '' }));
-                                        }}
-                                        className={`
-                                            p-4 rounded-lg border-2 text-left transition-all
-                                            ${paymentMethod === 'zimswitch'
-                                                ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-emerald-400'
-                                            }
-                                        `}
-                                        disabled={loading}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <Shield className={`h-6 w-6 ${paymentMethod === 'zimswitch' ? 'text-emerald-600' : 'text-gray-400'}`} />
-                                            <div className="flex-1">
-                                                <h5 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">Zimswitch</h5>
-                                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                                    Local bank cards • USD/ZIG
-                                                </p>
-                                            </div>
-                                            {paymentMethod === 'zimswitch' && (
-                                                <Check className="h-5 w-5 text-emerald-600" />
-                                            )}
-                                        </div>
-                                    </button>
-
+                                <div className="grid grid-cols-2 gap-4 mb-6">
                                     {/* EcoCash */}
                                     <button
-                                        onClick={() => {
-                                            setPaymentMethod('ecocash');
-                                            setErrors((prev) => ({ ...prev, paymentMethod: '' }));
-                                        }}
-                                        className={`
-                                            p-4 rounded-lg border-2 text-left transition-all
-                                            ${paymentMethod === 'ecocash'
-                                                ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-emerald-400'
-                                            }
-                                        `}
-                                        disabled={loading}
+                                        onClick={handlePaynowRedirect}
+                                        className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <Smartphone className={`h-6 w-6 ${paymentMethod === 'ecocash' ? 'text-emerald-600' : 'text-gray-400'}`} />
-                                            <div className="flex-1">
-                                                <h5 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">EcoCash</h5>
-                                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                                    Mobile wallet • Instant
-                                                </p>
-                                            </div>
-                                            {paymentMethod === 'ecocash' && (
-                                                <Check className="h-5 w-5 text-emerald-600" />
-                                            )}
-                                        </div>
+                                        <div className="bg-blue-600 text-white font-bold p-2 rounded mb-2 w-full text-center">EcoCash</div>
+                                        <span className="text-sm font-medium">EcoCash</span>
                                     </button>
 
                                     {/* OneMoney */}
                                     <button
-                                        onClick={() => {
-                                            setPaymentMethod('onemoney');
-                                            setErrors((prev) => ({ ...prev, paymentMethod: '' }));
-                                        }}
-                                        className={`
-                                            p-4 rounded-lg border-2 text-left transition-all
-                                            ${paymentMethod === 'onemoney'
-                                                ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-emerald-400'
-                                            }
-                                        `}
-                                        disabled={loading}
+                                        onClick={handlePaynowRedirect}
+                                        className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <Wallet className={`h-6 w-6 ${paymentMethod === 'onemoney' ? 'text-emerald-600' : 'text-gray-400'}`} />
-                                            <div className="flex-1">
-                                                <h5 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">OneMoney</h5>
-                                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                                    NetOne wallet • USD/ZIG
-                                                </p>
-                                            </div>
-                                            {paymentMethod === 'onemoney' && (
-                                                <Check className="h-5 w-5 text-emerald-600" />
-                                            )}
-                                        </div>
+                                        <div className="bg-orange-500 text-white font-bold p-2 rounded mb-2 w-full text-center">OneMoney</div>
+                                        <span className="text-sm font-medium">OneMoney</span>
                                     </button>
 
-                                    {/* InnBucks */}
+                                    {/* Visa */}
                                     <button
-                                        onClick={() => {
-                                            setPaymentMethod('innbucks');
-                                            setErrors((prev) => ({ ...prev, paymentMethod: '' }));
-                                        }}
-                                        className={`
-                                            p-4 rounded-lg border-2 text-left transition-all
-                                            ${paymentMethod === 'innbucks'
-                                                ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-emerald-400'
-                                            }
-                                        `}
-                                        disabled={loading}
+                                        onClick={handlePaynowRedirect}
+                                        className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <Smartphone className={`h-6 w-6 ${paymentMethod === 'innbucks' ? 'text-emerald-600' : 'text-gray-400'}`} />
-                                            <div className="flex-1">
-                                                <h5 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">InnBucks</h5>
-                                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                                    Auth code • USD only
-                                                </p>
-                                            </div>
-                                            {paymentMethod === 'innbucks' && (
-                                                <Check className="h-5 w-5 text-emerald-600" />
-                                            )}
-                                        </div>
+                                        <div className="bg-blue-900 text-white font-bold p-2 rounded mb-2 w-full text-center">VISA</div>
+                                        <span className="text-sm font-medium">Visa</span>
                                     </button>
 
-                                    {/* Omari */}
+                                    {/* Mastercard */}
                                     <button
-                                        onClick={() => {
-                                            setPaymentMethod('omari');
-                                            setErrors((prev) => ({ ...prev, paymentMethod: '' }));
-                                        }}
-                                        className={`
-                                            p-4 rounded-lg border-2 text-left transition-all
-                                            ${paymentMethod === 'omari'
-                                                ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-emerald-400'
-                                            }
-                                        `}
-                                        disabled={loading}
+                                        onClick={handlePaynowRedirect}
+                                        className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <MessageSquare className={`h-6 w-6 ${paymentMethod === 'omari' ? 'text-emerald-600' : 'text-gray-400'}`} />
-                                            <div className="flex-1">
-                                                <h5 className="font-semibold text-[#1b1b18] dark:text-[#EDEDEC]">Omari</h5>
-                                                <p className="text-xs text-[#706f6c] dark:text-[#A1A09A]">
-                                                    OTP verification • USD/ZIG
-                                                </p>
-                                            </div>
-                                            {paymentMethod === 'omari' && (
-                                                <Check className="h-5 w-5 text-emerald-600" />
-                                            )}
-                                        </div>
+                                        <div className="bg-red-600 text-white font-bold p-2 rounded mb-2 w-full text-center">Mastercard</div>
+                                        <span className="text-sm font-medium">Mastercard</span>
                                     </button>
                                 </div>
-                                {errors.paymentMethod && (
-                                    <p className="mt-2 text-sm text-red-600">{errors.paymentMethod}</p>
-                                )}
+
+                                <p className="text-xs text-center text-gray-500 dark:text-gray-400 mb-6">
+                                    Security provided by Paynow. You will be redirected to complete payment.
+                                </p>
+
+                                <div className="flex justify-center">
+                                    <Button variant="outline" onClick={handlePaymentCancel} className="w-full">
+                                        Cancel
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     ) : (
-                        <div className="space-y-4">
-                            {paymentMethod === 'visa' && (
-                                <VisaPayment
-                                    amount={totalAmount}
-                                    onSuccess={handlePaymentSuccess}
-                                    onCancel={handlePaymentCancel}
-                                    loading={loading}
-                                />
-                            )}
-                            {paymentMethod === 'zimswitch' && (
-                                <ZimswitchPayment
-                                    amount={totalAmount}
-                                    onSuccess={handlePaymentSuccess}
-                                    onCancel={handlePaymentCancel}
-                                    loading={loading}
-                                />
-                            )}
-                            {paymentMethod === 'ecocash' && (
-                                <EcoCashPayment
-                                    amount={totalAmount}
-                                    onSuccess={handlePaymentSuccess}
-                                    onCancel={handlePaymentCancel}
-                                    loading={loading}
-                                />
-                            )}
-                            {paymentMethod === 'onemoney' && (
-                                <OneMoneyPayment
-                                    amount={totalAmount}
-                                    onSuccess={handlePaymentSuccess}
-                                    onCancel={handlePaymentCancel}
-                                    loading={loading}
-                                />
-                            )}
-                            {paymentMethod === 'innbucks' && (
-                                <InnBucksPayment
-                                    amount={totalAmount}
-                                    onSuccess={handlePaymentSuccess}
-                                    onCancel={handlePaymentCancel}
-                                    loading={loading}
-                                />
-                            )}
-                            {paymentMethod === 'omari' && (
-                                <OmariPayment
-                                    amount={totalAmount}
-                                    onSuccess={handlePaymentSuccess}
-                                    onCancel={handlePaymentCancel}
-                                    loading={loading}
-                                />
-                            )}
+                        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-6 text-center">
+                            <h4 className="font-semibold text-lg text-emerald-900 dark:text-emerald-100 mb-2">
+                                Pay securely online
+                            </h4>
+                            <p className="text-sm text-emerald-700 dark:text-emerald-300 mb-4">
+                                Choose from EcoCash, OneMoney, Visa, or Mastercard on the next step.
+                            </p>
+                            <div className="flex justify-center">
+                                <Shield className="h-10 w-10 text-emerald-600 opacity-80" />
+                            </div>
                         </div>
                     )}
                 </div>
@@ -633,23 +525,25 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
             </div>
 
             {/* Actions */}
-            {!showPaymentForm && (
-                <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <Button onClick={onBack} variant="outline" size="lg" disabled={loading}>
-                        <ChevronLeft className="mr-2 h-5 w-5" />
-                        Back
-                    </Button>
-                    <Button
-                        onClick={handleContinueToPayment}
-                        disabled={loading}
-                        size="lg"
-                        className="bg-emerald-600 hover:bg-emerald-700"
-                    >
-                        <CreditCard className="mr-2 h-5 w-5" />
-                        Continue to Payment
-                    </Button>
-                </div>
-            )}
-        </div>
+            {
+                !showPaymentForm && (
+                    <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <Button onClick={onBack} variant="outline" size="lg" disabled={loading}>
+                            <ChevronLeft className="mr-2 h-5 w-5" />
+                            Back
+                        </Button>
+                        <Button
+                            onClick={handleProceedToPayment}
+                            disabled={loading}
+                            size="lg"
+                            className="bg-emerald-600 hover:bg-emerald-700"
+                        >
+                            <CreditCard className="mr-2 h-5 w-5" />
+                            Continue to Payment
+                        </Button>
+                    </div>
+                )
+            }
+        </div >
     );
 }

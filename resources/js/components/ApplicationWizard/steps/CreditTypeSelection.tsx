@@ -30,7 +30,7 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
             <div className="text-center">
                 <h2 className="text-2xl font-semibold mb-2">Select Credit Type</h2>
                 <p className="text-gray-600 dark:text-gray-400">
-                    Choose your preferred credit payment option
+                    Select your preferred credit payment option
                 </p>
                 <div className="mt-2 text-sm text-blue-600 dark:text-blue-400">
                     Loan Amount: <span className="font-bold">${loanAmount.toLocaleString()}</span>
@@ -41,7 +41,7 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                 {/* ZDC - Zero Deposit Credit */}
                 <Card
                     className={`
-                        cursor-pointer p-6 transition-all border-2
+                        cursor-pointer p-6 transition-all border-2 relative
                         ${selectedType === 'ZDC'
                             ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 shadow-lg scale-105'
                             : 'border-gray-200 dark:border-gray-700 hover:border-emerald-400 hover:shadow-md'
@@ -49,15 +49,19 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                     `}
                     onClick={() => setSelectedType('ZDC')}
                 >
-                    <div className="flex flex-col items-center text-center space-y-4">
-                        {selectedType === 'ZDC' && (
-                            <div className="absolute top-4 right-4">
-                                <div className="bg-emerald-600 text-white p-2 rounded-full">
-                                    <Check className="h-5 w-5" />
-                                </div>
-                            </div>
-                        )}
+                    <div className="absolute top-4 right-4">
+                        <div className={`
+                            h-6 w-6 rounded border-2 flex items-center justify-center transition-colors
+                            ${selectedType === 'ZDC'
+                                ? 'bg-emerald-600 border-emerald-600'
+                                : 'border-gray-300 bg-white'
+                            }
+                        `}>
+                            {selectedType === 'ZDC' && <Check className="h-4 w-4 text-white" />}
+                        </div>
+                    </div>
 
+                    <div className="flex flex-col items-center text-center space-y-4 pt-2">
                         <div className={`p-4 rounded-full ${selectedType === 'ZDC' ? 'bg-emerald-100 dark:bg-emerald-900' : 'bg-gray-100 dark:bg-gray-800'}`}>
                             <CreditCard className={`h-12 w-12 ${selectedType === 'ZDC' ? 'text-emerald-600' : 'text-gray-500'}`} />
                         </div>
@@ -96,10 +100,10 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                     </div>
                 </Card>
 
-                {/* PDC - Paid Deposit Credit */}
+                {/* DPC - Deposit Paid Credit */}
                 <Card
                     className={`
-                        cursor-pointer p-6 transition-all border-2
+                        cursor-pointer p-6 transition-all border-2 relative
                         ${selectedType === 'PDC'
                             ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/20 shadow-lg scale-105'
                             : 'border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:shadow-md'
@@ -107,22 +111,26 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                     `}
                     onClick={() => setSelectedType('PDC')}
                 >
-                    <div className="flex flex-col items-center text-center space-y-4">
-                        {selectedType === 'PDC' && (
-                            <div className="absolute top-4 right-4">
-                                <div className="bg-blue-600 text-white p-2 rounded-full">
-                                    <Check className="h-5 w-5" />
-                                </div>
-                            </div>
-                        )}
+                    <div className="absolute top-4 right-4">
+                        <div className={`
+                            h-6 w-6 rounded border-2 flex items-center justify-center transition-colors
+                            ${selectedType === 'PDC'
+                                ? 'bg-blue-600 border-blue-600'
+                                : 'border-gray-300 bg-white'
+                            }
+                        `}>
+                            {selectedType === 'PDC' && <Check className="h-4 w-4 text-white" />}
+                        </div>
+                    </div>
 
+                    <div className="flex flex-col items-center text-center space-y-4 pt-2">
                         <div className={`p-4 rounded-full ${selectedType === 'PDC' ? 'bg-blue-100 dark:bg-blue-900' : 'bg-gray-100 dark:bg-gray-800'}`}>
                             <Wallet className={`h-12 w-12 ${selectedType === 'PDC' ? 'text-blue-600' : 'text-gray-500'}`} />
                         </div>
 
                         <div>
                             <h3 className="text-xl font-bold mb-2 text-[#1b1b18] dark:text-[#EDEDEC]">
-                                Paid Deposit Credit (PDC)
+                                Deposit Paid Credit (DPC)
                             </h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                                 Pay 25% upfront and reduce your monthly payments
@@ -172,8 +180,8 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                     </h4>
                     <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
                         <li>• <strong>ZDC:</strong> No upfront payment required. Proceed directly to application form.</li>
-                        <li>• <strong>PDC:</strong> After selecting delivery details, you'll be redirected to make the 25% deposit payment via Paynow (EcoCash, OneMoney, or Card).</li>
-                        <li>• <strong>PDC:</strong> Once payment is confirmed, you'll continue with the application form.</li>
+                        <li>• <strong>DPC:</strong> After selecting delivery details, you'll be redirected to make the 25% deposit payment via Ecocash, Onemoney, Visa or Mastercard.</li>
+                        <li>• <strong>DPC:</strong> Once payment is confirmed, you'll continue with the application form.</li>
                         <li>• Both options require verification and approval before delivery.</li>
                     </ul>
                 </div>

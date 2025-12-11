@@ -30,6 +30,11 @@ interface DeliveryDetails {
     trackingType: string;
     purchaseType?: string;
     deliveredAt?: string | null;
+    // Holiday Package Details
+    zimparksVoucher?: string;
+    bookingNames?: string;
+    datesBooked?: string;
+    packageDetails?: string;
 }
 
 export default function DeliveryTracking() {
@@ -246,6 +251,49 @@ export default function DeliveryTracking() {
                                     </div>
                                 </div>
 
+                                {/* Holiday Package Details */}
+                                {deliveryDetails.zimparksVoucher && (
+                                    <div className="mt-6 border-t pt-6">
+                                        <h3 className="text-lg font-semibold mb-4 text-emerald-800 dark:text-emerald-400">
+                                            Holiday Package Details
+                                        </h3>
+                                        <div className="grid gap-4 md:grid-cols-2">
+                                            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg">
+                                                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                                    Zimparks Voucher
+                                                </p>
+                                                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                                    {deliveryDetails.zimparksVoucher}
+                                                </p>
+                                            </div>
+                                            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg">
+                                                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                                    Dates Booked
+                                                </p>
+                                                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                                    {deliveryDetails.datesBooked}
+                                                </p>
+                                            </div>
+                                            <div className="md:col-span-2 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg">
+                                                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                                    Names
+                                                </p>
+                                                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                                    {deliveryDetails.bookingNames}
+                                                </p>
+                                            </div>
+                                            <div className="md:col-span-2 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg">
+                                                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                                    Package Details
+                                                </p>
+                                                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                                    {deliveryDetails.packageDetails}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Delivery Status Messages */}
                                 {deliveryDetails.purchaseType === 'cash' && deliveryDetails.status !== 'delivered' && (
                                     <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-lg">
@@ -302,8 +350,8 @@ export default function DeliveryTracking() {
                             </Card>
                         </div>
                     )}
-                </div>
-            </div>
+                </div >
+            </div >
         </>
     );
 }

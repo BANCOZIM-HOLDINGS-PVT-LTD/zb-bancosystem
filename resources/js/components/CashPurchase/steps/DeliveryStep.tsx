@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Truck, Building2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { CashPurchaseData } from '../CashPurchaseWizard';
 
 interface DeliveryStepProps {
     data: CashPurchaseData;
-    onNext: (delivery: NonNullable<CashPurchaseData['delivery']>) => void;
+    onNext: (delivery: any) => void;
     onBack: () => void;
 }
 
@@ -17,7 +17,7 @@ const SWIFT_CITIES = [
     'Mazowe', 'Mt Darwin', 'Murambinda', 'Murehwa', 'Mutare', 'Mutoko', 'Mvurwi',
     'Ngezi', 'Norton', 'Nyanga', 'Nyika', 'Plumtree', 'Rusape', 'Shurugwi', 'Triangle',
     'Victoria Falls', 'Zvishavane'
-];
+].sort();
 
 // Gain Outlet depots
 const GAIN_DEPOTS = [
@@ -48,18 +48,103 @@ const GAIN_DEPOTS = [
     'KV Gain Metro Kadoma - kadoma', 'KW Gain Metro Kwekwe - kwekwe', 'KX Kwekwe - kwekwe',
     'MS Mashava - mashava', 'MTA Mataga - MTA Mataga', 'SH Shurugwi - shurugwi',
     'WX Gokwe - gokwe', 'ZX Zvishavane - zvishavane'
-];
+].sort();
+
+// Zimpost Offices
+const ZIMPOST_OFFICES = [
+    // Harare
+    'Harare Main Post Office (Cnr Inez Terrace)',
+    'Avondale Post Office',
+    'Belvedere Post Office',
+    'Borrowdale Post Office',
+    'Causeway Post Office',
+    'Chisipite Post Office',
+    'Dzivarasekwa Post Office',
+    'Emerald Hill Post Office',
+    'Glen Norah Post Office',
+    'Glen View Post Office',
+    'Greendale Post Office',
+    'Highlands Post Office',
+    'Kambuzuma Post Office',
+    'Mabelreign Post Office',
+    'Machipisa Post Office',
+    'Marlborough Post Office',
+    'Mbare Musika Post Office',
+    'Mbare West Post Office',
+    'Mabvuku Post Office',
+    'Mufakose Post Office',
+    'Mt Pleasant Post Office',
+    'Southerton Post Office',
+    'Tafara Post Office',
+    'Zimpost Central Sorting Office',
+
+    // Bulawayo
+    'Bulawayo Main Post Office',
+    'Nkulumane Post Office',
+    'Plumtree Post Office',
+
+    // Manicaland
+    'Rusape Post Office',
+    'Mutare Main Post Office',
+    'Chipinge Post Office',
+    'Nyanga Post Office',
+    'Murambinda Post Office',
+
+    // Midlands
+    'Gweru Main Post Office',
+    'Kwekwe (Mbizo) Post Office',
+    'Zvishavane Post Office',
+    'Mvuma Post Office',
+    'Gokwe Post Office',
+
+    // Mashonaland
+    'Chinhoyi Post Office',
+    'Bindura Post Office',
+    'Marondera Post Office',
+    'Karoi Post Office',
+    'Kariba Post Office',
+    'Mt Darwin Post Office',
+
+    // Masvingo
+    'Masvingo Main Post Office',
+    'Chiredzi Post Office',
+    'Gutu Post Office',
+
+    // Matabeleland
+    'Victoria Falls Post Office',
+    'Hwange Post Office',
+    'Gwanda Post Office',
+    'Beitbridge Post Office'
+].sort();
 
 // Determine delivery agent based on product category and name
 const determineDeliveryAgent = (category?: string, productName?: string): {
-    agent: 'swift' | 'gain_outlet';
+    agent: 'Swift' | 'Gain Cash & Carry' | 'Zim Post Office';
+    isEditable: boolean;
     reason: string;
 } => {
     const categoryLower = (category || '').toLowerCase();
     const productNameLower = (productName || '').toLowerCase();
     const combinedText = `${categoryLower} ${productNameLower}`;
 
-    // Check for tuckshops, groceries, airtime, candy, books, stationary, back to school and live broilers ONLY - Gain Outlet
+    // Check for Phones, Laptops, ICT gadgets - Zim Post Office
+    if (
+        combinedText.includes('phone') ||
+        combinedText.includes('laptop') ||
+        combinedText.includes('tablet') ||
+        combinedText.includes('gadget') ||
+        combinedText.includes('ict') ||
+        combinedText.includes('computer') ||
+        combinedText.includes('mobile')
+    ) {
+        return {
+            agent: 'Zim Post Office',
+            isEditable: false,
+            reason: 'Phones, Laptops and ICT gadgets are delivered through the Zim Post Office'
+        };
+    }
+
+    // Check for tuckshops, groceries, airtime, candy, books, stationary, back to school and live broilers ONLY - Gain Cash & Carry
     if (
         combinedText.includes('tuckshop') ||
         combinedText.includes('groceries') ||
@@ -77,14 +162,16 @@ const determineDeliveryAgent = (category?: string, productName?: string): {
         combinedText.includes('retailing')
     ) {
         return {
-            agent: 'gain_outlet',
-            reason: 'Tuckshops, groceries, airtime, candy, books, stationary, back to school and live broilers are delivered through Gain Outlet depots'
+            agent: 'Gain Cash & Carry',
+            isEditable: false,
+            reason: 'Tuckshops, groceries, airtime, candy, books, stationary, back to school and live broilers are delivered through Gain Cash & Carry depots'
         };
     }
 
     // All other products - Swift (default for everything else)
     return {
-        agent: 'swift',
+        agent: 'Swift',
+        isEditable: false,
         reason: 'All products are delivered through Swift depot service'
     };
 };
@@ -92,23 +179,33 @@ const determineDeliveryAgent = (category?: string, productName?: string): {
 export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps) {
     const deliveryAgentInfo = determineDeliveryAgent(data.product?.category, data.product?.name);
 
-    const [selectedAgent] = useState<'swift' | 'gain_outlet'>(
-        data.delivery?.type || deliveryAgentInfo.agent
+    const [selectedAgent, setSelectedAgent] = useState<'Swift' | 'Gain Cash & Carry' | 'Zim Post Office'>(
+        (data.delivery?.type as any) || deliveryAgentInfo.agent
     );
     const [selectedCity, setSelectedCity] = useState<string>(data.delivery?.city || '');
     const [selectedDepot, setSelectedDepot] = useState<string>(data.delivery?.depot || '');
     const [errors, setErrors] = useState<Record<string, string>>({});
 
+    useEffect(() => {
+        if (!deliveryAgentInfo.isEditable) {
+            setSelectedAgent(deliveryAgentInfo.agent);
+        }
+    }, [data.product?.category, data.product?.name]);
+
     const validateAndContinue = () => {
         const newErrors: Record<string, string> = {};
 
         // Validation
-        if (selectedAgent === 'swift' && !selectedCity) {
+        if (selectedAgent === 'Swift' && !selectedCity) {
             newErrors.city = 'Please select a city for Swift delivery';
         }
 
-        if (selectedAgent === 'gain_outlet' && !selectedDepot) {
-            newErrors.depot = 'Please select a Gain Outlet depot for collection';
+        if (selectedAgent === 'Gain Cash & Carry' && !selectedDepot) {
+            newErrors.depot = 'Please select a Gain Cash & Carry depot for collection';
+        }
+
+        if (selectedAgent === 'Zim Post Office' && !selectedCity) { // Reusing city for post office selection
+            newErrors.city = 'Please select a Zim Post Office branch for collection';
         }
 
         setErrors(newErrors);
@@ -116,11 +213,16 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
         if (Object.keys(newErrors).length === 0) {
             onNext({
                 type: selectedAgent,
-                city: selectedAgent === 'swift' ? selectedCity : '',
-                depot: selectedAgent === 'gain_outlet' ? selectedDepot : '',
+                city: (selectedAgent === 'Swift' || selectedAgent === 'Zim Post Office') ? selectedCity : '',
+                depot: selectedAgent === 'Gain Cash & Carry' ? selectedDepot : '',
+                agent: selectedAgent // Ensure consistent structure
             });
         }
     };
+
+    const isSwiftDisabled = (selectedAgent === 'Gain Cash & Carry' || selectedAgent === 'Zim Post Office') && !deliveryAgentInfo.isEditable;
+    const isGainDisabled = (selectedAgent === 'Swift' || selectedAgent === 'Zim Post Office') && !deliveryAgentInfo.isEditable;
+    const isPostOfficeDisabled = (selectedAgent === 'Swift' || selectedAgent === 'Gain Cash & Carry') && !deliveryAgentInfo.isEditable;
 
     return (
         <div className="space-y-6">
@@ -134,68 +236,67 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
                 </p>
             </div>
 
-            {/* Info Banner */}
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <div className="flex gap-3">
-                    <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                        <p className="text-sm text-blue-800 dark:text-blue-300 font-medium">
-                            {deliveryAgentInfo.reason}
-                        </p>
-                        <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
-                            This delivery method has been automatically assigned based on your product selection.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
             {/* Delivery Agent Display */}
             <div>
-                <label className="block text-sm font-medium mb-3 text-[#1b1b18] dark:text-[#EDEDEC]">
-                    Assigned To: <span className="text-red-600">*</span>
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Swift Option */}
-                    <div
-                        className={`p-4 border-2 rounded-lg ${
-                            selectedAgent === 'swift'
+                    {!isSwiftDisabled && (
+                        <div
+                            className={`p-4 border-2 rounded-lg ${selectedAgent === 'Swift'
                                 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
                                 : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-50'
-                        }`}
-                    >
-                        <Truck className={`h-6 w-6 mb-2 ${
-                            selectedAgent === 'swift' ? 'text-emerald-600' : 'text-gray-400'
-                        }`} />
-                        <p className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Swift</p>
-                        <p className="text-xs text-[#706f6c] dark:text-[#A1A09A] mt-1">
-                            Courier delivery
-                        </p>
-                    </div>
+                                }`}
+                        >
+                            <Truck className={`h-6 w-6 mb-2 ${selectedAgent === 'Swift' ? 'text-emerald-600' : 'text-gray-400'
+                                }`} />
+                            <p className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Swift</p>
+                            <p className="text-xs text-[#706f6c] dark:text-[#A1A09A] mt-1">
+                                Courier delivery
+                            </p>
+                        </div>
+                    )}
 
-                    {/* Gain Outlet Option */}
-                    <div
-                        className={`p-4 border-2 rounded-lg ${
-                            selectedAgent === 'gain_outlet'
+                    {/* Gain Cash & Carry Option */}
+                    {!isGainDisabled && (
+                        <div
+                            className={`p-4 border-2 rounded-lg ${selectedAgent === 'Gain Cash & Carry'
                                 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
                                 : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-50'
-                        }`}
-                    >
-                        <Building2 className={`h-6 w-6 mb-2 ${
-                            selectedAgent === 'gain_outlet' ? 'text-emerald-600' : 'text-gray-400'
-                        }`} />
-                        <p className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Gain Outlet</p>
-                        <p className="text-xs text-[#706f6c] dark:text-[#A1A09A] mt-1">
-                            Depot collection
-                        </p>
-                    </div>
+                                }`}
+                        >
+                            <Building2 className={`h-6 w-6 mb-2 ${selectedAgent === 'Gain Cash & Carry' ? 'text-emerald-600' : 'text-gray-400'
+                                }`} />
+                            <p className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Gain Cash & Carry</p>
+                            <p className="text-xs text-[#706f6c] dark:text-[#A1A09A] mt-1">
+                                Depot collection
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Post Office Option */}
+                    {!isPostOfficeDisabled && (
+                        <div
+                            className={`p-4 border-2 rounded-lg ${selectedAgent === 'Zim Post Office'
+                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-50'
+                                }`}
+                        >
+                            <Building2 className={`h-6 w-6 mb-2 ${selectedAgent === 'Zim Post Office' ? 'text-emerald-600' : 'text-gray-400'
+                                }`} />
+                            <p className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Zim Post Office</p>
+                            <p className="text-xs text-[#706f6c] dark:text-[#A1A09A] mt-1">
+                                Zimpost collection
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Swift City Selection */}
-            {selectedAgent === 'swift' && (
+            {/* Swift / Post Office City Selection */}
+            {(selectedAgent === 'Swift' || selectedAgent === 'Zim Post Office') && (
                 <div>
                     <label className="block text-sm font-medium mb-2 text-[#1b1b18] dark:text-[#EDEDEC]">
-                        Select City <span className="text-red-600">*</span>
+                        {selectedAgent === 'Swift' ? 'Select City' : 'Select Branch'} <span className="text-red-600">*</span>
                     </label>
                     <select
                         value={selectedCity}
@@ -209,27 +310,30 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
                             ${errors.city ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}
                         `}
                     >
-                        <option value="">Select the location closest to you</option>
-                        {SWIFT_CITIES.map((city) => (
-                            <option key={city} value={city}>
-                                {city}
-                            </option>
-                        ))}
+                        <option value="">{selectedAgent === 'Swift' ? 'Select the location closest to you' : 'Select a branch closest to you'}</option>
+                        {selectedAgent === 'Swift'
+                            ? SWIFT_CITIES.map((city) => (
+                                <option key={city} value={city}>{city}</option>
+                            ))
+                            : ZIMPOST_OFFICES.map((office) => (
+                                <option key={office} value={office}>{office}</option>
+                            ))
+                        }
                     </select>
                     {errors.city && (
                         <p className="mt-1 text-sm text-red-600">{errors.city}</p>
                     )}
                     <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                        You will collect your product from the Swift Depot in the selected location.
+                        You will collect your product from the {selectedAgent === 'Swift' ? 'Swift Depot' : 'Zim Post Office branch'} in the selected location.
                     </p>
                 </div>
             )}
 
-            {/* Gain Outlet Depot Selection */}
-            {selectedAgent === 'gain_outlet' && (
+            {/* Gain Cash & Carry Depot Selection */}
+            {selectedAgent === 'Gain Cash & Carry' && (
                 <div>
                     <label className="block text-sm font-medium mb-2 text-[#1b1b18] dark:text-[#EDEDEC]">
-                        Select Gain Outlet Depot <span className="text-red-600">*</span>
+                        Select Gain Cash & Carry Depot <span className="text-red-600">*</span>
                     </label>
                     <select
                         value={selectedDepot}
@@ -254,7 +358,7 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
                         <p className="mt-1 text-sm text-red-600">{errors.depot}</p>
                     )}
                     <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                        You will collect your product from the selected Gain Outlet depot.
+                        You will collect your product from the selected Gain Cash & Carry depot.
                     </p>
                 </div>
             )}

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, User, Building, CreditCard, Users } from 'lucide-react';
@@ -23,7 +24,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
         const businessName = data.business; // string from ProductSelection
         const finalPrice = data.amount || 0; // number from ProductSelection
         const intent = data.intent || 'hirePurchase';
-        
+
         let facilityType = '';
         if (intent === 'hirePurchase' && businessName) {
             facilityType = `Hire Purchase Credit - ${businessName}`;
@@ -33,26 +34,26 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
             // Fallback if intent doesn't match
             facilityType = `Credit Facility - ${businessName}`;
         }
-        
+
         // Calculate tenure based on amount
         let tenure = 12; // default
         if (finalPrice <= 1000) tenure = 6;
         else if (finalPrice <= 5000) tenure = 12;
         else if (finalPrice <= 15000) tenure = 18;
         else tenure = 24;
-        
+
         // Calculate monthly payment (10% annual interest)
         const interestRate = 0.10;
         const monthlyInterestRate = interestRate / 12;
-        const monthlyPayment = finalPrice > 0 ? 
+        const monthlyPayment = finalPrice > 0 ?
             (finalPrice * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenure)) /
             (Math.pow(1 + monthlyInterestRate, tenure) - 1) : 0;
-        
+
         // Note 7: SSB Loan starts first of next month and ends on last day of start date + loan period
         const today = new Date();
         const firstOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
         const loanEndDate = new Date(firstOfNextMonth.getFullYear(), firstOfNextMonth.getMonth() + tenure, 0); // Last day of the end month
-        
+
         return {
             creditFacilityType: facilityType,
             loanAmount: finalPrice.toFixed(2),
@@ -64,14 +65,16 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
             firstPaymentDate: firstOfNextMonth.toISOString().split('T')[0]
         };
     };
-    
+
     const creditDetails = calculateCreditFacilityDetails();
     const businessName = data.business;
     const currentDate = new Date().toISOString().split('T')[0];
-    
+
     const [hasOtherLoans, setHasOtherLoans] = useState<string>(''); // 'yes' or 'no'
     const [isCustomBranch, setIsCustomBranch] = useState<boolean>(false);
     const [spouseError, setSpouseError] = useState<string>(''); // Error message for spouse/next of kin validation
+    const [employmentError, setEmploymentError] = useState<string>(''); // Error message for employment validation
+    const [sameAsCell, setSameAsCell] = useState(false);
 
     const [formData, setFormData] = useState({
         // Credit Facility Details (pre-populated)
@@ -85,10 +88,10 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
         dateOfBirth: '', // Will be set by dial-date picker with defaultAge
         maritalStatus: '',
         nationality: 'Zimbabwean',
-        idNumber: '',
-        cellNumber: '',
+        idNumber: data.formResponses?.nationalIdNumber || '',
+        cellNumber: data.formResponses?.mobile || '',
         whatsApp: '',
-        emailAddress: '',
+        emailAddress: data.formResponses?.emailAddress || '',
         responsibleMinistry: '',
         employerName: '',
         employerAddress: '',
@@ -124,29 +127,34 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
         purposeAsset: businessName ? `${businessName} - ${data.scale || 'Standard Scale'}` : ''
     });
 
-    const ministryOptions = [
-        'Education',
-        'Health',
-        'Home Affairs',
-        'Justice',
-        'Other'
-    ];
-
     const handleInputChange = (field: string, value: string) => {
         let processedValue = field.toLowerCase().includes('idnumber')
             ? formatZimbabweId(value)
             : value;
 
-        // Limit employment number to 7 alphanumeric characters
+        // Limit employment number to 6 digits followed by a letter (7 chars total)
         if (field === 'employmentNumber') {
-            processedValue = value.replace(/[^A-Za-z0-9]/g, '').slice(0, 8).toUpperCase();
+            processedValue = value.replace(/[^A-Za-z0-9]/g, '').slice(0, 7).toUpperCase();
         }
 
-        setFormData(prev => ({
-            ...prev,
-            [field]: processedValue
-        }));
+        setFormData(prev => {
+            const updates: any = { [field]: processedValue };
+
+            // Auto-update WhatsApp if same as cell is checked
+            if (field === 'cellNumber' && sameAsCell) {
+                updates.whatsApp = processedValue;
+            }
+
+            return { ...prev, ...updates };
+        });
     };
+
+    // Update WhatsApp when checkbox changes
+    useEffect(() => {
+        if (sameAsCell) {
+            handleInputChange('whatsApp', formData.cellNumber);
+        }
+    }, [sameAsCell]);
 
     const handleSpouseChange = (index: number, field: string, value: string) => {
         // Clear error when user starts filling in spouse details
@@ -165,7 +173,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
     const handleLoanChange = (index: number, field: string, value: string) => {
         setFormData(prev => ({
             ...prev,
-            otherLoans: prev.otherLoans.map((loan, i) => 
+            otherLoans: prev.otherLoans.map((loan, i) =>
                 i === index ? { ...loan, [field]: value } : loan
             )
         }));
@@ -192,6 +200,16 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validate Employment Number
+        const employmentNumberRegex = /^\d{6}[A-Z]$/;
+        if (!employmentNumberRegex.test(formData.employmentNumber)) {
+            setEmploymentError('Employment Number must be 6 digits followed by a letter (e.g. 123456A)');
+            document.getElementById('employmentNumber')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        } else {
+            setEmploymentError('');
+        }
 
         // Validate that BOTH spouse/next of kin entries are filled in
         const allSpousesValid = formData.spouseDetails.every(spouse =>
@@ -322,7 +340,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                         <User className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Personal Details</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <div>
                             <Label htmlFor="title">Title</Label>
@@ -339,7 +357,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <FormField
                             id="surname"
                             label="Surname"
@@ -349,7 +367,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             autoCapitalize={true}
                             required
                         />
-                        
+
                         <FormField
                             id="firstName"
                             label="First Name"
@@ -359,7 +377,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             autoCapitalize={true}
                             required
                         />
-                        
+
                         <div>
                             <Label htmlFor="gender">Gender *</Label>
                             <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)} required>
@@ -372,7 +390,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <FormField
                             id="dateOfBirth"
                             label="Date of Birth"
@@ -385,7 +403,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             showAgeValidation={true}
                             required
                         />
-                        
+
                         <div>
                             <Label htmlFor="maritalStatus">Marital Status</Label>
                             <Select value={formData.maritalStatus} onValueChange={(value) => handleInputChange('maritalStatus', value)}>
@@ -400,7 +418,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <FormField
                             id="nationality"
                             label="Nationality"
@@ -410,7 +428,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             autoCapitalize={true}
                             required
                         />
-                        
+
                         <FormField
                             id="idNumber"
                             label="ID Number"
@@ -421,8 +439,10 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             placeholder="e.g. 12-345678 A 12"
                             title="Zimbabwe ID format: 12-345678 A 12"
                             required
+                            readOnly={!!data.formResponses?.nationalIdNumber}
+
                         />
-                        
+
                         <FormField
                             id="cellNumber"
                             label="Cell Number"
@@ -431,15 +451,38 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             onChange={(value) => handleInputChange('cellNumber', value)}
                             required
                         />
-                        
-                        <FormField
-                            id="whatsApp"
-                            label="WhatsApp Number"
-                            type="phone"
-                            value={formData.whatsApp}
-                            onChange={(value) => handleInputChange('whatsApp', value)}
-                        />
-                        
+
+                        <div>
+                            <div className="flex items-center space-x-2 mb-2">
+                                <Label htmlFor="whatsApp" className="mb-0">WhatsApp Number</Label>
+                                <div className="flex items-center space-x-2 ml-4">
+                                    <Checkbox
+                                        id="sameAsCell"
+                                        checked={sameAsCell}
+                                        onCheckedChange={(checked) => setSameAsCell(checked as boolean)}
+                                    />
+                                    <label
+                                        htmlFor="sameAsCell"
+                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-500"
+                                    >
+                                        Same as Cell Number
+                                    </label>
+                                </div>
+                            </div>
+                            <FormField
+                                id="whatsApp"
+                                label=""
+                                type="phone"
+                                value={formData.whatsApp}
+                                onChange={(value) => {
+                                    handleInputChange('whatsApp', value);
+                                    if (sameAsCell && value !== formData.cellNumber) {
+                                        setSameAsCell(false);
+                                    }
+                                }}
+                            />
+                        </div>
+
                         <FormField
                             id="emailAddress"
                             label="Email Address"
@@ -448,18 +491,18 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             onChange={(value) => handleInputChange('emailAddress', value)}
                             required
                         />
-                        
+
                         <div className="md:col-span-2 lg:col-span-3">
                             <FormField
                                 id="permanentAddress"
-                                label="Permanent Address"
+                                label="Residential Address"
                                 type="address"
                                 value={formData.permanentAddress}
                                 onChange={(value) => handleInputChange('permanentAddress', value)}
                                 required
                             />
                         </div>
-                        
+
                         <div>
                             <Label htmlFor="propertyOwnership">Accommodation Status</Label>
                             <Select value={formData.propertyOwnership} onValueChange={(value) => handleInputChange('propertyOwnership', value)}>
@@ -474,7 +517,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <FormField
                             id="periodAtAddress"
                             label="Period at Address (Years)"
@@ -482,7 +525,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             value={formData.periodAtAddress}
                             onChange={(value) => handleInputChange('periodAtAddress', value)}
                         />
-                        
+
                         <div className="md:col-span-2 lg:col-span-3">
                             <Label htmlFor="responsibleMinistry">You are employed by which Ministry *</Label>
                             <Select value={formData.responsibleMinistry} onValueChange={(value) => handleInputChange('responsibleMinistry', value)}>
@@ -490,9 +533,6 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                     <SelectValue placeholder="Select Ministry" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Zimbabwe National Army">Zimbabwe National Army</SelectItem>
-                                    <SelectItem value="Air Force of Zimbabwe">Air Force of Zimbabwe</SelectItem>
-                                    <SelectItem value="Other Security Sector">Other Security Sector</SelectItem>
                                     <SelectItem value="Primary and Secondary Education">Primary and Secondary Education</SelectItem>
                                     <SelectItem value="Health and Child Care">Health and Child Care</SelectItem>
                                     <SelectItem value="Home Affairs and Cultural Heritage">Home Affairs and Cultural Heritage</SelectItem>
@@ -514,6 +554,9 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                     <SelectItem value="Transport and Infrastructure">Transport and Infrastructure</SelectItem>
                                     <SelectItem value="Women Affairs">Women Affairs</SelectItem>
                                     <SelectItem value="Youth, Sport, Arts and Recreation">Youth, Sport, Arts and Recreation</SelectItem>
+                                    <SelectItem value="Zimbabwe National Army">Zimbabwe National Army</SelectItem>
+                                    <SelectItem value="Air Force of Zimbabwe">Air Force of Zimbabwe</SelectItem>
+                                    
                                 </SelectContent>
                             </Select>
                         </div>
@@ -527,7 +570,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                         <Building className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Employment Details</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-2">
                         <FormField
                             id="employerName"
@@ -538,7 +581,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             autoCapitalize={true}
                             required
                         />
-                        
+
                         <FormField
                             id="employerAddress"
                             label="Institution Address"
@@ -547,7 +590,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             onChange={(value) => handleInputChange('employerAddress', value)}
                             required
                         />
-                        
+
                         <div>
                             <Label htmlFor="employmentStatus">Employment Status</Label>
                             <Select value={formData.employmentStatus} onValueChange={(value) => handleInputChange('employmentStatus', value)} required>
@@ -561,7 +604,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <FormField
                             id="jobTitle"
                             label="Job Title"
@@ -571,7 +614,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             autoCapitalize={true}
                             required
                         />
-                        
+
                         <FormField
                             id="dateOfEmployment"
                             label="Date of Employment"
@@ -582,16 +625,21 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             defaultAge={0}
                             required
                         />
-                        
-                        <FormField
-                            id="employmentNumber"
-                            label="Employment Number"
-                            type="text"
-                            value={formData.employmentNumber}
-                            onChange={(value) => handleInputChange('employmentNumber', value)}
-                            required
-                        />
-                        
+
+                        <div>
+                            <FormField
+                                id="employmentNumber"
+                                label="Employment Number"
+                                type="text"
+                                value={formData.employmentNumber}
+                                onChange={(value) => handleInputChange('employmentNumber', value)}
+                                required
+                            />
+                            {employmentError && (
+                                <p className="text-sm text-red-500 mt-1">{employmentError}</p>
+                            )}
+                        </div>
+
                         <div>
                             <Label htmlFor="currentNetSalary">Net Pay Range (USD) *</Label>
                             <Select value={formData.currentNetSalary} onValueChange={(value) => handleInputChange('currentNetSalary', value)} required>
@@ -617,7 +665,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             autoCapitalize={true}
                             required
                         />
-                        
+
                         <FormField
                             id="headOfInstitutionCell"
                             label="Cell No of Immediate Supervisor"
@@ -654,7 +702,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                 onChange={(value) => handleSpouseChange(index, 'fullName', value)}
                                 autoCapitalize={true}
                             />
-                            
+
                             <div>
                                 <Label htmlFor={`spouse-${index}-relationship`}>Relationship</Label>
                                 <Select value={spouse.relationship} onValueChange={(value) => handleSpouseChange(index, 'relationship', value)}>
@@ -671,7 +719,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                     </SelectContent>
                                 </Select>
                             </div>
-                            
+
                             <FormField
                                 id={`spouse-${index}-phone`}
                                 label="Phone Number"
@@ -679,7 +727,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                 value={spouse.phoneNumber}
                                 onChange={(value) => handleSpouseChange(index, 'phoneNumber', value)}
                             />
-                            
+
                             <FormField
                                 id={`spouse-${index}-address`}
                                 label="Residential Address"
@@ -697,7 +745,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                         <Building className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Banking Details</h3>
                     </div>
-                    
+
                     <div className="grid gap-4 md:grid-cols-3">
                         <div>
                             <Label htmlFor="bankName">Bank Name *</Label>
@@ -844,20 +892,20 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                         <CreditCard className="h-6 w-6 text-green-600 mr-3" />
                         <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Hire Purchase Facility Application Details</h3>
                     </div>
-                    
+
                     {/* Pre-populated readonly fields */}
                     <div className="grid gap-4 mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg border">
                         <div className="text-sm text-green-600 dark:text-green-400 font-medium mb-2">
                             ✅ The following details have been automatically filled based on your product selection:
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label className="text-gray-700 dark:text-gray-300">Hire Purchase Facility Type</Label>
                                 <Input
                                     value={formData.creditFacilityType}
                                     readOnly
-                                    className="bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                                    className="border-gray-200 dark:border-gray-600"
                                 />
                             </div>
                             <div>
@@ -867,7 +915,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                     <Input
                                         value={formData.loanAmount}
                                         readOnly
-                                        className="pl-8 bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                                        className="pl-8 border-gray-200 dark:border-gray-600"
                                     />
                                 </div>
                             </div>
@@ -876,7 +924,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                 <Input
                                     value={`${formData.loanTenure} months`}
                                     readOnly
-                                    className="bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                                    className="border-gray-200 dark:border-gray-600"
                                 />
                             </div>
                             <div>
@@ -886,22 +934,19 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                     <Input
                                         value={formData.monthlyPayment}
                                         readOnly
-                                        className="pl-8 bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                                        className="pl-8 border-gray-200 dark:border-gray-600"
                                     />
                                 </div>
                             </div>
-                            <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Interest Rate (%)</Label>
-                                <Input
-                                    value={`${formData.interestRate}%`}
-                                    readOnly
-                                    type="hidden"
-                                    className="bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
-                                />
-                            </div>
+                            {/* Hidden Interest Rate */}
+                            <input
+                                type="hidden"
+                                value={`${formData.interestRate}%`}
+                                readOnly
+                            />
                         </div>
                     </div>
-                    
+
                     {/* Editable purpose field */}
                     <div>
                         <Label htmlFor="purposeAsset">Purpose/Asset Applied For *</Label>
@@ -927,7 +972,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                         <ChevronLeft className="h-4 w-4" />
                         Back
                     </Button>
-                    
+
                     <Button
                         type="submit"
                         disabled={loading}

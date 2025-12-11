@@ -42,9 +42,9 @@ export interface CashPurchaseData {
         email?: string;
     };
     payment?: {
-        method: 'visa' | 'zimswitch' | 'ecocash' | 'onemoney' | 'innbucks' | 'omari';
+        method: 'paynow';
         amount: number;
-        currency?: 'USD' | 'ZIG';
+        currency?: 'USD';
         // Common fields
         transactionId?: string;
         // Mobile wallet specific (EcoCash, OneMoney, Omari)
@@ -167,8 +167,12 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en' }: Ca
                 // Clear saved data
                 localStorage.removeItem('cashPurchaseData');
 
-                // Redirect to success page
-                router.visit(route('cash.purchase.success', { purchaseNumber: result.data.purchase_number }));
+                // Redirect to success page or payment gateway
+                if (result.data.redirect_url) {
+                    window.location.href = result.data.redirect_url;
+                } else {
+                    router.visit(route('cash.purchase.success', { purchaseNumber: result.data.purchase_number }));
+                }
             } else {
                 throw new Error(result.message || 'Purchase failed');
             }
@@ -263,8 +267,8 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en' }: Ca
                                                 ${isActive
                                                     ? 'bg-emerald-600 text-white shadow-lg scale-110'
                                                     : isCompleted
-                                                    ? 'bg-emerald-500 text-white'
-                                                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                                                        ? 'bg-emerald-500 text-white'
+                                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                                                 }
                                             `}
                                         >
@@ -280,8 +284,8 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en' }: Ca
                                                 ${isActive
                                                     ? 'text-emerald-600 dark:text-emerald-400'
                                                     : isCompleted
-                                                    ? 'text-emerald-500 dark:text-emerald-400'
-                                                    : 'text-gray-500 dark:text-gray-400'
+                                                        ? 'text-emerald-500 dark:text-emerald-400'
+                                                        : 'text-gray-500 dark:text-gray-400'
                                                 }
                                             `}
                                         >

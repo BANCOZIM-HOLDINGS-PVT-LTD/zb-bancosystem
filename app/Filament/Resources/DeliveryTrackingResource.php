@@ -142,9 +142,10 @@ class DeliveryTrackingResource extends BaseResource
                             ->label('Delivery Service')
                             ->options([
                                 'Swift' => 'Swift',
-                                'Gain Outlet' => 'Gain Outlet',
+                                'Gain Cash & Carry' => 'Gain Cash & Carry',
                                 'Bancozim' => 'Bancozim',
                                 'Bus Courier' => 'Bus Courier',
+                                'Zim Post Office' => 'Zim Post Office',
                             ])
                             ->required()
                             ->reactive()
@@ -159,13 +160,30 @@ class DeliveryTrackingResource extends BaseResource
                             ->required(fn (Get $get) => $get('courier_type') === 'Swift')
                             ->columnSpanFull(),
 
+                        // Post Office Details
+                        Forms\Components\TextInput::make('post_office_tracking_number')
+                            ->label('Serial Number')
+                            ->placeholder('Enter Serial Number')
+                            ->maxLength(100)
+                            ->visible(fn (Get $get) => $get('courier_type') === 'Zim Post Office')
+                            ->required(fn (Get $get) => $get('courier_type') === 'Zim Post Office')
+                            ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('post_office_vehicle_registration')
+                            ->label('Truck Reg Number')
+                            ->placeholder('Enter vehicle registration')
+                            ->maxLength(100)
+                            ->visible(fn (Get $get) => $get('courier_type') === 'Zim Post Office')
+                            ->required(fn (Get $get) => $get('courier_type') === 'Zim Post Office')
+                            ->columnSpanFull(),
+
                         // Gain Outlet Details
                         Forms\Components\TextInput::make('gain_voucher_number')
                             ->label('Gain Voucher Number')
                             ->placeholder('Enter Gain voucher number')
                             ->maxLength(100)
-                            ->visible(fn (Get $get) => $get('courier_type') === 'Gain Outlet')
-                            ->required(fn (Get $get) => $get('courier_type') === 'Gain Outlet')
+                            ->visible(fn (Get $get) => $get('courier_type') === 'Gain Cash & Carry')
+                            ->required(fn (Get $get) => $get('courier_type') === 'Gain Cash & Carry')
                             ->columnSpanFull(),
 
                         Forms\Components\TextInput::make('gain_depot_location')

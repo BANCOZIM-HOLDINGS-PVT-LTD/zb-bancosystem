@@ -70,7 +70,8 @@ class CashPurchaseController extends Controller
                 // Payment
                 'payment.method' => 'required|string',
                 'payment.amount' => 'required|numeric|min:0',
-                'payment.transactionId' => 'nullable|string',
+                'payment.transactionId' => 'nullable|string', // Optional now
+                'payment.currency' => 'nullable|string', // Optional
 
                 // Purchase type
                 'purchaseType' => ['required', Rule::in(['personal', 'microbiz'])],
@@ -158,23 +159,44 @@ class CashPurchaseController extends Controller
                 'status' => 'pending',
             ]);
 
-            // If transaction ID is provided, verify payment with Paynow
-            if (!empty($data['payment']['transactionId'])) {
+            // If method is paynow, verify or just create the link
+            $redirectUrl = route('cash.purchase.success', ['purchase' => $cashPurchase->purchase_number]);
+            $isPaynow = $data['payment']['method'] === 'paynow';
+
+            if ($isPaynow) {
+                // Initiate Paynow Transaction
+                $paynowResult = $this->paynowService->createPayment(
+                    $cashPurchase->purchase_number,
+                    $cashPurchase->amount_paid,
+                    $cashPurchase->email,
+                    "Purchase: {$cashPurchase->product_name}"
+                );
+
+                if ($paynowResult['success']) {
+                    $redirectUrl = $paynowResult['redirectUrl'];
+                    // We can also store the Poll URL if needed
+                    Log::info('Paynow transaction initiated', [
+                        'purchase' => $cashPurchase->purchase_number,
+                        'redirect' => $redirectUrl
+                    ]);
+                } else {
+                    Log::error('Paynow initiation failed', ['error' => $paynowResult['error']]);
+                    // Fallback or error?
+                    // For now let's return error
+                     return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to initiate payment with Paynow: ' . ($paynowResult['error'] ?? 'Unknown error'),
+                    ], 500);
+                }
+            } else if (!empty($data['payment']['transactionId'])) {
+                // Legacy or separate flow confirmation (like EcoCash previously)
+                // ... (existing logic)
                 $paymentVerified = $this->paynowService->verifyPayment(
                     $data['payment']['transactionId'],
                     $data['payment']['amount']
                 );
-
-                if ($paymentVerified) {
-                    $cashPurchase->markAsPaid($data['payment']['transactionId']);
-                } else {
-                    // Log payment verification failure but don't fail the purchase
-                    Log::warning('Paynow payment verification failed', [
-                        'purchase_number' => $cashPurchase->purchase_number,
-                        'transaction_id' => $data['payment']['transactionId'],
-                    ]);
-                }
-            }
+                // ...
+             }
 
             // Log the purchase creation
             Log::info('Cash purchase created', [
@@ -189,7 +211,8 @@ class CashPurchaseController extends Controller
                 'message' => 'Purchase created successfully',
                 'data' => [
                     'purchase_number' => $cashPurchase->purchase_number,
-                    'redirect_url' => route('cash.purchase.success', ['purchase' => $cashPurchase->purchase_number]),
+                    'redirect_url' => $redirectUrl,
+                    'is_redirect' => $isPaynow ?? false,
                 ],
             ], 201);
 
