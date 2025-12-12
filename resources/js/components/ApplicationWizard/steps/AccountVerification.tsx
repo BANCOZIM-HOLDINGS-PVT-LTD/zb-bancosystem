@@ -27,13 +27,18 @@ const AccountVerification: React.FC<AccountVerificationProps> = ({ data, onNext,
     // Skip this step for SSB employees using useEffect to avoid render issues
     useEffect(() => {
         if (isSSB) {
+            // Prevent infinite loop if data is already set
+            if (data.hasAccount === true && data.accountType === 'SSB' && data.skipAccountCheck === true) {
+                return;
+            }
+
             onNext({
                 hasAccount: true,
                 accountType: 'SSB',
                 skipAccountCheck: true
             });
         }
-    }, [isSSB, onNext]); // Added onNext to dependencies for correctness, though it's stable
+    }, [isSSB, onNext, data.hasAccount, data.accountType, data.skipAccountCheck]); // Added onNext to dependencies for correctness, though it's stable
 
     // Don't render anything for SSB employees while transitioning
     if (isSSB) {

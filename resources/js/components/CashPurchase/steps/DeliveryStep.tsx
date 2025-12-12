@@ -50,190 +50,60 @@ const GAIN_DEPOTS = [
     'WX Gokwe - gokwe', 'ZX Zvishavane - zvishavane'
 ].sort();
 
-// Zimpost Offices
-const ZIMPOST_OFFICES = [
-    // Harare
-    'Amby Post Office',
-    'Avondale Post Office',
-    'Belvedere Post Office',
-    'Borrowdale Post Office',
-    'Causeway Post Office',
-    'Chisipite Post Office',
-    'Chitungwiza Post Office',
-    'Dzivarasekwa Post Office',
-    'Emerald Hill Post Office',
-    'Glen Norah Post Office',
-    'Glen View Post Office',
-    'Graniteside Post Office',
-    'Greendale Post Office',
-    'Harare Main Post Office (Cnr Inez Terrace)',
-    'Hatfield Post Office',
-    'Highfield Post Office',
-    'Highlands Post Office',
-    'Kambuzuma Post Office',
-    'Mabelreign Post Office',
-    'Mabvuku Post Office',
-    'Machipisa Post Office',
-    'Marlborough Post Office',
-    'Mbare Musika Post Office',
-    'Mbare West Post Office',
-    'Mt Pleasant Post Office',
-    'Mufakose Post Office',
-    'Norton Post Office',
-    'Ruwa Post Office',
-    'Seke Post Office',
-    'Southerton Post Office',
-    'Tafara Post Office',
-    'Waterfalls Post Office',
-    'Zimpost Central Sorting Office',
+// Grouped Zimpost Offices
+const ZIMPOST_LOCATIONS: Record<string, string[]> = {
+    'Harare': [
+        'Amby Post Office', 'Avondale Post Office', 'Belvedere Post Office', 'Borrowdale Post Office',
+        'Causeway Post Office', 'Chisipite Post Office', 'Chitungwiza Post Office', 'Dzivarasekwa Post Office',
+        'Emerald Hill Post Office', 'Glen Norah Post Office', 'Glen View Post Office', 'Graniteside Post Office',
+        'Greendale Post Office', 'Harare Main Post Office (Cnr Inez Terrace)', 'Hatfield Post Office',
+        'Highfield Post Office', 'Highlands Post Office', 'Kambuzuma Post Office', 'Mabelreign Post Office',
+        'Mabvuku Post Office', 'Machipisa Post Office', 'Marlborough Post Office', 'Mbare Musika Post Office',
+        'Mbare West Post Office', 'Mt Pleasant Post Office', 'Mufakose Post Office', 'Norton Post Office',
+        'Ruwa Post Office', 'Seke Post Office', 'Southerton Post Office', 'Tafara Post Office',
+        'Waterfalls Post Office', 'Zimpost Central Sorting Office', 'Acturus Post Office', 'Beatrice Post Office',
+        'Bromley Post Office', 'Goromonzi Post Office', 'Juru Post Office', 'Zengeza Post Office'
+    ],
+    'Bulawayo': [
+        'Ascot Post Office', 'Belmont Post Office', 'Bulawayo Main Post Office', 'Entumbane Post Office',
+        'Famona Post Office', 'Hillside Post Office', 'Llewellin Barracks Post Office', 'Luveve Post Office',
+        'Magwegwe Post Office', 'Mpopoma Post Office', 'Morningside Post Office', 'Mzilikazi Post Office',
+        'Nkulumane Post Office', 'Northend Post Office', 'Pumula Post Office', 'Raylton Post Office',
+        'Tsholotsho Post Office'
+    ],
+    'Masvingo': [
+        'Masvingo Main Post Office', 'Chikato Post Office', 'Morgenster Post Office', 'Mashava Post Office',
+        'Jerera Post Office', 'Nyika Post Office', 'Gutu Post Office', 'Chiredzi Post Office', 'Triangle Post Office',
+        'Mwenezi Post Office', 'Rutenga Post Office', 'Ngundu Post Office', 'Chikombedzi Post Office',
+        'Renco Post Office', 'Chatsworth Post Office', 'Mupandawana Post Office'
+    ],
+    'Mutare': [
+        'Mutare Main Post Office', 'Sakubva Post Office', 'Dangamvura Post Office', 'Chimba Post Office',
+        'Penhalonga Post Office', 'Odzi Post Office', 'Watsomba Post Office', 'Nyazura Post Office',
+        'Rusape Post Office', 'Headlands Post Office', 'Nyanga Post Office', 'Hauna Post Office',
+        'Chipinge Post Office', 'Chimanimani Post Office', 'Checheche Post Office',
+        'Birchenough Post Office', 'Murambinda Post Office'
+    ],
+    'Gweru': [
+        'Gweru Main Post Office', 'Mkoba Post Office', 'Ascot Post Office', 'Mvuma Post Office',
+        'Shurugwi Post Office', 'Charandura Post Office', 'Lalapanzi Post Office'
+    ],
+    'Kwekwe': [
+        'Kwekwe Main Post Office', 'Kwekwe (Mbizo) Post Office', 'Redcliff Post Office',
+        'Zhombe Post Office', 'Gokwe Post Office', 'Nembudziya Post Office', 'Manoti Post Office'
+    ],
+    'Kadoma': [
+        'Kadoma Post Office', 'Rimuka Post Office', 'Chegutu Post Office', 'Chakari Post Office',
+        'Sanyati Post Office', 'Mubayira Post Office', 'Mhondoro-Ngezi Post Office'
+    ],
+    'Victoria Falls': [
+        'Victoria Falls Post Office', 'Chinotimba Post Office', 'Hwange Post Office', 'Dete Post Office',
+        'Binga Post Office', 'Lupane Post Office'
+    ]
+};
 
-    // Bulawayo & Matabeleland
-    'Ascot Post Office',
-    'Beitbridge Post Office',
-    'Belmont Post Office',
-    'Binga Post Office',
-    'Bulawayo Main Post Office',
-    'Chinotimba Post Office',
-    'Dete Post Office',
-    'Entumbane Post Office',
-    'Esigodini Post Office',
-    'Famona Post Office',
-    'Figtree Post Office',
-    'Filabusi Post Office',
-    'Gwanda Post Office',
-    'Hillside Post Office',
-    'Hwange Post Office',
-    'Llewellin Barracks Post Office',
-    'Lupane Post Office',
-    'Luveve Post Office',
-    'Magwegwe Post Office',
-    'Maphisa Post Office',
-    'Matabisa Post Office',
-    'Mbalabala Post Office',
-    'Mpopoma Post Office',
-    'Morningside Post Office',
-    'Mzilikazi Post Office',
-    'Nkayi Post Office',
-    'Nkulumane Post Office',
-    'Northend Post Office',
-    'Plumtree Post Office',
-    'Pumula Post Office',
-    'Raylton Post Office',
-    'Shangani Post Office',
-    'Solusi Post Office',
-    'Tsholotsho Post Office',
-    'Turkmine Post Office',
-    'Victoria Falls Post Office',
-    'West Nicholson Post Office',
-
-    // Manicaland
-    'Birchenough Post Office',
-    'Checheche Post Office',
-    'Chimanimani Post Office',
-    'Chipinge Post Office',
-    'Dangamvura Post Office',
-    'Dorowa Post Office',
-    'Hauna Post Office',
-    'Headlands Post Office',
-    'Marange Post Office',
-    'Mt Selinda Post Office',
-    'Murambinda Post Office',
-    'Mutare Main Post Office',
-    'Mutasa Post Office',
-    'Nhedziwa Post Office',
-    'Nyamaropa Post Office',
-    'Nyanga Post Office',
-    'Nyanyadzi Post Office',
-    'Nyazura Post Office',
-    'Odzi Post Office',
-    'Penhalonga Post Office',
-    'Rusape Post Office',
-    'Sakubva Post Office',
-    'Watsomba Post Office',
-
-    // Midlands & Masvingo
-    'Charandura Post Office',
-    'Chatsworth Post Office',
-    'Chikato Post Office',
-    'Chikombedzi Post Office',
-    'Chiredzi Post Office',
-    'Chivhu Post Office',
-    'Donga Post Office',
-    'Gokwe Post Office',
-    'Gweru Main Post Office',
-    'Jerera Post Office',
-    'Kadoma Post Office',
-    'Kwekwe Main Post Office',
-    'Kwekwe (Mbizo) Post Office',
-    'Makuvatsine Post Office',
-    'Manoti Post Office',
-    'Masase Post Office',
-    'Mashava Post Office',
-    'Masvingo Main Post Office',
-    'Mataga Post Office',
-    'Mberengwa Post Office',
-    'Mkoba Post Office',
-    'Morgenster Post Office',
-    'Mpandawana Post Office',
-    'Mvuma Post Office',
-    'Mwenezi Post Office',
-    'Nembudziya Post Office',
-    'Ngundu Post Office',
-    'Nyika Post Office',
-    'Renco Post Office',
-    'Rimuka Post Office',
-    'Rutenga Post Office',
-    'Sanyati Post Office',
-    'Shurugwi Post Office',
-    'Triangle Post Office',
-    'Zhombe Post Office',
-    'Zvishavane Post Office',
-
-    // Mashonaland (West, Central, East)
-    'Acturus Post Office',
-    'Banket Post Office',
-    'Beatrice Post Office',
-    'Bindura Post Office',
-    'Bromley Post Office',
-    'Centenary Post Office',
-    'Chakari Post Office',
-    'Chegutu Post Office',
-    'Chikonohono Post Office',
-    'Chinhoyi Post Office',
-    'Chirundu Post Office',
-    'Concession Post Office',
-    'Darwendale Post Office',
-    'Glendale Post Office',
-    'Goromonzi Post Office',
-    'Guruve Post Office',
-    'Juru Post Office',
-    'Kariba Post Office',
-    'Karoi Post Office',
-    'Macheke Post Office',
-    'Magunje Post Office',
-    'Marondera Post Office',
-    'Mazowe Post Office',
-    'Mhangura Post Office',
-    'Mhondoro-Ngezi Post Office',
-    'Mt Darwin Post Office',
-    'Mubayira Post Office',
-    'Mudzi Post Office',
-    'Murewa Post Office',
-    'Murombedzi Post Office',
-    'Mutawatawa Post Office',
-    'Mutoko Post Office',
-    'Mutorashanga Post Office',
-    'Muzarabani Post Office',
-    'Mvurwi Post Office',
-    'Nyamhunga Post Office',
-    'Raffingora Post Office',
-    'Rushinga Post Office',
-    'Sadza Post Office',
-    'Selous Post Office',
-    'Shamva Post Office',
-    'Wedza Post Office',
-    'Zengeza Post Office'
-].sort();
+// Flatten to keep compatibility if needed, though we use grouped now
+const ALL_ZIMPOST_BRANCHES = Object.values(ZIMPOST_LOCATIONS).flat().sort();
 
 // Determine delivery agent based on product category and name
 const determineDeliveryAgent = (category?: string, productName?: string): {
@@ -301,8 +171,12 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
             newErrors.depot = 'Please select a Gain Cash & Carry depot for collection';
         }
 
-        if (selectedAgent === 'Zim Post Office' && !selectedCity) { // Reusing city for post office selection
-            newErrors.city = 'Please select a Zim Post Office branch for collection';
+        if (selectedAgent === 'Zim Post Office') {
+            if (!selectedCity) {
+                newErrors.city = 'Please select your city or province';
+            } else if (!selectedDepot) {
+                newErrors.depot = 'Please select a Zim Post Office branch';
+            }
         }
 
         setErrors(newErrors);
@@ -311,7 +185,7 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
             onNext({
                 type: selectedAgent,
                 city: selectedAgent === 'Zim Post Office' ? selectedCity : '',
-                depot: selectedAgent === 'Gain Cash & Carry' ? selectedDepot : '',
+                depot: selectedDepot, // Unified field
                 agent: selectedAgent // Ensure consistent structure
             });
         }
@@ -329,7 +203,7 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
                     Delivery Depot
                 </h2>
                 <p className="text-[#706f6c] dark:text-[#A1A09A]">
-                    Please be advised that you will be required to collect your product from the nearest depot. Kindly select your nearest depot.
+                    Please be advised that all delivery services are done via our courier, Zimpost Courier Connect to all urban and rural destinations in Zimbabwe. You will collect your product from the Post Office nearest to you.
                 </p>
             </div>
 
@@ -373,11 +247,11 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
                 </div>
             </div>
 
-            {/* Swift / Post Office City Selection */}
-            {(selectedAgent === 'Swift' || selectedAgent === 'Zim Post Office') && (
+            {/* Swift Selection */}
+            {selectedAgent === 'Swift' && (
                 <div>
                     <label className="block text-sm font-medium mb-2 text-[#1b1b18] dark:text-[#EDEDEC]">
-                        {selectedAgent === 'Swift' ? 'Select City' : 'Select Branch'} <span className="text-red-600">*</span>
+                        Select City <span className="text-red-600">*</span>
                     </label>
                     <select
                         value={selectedCity}
@@ -391,22 +265,82 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
                             ${errors.city ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}
                         `}
                     >
-                        <option value="">{selectedAgent === 'Swift' ? 'Select the location closest to you' : 'Select a branch closest to you'}</option>
-                        {selectedAgent === 'Swift'
-                            ? SWIFT_CITIES.map((city) => (
-                                <option key={city} value={city}>{city}</option>
-                            ))
-                            : ZIMPOST_OFFICES.map((office) => (
-                                <option key={office} value={office}>{office}</option>
-                            ))
-                        }
+                        <option value="">Select the location closest to you</option>
+                        {SWIFT_CITIES.map((city) => (
+                            <option key={city} value={city}>{city}</option>
+                        ))}
                     </select>
                     {errors.city && (
                         <p className="mt-1 text-sm text-red-600">{errors.city}</p>
                     )}
                     <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                        {selectedAgent === 'Zim Post Office' ? 'You will collect at your nearest post office.' : 'You will collect your product from the Gain Cash & Carry depot in the selected location.'}
+                        You will collect your product from the Swift Depot in the selected location.
                     </p>
+                </div>
+            )}
+
+            {/* New Two-Step Post Office Selection */}
+            {selectedAgent === 'Zim Post Office' && (
+                <div className="space-y-4">
+                    {/* Step 1: City/Province */}
+                    <div>
+                        <label className="block text-sm font-medium mb-2 text-[#1b1b18] dark:text-[#EDEDEC]">
+                            Select City/Province <span className="text-red-600">*</span>
+                        </label>
+                        <select
+                            value={selectedCity}
+                            onChange={(e) => {
+                                setSelectedCity(e.target.value);
+                                setSelectedDepot(''); // Reset branch
+                                setErrors({});
+                            }}
+                            className={`
+                                w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500
+                                dark:bg-gray-800 dark:text-white
+                                ${errors.city ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}
+                            `}
+                        >
+                            <option value="">Select your city or province</option>
+                            {Object.keys(ZIMPOST_LOCATIONS).map((city) => (
+                                <option key={city} value={city}>{city}</option>
+                            ))}
+                        </select>
+                        {errors.city && (
+                            <p className="mt-1 text-sm text-red-600">{errors.city}</p>
+                        )}
+                    </div>
+
+                    {/* Step 2: Branch */}
+                    {selectedCity && (
+                        <div>
+                            <label className="block text-sm font-medium mb-2 text-[#1b1b18] dark:text-[#EDEDEC]">
+                                Select Zim Post Office Branch <span className="text-red-600">*</span>
+                            </label>
+                            <select
+                                value={selectedDepot}
+                                onChange={(e) => {
+                                    setSelectedDepot(e.target.value);
+                                    setErrors({});
+                                }}
+                                className={`
+                                    w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500
+                                    dark:bg-gray-800 dark:text-white
+                                    ${errors.depot ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}
+                                `}
+                            >
+                                <option value="">Select a branch within {selectedCity}</option>
+                                {(ZIMPOST_LOCATIONS[selectedCity] || []).map((branch) => (
+                                    <option key={branch} value={branch}>{branch}</option>
+                                ))}
+                            </select>
+                            {errors.depot && (
+                                <p className="mt-1 text-sm text-red-600">{errors.depot}</p>
+                            )}
+                            <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                You will collect at your nearest post office.
+                            </p>
+                        </div>
+                    )}
                 </div>
             )}
 

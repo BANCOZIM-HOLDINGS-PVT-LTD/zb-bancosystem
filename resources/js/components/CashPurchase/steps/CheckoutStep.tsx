@@ -436,8 +436,21 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
                                 <div className="grid grid-cols-2 gap-4 mb-6">
                                     {/* EcoCash */}
                                     <button
-                                        onClick={handlePaynowRedirect}
-                                        className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700"
+                                        onClick={() => onComplete({
+                                            customer: {
+                                                nationalId: validateZimbabweanID(nationalId).formatted || nationalId,
+                                                fullName,
+                                                phone,
+                                                email: email || undefined,
+                                            },
+                                            payment: {
+                                                method: 'ecocash',
+                                                amount: totalAmount,
+                                                currency: 'USD',
+                                            },
+                                        })}
+                                        disabled={loading}
+                                        className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700 disabled:opacity-50"
                                     >
                                         <div className="bg-blue-600 text-white font-bold p-2 rounded mb-2 w-full text-center">EcoCash</div>
                                         <span className="text-sm font-medium">EcoCash</span>
@@ -445,38 +458,77 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
 
                                     {/* OneMoney */}
                                     <button
-                                        onClick={handlePaynowRedirect}
-                                        className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700"
+                                        onClick={() => onComplete({
+                                            customer: {
+                                                nationalId: validateZimbabweanID(nationalId).formatted || nationalId,
+                                                fullName,
+                                                phone,
+                                                email: email || undefined,
+                                            },
+                                            payment: {
+                                                method: 'onemoney',
+                                                amount: totalAmount,
+                                                currency: 'USD',
+                                            },
+                                        })}
+                                        disabled={loading}
+                                        className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700 disabled:opacity-50"
                                     >
                                         <div className="bg-orange-500 text-white font-bold p-2 rounded mb-2 w-full text-center">OneMoney</div>
                                         <span className="text-sm font-medium">OneMoney</span>
                                     </button>
 
-                                    {/* Visa */}
+                                    {/* O'Mari */}
                                     <button
-                                        onClick={handlePaynowRedirect}
-                                        className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700"
+                                        onClick={() => onComplete({
+                                            customer: {
+                                                nationalId: validateZimbabweanID(nationalId).formatted || nationalId,
+                                                fullName,
+                                                phone,
+                                                email: email || undefined,
+                                            },
+                                            payment: {
+                                                method: 'paynow', // O'Mari usually via generic Paynow gateway or specific
+                                                amount: totalAmount,
+                                                currency: 'USD',
+                                            },
+                                        })}
+                                        disabled={loading}
+                                        className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700 disabled:opacity-50"
                                     >
-                                        <div className="bg-blue-900 text-white font-bold p-2 rounded mb-2 w-full text-center">VISA</div>
-                                        <span className="text-sm font-medium">Visa</span>
+                                        <div className="bg-red-500 text-white font-bold p-2 rounded mb-2 w-full text-center">O'Mari</div>
+                                        <span className="text-sm font-medium">O'Mari</span>
                                     </button>
 
-                                    {/* Mastercard */}
+                                    {/* Visa / Mastercard */}
                                     <button
-                                        onClick={handlePaynowRedirect}
-                                        className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700"
+                                        onClick={() => onComplete({
+                                            customer: {
+                                                nationalId: validateZimbabweanID(nationalId).formatted || nationalId,
+                                                fullName,
+                                                phone,
+                                                email: email || undefined,
+                                            },
+                                            payment: {
+                                                method: 'paynow', // Direct to Paynow web interface
+                                                amount: totalAmount,
+                                                currency: 'USD',
+                                            },
+                                        })}
+                                        disabled={loading}
+                                        className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700 disabled:opacity-50"
                                     >
-                                        <div className="bg-red-600 text-white font-bold p-2 rounded mb-2 w-full text-center">Mastercard</div>
-                                        <span className="text-sm font-medium">Mastercard</span>
+                                        <div className="bg-blue-900 text-white font-bold p-2 rounded mb-2 w-full text-center">VISA / Mastercard</div>
+                                        <span className="text-sm font-medium">Card</span>
                                     </button>
                                 </div>
 
                                 <p className="text-xs text-center text-gray-500 dark:text-gray-400 mb-6">
-                                    Security provided by Paynow. You will be redirected to complete payment.
+                                    Secure payments processing by Paynow.
                                 </p>
 
                                 <div className="flex justify-center">
-                                    <Button variant="outline" onClick={handlePaymentCancel} className="w-full">
+                                    <Button variant="outline" onClick={handlePaymentCancel} className="w-full" disabled={loading}>
                                         Cancel
                                     </Button>
                                 </div>

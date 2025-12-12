@@ -134,7 +134,7 @@ export default function ClientRegister() {
     return (
         <AuthLayout
             title="Register"
-            description="Enter your National ID and phone number to register"
+            description="Enter your Zimbabwean National ID and phone number to register"
         >
             <Head title="Register" />
             <form className="flex flex-col gap-6" onSubmit={submit}>

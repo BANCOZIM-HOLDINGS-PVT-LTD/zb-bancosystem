@@ -59,6 +59,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
         const businessName = data.business || ''; // string from ProductSelection
         const finalPrice = data.amount || 0; // number from ProductSelection
         const intent = data.intent || 'hirePurchase';
+        const selectedMonth = data.creditTerm;
 
         let facilityType = '';
         if (intent === 'hirePurchase' && businessName) {
@@ -72,25 +73,34 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
             facilityType = 'Credit Facility';
         }
 
-        // Calculate tenure based on amount
+        // Calculate tenure
         let tenure = 12; // default
-        if (finalPrice <= 1000) tenure = 6;
-        else if (finalPrice <= 5000) tenure = 12;
-        else if (finalPrice <= 15000) tenure = 18;
-        else tenure = 24;
+        if (selectedMonth) {
+            tenure = parseInt(selectedMonth.toString());
+        } else {
+            if (finalPrice <= 1000) tenure = 6;
+            else if (finalPrice <= 5000) tenure = 12;
+            else if (finalPrice <= 15000) tenure = 18;
+            else tenure = 24;
+        }
 
-        // Calculate monthly payment (10% annual interest)
-        const interestRate = 0.10;
-        const monthlyInterestRate = interestRate / 12;
-        const monthlyPayment = finalPrice > 0 ?
-            (finalPrice * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenure)) /
-            (Math.pow(1 + monthlyInterestRate, tenure) - 1) : 0;
+        // Calculate monthly payment
+        let monthlyPaymentValue = 0;
+        if (data.monthlyPayment) {
+            monthlyPaymentValue = parseFloat(data.monthlyPayment);
+        } else {
+            const interestRate = 0.10;
+            const monthlyInterestRate = interestRate / 12;
+            monthlyPaymentValue = finalPrice > 0 ?
+                (finalPrice * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenure)) /
+                (Math.pow(1 + monthlyInterestRate, tenure) - 1) : 0;
+        }
 
         return {
             creditFacilityType: facilityType,
             loanAmount: finalPrice.toFixed(2),
             loanTenure: tenure.toString(),
-            monthlyPayment: monthlyPayment.toFixed(2),
+            monthlyPayment: monthlyPaymentValue.toFixed(2),
             interestRate: '10.0'
         };
     };
@@ -274,6 +284,16 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
             return updatedData;
         });
     };
+
+    // Auto-set spouse relation if married
+    React.useEffect(() => {
+        if (formData.maritalStatus === 'Married') {
+            setFormData(prev => ({
+                ...prev,
+                spouseRelationship: 'Spouse'
+            }));
+        }
+    }, [formData.maritalStatus]);
 
     // Set default values for GOZ Non-SSB
     React.useEffect(() => {
@@ -800,8 +820,8 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 id="residentialAddress"
                                 name="residentialAddress"
                                 label="Residential Address *"
-                                type="address"
-                                value={formData.residentialAddress}
+                                type="text"
+                                value={typeof formData.residentialAddress === 'string' ? formData.residentialAddress : ''}
                                 onChange={(value) => handleInputChange('residentialAddress', value)}
                                 required
                             />
@@ -991,7 +1011,10 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                     <div className="flex items-center mb-4">
                         <Users className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">
-                            {formData.gender === 'Male' ? "Wife's" : formData.gender === 'Female' ? "Husband's" : "Spouse"}/Next of Kin
+                            {formData.maritalStatus === 'Married' ?
+                                (formData.gender === 'Male' ? "Wife's Details" :
+                                    formData.gender === 'Female' ? "Husband's Details" : "Spouse Details")
+                                : "Next of Kin Details"}
                         </h3>
                     </div>
                     <p className="text-xs text-gray-500 italic mb-4">
@@ -1065,6 +1088,17 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 type="phone"
                                 value={formData.spouseContact}
                                 onChange={(value) => handleInputChange('spouseContact', value)}
+                            />
+                        </div>
+
+                        <div>
+                            <FormField
+                                id="spouseAddress"
+                                name="spouseAddress"
+                                label="Address"
+                                type="text"
+                                value={typeof formData.spouseAddress === 'string' ? formData.spouseAddress : ''}
+                                onChange={(value) => handleInputChange('spouseAddress', value)}
                             />
                         </div>
                     </div>

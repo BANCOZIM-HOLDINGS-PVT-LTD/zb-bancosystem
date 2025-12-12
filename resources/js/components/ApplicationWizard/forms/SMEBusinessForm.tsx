@@ -23,6 +23,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
         const businessName = data.business; // string from ProductSelection
         const finalPrice = data.amount || 0; // number from ProductSelection
         const intent = data.intent || 'hirePurchase';
+        const selectedMonth = data.creditTerm;
 
         let facilityType = '';
         if (intent === 'hirePurchase' && businessName) {
@@ -34,25 +35,34 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
             facilityType = `Credit Facility - ${businessName}`;
         }
 
-        // Calculate tenure based on amount
+        // Calculate tenure
         let tenure = 12; // default
-        if (finalPrice <= 1000) tenure = 6;
-        else if (finalPrice <= 5000) tenure = 12;
-        else if (finalPrice <= 15000) tenure = 18;
-        else tenure = 24;
+        if (selectedMonth) {
+            tenure = parseInt(selectedMonth.toString());
+        } else {
+            if (finalPrice <= 1000) tenure = 6;
+            else if (finalPrice <= 5000) tenure = 12;
+            else if (finalPrice <= 15000) tenure = 18;
+            else tenure = 24;
+        }
 
-        // Calculate monthly payment (10% annual interest)
-        const interestRate = 0.10;
-        const monthlyInterestRate = interestRate / 12;
-        const monthlyPayment = finalPrice > 0 ?
-            (finalPrice * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenure)) /
-            (Math.pow(1 + monthlyInterestRate, tenure) - 1) : 0;
+        // Calculate monthly payment
+        let monthlyPaymentValue = 0;
+        if (data.monthlyPayment) {
+            monthlyPaymentValue = parseFloat(data.monthlyPayment);
+        } else {
+            const interestRate = 0.10;
+            const monthlyInterestRate = interestRate / 12;
+            monthlyPaymentValue = finalPrice > 0 ?
+                (finalPrice * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenure)) /
+                (Math.pow(1 + monthlyInterestRate, tenure) - 1) : 0;
+        }
 
         return {
             creditFacilityType: facilityType,
             loanAmount: finalPrice.toFixed(2),
             loanTenure: tenure.toString(),
-            monthlyPayment: monthlyPayment.toFixed(2),
+            monthlyPayment: monthlyPaymentValue.toFixed(2),
             interestRate: '10.0'
         };
     };
@@ -529,8 +539,8 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                             <FormField
                                 id="businessAddress"
                                 label="Business Address"
-                                type="address"
-                                value={formData.businessAddress}
+                                type="text"
+                                value={typeof formData.businessAddress === 'string' ? formData.businessAddress : ''}
                                 onChange={(value) => handleInputChange('businessAddress', value)}
                                 required
                             />
@@ -1060,7 +1070,9 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 <Card className="p-6">
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">
-                             {formData.directorsPersonalDetails.gender === 'Male' ? "WIFE'S" : formData.directorsPersonalDetails.gender === 'Female' ? "HUSBAND'S" : "SPOUSE"} AND NEXT OF KIN DETAILS
+                            {formData.directorsPersonalDetails.maritalStatus === 'Married'
+                                ? (formData.directorsPersonalDetails.gender === 'Male' ? "Wife's" : formData.directorsPersonalDetails.gender === 'Female' ? "Husband's" : "Spouse")
+                                : "Next of Kin"} and Next of Kin Details
                         </h3>
                     </div>
                     <p className="text-xs text-gray-500 italic mb-4">
@@ -1071,7 +1083,9 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                         {/* Spouse Details */}
                         <div>
                             <h4 className="font-semibold mb-3 text-emerald-700">
-                                {formData.directorsPersonalDetails.gender === 'Male' ? "WIFE'S" : formData.directorsPersonalDetails.gender === 'Female' ? "HUSBAND'S" : "SPOUSE"} DETAILS
+                                {formData.directorsPersonalDetails.maritalStatus === 'Married'
+                                    ? (formData.directorsPersonalDetails.gender === 'Male' ? "Wife's Details" : formData.directorsPersonalDetails.gender === 'Female' ? "Husband's Details" : "Spouse Details")
+                                    : "Next of Kin Details"}
                             </h4>
                             <div className="space-y-3">
                                 <div>
@@ -1139,8 +1153,8 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                     <FormField
                                         id="spouseAddress"
                                         label="Address"
-                                        type="address"
-                                        value={formData.spouseAndNextOfKin.spouse.address || JSON.stringify({})}
+                                        type="text"
+                                        value={typeof formData.spouseAndNextOfKin.spouse.address === 'string' ? formData.spouseAndNextOfKin.spouse.address : ''}
                                         onChange={(value) => {
                                             setFormData(prev => ({
                                                 ...prev,
@@ -1255,8 +1269,8 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                     <FormField
                                         id="nextOfKin1Address"
                                         label="Address"
-                                        type="address"
-                                        value={formData.spouseAndNextOfKin.nextOfKin1.address || JSON.stringify({})}
+                                        type="text"
+                                        value={typeof formData.spouseAndNextOfKin.nextOfKin1.address === 'string' ? formData.spouseAndNextOfKin.nextOfKin1.address : ''}
                                         onChange={(value) => {
                                             setFormData(prev => ({
                                                 ...prev,
@@ -1373,8 +1387,8 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                             <FormField
                                 id="nextOfKin2Address"
                                 label="Address"
-                                type="address"
-                                value={formData.spouseAndNextOfKin.nextOfKin2.address || JSON.stringify({})}
+                                type="text"
+                                value={typeof formData.spouseAndNextOfKin.nextOfKin2.address === 'string' ? formData.spouseAndNextOfKin.nextOfKin2.address : ''}
                                 onChange={(value) => {
                                     setFormData(prev => ({
                                         ...prev,

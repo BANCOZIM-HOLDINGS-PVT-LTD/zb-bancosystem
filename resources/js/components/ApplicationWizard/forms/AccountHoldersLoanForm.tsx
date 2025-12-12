@@ -41,11 +41,13 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
         };
         return mappings[value as keyof typeof mappings] || value;
     };
+
     // Calculate credit facility details from product selection
     const calculateCreditFacilityDetails = () => {
         const businessName = data.business || ''; // string from ProductSelection
         const finalPrice = data.amount || 0; // number from ProductSelection
         const intent = data.intent || 'hirePurchase';
+        const selectedMonth = data.creditTerm;
 
         let facilityType = '';
         if (intent === 'hirePurchase' && businessName) {
@@ -59,25 +61,34 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             facilityType = 'Credit Facility';
         }
 
-        // Calculate tenure based on amount
+        // Calculate tenure
         let tenure = 12; // default
-        if (finalPrice <= 1000) tenure = 6;
-        else if (finalPrice <= 5000) tenure = 12;
-        else if (finalPrice <= 15000) tenure = 18;
-        else tenure = 24;
+        if (selectedMonth) {
+            tenure = parseInt(selectedMonth.toString());
+        } else {
+            if (finalPrice <= 1000) tenure = 6;
+            else if (finalPrice <= 5000) tenure = 12;
+            else if (finalPrice <= 15000) tenure = 18;
+            else tenure = 24;
+        }
 
-        // Calculate monthly payment (10% annual interest)
-        const interestRate = 0.10;
-        const monthlyInterestRate = interestRate / 12;
-        const monthlyPayment = finalPrice > 0 ?
-            (finalPrice * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenure)) /
-            (Math.pow(1 + monthlyInterestRate, tenure) - 1) : 0;
+        // Calculate monthly payment
+        let monthlyPaymentValue = 0;
+        if (data.monthlyPayment) {
+            monthlyPaymentValue = parseFloat(data.monthlyPayment);
+        } else {
+            const interestRate = 0.10;
+            const monthlyInterestRate = interestRate / 12;
+            monthlyPaymentValue = finalPrice > 0 ?
+                (finalPrice * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenure)) /
+                (Math.pow(1 + monthlyInterestRate, tenure) - 1) : 0;
+        }
 
         return {
             creditFacilityType: facilityType,
             loanAmount: finalPrice.toFixed(2),
             loanTenure: tenure.toString(),
-            monthlyPayment: monthlyPayment.toFixed(2),
+            monthlyPayment: monthlyPaymentValue.toFixed(2),
             interestRate: '10.0'
         };
     };
@@ -176,6 +187,18 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             [field]: processedValue
         }));
     };
+
+    // Auto-set spouse relation if married
+    React.useEffect(() => {
+        if (formData.maritalStatus === 'Married') {
+            setFormData(prev => ({
+                ...prev,
+                spouseDetails: prev.spouseDetails.map((spouse, i) =>
+                    i === 0 ? { ...spouse, relationship: 'Spouse' } : spouse
+                )
+            }));
+        }
+    }, [formData.maritalStatus]);
 
     const handleSpouseChange = (index: number, field: string, value: string) => {
         setFormData(prev => ({
@@ -461,8 +484,8 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                             <FormField
                                 id="permanentAddress"
                                 label="Residential Address"
-                                type="address"
-                                value={formData.permanentAddress || '{}'}
+                                type="text"
+                                value={typeof formData.permanentAddress === 'string' ? formData.permanentAddress : ''}
                                 onChange={(value) => handleInputChange('permanentAddress', value)}
                             />
                         </div>
@@ -627,8 +650,8 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                             <FormField
                                 id="employerAddress"
                                 label="Institution Address"
-                                type="address"
-                                value={formData.employerAddress || '{}'}
+                                type="text"
+                                value={typeof formData.employerAddress === 'string' ? formData.employerAddress : ''}
                                 onChange={(value) => handleInputChange('employerAddress', value)}
                                 required
                             />
@@ -709,69 +732,86 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     <div className="flex items-center mb-4">
                         <Users className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">
-                            {formData.gender === 'Male' ? "Wife's" : formData.gender === 'Female' ? "Husband's" : "Spouse"} and Next of Kin Details *
+                            {formData.spouseDetails[0]?.relationship === 'Spouse' || formData.maritalStatus === 'Married'
+                                ? (formData.gender === 'Male' ? "Wife's" : formData.gender === 'Female' ? "Husband's" : "Spouse")
+                                : "Next of Kin"} Details *
                         </h3>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        At least one next of kin is required
-                    </p>
+
                     <p className="text-xs text-gray-500 italic mb-4">
                         *this is for statistical and record keeping purposes only*
                     </p>
 
-                    {formData.spouseDetails.map((spouse, index) => (
-                        <div key={index} className="grid gap-4 md:grid-cols-4 mb-4 p-4 border rounded-lg">
-                            <div>
-                                <FormField
-                                    id={`spouse-${index}-name`}
-                                    label={`Full Names${index === 0 ? ' *' : ''}`}
-                                    type="text"
-                                    value={spouse.fullName}
-                                    onChange={(value) => handleSpouseChange(index, 'fullName', value)}
-                                    required={index === 0}
-                                    autoCapitalize={true}
-                                />
-                            </div>
+                    {formData.spouseDetails.map((spouse, index) => {
+                        let containerLabel = "Next of Kin Details";
+                        if (index === 0) {
+                            if (formData.maritalStatus === 'Married') {
+                                if (formData.gender === 'Male') containerLabel = "Wife's Details";
+                                else if (formData.gender === 'Female') containerLabel = "Husband's Details";
+                                else containerLabel = "Spouse Details";
+                            }
+                        }
 
-                            <div>
-                                <Label htmlFor={`spouse-${index}-relationship`}>Relationship{index === 0 && spouse.fullName ? ' *' : ''}</Label>
-                                <Select value={spouse.relationship} onValueChange={(value) => handleSpouseChange(index, 'relationship', value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select relationship" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Spouse">Spouse</SelectItem>
-                                        <SelectItem value="Parent">Parent</SelectItem>
-                                        <SelectItem value="Child">Child</SelectItem>
-                                        <SelectItem value="Relative">Relative</SelectItem>
-                                        <SelectItem value="Work colleague">Work colleague</SelectItem>
-                                        <SelectItem value="Friend">Friend</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                        return (
+                            <div key={index} className="grid gap-4 md:grid-cols-4 mb-4 p-4 border rounded-lg">
+                                <div className="md:col-span-4 mb-2">
+                                    <h4 className="text-md font-medium text-emerald-800 dark:text-emerald-400 border-b pb-1">
+                                        {containerLabel}
+                                    </h4>
+                                </div>
 
-                            <div>
-                                <FormField
-                                    id={`spouse-${index}-phone`}
-                                    label={`Phone Numbers${index === 0 && spouse.fullName ? ' *' : ''}`}
-                                    type="phone"
-                                    value={spouse.phoneNumber}
-                                    onChange={(value) => handleSpouseChange(index, 'phoneNumber', value)}
-                                    required={index === 0 && !!spouse.fullName}
-                                />
-                            </div>
+                                <div>
+                                    <FormField
+                                        id={`spouse-${index}-name`}
+                                        label={`Full Names${index === 0 ? ' *' : ''}`}
+                                        type="text"
+                                        value={spouse.fullName}
+                                        onChange={(value) => handleSpouseChange(index, 'fullName', value)}
+                                        required={index === 0}
+                                        autoCapitalize={true}
+                                    />
+                                </div>
 
-                            <div>
-                                <FormField
-                                    id={`spouse-${index}-address`}
-                                    label="Residential address"
-                                    type="address"
-                                    value={spouse.residentialAddress || '{}'}
-                                    onChange={(value) => handleSpouseChange(index, 'residentialAddress', value)}
-                                />
+                                <div>
+                                    <Label htmlFor={`spouse-${index}-relationship`}>Relationship{index === 0 && spouse.fullName ? ' *' : ''}</Label>
+                                    <Select value={spouse.relationship} onValueChange={(value) => handleSpouseChange(index, 'relationship', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select relationship" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Spouse">Spouse</SelectItem>
+                                            <SelectItem value="Parent">Parent</SelectItem>
+                                            <SelectItem value="Child">Child</SelectItem>
+                                            <SelectItem value="Relative">Relative</SelectItem>
+                                            <SelectItem value="Work colleague">Work colleague</SelectItem>
+                                            <SelectItem value="Friend">Friend</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div>
+                                    <FormField
+                                        id={`spouse-${index}-phone`}
+                                        label={`Phone Numbers${index === 0 && spouse.fullName ? ' *' : ''}`}
+                                        type="phone"
+                                        value={spouse.phoneNumber}
+                                        onChange={(value) => handleSpouseChange(index, 'phoneNumber', value)}
+                                        required={index === 0 && !!spouse.fullName}
+                                    />
+                                </div>
+
+                                <div>
+                                    <FormField
+                                        id={`spouse-${index}-address`}
+                                        label="Residential address"
+                                        type="text"
+                                        value={typeof spouse.residentialAddress === 'string' ? spouse.residentialAddress : ''}
+                                        onChange={(value) => handleSpouseChange(index, 'residentialAddress', value)}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </Card>
 
                 {/* Banking/Mobile Account Details */}

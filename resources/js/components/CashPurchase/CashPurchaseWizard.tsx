@@ -42,7 +42,7 @@ export interface CashPurchaseData {
         email?: string;
     };
     payment?: {
-        method: 'paynow';
+        method: 'paynow' | 'ecocash' | 'onemoney';
         amount: number;
         currency?: 'USD';
         // Common fields

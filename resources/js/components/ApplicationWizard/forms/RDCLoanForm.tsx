@@ -38,17 +38,24 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
 
         // Calculate tenure based on amount
         let tenure = 12; // default
-        if (finalPrice <= 1000) tenure = 6;
-        else if (finalPrice <= 5000) tenure = 12;
-        else if (finalPrice <= 15000) tenure = 18;
-        else tenure = 24;
+
+        // Use user selected term if available
+        if (data.creditTerm) {
+            tenure = parseInt(data.creditTerm.toString());
+        } else {
+            if (finalPrice <= 1000) tenure = 6;
+            else if (finalPrice <= 5000) tenure = 12;
+            else if (finalPrice <= 15000) tenure = 18;
+            else tenure = 24;
+        }
 
         // Calculate monthly payment (10% annual interest)
         const interestRate = 0.10;
         const monthlyInterestRate = interestRate / 12;
-        const monthlyPayment = finalPrice > 0 ?
+        // Use user selected monthly payment if available, otherwise calculate
+        const monthlyPayment = data.monthlyPayment ? parseFloat(data.monthlyPayment) : (finalPrice > 0 ?
             (finalPrice * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenure)) /
-            (Math.pow(1 + monthlyInterestRate, tenure) - 1) : 0;
+            (Math.pow(1 + monthlyInterestRate, tenure) - 1) : 0);
 
         // Note 7: SSB Loan starts first of next month and ends on last day of start date + loan period
         const today = new Date();
@@ -324,9 +331,11 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             <div className="text-center">
-                <h2 className="text-2xl font-semibold mb-2">RDC Loan Application Form</h2>
+                <h2 className="text-2xl font-semibold mb-2">
+                    {data.employer === 'Municipality' ? 'Municipality Loan Application' : 'RDC Loan Application'}
+                </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-2">
-                    Complete your RDC loan application details
+                    Complete your {data.employer === 'Municipality' ? 'municipality' : 'RDC'} loan application details
                 </p>
                 <p className="text-sm text-red-600 dark:text-red-400">
                     Fields marked with * are required
@@ -497,8 +506,8 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                             <FormField
                                 id="permanentAddress"
                                 label="Residential Address"
-                                type="address"
-                                value={formData.permanentAddress}
+                                type="text"
+                                value={typeof formData.permanentAddress === 'string' ? formData.permanentAddress : ''}
                                 onChange={(value) => handleInputChange('permanentAddress', value)}
                                 required
                             />
@@ -567,8 +576,8 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                         <FormField
                             id="employerAddress"
                             label="Institution Address"
-                            type="address"
-                            value={formData.employerAddress}
+                            type="text"
+                            value={typeof formData.employerAddress === 'string' ? formData.employerAddress : ''}
                             onChange={(value) => handleInputChange('employerAddress', value)}
                             required
                         />
@@ -664,13 +673,13 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                     <div className="flex items-center mb-4">
                         <Users className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">
-                            {formData.gender === 'Male' ? "Wife's" : formData.gender === 'Female' ? "Husband's" : "Spouse"} and Next of Kin Details *
+                            Next of Kin Details *
                         </h3>
                     </div>
+
                     <p className="text-xs text-gray-500 italic mb-4">
                         *this is for statistical and record keeping purposes only*
                     </p>
-
 
                     {spouseError && (
                         <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -680,51 +689,69 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                         </div>
                     )}
 
-                    {formData.spouseDetails.map((spouse, index) => (
-                        <div key={index} className="grid gap-4 md:grid-cols-4 mb-4 p-4 border rounded-lg">
-                            <FormField
-                                id={`spouse-${index}-name`}
-                                label="Full Name"
-                                type="text"
-                                value={spouse.fullName}
-                                onChange={(value) => handleSpouseChange(index, 'fullName', value)}
-                                autoCapitalize={true}
-                            />
+                    {formData.spouseDetails.map((spouse, index) => {
+                        let containerLabel = "Next of Kin Details";
+                        if (index === 0) {
+                            if (formData.maritalStatus === 'Married') {
+                                if (formData.gender === 'Male') containerLabel = "Wife's Details";
+                                else if (formData.gender === 'Female') containerLabel = "Husband's Details";
+                                else containerLabel = "Spouse Details";
+                            }
+                        }
 
-                            <div>
-                                <Label htmlFor={`spouse-${index}-relationship`}>Relationship</Label>
-                                <Select value={spouse.relationship} onValueChange={(value) => handleSpouseChange(index, 'relationship', value)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select relationship" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Spouse">Spouse</SelectItem>
-                                        <SelectItem value="Parent">Parent</SelectItem>
-                                        <SelectItem value="Child">Child</SelectItem>
-                                        <SelectItem value="Relative">Relative</SelectItem>
-                                        <SelectItem value="Work colleague">Work colleague</SelectItem>
-                                        <SelectItem value="Friend">Friend</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                        return (
+                            <div key={index} className="grid gap-4 md:grid-cols-4 mb-4 p-4 border rounded-lg">
+                                <div className="md:col-span-4 mb-2">
+                                    <h4 className="text-md font-medium text-emerald-800 dark:text-emerald-400 border-b pb-1">
+                                        {containerLabel}
+                                    </h4>
+                                </div>
+                                <FormField
+                                    id={`spouse-${index}-name`}
+                                    label={`Full Name${index === 0 ? ' *' : ''}`}
+                                    type="text"
+                                    value={spouse.fullName}
+                                    onChange={(value) => handleSpouseChange(index, 'fullName', value)}
+                                    required={index === 0}
+                                    autoCapitalize={true}
+                                />
+
+                                <div>
+                                    <Label htmlFor={`spouse-${index}-relationship`}>Relationship{index === 0 && spouse.fullName ? ' *' : ''}</Label>
+                                    <Select value={spouse.relationship} onValueChange={(value) => handleSpouseChange(index, 'relationship', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select relationship" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Spouse">Spouse</SelectItem>
+                                            <SelectItem value="Parent">Parent</SelectItem>
+                                            <SelectItem value="Child">Child</SelectItem>
+                                            <SelectItem value="Relative">Relative</SelectItem>
+                                            <SelectItem value="Work colleague">Work colleague</SelectItem>
+                                            <SelectItem value="Friend">Friend</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <FormField
+                                    id={`spouse-${index}-phone`}
+                                    label={`Phone Number${index === 0 && spouse.fullName ? ' *' : ''}`}
+                                    type="phone"
+                                    value={spouse.phoneNumber}
+                                    onChange={(value) => handleSpouseChange(index, 'phoneNumber', value)}
+                                    required={index === 0 && !!spouse.fullName}
+                                />
+
+                                <FormField
+                                    id={`spouse-${index}-address`}
+                                    label="Residential Address"
+                                    type="text"
+                                    value={typeof spouse.residentialAddress === 'string' ? spouse.residentialAddress : ''}
+                                    onChange={(value) => handleSpouseChange(index, 'residentialAddress', value)}
+                                />
                             </div>
-
-                            <FormField
-                                id={`spouse-${index}-phone`}
-                                label="Phone Number"
-                                type="phone"
-                                value={spouse.phoneNumber}
-                                onChange={(value) => handleSpouseChange(index, 'phoneNumber', value)}
-                            />
-
-                            <FormField
-                                id={`spouse-${index}-address`}
-                                label="Residential Address"
-                                type="address"
-                                value={spouse.residentialAddress}
-                                onChange={(value) => handleSpouseChange(index, 'residentialAddress', value)}
-                            />
-                        </div>
-                    ))}
+                        );
+                    })}
                 </Card>
 
                 {/* Banking Details */}

@@ -159,17 +159,21 @@ class CashPurchaseController extends Controller
                 'status' => 'pending',
             ]);
 
-            // If method is paynow, verify or just create the link
+            // If method is paynow or mobile, verify or just create the link
             $redirectUrl = route('cash.purchase.success', ['purchase' => $cashPurchase->purchase_number]);
-            $isPaynow = $data['payment']['method'] === 'paynow';
+            $paymentMethod = $data['payment']['method'];
+            $isPaynow = in_array($paymentMethod, ['paynow', 'ecocash', 'onemoney']);
 
             if ($isPaynow) {
-                // Initiate Paynow Transaction
+                // Determine description
+                $description = "Purchase: {$cashPurchase->product_name}";
+                
+                // 1. Create Web/Generic Payment first to get Reference/PollURL
                 $paynowResult = $this->paynowService->createPayment(
                     $cashPurchase->purchase_number,
                     $cashPurchase->amount_paid,
-                    $cashPurchase->email,
-                    "Purchase: {$cashPurchase->product_name}"
+                    $cashPurchase->email ?? 'no-email@example.com', // Paynow requires email
+                    $description
                 );
 
                 if ($paynowResult['success']) {
@@ -177,8 +181,36 @@ class CashPurchaseController extends Controller
                     // We can also store the Poll URL if needed
                     Log::info('Paynow transaction initiated', [
                         'purchase' => $cashPurchase->purchase_number,
-                        'redirect' => $redirectUrl
+                        'redirect' => $redirectUrl,
+                        'poll_url' => $paynowResult['pollUrl']
                     ]);
+                    
+                    // 2. If Mobile Method (EcoCash/OneMoney), trigger mobile prompt immediately
+                    if (in_array($paymentMethod, ['ecocash', 'onemoney'])) {
+                        Log::info('Triggering mobile prompt', ['method' => $paymentMethod, 'phone' => $cashPurchase->phone]);
+                        
+                        $mobileResult = $this->paynowService->initiateMobile(
+                            $paynowResult['pollUrl'],
+                            $cashPurchase->phone,
+                            $paymentMethod
+                        );
+                        
+                        // If mobile init successful, we might want to tell frontend to expect a prompt
+                        // But frontend expects a redirect_url or success.
+                        // We can return instructions.
+                        if ($mobileResult['success']) {
+                             // We still return success: true, but maybe with extra info?
+                             // The frontend will likely redirect to success page or show "Check your phone".
+                             // The current flow redirects to "CashPurchaseSuccess" page which shows details.
+                             // Ideally, for mobile, we should stay on a "Waiting" page or redirect to Success with "Pending" status.
+                             Log::info('Mobile prompt triggered successfully');
+                        } else {
+                             Log::warning('Mobile prompt failed', ['error' => $mobileResult['error'] ?? 'Unknown']);
+                             // We don't fail the whole request because the "Payment" exists in Paynow, just the push failed.
+                             // User can still pay via the link if they want (fallback).
+                        }
+                    }
+                    
                 } else {
                     Log::error('Paynow initiation failed', ['error' => $paynowResult['error']]);
                     // Fallback or error?

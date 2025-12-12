@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import EmployerSelection from './steps/EmployerSelection';
 import ProductSelection from './steps/ProductSelection';
@@ -604,7 +604,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
     const [validationAttempted, setValidationAttempted] = useState(false);
     const [missingRequiredFields, setMissingRequiredFields] = useState<string[]>([]);
 
-    const handleNext = async (stepData: Partial<WizardData>) => {
+    const handleNext = useCallback(async (stepData: Partial<WizardData>) => {
         const updatedData = { ...wizardData, ...stepData };
 
         // Validate the current step before proceeding
@@ -702,9 +702,9 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         } else {
             handleComplete(updatedData);
         }
-    };
+    }, [wizardData, currentStep, sessionId, steps, stateManager, localStateManager]);
 
-    const handleBack = () => {
+    const handleBack = useCallback(() => {
         const currentIndex = steps.indexOf(currentStep);
         if (currentIndex > 0) {
             const prevStep = steps[currentIndex - 1];
@@ -713,7 +713,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             // Save the current step to local storage when navigating back
             localStateManager.saveLocalState(sessionId, prevStep, wizardData);
         }
-    };
+    }, [currentStep, steps, sessionId, wizardData, localStateManager]);
 
 
 
@@ -737,7 +737,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         }
     };
 
-    const handleComplete = async (finalData: WizardData) => {
+    const handleComplete = useCallback(async (finalData: WizardData) => {
         setLoading(true);
         try {
             let referenceCode = finalData.referenceCode;
@@ -838,7 +838,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         } finally {
             setLoading(false);
         }
-    };
+    }, [sessionId, stateManager, localStateManager]);
 
     const renderStep = () => {
         const commonProps = {
@@ -861,7 +861,16 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             case 'depositPayment':
                 return <DepositPaymentStep {...commonProps} />;
             case 'summary':
-                return <ApplicationSummary {...commonProps} hasAccount={wizardData.hasAccount ?? false} />;
+                return (
+                    <ApplicationSummary
+                        {...commonProps}
+                        data={{
+                            ...wizardData,
+                            hasAccount: wizardData.hasAccount ?? false,
+                            wantsAccount: wizardData.wantsAccount ?? false
+                        }}
+                    />
+                );
             case 'account':
                 return <AccountVerification {...commonProps} />;
             case 'form':
