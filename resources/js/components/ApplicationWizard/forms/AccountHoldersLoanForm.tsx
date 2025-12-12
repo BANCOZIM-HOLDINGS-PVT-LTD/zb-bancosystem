@@ -9,6 +9,7 @@ import { ChevronLeft, User, Building, CreditCard, Users, DollarSign } from 'luci
 import FormField from '@/components/ApplicationWizard/components/FormField';
 import { formatZimbabweId } from '@/components/ApplicationWizard/utils/formatters';
 import { zimbabweBanks } from '@/components/ApplicationWizard/data/zimbabweBanks';
+import { securityCompanies } from '@/components/ApplicationWizard/data/securityCompanies';
 
 interface AccountHoldersLoanFormProps {
     data: any;
@@ -552,6 +553,39 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                         <SelectItem value="Other Security Sector">Other Security Sector</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            ) : data.employer === 'security-company' ? (
+                                <div className="space-y-2">
+                                    <Select
+                                        value={formData.employerName && !securityCompanies.includes(formData.employerName) ? 'Other' : formData.employerName}
+                                        onValueChange={(value) => {
+                                            if (value === 'Other') {
+                                                handleInputChange('employerName', '');
+                                            } else {
+                                                handleInputChange('employerName', value);
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select Security Company" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {securityCompanies.map((company) => (
+                                                <SelectItem key={company} value={company}>
+                                                    {company}
+                                                </SelectItem>
+                                            ))}
+                                            <SelectItem value="Other">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {(!formData.employerName || !securityCompanies.includes(formData.employerName)) && (
+                                        <Input
+                                            placeholder="Specify Security Company"
+                                            value={formData.employerName}
+                                            onChange={(e) => handleInputChange('employerName', e.target.value)}
+                                            className="mt-2"
+                                        />
+                                    )}
+                                </div>
                             ) : (
                                 <Input
                                     id="employerName"

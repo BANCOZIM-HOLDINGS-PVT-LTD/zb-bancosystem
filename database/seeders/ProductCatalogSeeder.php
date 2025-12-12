@@ -60,7 +60,7 @@ class ProductCatalogSeeder extends Seeder
                     $productId = DB::table('products')->insertGetId([
                         'product_sub_category_id' => $subcategoryId,
                         'name' => $businessData['name'],
-                        'base_price' => 280.00, // Base price is effectively the Lite price
+                        'base_price' => 280.00, // Base price is effectively the Bronze Package price
                         'image_url' => 'https://via.placeholder.com/150',
                         'created_at' => now(),
                         'updated_at' => now(),
@@ -68,9 +68,9 @@ class ProductCatalogSeeder extends Seeder
 
                     // Standard scales for ALL MicroBiz products
                     $scales = [
-                        ['name' => 'Lite', 'custom_price' => 280.00, 'multiplier' => 1.0],
-                        ['name' => 'Standard', 'custom_price' => 490.00, 'multiplier' => 1.75], // Approx multiplier
-                        ['name' => 'Full house', 'custom_price' => 930.00, 'multiplier' => 3.32], // Approx multiplier
+                        ['name' => 'Bronze Package', 'custom_price' => 280.00, 'multiplier' => 1.0],
+                        ['name' => 'Silver Package', 'custom_price' => 490.00, 'multiplier' => 1.75], // Approx multiplier
+                        ['name' => 'Gold Package', 'custom_price' => 930.00, 'multiplier' => 3.32], // Approx multiplier
                     ];
 
                     foreach ($scales as $scaleData) {

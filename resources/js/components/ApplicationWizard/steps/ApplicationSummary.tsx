@@ -61,6 +61,22 @@ const getFormIdByEmployer = (employerId: string, hasAccount: boolean, wantsAccou
         case 'entrepreneur':
             // Entrepreneurs use SME form
             return 'smes_business_account_opening.json';
+        case 'municipality':
+        case 'rural-district-council':
+            // For RDC/Municipality, check if they are proceeding with RDC form
+            if (!hasAccount && !wantsAccount) {
+                // This corresponds to the user selecting "Yes" to "Do you work for these?"
+                // Note: logic in AccountVerification.tsx sets accountType to 'RDC Loan Application'
+                // We should probably rely on a more explicit flag if possible, but the flow is:
+                // No Account -> Council Yes -> RDC Form
+                return 'rdc_loan_application.json';
+            }
+            // If they have account -> Account Holder
+            if (hasAccount) return 'account_holder_loan_application.json';
+            // If they want account (failed council check) -> Open Account
+            if (wantsAccount) return 'individual_account_opening.json';
+
+            return 'individual_account_opening.json';
         default:
             // For all other employers (non-SSB)
             if (hasAccount) {
@@ -124,6 +140,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
         const formTypeMap: { [key: string]: string } = {
             'account_holder_loan_application.json': 'Account Holder Loan Application',
             'ssb_account_opening_form.json': 'SSB Loan Application',
+            'rdc_loan_application.json': 'RDC Loan Application',
             'individual_account_opening.json': 'New ZB Account Opening',
             'smes_business_account_opening.json': 'SME Business Account Opening',
             'pensioners_loan_account.json': 'Pensioners Loan Account'

@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
 import { validateZimbabweanID } from '@/utils/zimbabwean-id-validator';
+import { countryCodes } from '@/data/countryCodes';
+import CountryCodeSelect from '@/components/ui/country-code-select';
 
 type ClientRegisterForm = {
     national_id: string;
@@ -22,6 +24,17 @@ export default function ClientRegister() {
     });
 
     const [idValidationError, setIdValidationError] = useState<string>('');
+
+    // Helper to extract dial code from phone number
+    const getDialCode = (phone: string) => {
+        // Sort codes by length descending to match longest first
+        // We memoize this or just run it since countryCodes is small enough (~250 items)
+        const sortedCodes = [...countryCodes].sort((a, b) => b.dial_code.length - a.dial_code.length);
+        const match = sortedCodes.find(c => phone.startsWith(c.dial_code));
+        return match ? match.dial_code : '+263';
+    };
+
+    const currentDialCode = getDialCode(data.phone);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -152,45 +165,32 @@ export default function ClientRegister() {
                     <div className="grid gap-2">
                         <Label htmlFor="phone">Phone Number</Label>
                         <div className="flex gap-2">
-                            <div className="w-[110px] shrink-0">
-                                <select
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                    value={data.phone.startsWith('+') ? data.phone.slice(0, 4) : '+263'}
-                                    onChange={(e) => {
-                                        const code = e.target.value;
-                                        // Update phone start with new code while keeping the rest
-                                        const currentNumber = data.phone.replace(/^\+\d{3}/, ''); // Strip existing code if any
-                                        setData('phone', code + currentNumber);
-                                    }}
-                                    disabled={processing}
-                                >
-                                    <option value="+263">🇿🇼 +263</option>
-                                    <option value="+27">🇿🇦 +27</option>
-                                    <option value="+44">🇬🇧 +44</option>
-                                    <option value="+1">🇺🇸 +1</option>
-                                    <option value="+267">🇧🇼 +267</option>
-                                    <option value="+260">🇿🇲 +260</option>
-                                    {/* Add generic option for others if needed, strictly text input next */}
-                                </select>
-                            </div>
+                            <CountryCodeSelect
+                                value={currentDialCode}
+                                onChange={(newCode) => {
+                                    // Strip the old code and prepend new code
+                                    const numberPart = data.phone.substring(currentDialCode.length);
+                                    setData('phone', newCode + numberPart);
+                                }}
+                                countries={countryCodes}
+                                disabled={processing}
+                            />
                             <Input
                                 id="phone"
                                 type="tel"
                                 required
                                 tabIndex={2}
-                                value={data.phone.replace(/^\+\d{3}/, '')} // Display only the number part
+                                value={data.phone.substring(currentDialCode.length)} // Display only the number part
                                 onChange={(e) => {
                                     const number = e.target.value.replace(/\D/g, ''); // Numeric only for the body
-                                    const currentCode = data.phone.startsWith('+') ? data.phone.slice(0, 4) : '+263';
-                                    setData('phone', currentCode + number);
+                                    setData('phone', currentDialCode + number);
                                 }}
                                 disabled={processing}
                                 placeholder="771234567"
                                 className="flex-1"
                             />
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            Enter your phone number starting with the country code on the left.
+                        <p className="text-xs text-muted-foreground">Enter your phone number.
                         </p>
                         <InputError message={errors.phone} />
                     </div>

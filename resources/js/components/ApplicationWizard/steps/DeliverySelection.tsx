@@ -495,7 +495,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                         <p className="text-gray-600 dark:text-gray-400">
                             {isZimparks
                                 ? 'Please select your preferred dates for your holiday package.'
-                                : 'Please be advised that you will be required to collect your product from the nearest depot. Kindly select your nearest depot.'}
+                                : 'Please be advised that you will collect at your nearest post office. Choose the one closest to you.'}
                         </p>
                     </div>
 

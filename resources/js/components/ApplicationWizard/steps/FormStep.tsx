@@ -1,6 +1,7 @@
 import React from 'react';
 import AccountHoldersLoanForm from '../forms/AccountHoldersLoanForm';
 import SSBLoanForm from '../forms/SSBLoanForm';
+import RDCLoanForm from '../forms/RDCLoanForm';
 import ZBAccountOpeningForm from '../forms/ZBAccountOpeningForm';
 import SMEBusinessForm from '../forms/SMEBusinessForm';
 
@@ -37,6 +38,16 @@ const FormStep: React.FC<FormStepProps> = ({ data, onNext, onBack, loading }) =>
             case 'ssb_account_opening_form.json':
                 return (
                     <SSBLoanForm
+                        data={data}
+                        onNext={onNext}
+                        onBack={onBack}
+                        loading={loading}
+                    />
+                );
+
+            case 'rdc_loan_application.json':
+                return (
+                    <RDCLoanForm
                         data={data}
                         onNext={onNext}
                         onBack={onBack}

@@ -719,11 +719,15 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 // Use custom_price if available, otherwise calculate from multiplier
                                 const amount = scale.custom_price || (selectedBusiness.basePrice * scale.multiplier);
                                 const isSelected = selectedScale?.name === scale.name;
-                                // Format scale name: add "Package" suffix for Lite, Standard, Full house
+                                // Format scale name: add "Package" suffix for Lite, Standard, Full house and handle rebranding
                                 const formatScaleName = (name: string) => {
-                                    const packageScales = ['Lite', 'Standard', 'Full house'];
+                                    if (name === 'Lite') return 'Bronze Package';
+                                    if (name === 'Standard') return 'Silver Package';
+                                    if (name === 'Full house' || name === 'Full House') return 'Gold Package';
+
+                                    const packageScales = ['Bronze Package', 'Silver Package', 'Gold Package'];
                                     if (packageScales.includes(name)) {
-                                        return `${name === 'Full house' ? 'Full House' : name} Package`;
+                                        return name; // Already correct
                                     }
                                     return name;
                                 };
