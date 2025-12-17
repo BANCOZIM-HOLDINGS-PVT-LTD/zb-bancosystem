@@ -31,57 +31,43 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const product = data.product!;
+    const cart = data.cart || [];
     const delivery = data.delivery!;
 
-    // Check if purchase type is microbiz and calculate fees
+    // Calculate totals
+    const cartTotal = cart.reduce((sum, item) => sum + (item.cashPrice * item.quantity), 0);
     const isMicrobiz = data.purchaseType === 'microbiz';
-    const includesMESystem = isMicrobiz && (delivery.includesMESystem || false);
-    const includesTraining = isMicrobiz && (delivery.includesTraining || false);
-    const meSystemFee = includesMESystem ? (product.cashPrice * ME_SYSTEM_PERCENTAGE) : 0;
-    const trainingFee = includesTraining ? (product.cashPrice * TRAINING_PERCENTAGE) : 0;
+    const includesMESystem = isMicrobiz && (data.includesMESystem || false);
+    const includesTraining = isMicrobiz && (data.includesTraining || false);
+
+    const meSystemFee = includesMESystem ? (cartTotal * ME_SYSTEM_PERCENTAGE) : 0;
+    const trainingFee = includesTraining ? (cartTotal * TRAINING_PERCENTAGE) : 0;
     const deliveryFee = delivery.type === 'swift' ? 10 : 0;
-    const totalAmount = product.cashPrice + meSystemFee + trainingFee + deliveryFee;
+    const totalAmount = cartTotal + meSystemFee + trainingFee + deliveryFee;
 
     const handleNationalIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let value = e.target.value.toUpperCase();
-
-        // Remove invalid characters
         value = value.replace(/[^A-Z0-9-]/g, '');
-
-        // Auto-masking logic
-        // Remove existing dashes to re-process
         const clean = value.replace(/-/g, '');
 
         let formatted = '';
         if (clean.length > 0) {
-            // First 2 digits (District)
             formatted += clean.substring(0, 2);
-
             if (clean.length > 2) {
                 formatted += '-';
-
-                // Find index of the letter after district code
                 const remaining = clean.substring(2);
                 const letterMatch = remaining.match(/[A-Z]/);
 
                 if (letterMatch && letterMatch.index !== undefined) {
-                    // We found the letter
                     const letterIndex = letterMatch.index;
-                    // Digits before letter (Registration Number)
                     formatted += remaining.substring(0, letterIndex);
-                    // Add dash before letter
                     formatted += '-';
-                    // The Letter
                     formatted += remaining.charAt(letterIndex);
-
-                    // Digits after letter (Check Digits)
                     if (remaining.length > letterIndex + 1) {
                         formatted += '-';
-                        formatted += remaining.substring(letterIndex + 1, letterIndex + 3); // Max 2 digits
+                        formatted += remaining.substring(letterIndex + 1, letterIndex + 3);
                     }
                 } else {
-                    // No letter yet, just append remaining digits (up to 7 for reg number)
                     formatted += remaining.substring(0, 7);
                 }
             }
@@ -93,33 +79,23 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let value = e.target.value;
-
-        // If user clears input, allow it
         if (!value) {
             setPhone('');
             return;
         }
 
-        // Ensure starts with +263
         if (!value.startsWith('+263')) {
             if (value.startsWith('0')) {
-                // simple replace 0 with +263
                 value = '+263' + value.substring(1);
             } else if (value.startsWith('263')) {
                 value = '+' + value;
             } else {
-                // If arbitrary typing, force prefix
                 value = '+263' + value.replace(/[^0-9]/g, '');
             }
         }
 
-        // Remove non-digits/plus
         const parts = value.split('+');
         const numberPart = parts[1] ? parts[1].replace(/[^0-9]/g, '') : '';
-
-        // Limit length if needed (Zimbabwe numbers are usually 9 digits after country code -> +263 7X XXX XXXX = 12 digits total excluding +)
-        // Usually +263 771 234 567
-
         setPhone('+' + numberPart);
         setErrors((prev) => ({ ...prev, phone: '' }));
     };
@@ -127,7 +103,6 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
     const validateCustomerInfo = () => {
         const newErrors: Record<string, string> = {};
 
-        // Validate National ID
         if (!nationalId.trim()) {
             newErrors.nationalId = 'National ID is required';
         } else {
@@ -137,7 +112,6 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
             }
         }
 
-        // Validate Surname and First Names
         const surname = fullName.split(' ')[0] || '';
         const firstNames = fullName.split(' ').slice(1).join(' ');
 
@@ -151,20 +125,16 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
             newErrors.fullName = 'First names must be at least 2 characters';
         }
 
-        // Validate Phone
         if (!phone.trim()) {
             newErrors.phone = 'Phone number is required';
         } else if (!/^\+263[0-9]{9}$/.test(phone.replace(/[\s-]/g, ''))) {
-            // Adjusted regex to matching the storing format (+263XXXXXXXXX)
             newErrors.phone = 'Invalid Zimbabwe phone number (e.g., +263771234567)';
         }
 
-        // Validate Email (optional but must be valid if provided)
         if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             newErrors.email = 'Invalid email address';
         }
 
-        // Validate Terms
         if (!agreedToTerms) {
             newErrors.terms = 'You must agree to the terms and conditions';
         }
@@ -175,36 +145,33 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
 
     const handleProceedToPayment = () => {
         if (validateCustomerInfo()) {
-            // Submit with 'paynow' method
-            onComplete({
-                customer: {
-                    nationalId: validateZimbabweanID(nationalId).formatted || nationalId,
-                    fullName,
-                    phone,
-                    email: email || undefined,
-                },
-                payment: {
-                    method: 'paynow',
-                    amount: totalAmount,
-                    currency: 'USD',
-                },
-            });
+            setShowPaymentForm(true);
         }
+    };
+
+    // Actually handle payment selection (renamed slightly for clarity in flow)
+    const handleSelectPaymentMethod = (method: string) => {
+        onComplete({
+            customer: {
+                nationalId: validateZimbabweanID(nationalId).formatted || nationalId,
+                fullName,
+                phone,
+                email: email || undefined,
+            },
+            payment: {
+                method: method as any,
+                amount: totalAmount,
+                currency: 'USD',
+            },
+        });
     };
 
     const handlePaymentCancel = () => {
         setShowPaymentForm(false);
     };
 
-    const handlePaynowRedirect = () => {
-        const queryParams = `id=20549&amount=${totalAmount.toFixed(2)}&amount_quantity=0.00&l=1`;
-        const base64Query = btoa(queryParams);
-        const paynowUrl = `https://www.paynow.co.zw/Payment/BillPaymentLink/?q=${base64Query}`;
-        window.open(paynowUrl, '_blank');
-    };
-
     const formatCurrency = (amount: number) => {
-        return `$${amount.toLocaleString()}`;
+        return `$${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     return (
@@ -384,9 +351,11 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
 
                         <div className="space-y-2">
                             <div className="flex justify-between text-sm">
-                                <span className="text-[#706f6c] dark:text-[#A1A09A]">Product Price:</span>
+                                <span className="text-[#706f6c] dark:text-[#A1A09A]">
+                                    Subtotal ({cart.length} items):
+                                </span>
                                 <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">
-                                    {formatCurrency(product.cashPrice)}
+                                    {formatCurrency(cartTotal)}
                                 </span>
                             </div>
 
@@ -436,19 +405,7 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
                                 <div className="grid grid-cols-2 gap-4 mb-6">
                                     {/* EcoCash */}
                                     <button
-                                        onClick={() => onComplete({
-                                            customer: {
-                                                nationalId: validateZimbabweanID(nationalId).formatted || nationalId,
-                                                fullName,
-                                                phone,
-                                                email: email || undefined,
-                                            },
-                                            payment: {
-                                                method: 'ecocash',
-                                                amount: totalAmount,
-                                                currency: 'USD',
-                                            },
-                                        })}
+                                        onClick={() => handleSelectPaymentMethod('ecocash')}
                                         disabled={loading}
                                         className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700 disabled:opacity-50"
                                     >
@@ -458,19 +415,7 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
 
                                     {/* OneMoney */}
                                     <button
-                                        onClick={() => onComplete({
-                                            customer: {
-                                                nationalId: validateZimbabweanID(nationalId).formatted || nationalId,
-                                                fullName,
-                                                phone,
-                                                email: email || undefined,
-                                            },
-                                            payment: {
-                                                method: 'onemoney',
-                                                amount: totalAmount,
-                                                currency: 'USD',
-                                            },
-                                        })}
+                                        onClick={() => handleSelectPaymentMethod('onemoney')}
                                         disabled={loading}
                                         className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700 disabled:opacity-50"
                                     >
@@ -480,19 +425,7 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
 
                                     {/* O'Mari */}
                                     <button
-                                        onClick={() => onComplete({
-                                            customer: {
-                                                nationalId: validateZimbabweanID(nationalId).formatted || nationalId,
-                                                fullName,
-                                                phone,
-                                                email: email || undefined,
-                                            },
-                                            payment: {
-                                                method: 'paynow', // O'Mari usually via generic Paynow gateway or specific
-                                                amount: totalAmount,
-                                                currency: 'USD',
-                                            },
-                                        })}
+                                        onClick={() => handleSelectPaymentMethod('paynow')}
                                         disabled={loading}
                                         className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700 disabled:opacity-50"
                                     >
@@ -502,19 +435,7 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
 
                                     {/* Visa / Mastercard */}
                                     <button
-                                        onClick={() => onComplete({
-                                            customer: {
-                                                nationalId: validateZimbabweanID(nationalId).formatted || nationalId,
-                                                fullName,
-                                                phone,
-                                                email: email || undefined,
-                                            },
-                                            payment: {
-                                                method: 'paynow', // Direct to Paynow web interface
-                                                amount: totalAmount,
-                                                currency: 'USD',
-                                            },
-                                        })}
+                                        onClick={() => handleSelectPaymentMethod('paynow')}
                                         disabled={loading}
                                         className="flex flex-col items-center justify-center p-4 border rounded-lg hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all border-gray-200 dark:border-gray-700 disabled:opacity-50"
                                     >

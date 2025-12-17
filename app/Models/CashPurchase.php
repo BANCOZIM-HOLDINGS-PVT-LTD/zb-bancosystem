@@ -115,6 +115,11 @@ class CashPurchase extends Model
         return $this->belongsTo(Product::class);
     }
 
+    public function items()
+    {
+        return $this->hasMany(CashPurchaseItem::class);
+    }
+
     /**
      * Add a status update to history
      */

@@ -105,37 +105,41 @@ const ZIMPOST_LOCATIONS: Record<string, string[]> = {
 // Flatten to keep compatibility if needed, though we use grouped now
 const ALL_ZIMPOST_BRANCHES = Object.values(ZIMPOST_LOCATIONS).flat().sort();
 
-// Determine delivery agent based on product category and name
-const determineDeliveryAgent = (category?: string, productName?: string): {
+// Determine delivery agent based on cart items
+const determineDeliveryAgent = (cart: { category: string; name: string }[]): {
     agent: 'Gain Cash & Carry' | 'Zim Post Office';
     isEditable: boolean;
     reason: string;
 } => {
-    const categoryLower = (category || '').toLowerCase();
-    const productNameLower = (productName || '').toLowerCase();
-    const combinedText = `${categoryLower} ${productNameLower}`;
+    // Check if any item in the cart requires Gain Cash & Carry
+    const hasGainItem = cart.some(item => {
+        const categoryLower = (item.category || '').toLowerCase();
+        const productNameLower = (item.name || '').toLowerCase();
+        const combinedText = `${categoryLower} ${productNameLower}`;
 
-    // Check for tuckshops, groceries, airtime, candy, books, stationary, back to school and live broilers ONLY - Gain Cash & Carry
-    if (
-        combinedText.includes('tuckshop') ||
-        combinedText.includes('groceries') ||
-        combinedText.includes('grocery') ||
-        combinedText.includes('airtime') ||
-        combinedText.includes('candy') ||
-        combinedText.includes('chicken') ||
-        combinedText.includes('poultry') ||
-        combinedText.includes('broiler') ||
-        combinedText.includes('livestock') ||
-        combinedText.includes('back to school') ||
-        combinedText.includes('book') ||
-        combinedText.includes('stationery') ||
-        combinedText.includes('stationary') ||
-        combinedText.includes('retailing')
-    ) {
+        return (
+            combinedText.includes('tuckshop') ||
+            combinedText.includes('groceries') ||
+            combinedText.includes('grocery') ||
+            combinedText.includes('airtime') ||
+            combinedText.includes('candy') ||
+            combinedText.includes('chicken') ||
+            combinedText.includes('poultry') ||
+            combinedText.includes('broiler') ||
+            combinedText.includes('livestock') ||
+            combinedText.includes('back to school') ||
+            combinedText.includes('book') ||
+            combinedText.includes('stationery') ||
+            combinedText.includes('stationary') ||
+            combinedText.includes('retailing')
+        );
+    });
+
+    if (hasGainItem) {
         return {
             agent: 'Gain Cash & Carry',
             isEditable: false,
-            reason: 'Tuckshops, groceries, airtime, candy, books, stationary, back to school and live broilers are delivered through Gain Cash & Carry depots'
+            reason: 'Tuckshops, groceries, airtime, and livestock products are delivered through Gain Cash & Carry depots'
         };
     }
 
@@ -148,7 +152,8 @@ const determineDeliveryAgent = (category?: string, productName?: string): {
 };
 
 export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps) {
-    const deliveryAgentInfo = determineDeliveryAgent(data.product?.category, data.product?.name);
+    const cart = data.cart || [];
+    const deliveryAgentInfo = determineDeliveryAgent(cart);
 
     const [selectedAgent, setSelectedAgent] = useState<'Swift' | 'Gain Cash & Carry' | 'Zim Post Office'>(
         (data.delivery?.type as any) || deliveryAgentInfo.agent
@@ -161,7 +166,7 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
         if (!deliveryAgentInfo.isEditable) {
             setSelectedAgent(deliveryAgentInfo.agent);
         }
-    }, [data.product?.category, data.product?.name]);
+    }, [cart]);
 
     const validateAndContinue = () => {
         const newErrors: Record<string, string> = {};

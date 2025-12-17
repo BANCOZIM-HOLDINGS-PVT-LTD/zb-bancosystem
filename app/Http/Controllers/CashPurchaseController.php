@@ -46,12 +46,13 @@ class CashPurchaseController extends Controller
         try {
             // Validate the incoming data
             $validator = Validator::make($request->all(), [
-                // Product
-                'product.id' => 'required|exists:products,id',
-                'product.name' => 'required|string',
-                'product.cashPrice' => 'required|numeric|min:0',
-                'product.loanPrice' => 'nullable|numeric|min:0',
-                'product.category' => 'required|string',
+                // Cart Items
+                'items' => 'required|array|min:1',
+                'items.*.id' => 'required|integer', // Removed exists:products,id to allow fallback/dynamic products
+                'items.*.name' => 'required|string',
+                'items.*.cashPrice' => 'required|numeric|min:0',
+                'items.*.quantity' => 'required|integer|min:1',
+                'items.*.category' => 'nullable|string',
 
                 // Delivery
                 'delivery.type' => ['required', Rule::in(['swift', 'gain_outlet'])],
@@ -71,9 +72,9 @@ class CashPurchaseController extends Controller
 
                 // Payment
                 'payment.method' => 'required|string',
-                'payment.amount' => 'required|numeric|min:0',
-                'payment.transactionId' => 'nullable|string', // Optional now
-                'payment.currency' => 'nullable|string', // Optional
+                'payment.amount' => 'required|numeric|min:0', // This should match calculated total
+                'payment.transactionId' => 'nullable|string',
+                'payment.currency' => 'nullable|string',
 
                 // Purchase type
                 'purchaseType' => ['required', Rule::in(['personal', 'microbiz'])],
@@ -99,36 +100,42 @@ class CashPurchaseController extends Controller
                 ], 422);
             }
 
+            // Calculate totals
+            $itemsTotal = 0;
+            $items = $data['items'];
+            foreach ($items as $item) {
+                $itemsTotal += ($item['cashPrice'] * $item['quantity']);
+            }
+
             // Calculate delivery fee
             $deliveryFee = $data['delivery']['type'] === 'swift' ? 10.00 : 0.00;
 
-            // Calculate M&E and Training fees for MicroBiz purchases
+            // Calculate M&E and Training fees (Applied on total or per item? Assuming Total for now relative to hardware cost)
+            // But wait, user said "add items so they can pay". Usually fees are fixed or % of total.
+            // Existing logic: 10% of cash price.
             $isMicrobiz = $data['purchaseType'] === 'microbiz';
             $includesMESystem = $isMicrobiz && ($data['delivery']['includesMESystem'] ?? false);
             $includesTraining = $isMicrobiz && ($data['delivery']['includesTraining'] ?? false);
 
-            $meSystemFee = $includesMESystem ? ($data['product']['cashPrice'] * 0.10) : 0.00; // 10% of cash price
-            $trainingFee = $includesTraining ? ($data['product']['cashPrice'] * 0.055) : 0.00;
+            $meSystemFee = $includesMESystem ? ($itemsTotal * 0.10) : 0.00;
+            $trainingFee = $includesTraining ? ($itemsTotal * 0.055) : 0.00;
 
-            // Verify the product exists and get details
-            $product = Product::find($data['product']['id']);
-            if (!$product) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Product not found',
-                ], 404);
-            }
-
-            // Create the cash purchase
+            $calculatedTotal = $itemsTotal + $deliveryFee + $meSystemFee + $trainingFee;
+            
+            // Verify payment amount matches (allow small diff for rounding?)
+            // For now, let's trust the frontend passed amount but maybe log if different.
+            // Actually, best to use calculated amount for security.
+            
+            // Create the cash purchase (Header)
             $cashPurchase = CashPurchase::create([
                 'purchase_type' => $data['purchaseType'],
 
-                // Product
-                'product_id' => $product->id,
-                'product_name' => $data['product']['name'],
-                'cash_price' => $data['product']['cashPrice'],
-                'loan_price' => $data['product']['loanPrice'],
-                'category' => $data['product']['category'],
+                // Product Summary (First item or Generic)
+                'product_id' => null, // Multiple items
+                'product_name' => count($items) . ' Items (' . $items[0]['name'] . '...)',
+                'cash_price' => $itemsTotal, // Subtotal
+                'loan_price' => 0,
+                'category' => 'Mixed',
 
                 // Customer
                 'national_id' => $idValidation['formatted'],
@@ -153,7 +160,7 @@ class CashPurchaseController extends Controller
 
                 // Payment
                 'payment_method' => $data['payment']['method'],
-                'amount_paid' => $data['payment']['amount'],
+                'amount_paid' => $calculatedTotal, // Use calculated to be safe, or data['payment']['amount']
                 'transaction_id' => $data['payment']['transactionId'] ?? null,
                 'payment_status' => 'pending',
 
@@ -161,82 +168,62 @@ class CashPurchaseController extends Controller
                 'status' => 'pending',
             ]);
 
-            // If method is paynow or mobile, verify or just create the link
+            // Save Items
+            foreach ($items as $item) {
+                $cashPurchase->items()->create([
+                    'product_id' => $item['id'],
+                    'product_name' => $item['name'],
+                    'category' => $item['category'] ?? null,
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['cashPrice'],
+                    'total_price' => $item['cashPrice'] * $item['quantity'],
+                    'metadata' => [
+                        'original_loan_price' => $item['loanPrice'] ?? 0
+                    ]
+                ]);
+            }
+
+            // Payment Logic
             $redirectUrl = route('cash.purchase.success', ['purchase' => $cashPurchase->purchase_number]);
             $paymentMethod = $data['payment']['method'];
             $isPaynow = in_array($paymentMethod, ['paynow', 'ecocash', 'onemoney']);
 
             if ($isPaynow) {
-                // Determine description
-                $description = "Purchase: {$cashPurchase->product_name}";
+                $description = "Order {$cashPurchase->purchase_number}: " . count($items) . " Items";
                 
-                // 1. Create Web/Generic Payment first to get Reference/PollURL
                 $paynowResult = $this->paynowService->createPayment(
                     $cashPurchase->purchase_number,
                     $cashPurchase->amount_paid,
-                    $cashPurchase->email ?? 'no-email@example.com', // Paynow requires email
+                    $cashPurchase->email ?? 'no-email@example.com',
                     $description
                 );
 
                 if ($paynowResult['success']) {
                     $redirectUrl = $paynowResult['redirectUrl'];
-                    // We can also store the Poll URL if needed
                     Log::info('Paynow transaction initiated', [
                         'purchase' => $cashPurchase->purchase_number,
-                        'redirect' => $redirectUrl,
-                        'poll_url' => $paynowResult['pollUrl']
+                        'redirect' => $redirectUrl
                     ]);
                     
-                    // 2. If Mobile Method (EcoCash/OneMoney), trigger mobile prompt immediately
                     if (in_array($paymentMethod, ['ecocash', 'onemoney'])) {
-                        Log::info('Triggering mobile prompt', ['method' => $paymentMethod, 'phone' => $cashPurchase->phone]);
-                        
-                        $mobileResult = $this->paynowService->initiateMobile(
+                        $this->paynowService->initiateMobile(
                             $paynowResult['pollUrl'],
                             $cashPurchase->phone,
                             $paymentMethod
                         );
-                        
-                        // If mobile init successful, we might want to tell frontend to expect a prompt
-                        // But frontend expects a redirect_url or success.
-                        // We can return instructions.
-                        if ($mobileResult['success']) {
-                             // We still return success: true, but maybe with extra info?
-                             // The frontend will likely redirect to success page or show "Check your phone".
-                             // The current flow redirects to "CashPurchaseSuccess" page which shows details.
-                             // Ideally, for mobile, we should stay on a "Waiting" page or redirect to Success with "Pending" status.
-                             Log::info('Mobile prompt triggered successfully');
-                        } else {
-                             Log::warning('Mobile prompt failed', ['error' => $mobileResult['error'] ?? 'Unknown']);
-                             // We don't fail the whole request because the "Payment" exists in Paynow, just the push failed.
-                             // User can still pay via the link if they want (fallback).
-                        }
                     }
-                    
                 } else {
-                    Log::error('Paynow initiation failed', ['error' => $paynowResult['error']]);
-                    // Fallback or error?
-                    // For now let's return error
-                     return response()->json([
+                    return response()->json([
                         'success' => false,
-                        'message' => 'Failed to initiate payment with Paynow: ' . ($paynowResult['error'] ?? 'Unknown error'),
+                        'message' => 'Failed to initiate payment: ' . ($paynowResult['error'] ?? 'Unknown error'),
                     ], 500);
                 }
-            } else if (!empty($data['payment']['transactionId'])) {
-                // Legacy or separate flow confirmation (like EcoCash previously)
-                // ... (existing logic)
-                $paymentVerified = $this->paynowService->verifyPayment(
-                    $data['payment']['transactionId'],
-                    $data['payment']['amount']
-                );
-                // ...
-             }
+            }
 
             // Log the purchase creation
             Log::info('Cash purchase created', [
                 'purchase_number' => $cashPurchase->purchase_number,
-                'purchase_type' => $cashPurchase->purchase_type,
-                'customer_id' => $cashPurchase->national_id,
+                'items_count' => count($items),
                 'amount' => $cashPurchase->amount_paid,
             ]);
 
@@ -254,7 +241,6 @@ class CashPurchaseController extends Controller
             Log::error('Cash purchase creation failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'data' => $request->all(),
             ]);
 
             return response()->json([

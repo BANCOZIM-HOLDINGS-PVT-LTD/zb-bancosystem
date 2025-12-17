@@ -16,7 +16,7 @@ export interface CashPurchaseData {
     meSystemFee?: number;
     includesTraining?: boolean;
     trainingFee?: number;
-    product?: {
+    cart: {
         id: number;
         name: string;
         cashPrice: number;
@@ -24,7 +24,10 @@ export interface CashPurchaseData {
         category: string;
         description?: string;
         image?: string;
-    };
+        quantity: number;
+    }[];
+    // Deprecated single product field, keeping for type safety in legacy checks
+    product?: any;
     delivery?: {
         type: 'swift' | 'gain_outlet';
         depot: string;
@@ -84,6 +87,7 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en', curr
     const [wizardData, setWizardData] = useState<CashPurchaseData>({
         purchaseType,
         language,
+        cart: [], // Initialize empty cart
         payment: {
             method: 'paynow', // Default
             amount: 0,
@@ -137,15 +141,23 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en', curr
             try {
                 const parsed = JSON.parse(savedData);
                 if (parsed.purchaseType === purchaseType) {
-                    setWizardData(parsed);
+                    setWizardData(prev => ({
+                        ...prev,
+                        ...parsed,
+                        cart: parsed.cart || [], // Ensure cart exists for legacy data
+                    }));
+
                     // Resume from last incomplete step
                     if (!parsed.customer) {
-                        if (!parsed.delivery) {
-                            setCurrentStep('delivery');
-                        } else if (!parsed.product) {
-                            setCurrentStep('catalogue');
+                        // Logic adjusted: if we have items in cart (or legacy product), go to delivery, else catalogue
+                        if ((parsed.cart && parsed.cart.length > 0) || parsed.product) {
+                            if (!parsed.delivery) {
+                                setCurrentStep('delivery');
+                            } else {
+                                setCurrentStep('checkout');
+                            }
                         } else {
-                            setCurrentStep('checkout');
+                            setCurrentStep('catalogue');
                         }
                     }
                 }
@@ -191,7 +203,12 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en', curr
     const handleCheckoutComplete = async (checkoutData: Partial<CashPurchaseData>) => {
         setLoading(true);
         try {
-            const finalData = { ...wizardData, ...checkoutData };
+            // Transform data for backend if needed
+            const finalData = {
+                ...wizardData,
+                ...checkoutData,
+                items: wizardData.cart, // Map cart to items
+            };
 
             // Submit to backend
             const response = await fetch('/api/cash-purchases', {
@@ -238,8 +255,9 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en', curr
                     <CatalogueStep
                         purchaseType={purchaseType}
                         currency={wizardData.payment?.currency || 'USD'}
-                        selectedProduct={wizardData.product}
-                        onNext={(data) => handleNext({ product: data })}
+                        cart={wizardData.cart}
+                        onUpdateCart={(newCart) => updateWizardData({ cart: newCart })}
+                        onNext={() => handleNext({})}
                         onBack={() => router.visit(route('welcome'))}
                     />
                 );
