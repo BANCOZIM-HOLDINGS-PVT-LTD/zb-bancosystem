@@ -17,6 +17,7 @@ export interface WizardData {
     // Basic application data
     language?: string;
     intent?: string;
+    currency?: string;
     employer?: string;
     employerCategory?: string;
     employerName?: string;

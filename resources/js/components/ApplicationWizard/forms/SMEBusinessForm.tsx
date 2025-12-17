@@ -70,6 +70,9 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
     const creditDetails = calculateCreditFacilityDetails();
     const businessName = data.business;
     const currentDate = new Date().toISOString().split('T')[0];
+    const selectedCurrency = data.currency || 'USD';
+    const isZiG = selectedCurrency === 'ZiG';
+    const currencySymbol = isZiG ? 'ZiG' : '$';
 
     const [formData, setFormData] = useState<Record<string, any>>({
         // Credit Facility Details (pre-populated)
@@ -697,18 +700,18 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                         </div>
 
                         <div>
-                            <Label htmlFor="netProfit">Net Pay Range (USD)</Label>
+                            <Label htmlFor="netProfit">Net Pay Range ({selectedCurrency})</Label>
                             <Select value={formData.netProfit} onValueChange={(value) => handleInputChange('netProfit', value)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select net pay range" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="100-200">$100 - $200</SelectItem>
-                                    <SelectItem value="201-400">$201 - $400</SelectItem>
-                                    <SelectItem value="401-600">$401 - $600</SelectItem>
-                                    <SelectItem value="601-800">$601 - $800</SelectItem>
-                                    <SelectItem value="801-1000">$801 - $1000</SelectItem>
-                                    <SelectItem value="1001+">$1001+</SelectItem>
+                                    <SelectItem value="100-200">{currencySymbol}100 - {currencySymbol}200</SelectItem>
+                                    <SelectItem value="201-400">{currencySymbol}201 - {currencySymbol}400</SelectItem>
+                                    <SelectItem value="401-600">{currencySymbol}401 - {currencySymbol}600</SelectItem>
+                                    <SelectItem value="601-800">{currencySymbol}601 - {currencySymbol}800</SelectItem>
+                                    <SelectItem value="801-1000">{currencySymbol}801 - {currencySymbol}1000</SelectItem>
+                                    <SelectItem value="1001+">{currencySymbol}1001+</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -778,13 +781,17 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 />
                             </div>
                             <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Amount (USD)</Label>
+                                <Label className="text-gray-700 dark:text-gray-300">Amount ({selectedCurrency})</Label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                                    {isZiG ? (
+                                        <span className="absolute left-3 top-2.5 text-gray-500 text-xs font-bold pt-0.5">ZiG</span>
+                                    ) : (
+                                        <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                                    )}
                                     <Input
                                         value={formData.loanAmount}
                                         readOnly
-                                        className="pl-8 bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                                        className={`bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 ${isZiG ? 'pl-10' : 'pl-8'}`}
                                     />
                                 </div>
                             </div>
@@ -797,13 +804,17 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                 />
                             </div>
                             <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Monthly Payment (USD)</Label>
+                                <Label className="text-gray-700 dark:text-gray-300">Monthly Payment ({selectedCurrency})</Label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                                    {isZiG ? (
+                                        <span className="absolute left-3 top-2.5 text-gray-500 text-xs font-bold pt-0.5">ZiG</span>
+                                    ) : (
+                                        <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                                    )}
                                     <Input
                                         value={formData.monthlyPayment}
                                         readOnly
-                                        className="pl-8 bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+                                        className={`bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 ${isZiG ? 'pl-10' : 'pl-8'}`}
                                     />
                                 </div>
                             </div>

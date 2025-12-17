@@ -51,7 +51,7 @@ class WhatsAppConversationService
             }
             
             // Try to get existing conversation state
-            $state = $this->stateManager->retrieveState('whatsapp_' . $phoneNumber, 'whatsapp');
+            $state = $this->stateManager->retrieveState($phoneNumber, 'whatsapp');
             
             if (!$state) {
                 // New conversation without greeting

@@ -1,5 +1,5 @@
 import { type SharedData } from '@/types';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
 import { Globe, CreditCard, Briefcase, FileText, Package, ChevronRight, User, DollarSign, ShoppingBag } from 'lucide-react';
 
@@ -23,8 +23,10 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
         return 'language';
     };
 
-    const [currentStep, setCurrentStep] = useState<'language' | 'auth' | 'intent'>(getInitialStep());
+    const [currentStep, setCurrentStep] = useState<'language' | 'auth' | 'intent' | 'currency'>(getInitialStep());
     const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
+    const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
+    const [lastSelectedIntent, setLastSelectedIntent] = useState<string | null>(null);
 
     const languages = [
         { code: 'en', name: 'English', greeting: 'Welcome to Microbiz' },
@@ -109,28 +111,47 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
     const handleIntentSelect = (intent: string) => {
         const selectedIntent = intents.find(i => i.id === intent);
         if (selectedIntent) {
-            // Build base params
-            let params: Record<string, string> = {};
+            // For tracking options, redirect immediately
+            if (!selectedIntent.forNewUsers) {
+                const params: Record<string, string> = { language: selectedLanguage };
+                router.visit(route(selectedIntent.route, params));
+                return;
+            }
 
-            if (intent === 'hirePurchase' || intent === 'microBiz') {
-                params = { intent, language: selectedLanguage };
+            // For purchase options, proceed to currency selection
+            setLastSelectedIntent(intent);
+            setCurrentStep('currency');
+        }
+    };
+
+    const handleCurrencySelect = (currency: string) => {
+        setSelectedCurrency(currency);
+        if (!lastSelectedIntent) return;
+
+        const selectedIntent = intents.find(i => i.id === lastSelectedIntent);
+        if (selectedIntent) {
+            // Build base params
+            let params: Record<string, string> = {
+                language: selectedLanguage,
+                currency: currency
+            };
+
+            if (lastSelectedIntent === 'hirePurchase' || lastSelectedIntent === 'microBiz') {
+                params.intent = lastSelectedIntent;
                 // Add referral code if available
                 if (referralCode) {
                     params.ref = referralCode;
                 }
-                window.location.href = route(selectedIntent.route, params);
-            } else if (intent === 'cashPurchasePersonal' || intent === 'cashPurchaseMicroBiz') {
+                router.visit(route(selectedIntent.route, params));
+            } else if (lastSelectedIntent === 'cashPurchasePersonal' || lastSelectedIntent === 'cashPurchaseMicroBiz') {
                 // Determine purchase type based on intent
-                const purchaseType = intent === 'cashPurchasePersonal' ? 'personal' : 'microbiz';
-                params = { type: purchaseType, language: selectedLanguage };
+                const purchaseType = lastSelectedIntent === 'cashPurchasePersonal' ? 'personal' : 'microbiz';
+                params.type = purchaseType;
                 // Add referral code if available
                 if (referralCode) {
                     params.ref = referralCode;
                 }
-                window.location.href = route(selectedIntent.route, params);
-            } else {
-                params = { language: selectedLanguage };
-                window.location.href = route(selectedIntent.route, params);
+                router.visit(route(selectedIntent.route, params));
             }
         }
     };
@@ -298,6 +319,65 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                                 </button>
                                             );
                                         })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {currentStep === 'currency' && (
+                                <div className="space-y-8">
+                                    <div className="text-center">
+                                        <h1 className="text-3xl font-bold mb-4">
+                                            Select Currency
+                                        </h1>
+                                        <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
+                                            Please tick the applicable currency
+                                        </p>
+                                        <button
+                                            onClick={() => setCurrentStep('intent')}
+                                            className="mt-4 text-sm text-emerald-600 hover:text-emerald-700"
+                                        >
+                                            ← Back to Services
+                                        </button>
+                                    </div>
+
+                                    <div className="grid gap-4 sm:grid-cols-2 max-w-md mx-auto">
+                                        <button
+                                            onClick={() => handleCurrencySelect('USD')}
+                                            className="group p-6 text-center rounded-lg border border-[#e3e3e0] transition-all hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-lg dark:border-[#3E3E3A] dark:hover:border-emerald-500 dark:hover:bg-emerald-950/20"
+                                        >
+                                            <div className="flex flex-col items-center space-y-3">
+                                                <div className="p-3 bg-emerald-100 dark:bg-emerald-900 rounded-full">
+                                                    <DollarSign className="h-8 w-8 text-emerald-600" />
+                                                </div>
+                                                <h3 className="text-xl font-bold group-hover:text-emerald-600">
+                                                    USD
+                                                </h3>
+                                                <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                                    United States Dollar
+                                                </p>
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            onClick={() => handleCurrencySelect('ZiG')}
+                                            className="group p-6 text-center rounded-lg border border-[#e3e3e0] transition-all hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-lg dark:border-[#3E3E3A] dark:hover:border-emerald-500 dark:hover:bg-emerald-950/20"
+                                        >
+                                            <div className="flex flex-col items-center space-y-3">
+                                                <div className="p-3 bg-emerald-100 dark:bg-emerald-900 rounded-full">
+                                                    <span className="text-2xl font-bold text-emerald-600">Z</span>
+                                                </div>
+                                                <h3 className="text-xl font-bold group-hover:text-emerald-600">
+                                                    ZiG
+                                                </h3>
+                                                <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                                    Zimbabwe Gold
+                                                </p>
+                                            </div>
+                                        </button>
+                                    </div>
+
+                                    <div className="text-center text-sm text-gray-400 mt-4">
+                                        Note: 1 USD = 35 ZiG
                                     </div>
                                 </div>
                             )}

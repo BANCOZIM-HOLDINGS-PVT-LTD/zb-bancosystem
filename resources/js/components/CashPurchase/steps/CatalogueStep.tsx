@@ -18,9 +18,23 @@ interface CatalogueStepProps {
     selectedProduct?: Product;
     onNext: (product: Product) => void;
     onBack: () => void;
+    currency: string;
 }
 
-export default function CatalogueStep({ purchaseType, selectedProduct, onNext, onBack }: CatalogueStepProps) {
+const ZIG_RATE = 35;
+
+const allowedZiGKeywords = [
+    // Personal
+    'Techno', 'Redmi', 'Samsung',
+    'Building materials', 'holiday', 'school fees',
+    'back to school', 'baby',
+    'Zimparks',
+    'vacation',
+    // Microbiz
+    'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries'
+];
+
+export default function CatalogueStep({ purchaseType, selectedProduct, onNext, onBack, currency }: CatalogueStepProps) {
     const [products, setProducts] = useState<Product[]>([]);
     const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<string[]>([]);
@@ -31,7 +45,7 @@ export default function CatalogueStep({ purchaseType, selectedProduct, onNext, o
 
     useEffect(() => {
         loadProducts();
-    }, [purchaseType]);
+    }, [purchaseType, currency]);
 
     useEffect(() => {
         filterProducts();
@@ -178,7 +192,19 @@ export default function CatalogueStep({ purchaseType, selectedProduct, onNext, o
             });
 
             console.log('Loaded products:', allProducts.length, 'from', categoryNames.length, 'categories');
-            setProducts(allProducts);
+
+            // Apply ZiG filtering
+            let finalProducts = allProducts;
+            if (currency === 'ZiG') {
+                finalProducts = allProducts.filter(p =>
+                    allowedZiGKeywords.some(k =>
+                        p.name.toLowerCase().includes(k.toLowerCase()) ||
+                        p.category.toLowerCase().includes(k.toLowerCase())
+                    )
+                );
+            }
+
+            setProducts(finalProducts);
             setCategories(['all', ...categoryNames]);
         } catch (error) {
             console.error('Failed to load products:', error);
@@ -220,6 +246,10 @@ export default function CatalogueStep({ purchaseType, selectedProduct, onNext, o
     };
 
     const formatCurrency = (amount: number) => {
+        if (currency === 'ZiG') {
+            const zigAmount = amount * ZIG_RATE;
+            return `ZiG${zigAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+        }
         return `$${amount.toLocaleString()}`;
     };
 

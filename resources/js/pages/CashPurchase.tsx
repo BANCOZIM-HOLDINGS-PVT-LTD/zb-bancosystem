@@ -5,9 +5,10 @@ import CashPurchaseWizard from '@/components/CashPurchase/CashPurchaseWizard';
 interface CashPurchaseProps {
     type: 'personal' | 'microbiz';
     language?: string;
+    currency?: string;
 }
 
-export default function CashPurchase({ type, language = 'en' }: CashPurchaseProps) {
+export default function CashPurchase({ type, language = 'en', currency = 'USD' }: CashPurchaseProps) {
     return (
         <>
             <Head title={`Buy with Cash - ${type === 'personal' ? 'Personal Products' : 'MicroBiz Starter Pack'}`}>
@@ -16,7 +17,7 @@ export default function CashPurchase({ type, language = 'en' }: CashPurchaseProp
             </Head>
 
             <div className="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a]">
-                <CashPurchaseWizard purchaseType={type} language={language} />
+                <CashPurchaseWizard purchaseType={type} language={language} currency={currency} />
             </div>
         </>
     );

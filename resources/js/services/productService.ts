@@ -350,6 +350,40 @@ class ProductService {
                 ]
               }
             ]
+          },
+          {
+            name: 'Broiler Production',
+            businesses: [
+              {
+                name: 'Broiler Production',
+                basePrice: 500,
+                scales: [
+                  { name: 'Small', multiplier: 1 },
+                  { name: 'Medium', multiplier: 2 },
+                  { name: 'Large', multiplier: 4 }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'tuckshop',
+        name: 'Tuck shop',
+        emoji: '🛒',
+        subcategories: [
+          {
+            name: 'Groceries',
+            businesses: [
+              {
+                name: 'Grocery Stock', // Keeping product name generic or matching subcategory if needed, assuming Groceries contain Grocery Stock
+                basePrice: 1000,
+                scales: [
+                  { name: 'Starter', multiplier: 1 },
+                  { name: 'Standard', multiplier: 2 }
+                ]
+              }
+            ]
           }
         ]
       },

@@ -108,6 +108,8 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
     const creditDetails = calculateCreditFacilityDetails();
     const businessName = data.business || '';
     const currentDate = new Date().toISOString().split('T')[0];
+    const selectedCurrency = data.currency || 'USD';
+    const isZiG = selectedCurrency === 'ZiG';
 
     const [formData, setFormData] = useState({
         // Credit Facility Details (pre-populated)
@@ -454,13 +456,17 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 />
                             </div>
                             <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Amount (USD)</Label>
+                                <Label className="text-gray-700 dark:text-gray-300">Amount ({selectedCurrency})</Label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                                    {isZiG ? (
+                                        <span className="absolute left-3 top-2.5 text-gray-500 text-xs font-bold pt-0.5">ZiG</span>
+                                    ) : (
+                                        <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                                    )}
                                     <Input
                                         value={formData.loanAmount}
                                         readOnly
-                                        className="pl-8 border-gray-200 dark:border-gray-600"
+                                        className={`border-gray-200 dark:border-gray-600 ${isZiG ? 'pl-10' : 'pl-8'}`}
                                     />
                                 </div>
                             </div>
@@ -473,13 +479,17 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 />
                             </div>
                             <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Monthly Payment (USD)</Label>
+                                <Label className="text-gray-700 dark:text-gray-300">Monthly Payment ({selectedCurrency})</Label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                                    {isZiG ? (
+                                        <span className="absolute left-3 top-2.5 text-gray-500 text-xs font-bold pt-0.5">ZiG</span>
+                                    ) : (
+                                        <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                                    )}
                                     <Input
                                         value={formData.monthlyPayment}
                                         readOnly
-                                        className="pl-8 border-gray-200 dark:border-gray-600"
+                                        className={`border-gray-200 dark:border-gray-600 ${isZiG ? 'pl-10' : 'pl-8'}`}
                                     />
                                 </div>
                             </div>
@@ -533,7 +543,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         </div>
 
                         <div>
-                            <Label htmlFor="initialDeposit">Initial Deposit Amount (USD)</Label>
+                            <Label htmlFor="initialDeposit">Initial Deposit Amount ({selectedCurrency})</Label>
                             <Input
                                 id="initialDeposit"
                                 type="number"

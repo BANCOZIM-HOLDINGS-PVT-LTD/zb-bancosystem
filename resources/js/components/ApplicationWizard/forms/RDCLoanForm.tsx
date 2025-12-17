@@ -77,6 +77,9 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
     const creditDetails = calculateCreditFacilityDetails();
     const businessName = data.business;
     const currentDate = new Date().toISOString().split('T')[0];
+    const selectedCurrency = data.currency || 'USD';
+    const isZiG = selectedCurrency === 'ZiG';
+    const currencySymbol = isZiG ? 'ZiG' : '$';
 
     const [hasOtherLoans, setHasOtherLoans] = useState<string>(''); // 'yes' or 'no'
     const [isCustomBranch, setIsCustomBranch] = useState<boolean>(false);
@@ -632,17 +635,17 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                         </div>
 
                         <div>
-                            <Label htmlFor="currentNetSalary">Net Pay Range (USD) *</Label>
+                            <Label htmlFor="currentNetSalary">Net Pay Range ({selectedCurrency}) *</Label>
                             <Select value={formData.currentNetSalary} onValueChange={(value) => handleInputChange('currentNetSalary', value)} required>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select net pay range" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="10-50">$10 - $50</SelectItem>
-                                    <SelectItem value="51-100">$51 - $100</SelectItem>
-                                    <SelectItem value="101-200">$101 - $200</SelectItem>
-                                    <SelectItem value="201-300">$201 - $300</SelectItem>
-                                    <SelectItem value="300+">$300+</SelectItem>
+                                    <SelectItem value="10-50">{currencySymbol}10 - {currencySymbol}50</SelectItem>
+                                    <SelectItem value="51-100">{currencySymbol}51 - {currencySymbol}100</SelectItem>
+                                    <SelectItem value="101-200">{currencySymbol}101 - {currencySymbol}200</SelectItem>
+                                    <SelectItem value="201-300">{currencySymbol}201 - {currencySymbol}300</SelectItem>
+                                    <SelectItem value="300+">{currencySymbol}300+</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -890,7 +893,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
 
                                     <FormField
                                         id={`loan-${index}-installment`}
-                                        label="Monthly Installment (USD)"
+                                        label={`Monthly Installment (${selectedCurrency})`}
                                         type="number"
                                         value={loan.monthlyInstallment}
                                         onChange={(value) => handleLoanChange(index, 'monthlyInstallment', value)}
@@ -924,13 +927,17 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                                 />
                             </div>
                             <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Price/Applied Amount (USD)</Label>
+                                <Label className="text-gray-700 dark:text-gray-300">Price/Applied Amount ({selectedCurrency})</Label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                                    {isZiG ? (
+                                        <span className="absolute left-3 top-2.5 text-gray-500 text-xs font-bold pt-0.5">ZiG</span>
+                                    ) : (
+                                        <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                                    )}
                                     <Input
                                         value={formData.loanAmount}
                                         readOnly
-                                        className="pl-8 border-gray-200 dark:border-gray-600"
+                                        className={`${isZiG ? 'pl-10' : 'pl-8'} border-gray-200 dark:border-gray-600`}
                                     />
                                 </div>
                             </div>
@@ -943,13 +950,17 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                                 />
                             </div>
                             <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Monthly Payment (USD)</Label>
+                                <Label className="text-gray-700 dark:text-gray-300">Monthly Payment ({selectedCurrency})</Label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                                    {isZiG ? (
+                                        <span className="absolute left-3 top-2.5 text-gray-500 text-xs font-bold pt-0.5">ZiG</span>
+                                    ) : (
+                                        <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                                    )}
                                     <Input
                                         value={formData.monthlyPayment}
                                         readOnly
-                                        className="pl-8 border-gray-200 dark:border-gray-600"
+                                        className={`${isZiG ? 'pl-10' : 'pl-8'} border-gray-200 dark:border-gray-600`}
                                     />
                                 </div>
                             </div>

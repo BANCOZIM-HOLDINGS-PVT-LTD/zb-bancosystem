@@ -48,9 +48,66 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const ME_SYSTEM_PERCENTAGE = 0.10; // 10% of loan amount
     const TRAINING_PERCENTAGE = 0.055; // 5.5%
 
+    // Currency Logic
+    const selectedCurrency = data.currency || 'USD';
+    const isZiG = selectedCurrency === 'ZiG';
+    const ZIG_RATE = 35;
+
+    const formatCurrency = (amount: number) => {
+        const symbol = isZiG ? 'ZiG' : '$';
+        // If ZiG, we assume the amount is already converted (or we convert for display if needed)
+        // But for consistency, let's assume all 'amount' variables holding money are in the selected currency.
+        return `${symbol}${amount.toLocaleString()}`;
+    };
+
     // Determine if this is a personal products or MicroBiz application
     const isPersonalProducts = data.intent === 'hirePurchase';
     const isMicroBiz = data.intent === 'microBiz';
+
+    const filterProductsForZiG = (categories: Category[]) => {
+        if (!isZiG) return categories;
+
+        const allowedKeywords = [
+            // Personal
+            'Techno', 'Redmi', 'Samsung',
+            'Building materials', 'holiday', 'school fees',
+            'back to school', 'baby',
+            'Zimparks',
+            'vacation',
+            // Microbiz
+            'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries'
+        ];
+
+        return categories.map(cat => {
+            // Check if the category itself matches any allowed keyword (e.g. Tuckshop)
+            const isCategoryAllowed = allowedKeywords.some(k => cat.name.toLowerCase().includes(k.toLowerCase()));
+
+            if (isCategoryAllowed) {
+                return cat;
+            }
+
+            return {
+                ...cat,
+                subcategories: cat.subcategories.map(sub => ({
+                    ...sub,
+                    // Filter businesses
+                    businesses: sub.businesses.filter(b =>
+                        allowedKeywords.some(k => b.name.toLowerCase().includes(k.toLowerCase()) ||
+                            sub.name.toLowerCase().includes(k.toLowerCase()))
+                    ),
+                    // Filter series
+                    series: sub.series?.filter(s =>
+                        allowedKeywords.some(k => s.name.toLowerCase().includes(k.toLowerCase()) ||
+                            s.products.some(p => p.name.toLowerCase().includes(k.toLowerCase())))
+                    )
+                })).filter(sub => sub.businesses.length > 0 || (sub.series && sub.series.length > 0))
+            };
+        }).filter(cat => {
+            const isCategoryAllowed = allowedKeywords.some(k => cat.name.toLowerCase().includes(k.toLowerCase()));
+            if (isCategoryAllowed) return true;
+            return cat.subcategories.length > 0;
+        });
+    };
 
     // Load products from API on component mount
     useEffect(() => {
@@ -60,8 +117,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 setError(null);
                 const categories = await productService.getProductCategories(data.intent);
 
-                // No filtering needed - API already filters by intent
-                setProductCategories(categories);
+                // Apply currency filtering
+                const filteredCategories = filterProductsForZiG(categories);
+                setProductCategories(filteredCategories);
             } catch (err) {
                 console.error('Failed to load products:', err);
                 setError('Failed to load product catalog. Please try again.');
@@ -71,7 +129,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         };
 
         loadProducts();
-    }, [data.intent]);
+    }, [data.intent, selectedCurrency]); // Re-run if intent or currency changes
 
     const handleCategorySelect = (category: Category) => {
         setSelectedCategory(category);
@@ -145,6 +203,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             amount = scale.custom_price;
         } else {
             amount = (selectedBusiness?.basePrice || 0) * scale.multiplier;
+        }
+
+        // Apply currency conversion
+        if (isZiG) {
+            amount = parseFloat((amount * ZIG_RATE).toFixed(2));
         }
 
         setFinalAmount(amount);
@@ -414,7 +477,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     {currentView === 'businesses' && (isPersonalProducts ? `${selectedSubcategory?.name} - Select Product` : `${selectedSubcategory?.name} - Select Business`)}
                     {currentView === 'zimparks_destinations' && 'Select Your Destination Resort'}
                     {currentView === 'scales' && `${selectedBusiness?.name} - Select ${isPersonalProducts ? 'Quantity' : 'Scale'}`}
-                    {currentView === 'terms' && 'Select Credit Terms'}
+                    {currentView === 'terms' && `Net Loan (selling price): ${formatCurrency(finalAmount)}`}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400">
                     {currentView === 'categories' && (isPersonalProducts ? 'Choose the type of product you want to purchase' : 'Choose the type of business you want to start')}
@@ -422,7 +485,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     {currentView === 'businesses' && (isPersonalProducts ? 'Choose your product' : 'Choose your business type')}
                     {currentView === 'zimparks_destinations' && 'Choose from our exclusive list of 30 premier destinations'}
                     {currentView === 'scales' && (isPersonalProducts ? 'Select quantity or package size' : 'Select the size of your operation')}
-                    {currentView === 'terms' && `Net Loan (selling price): $${finalAmount.toLocaleString()}`}
+                    {currentView === 'terms' && `Net Loan (selling price): ${formatCurrency(finalAmount)}`}
                 </p>
                 {currentView === 'categories' && (
                     <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
@@ -540,8 +603,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 <div className="flex-grow">
                                     <h3 className="text-lg font-medium mb-1">{business.name}</h3>
                                     <div className="flex items-center text-sm text-gray-500 mb-1">
-                                        <DollarSign className="h-4 w-4 mr-1" />
-                                        From ${business.basePrice.toLocaleString()}
+                                        <div className="font-semibold mr-1">{isZiG ? 'ZiG' : '$'}</div>
+                                        From {formatCurrency(isZiG ? business.basePrice * ZIG_RATE : business.basePrice)}
                                     </div>
                                     {business.colors && Array.isArray(business.colors) && business.colors.length > 0 && (
                                         <div className="flex gap-1 mt-2">
@@ -613,7 +676,10 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                             <div>
                                 <h2 className="text-3xl font-bold text-gray-900 mb-2">{selectedBusiness.name}</h2>
                                 <div className="text-2xl font-bold text-emerald-600">
-                                    ${finalAmount > 0 ? finalAmount.toLocaleString() : selectedBusiness.basePrice.toLocaleString()}
+                                    {finalAmount > 0
+                                        ? formatCurrency(finalAmount)
+                                        : formatCurrency(isZiG ? selectedBusiness.basePrice * ZIG_RATE : selectedBusiness.basePrice)
+                                    }
                                 </div>
                             </div>
 
@@ -739,7 +805,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                     >
                                         <h3 className="text-lg font-medium mb-2">{formatScaleName(scale.name)}</h3>
                                         <div className="text-xl font-bold text-emerald-600 mb-2">
-                                            Cost: ${amount.toLocaleString()}
+                                            Cost: {formatCurrency(isZiG ? amount * ZIG_RATE : amount)}
                                         </div>
                                     </Card>
                                 );
@@ -794,7 +860,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                 Track your business performance, monitor inventory, manage finances, and get business insights with our advanced M&E system.
                                             </p>
                                             <div className="mt-2 flex items-center gap-2">
-                                                <span className="text-xl font-bold text-emerald-600">+${(finalAmount * ME_SYSTEM_PERCENTAGE).toFixed(2)}</span>
+                                                <span className="text-xl font-bold text-emerald-600">+{formatCurrency(finalAmount * ME_SYSTEM_PERCENTAGE)}</span>
                                                 <span className="text-sm text-gray-500">(10% of selling price)</span>
                                             </div>
                                         </div>
@@ -819,7 +885,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                 Get comprehensive training on technical skills and business management to help you succeed in your business venture.
                                             </p>
                                             <div className="mt-2 flex items-center gap-2">
-                                                <span className="text-xl font-bold text-purple-600">+${(finalAmount * TRAINING_PERCENTAGE).toFixed(2)}</span>
+                                                <span className="text-xl font-bold text-purple-600">+{formatCurrency(finalAmount * TRAINING_PERCENTAGE)}</span>
                                                 <span className="text-sm text-gray-500">(5.5% of selling price)</span>
                                             </div>
                                         </div>
@@ -832,11 +898,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                         <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">New Selling Price</p>
                             <p className="text-3xl font-bold text-emerald-600">
-                                ${((finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)) * 1.06).toLocaleString()}
+                                {formatCurrency((finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)) * 1.06)}
                             </p>
                             {(includesMESystem || includesTraining) && (
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Base Price: ${(finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)).toLocaleString()}
+                                    Base Price: {formatCurrency(finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0))}
                                     {includesMESystem && ` (incl. M&E)`}
                                     {includesTraining && ` (incl. Training)`}
                                 </p>
@@ -877,11 +943,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
                                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Net Loan (selling price)</p>
                                             <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                                                ${(() => {
+                                                {(() => {
                                                     const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
                                                     const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
                                                     const netLoan = finalAmount + meSystemFee + trainingFee;
-                                                    return netLoan.toFixed(2);
+                                                    return formatCurrency(netLoan);
                                                 })()}
                                             </p>
                                         </div>
@@ -890,12 +956,12 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
                                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">New Selling Price</p>
                                             <p className="text-2xl font-bold text-emerald-600">
-                                                ${(() => {
+                                                {(() => {
                                                     const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
                                                     const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
                                                     const netLoan = finalAmount + meSystemFee + trainingFee;
                                                     const grossLoan = netLoan * 1.06;
-                                                    return grossLoan.toFixed(2);
+                                                    return formatCurrency(grossLoan);
                                                 })()}
                                             </p>
                                         </div>
@@ -904,7 +970,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
                                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Monthly Payment</p>
                                             <p className="text-2xl font-bold text-blue-600">
-                                                ${(() => {
+                                                {(() => {
                                                     const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
                                                     const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
                                                     const netLoan = finalAmount + meSystemFee + trainingFee;
@@ -915,7 +981,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                         ? (grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
                                                         (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
                                                         : 0;
-                                                    return monthlyPayment.toFixed(2);
+                                                    return formatCurrency(monthlyPayment);
                                                 })()}
                                             </p>
                                         </div>

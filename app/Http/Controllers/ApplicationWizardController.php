@@ -33,6 +33,7 @@ class ApplicationWizardController extends Controller
     {
         $intent = $request->query('intent');
         $language = $request->query('language', 'en');
+        $currency = $request->query('currency', 'USD');
         $sessionId = $request->query('session_id');
         $referralCode = $request->query('ref');
 
@@ -65,6 +66,11 @@ class ApplicationWizardController extends Controller
         // If language is provided, add it to initial data
         if ($language) {
             $initialData['language'] = $language;
+        }
+        
+        // If currency is provided, add it to initial data
+        if ($currency) {
+            $initialData['currency'] = $currency;
         }
 
         // If intent is provided, add it to initial data (always the case now)

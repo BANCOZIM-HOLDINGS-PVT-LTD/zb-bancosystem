@@ -44,7 +44,7 @@ export interface CashPurchaseData {
     payment?: {
         method: 'paynow' | 'ecocash' | 'onemoney';
         amount: number;
-        currency?: 'USD';
+        currency?: string;
         // Common fields
         transactionId?: string;
         // Mobile wallet specific (EcoCash, OneMoney, Omari)
@@ -67,6 +67,7 @@ export interface CashPurchaseData {
 interface CashPurchaseWizardProps {
     purchaseType: 'personal' | 'microbiz';
     language?: string;
+    currency?: string;
 }
 
 type StepType = 'catalogue' | 'delivery' | 'summary' | 'checkout';
@@ -78,11 +79,16 @@ const steps = [
     { id: 'checkout', name: 'Payment', icon: CreditCard },
 ];
 
-export default function CashPurchaseWizard({ purchaseType, language = 'en' }: CashPurchaseWizardProps) {
+export default function CashPurchaseWizard({ purchaseType, language = 'en', currency = 'USD' }: CashPurchaseWizardProps) {
     const [currentStep, setCurrentStep] = useState<StepType>('catalogue');
     const [wizardData, setWizardData] = useState<CashPurchaseData>({
         purchaseType,
         language,
+        payment: {
+            method: 'paynow', // Default
+            amount: 0,
+            currency: currency
+        }
     });
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -231,6 +237,7 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en' }: Ca
                 return (
                     <CatalogueStep
                         purchaseType={purchaseType}
+                        currency={wizardData.payment?.currency || 'USD'}
                         selectedProduct={wizardData.product}
                         onNext={(data) => handleNext({ product: data })}
                         onBack={() => router.visit(route('welcome'))}
