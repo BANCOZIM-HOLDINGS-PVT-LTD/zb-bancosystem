@@ -519,6 +519,7 @@ class HirePurchaseSeeder extends Seeder
             ['emoji' => '🧱', 'type' => 'hire_purchase']
         );
 
+        // Create subcategories and products using the existing helper
         $this->seedSubcategoryData($category, 'Cement', [
             'PPC Cement' => [
                 'products' => ['PPC Surebuild 42.5N'],
@@ -527,6 +528,43 @@ class HirePurchaseSeeder extends Seeder
             'Lafarge Cement' => [
                 'products' => ['Lafarge Supaset'],
                 'storage' => ['50kg Bag', '50 Bags Pallet']
+            ]
+        ], false);
+
+        $this->seedSubcategoryData($category, 'Doors', [
+            'Teak Doors' => [
+                'products' => ['Teak Door'],
+                'colors' => ['Natural Teak', 'Dark Oak', 'Varnish', 'White'],
+                'storage' => ['Standard', 'Double']
+            ],
+            'Pine Doors' => [
+                'products' => ['Pine Door'],
+                'colors' => ['Natural Pine', 'Clear Varnish', 'White Wash'],
+                'storage' => ['Standard', 'Double']
+            ]
+        ], true);
+
+        $this->seedSubcategoryData($category, 'Paint', [
+            'Interior Paints' => [
+                'products' => ['Interior Paint'],
+                'colors' => ['White', 'Cream', 'Peach', 'Light Grey', 'Sky Blue'],
+                'storage' => ['5L', '20L']
+            ],
+            'Exterior Paints' => [
+                'products' => ['Exterior Paint'],
+                'colors' => ['White', 'Cream', 'Grey', 'Terracotta', 'Green'],
+                'storage' => ['5L', '20L']
+            ]
+        ], true);
+
+        $this->seedSubcategoryData($category, 'Window Frames', [
+            'Aluminum Frames' => [
+                'products' => ['Aluminum Frame'],
+                'storage' => ['Small', 'Standard', 'Large']
+            ],
+            'Steel Frames' => [
+                'products' => ['Steel Frame'],
+                'storage' => ['Small', 'Standard', 'Large']
             ]
         ], false);
     }

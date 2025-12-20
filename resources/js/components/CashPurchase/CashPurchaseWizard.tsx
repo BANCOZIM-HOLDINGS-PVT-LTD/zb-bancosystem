@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { router, usePage } from '@inertiajs/react';
-import { ChevronLeft, CheckCircle, ShoppingCart, Truck, FileText, CreditCard, Package } from 'lucide-react';
+import { ChevronLeft, CheckCircle, ShoppingBasket, Truck, FileText, CreditCard, Package } from 'lucide-react';
 
 // Step components
 import CatalogueStep from './steps/CatalogueStep';
@@ -76,7 +76,7 @@ interface CashPurchaseWizardProps {
 type StepType = 'catalogue' | 'delivery' | 'summary' | 'checkout';
 
 const steps = [
-    { id: 'catalogue', name: 'Select Product', icon: ShoppingCart },
+    { id: 'catalogue', name: 'Select Product', icon: ShoppingBasket },
     { id: 'delivery', name: 'Delivery Details', icon: Truck },
     { id: 'summary', name: 'Review Order', icon: FileText },
     { id: 'checkout', name: 'Payment', icon: CreditCard },

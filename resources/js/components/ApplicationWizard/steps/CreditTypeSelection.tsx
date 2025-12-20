@@ -15,9 +15,18 @@ type CreditType = 'ZDC' | 'PDC';
 const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext, onBack, loading }) => {
     const [selectedType, setSelectedType] = React.useState<CreditType | null>(data.creditType || null);
 
+    // Currency formatting based on selected currency
+    const selectedCurrency = data.currency || 'USD';
+    const isZiG = selectedCurrency === 'ZiG';
+    const currencySymbol = isZiG ? 'ZiG' : '$';
+
+    const formatCurrency = (amount: number) => {
+        return `${currencySymbol}${amount.toLocaleString()}`;
+    };
+
     // Calculate 25% deposit for PDC
     const loanAmount = data.amount || data.loanAmount || 0;
-    const depositAmount = (loanAmount * 0.25).toFixed(2);
+    const depositAmount = loanAmount * 0.25;
 
     const handleContinue = () => {
         if (selectedType) {
@@ -33,7 +42,7 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                     Select your preferred credit payment option
                 </p>
                 <div className="mt-2 text-sm text-blue-600 dark:text-blue-400">
-                    Loan Amount: <span className="font-bold">${loanAmount.toLocaleString()}</span>
+                    Loan Amount: <span className="font-bold">{formatCurrency(loanAmount)}</span>
                 </div>
             </div>
 
@@ -90,7 +99,7 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                             <div className="text-center">
                                 <p className="text-xs text-gray-500 mb-1">Monthly Payment</p>
                                 <p className="text-2xl font-bold text-emerald-600">
-                                    ${data.monthlyPayment?.toLocaleString() || 'N/A'}
+                                    {formatCurrency(data.monthlyPayment || 0)}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">
                                     for {data.creditTerm || 'N/A'} months
@@ -152,7 +161,7 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                             <div className="text-center">
                                 <p className="text-xs text-gray-500 mb-1">Deposit Payment</p>
                                 <p className="text-2xl font-bold text-blue-600">
-                                    ${parseFloat(depositAmount).toLocaleString()}
+                                    {formatCurrency(depositAmount)}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">
                                     25% of loan amount
@@ -161,7 +170,7 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                             <div className="text-center pt-2">
                                 <p className="text-xs text-gray-500 mb-1">Monthly Payment</p>
                                 <p className="text-lg font-bold text-blue-600">
-                                    ${((loanAmount * 0.75) / (data.creditTerm || 12)).toFixed(2)}
+                                    {formatCurrency((loanAmount * 0.75) / (data.creditTerm || 12))}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">
                                     for {data.creditTerm || 'N/A'} months

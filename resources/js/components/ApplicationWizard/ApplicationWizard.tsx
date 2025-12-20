@@ -42,6 +42,18 @@ export interface WizardData {
     includesTraining?: boolean;
     trainingFee?: number;
 
+    // Cart for Building Materials (or other multi-item categories)
+    cart?: {
+        businessId: number;
+        name: string;
+        price: number;
+        quantity: number;
+        color?: string;
+        interiorColor?: string;
+        exteriorColor?: string;
+        scale?: string;
+    }[];
+
     // Credit type selection (ZDC or PDC)
     creditType?: 'ZDC' | 'PDC';
     depositAmount?: number;
@@ -67,6 +79,11 @@ export interface WizardData {
 
     // Final price calculation
     finalPrice?: number;
+
+    // Color selections
+    color?: string;
+    interiorColor?: string;
+    exteriorColor?: string;
 
     // Account verification
     hasAccount?: boolean;

@@ -6,7 +6,10 @@ export interface BusinessType {
   name: string;
   basePrice: number;
   image_url?: string;
+  description?: string;
   colors?: string[];
+  interiorColors?: string[];
+  exteriorColors?: string[];
   scales: {
     id?: number;
     name: string;
@@ -310,6 +313,82 @@ class ProductService {
         ]
       },
       {
+        id: 'building-materials',
+        name: 'Building Materials',
+        emoji: '🧱',
+        subcategories: [
+          {
+            name: 'Doors',
+            businesses: [
+              {
+                name: 'Teak Door',
+                basePrice: 150,
+                colors: ['Natural Teak', 'Dark Oak', 'Varnish', 'White'],
+                scales: [
+                  { name: 'Standard', multiplier: 1 },
+                  { name: 'Double', multiplier: 2 }
+                ]
+              },
+              {
+                name: 'Pine Door',
+                basePrice: 80,
+                colors: ['Natural Pine', 'Clear Varnish', 'White Wash'],
+                scales: [
+                  { name: 'Standard', multiplier: 1 },
+                  { name: 'Double', multiplier: 1.8 }
+                ]
+              }
+            ]
+          },
+          {
+            name: 'Paint',
+            businesses: [
+              {
+                name: 'Interior Paint',
+                basePrice: 40,
+                colors: ['White', 'Cream', 'Peach', 'Light Grey', 'Sky Blue'],
+                scales: [
+                  { name: '5L', multiplier: 1 },
+                  { name: '20L', multiplier: 3.5 }
+                ]
+              },
+              {
+                name: 'Exterior Paint',
+                basePrice: 55,
+                colors: ['White', 'Cream', 'Grey', 'Terracotta', 'Green'],
+                scales: [
+                  { name: '5L', multiplier: 1 },
+                  { name: '20L', multiplier: 3.5 }
+                ]
+              }
+            ]
+          },
+          {
+            name: 'Window Frames',
+            businesses: [
+              {
+                name: 'Aluminum Frame',
+                basePrice: 120,
+                scales: [
+                  { name: 'Small', multiplier: 0.8 },
+                  { name: 'Standard', multiplier: 1 },
+                  { name: 'Large', multiplier: 1.5 }
+                ]
+              },
+              {
+                name: 'Steel Frame',
+                basePrice: 80,
+                scales: [
+                  { name: 'Small', multiplier: 0.8 },
+                  { name: 'Standard', multiplier: 1 },
+                  { name: 'Large', multiplier: 1.5 }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
         id: 'solar',
         name: 'Solar Systems',
         emoji: '☀️',
@@ -413,11 +492,11 @@ class ProductService {
     // Filter based on intent
     if (intent === 'hirePurchase') {
       return allCategories.filter(cat =>
-        ['electronics', 'appliances', 'furniture', 'solar', 'technology'].includes(cat.id.toLowerCase())
+        ['electronics', 'appliances', 'furniture', 'solar', 'technology', 'building-materials'].includes(cat.id.toLowerCase())
       );
     } else if (intent === 'microBiz') {
       return allCategories.filter(cat =>
-        !['electronics', 'appliances', 'furniture', 'solar', 'technology'].includes(cat.id.toLowerCase())
+        !['electronics', 'appliances', 'furniture', 'solar', 'technology', 'building-materials'].includes(cat.id.toLowerCase())
       );
     }
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronRight, ChevronLeft, Package, MapPin, DollarSign, Tag, Truck, Monitor, GraduationCap } from 'lucide-react';
+import { ChevronRight, ChevronLeft, ShoppingBasket, MapPin, DollarSign, Tag, Truck, Monitor, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import type { CashPurchaseData } from '../CashPurchaseWizard';
@@ -66,10 +66,10 @@ export default function SummaryStep({ data, onNext, onBack }: SummaryStepProps) 
                 {/* Product Summary */}
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
                     <div className="flex items-start gap-4 mb-4">
-                        <Package className="h-6 w-6 text-emerald-600 flex-shrink-0 mt-1" />
+                        <ShoppingBasket className="h-6 w-6 text-emerald-600 flex-shrink-0 mt-1" />
                         <div className="flex-1">
                             <h3 className="font-semibold text-lg mb-1 text-[#1b1b18] dark:text-[#EDEDEC]">
-                                Order Items ({cart.length})
+                                Shopping Basket Items ({cart.length})
                             </h3>
                         </div>
                     </div>

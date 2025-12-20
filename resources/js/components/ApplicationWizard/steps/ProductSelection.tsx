@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ChevronLeft, ChevronRight, ArrowLeft, DollarSign, Calendar, Loader2, Monitor, GraduationCap, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, DollarSign, Calendar, Loader2, Monitor, GraduationCap, Info, ShoppingBasket, X } from 'lucide-react';
 import { productService, getCreditTermOptions, type BusinessType, type Subcategory, type Category, type Series } from '../../../services/productService';
 import { zimparksDestinations, type ZimparksDestination } from '../data/zimparksDestinations';
 import { getPackageDescription } from '../data/packageDescriptions';
@@ -31,8 +31,10 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [selectedSubcategory, setSelectedSubcategory] = useState<Subcategory | null>(null);
     const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
     const [selectedBusiness, setSelectedBusiness] = useState<BusinessType | null>(null);
-    const [selectedScale, setSelectedScale] = useState<{ name: string; multiplier: number; custom_price?: number } | null>(null);
+    const [selectedScale, setSelectedScale] = useState<{ id?: number; name: string; multiplier: number; custom_price?: number } | null>(null);
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
+    const [selectedInteriorColor, setSelectedInteriorColor] = useState<string | null>(null);
+    const [selectedExteriorColor, setSelectedExteriorColor] = useState<string | null>(null);
     const [finalAmount, setFinalAmount] = useState<number>(0);
     const [includesMESystem, setIncludesMESystem] = useState<boolean>(false);
     const [includesTraining, setIncludesTraining] = useState<boolean>(false);
@@ -44,6 +46,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [showZBBankingNotification, setShowZBBankingNotification] = useState<boolean>(false);
     const [selectedDestination, setSelectedDestination] = useState<ZimparksDestination | null>(null);
     const [showDestinationModal, setShowDestinationModal] = useState<boolean>(false);
+
+    // Cart State
+    const [cart, setCart] = useState<{ businessId: number; name: string; price: number; quantity: number; color?: string; interiorColor?: string; exteriorColor?: string; scale?: string }[]>(data.cart || []);
+    const [cartQuantity, setCartQuantity] = useState<number>(1);
+    const isCartMode = selectedCategory?.name === 'Building Materials';
 
     const ME_SYSTEM_PERCENTAGE = 0.10; // 10% of loan amount
     const TRAINING_PERCENTAGE = 0.055; // 5.5%
@@ -75,11 +82,16 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             'Zimparks',
             'vacation',
             // Microbiz
-            'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries'
+            'Agriculture', // Allow full Agriculture category
+            'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries',
+            // Agricultural Mechanization specific items
+            'water storage', 'pumping system', 'maize sheller', 'irrigation', 'land security'
         ];
 
         return categories.map(cat => {
-            // Check if the category itself matches any allowed keyword (e.g. Tuckshop)
+            // Check if the category itself matches any allowed keyword (e.g. Tuckshop, Agriculture)
+            // Note: We use strict check for 'Agriculture' to avoid matching 'Agricultural Mechanization' by accident if logic changes,
+            // but currently 'Agriculture' doesn't match 'Agricultural'.
             const isCategoryAllowed = allowedKeywords.some(k => cat.name.toLowerCase().includes(k.toLowerCase()));
 
             if (isCategoryAllowed) {
@@ -165,6 +177,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const handleBusinessSelect = (business: BusinessType) => {
         setSelectedBusiness(business);
         setSelectedColor(null); // Reset color
+        setSelectedInteriorColor(null); // Reset interior color
+        setSelectedExteriorColor(null); // Reset exterior color
         setSelectedScale(null); // Reset scale/storage
 
         if (business.name === 'Zimparks Vacation Package') {
@@ -195,7 +209,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         }
     };
 
-    const handleScaleSelect = (scale: { name: string; multiplier: number; custom_price?: number }) => {
+    const handleScaleSelect = (scale: { id?: number; name: string; multiplier: number; custom_price?: number }) => {
         setSelectedScale(scale);
 
         let amount = 0;
@@ -235,6 +249,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         setSelectedTermMonths(months);
         setValidationError(''); // Clear validation error when user selects
     };
+
+
 
     const handleDestinationSelect = (destination: ZimparksDestination) => {
         setSelectedDestination(destination);
@@ -289,6 +305,27 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         const firstPaymentDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
         const lastPaymentDate = new Date(today.getFullYear(), today.getMonth() + selectedTermMonths, 1);
 
+        if (isCartMode) {
+            onNext({
+                category: selectedCategory?.id,
+                amount: grossLoan,
+                cart: cart,
+                currency: selectedCurrency,
+                business: cart.map(item => item.name).join(', '),
+                finalPrice: finalAmount, // Cart total
+                loanAmount: grossLoan,
+                selectedBusiness: null,
+                selectedScale: null,
+                color: null,
+                creditTerm: selectedTermMonths,
+                monthlyPayment: parseFloat(monthlyPayment.toFixed(2)),
+                interestRate: '96%',
+                firstPaymentDate: firstPaymentDate.toISOString().split('T')[0],
+                lastPaymentDate: lastPaymentDate.toISOString().split('T')[0],
+            });
+            return;
+        }
+
         onNext({
             // Legacy fields for backward compatibility
             category: selectedCategory?.name,
@@ -311,16 +348,26 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             loanAmount: grossLoan,
             netLoan: netLoan,
             grossLoan: grossLoan,
-            bankAdminFee: parseFloat(bankAdminFee.toFixed(2)),
-            sellingPrice: finalAmount,
-            // Payment dates
-            firstPaymentDate: firstPaymentDate.toISOString(),
-            lastPaymentDate: lastPaymentDate.toISOString(),
-            // ME System and Training
-            includesMESystem: includesMESystem,
-            meSystemFee: meSystemFee,
-            includesTraining: includesTraining,
-            trainingFee: trainingFee,
+            interestRate: '96%',
+            firstPaymentDate: firstPaymentDate.toISOString().split('T')[0],
+            lastPaymentDate: lastPaymentDate.toISOString().split('T')[0],
+            // Additional details
+            includesMESystem,
+            meSystemFee,
+            includesTraining,
+            trainingFee,
+            selectedBusiness: {
+                id: selectedBusiness?.id?.toString(),
+                name: selectedBusiness?.name,
+                salesData: []
+            },
+            selectedScale: selectedScale ? {
+                id: selectedScale.id?.toString(),
+                name: selectedScale.name
+            } : undefined,
+            color: selectedColor,
+            interiorColor: selectedInteriorColor,
+            exteriorColor: selectedExteriorColor
         });
     };
 
@@ -377,40 +424,145 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         }
     };
 
-    const creditTerms = selectedBusiness ? getCreditTermOptions(finalAmount) : [];
 
-    // Show loading state
+
+    const handleAddToCart = () => {
+        // Validation: Must have business.
+        if (!selectedBusiness) return;
+        // Validation: If colors exist, must have color selected.
+        if (selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && !selectedColor) return;
+        // Validation: If interior colors exist, must have interior color selected.
+        if (selectedBusiness.interiorColors && Array.isArray(selectedBusiness.interiorColors) && selectedBusiness.interiorColors.length > 0 && !selectedInteriorColor) return;
+        // Validation: If exterior colors exist, must have exterior color selected.
+        if (selectedBusiness.exteriorColors && Array.isArray(selectedBusiness.exteriorColors) && selectedBusiness.exteriorColors.length > 0 && !selectedExteriorColor) return;
+
+        const scale = selectedScale; // Can be null
+        const price = scale?.custom_price || (selectedBusiness.basePrice * (scale?.multiplier || 1));
+
+        const newItem = {
+            businessId: selectedBusiness.id || 0,
+            name: selectedBusiness.name,
+            price: price,
+            quantity: cartQuantity,
+            color: selectedColor || undefined,
+            interiorColor: selectedInteriorColor || undefined,
+            exteriorColor: selectedExteriorColor || undefined,
+            scale: scale?.name
+        };
+
+        setCart([...cart, newItem]);
+        setCartQuantity(1);
+        setSelectedBusiness(null);
+        setSelectedSubcategory(null);
+        setSelectedInteriorColor(null);
+        setSelectedExteriorColor(null);
+        setCurrentView('subcategories');
+    };
+
+    const handleRemoveFromCart = (index: number) => {
+        const newCart = [...cart];
+        newCart.splice(index, 1);
+        setCart(newCart);
+    };
+
+    const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // Sync finalAmount with cartTotal when cart changes in cart mode (when viewing terms)
+    useEffect(() => {
+        if (isCartMode && currentView === 'terms') {
+            setFinalAmount(cartTotal);
+        }
+    }, [cart, cartTotal, isCartMode, currentView]);
+
+    const handleNext = () => {
+        if (isCartMode) {
+            if (cart.length === 0) {
+                setValidationError('Please add at least one item to your basket.');
+                return;
+            }
+            setFinalAmount(cartTotal);
+            setCurrentView('terms');
+            return;
+        }
+
+        // Standard Flow
+        if (!selectedBusiness) return;
+
+        // Check if scale/storage is required but not selected
+        if (selectedBusiness.scales.length > 0 && !selectedScale) {
+            setValidationError('Please select an option');
+            return;
+        }
+
+        // Check if color is required but not selected
+        if (selectedBusiness.colors && selectedBusiness.colors.length > 0 && !selectedColor) {
+            setValidationError('Please select a color');
+            return;
+        }
+
+        // For MicroBiz/Zimparks, validation happens before this step or logic is different, 
+        // but generally we proceed to terms or show package details.
+        // The buttons handling this call ensure we have selections.
+
+        setCurrentView('terms');
+    };
+
+    // If isCartMode, render Basket Summary
+    const renderCartSummary = () => (
+        <Card className="p-4 mb-6 bg-white dark:bg-[#1b1b18] border-[#e5e7eb] dark:border-[#27272a]">
+            <h3 className="font-semibold mb-4 text-[#1b1b18] dark:text-[#EDEDEC] flex items-center">
+                <ShoppingBasket className="w-5 h-5 mr-2" />
+                Shopping Basket
+            </h3>
+            {cart.length === 0 ? (
+                <p className="text-sm text-gray-500">Your basket is empty.</p>
+            ) : (
+                <div className="space-y-3">
+                    {cart.map((item, index) => (
+                        <div key={index} className="flex justify-between items-center text-sm">
+                            <div>
+                                <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{item.name}</span>
+                                <div className="text-xs text-gray-500">
+                                    {item.color && <span className="mr-2">Color: {item.color}</span>}
+                                    {item.scale && <span>Size: {item.scale}</span>}
+                                    <span className="ml-2">x{item.quantity}</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center">
+                                <span className="font-medium mr-3">{formatCurrency(item.price * item.quantity)}</span>
+                                <Button variant="ghost" size="sm" onClick={() => handleRemoveFromCart(index)} className="text-red-500 h-6 w-6 p-0 hover:bg-red-50">
+                                    <X className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    ))}
+                    <div className="border-t pt-2 mt-2 flex justify-between font-bold">
+                        <span>Total</span>
+                        <span>{formatCurrency(cartTotal)}</span>
+                    </div>
+                </div>
+            )}
+        </Card>
+    );
+
+    const creditTerms = (selectedBusiness || isCartMode) ? getCreditTermOptions(finalAmount) : [];
+
     if (isLoadingProducts) {
         return (
-            <div className="space-y-6">
-                <div className="text-center">
-                    <h2 className="text-2xl font-semibold mb-2">Loading Product Catalog</h2>
-                    <p className="text-gray-600 dark:text-gray-400">Please wait while we load available products...</p>
-                </div>
-                <div className="flex justify-center items-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                </div>
+            <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
             </div>
         );
     }
 
-    // Show error state
     if (error) {
         return (
-            <div className="space-y-6">
-                <div className="text-center">
-                    <h2 className="text-2xl font-semibold mb-2 text-red-600">Error Loading Products</h2>
-                    <p className="text-gray-600 dark:text-gray-400">{error}</p>
-                </div>
-                <div className="flex justify-center space-x-4">
-                    <Button onClick={() => window.location.reload()} variant="outline">
-                        Retry
-                    </Button>
-                    <Button onClick={onBack} variant="outline">
-                        Go Back
-                    </Button>
-                </div>
-            </div>
+            <Alert className="border-red-500 bg-red-50">
+                <AlertDescription className="text-red-800">{error}</AlertDescription>
+                <Button onClick={() => window.location.reload()} variant="outline" className="mt-2">
+                    Retry
+                </Button>
+            </Alert>
         );
     }
 
@@ -463,13 +615,23 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             'pink': '#FFC0CB',
             'purple': '#800080',
             'brown': '#A52A2A',
-            'beige': '#F5F5DC'
+            'beige': '#F5F5DC',
+            'natural teak': '#C19A6B',
+            'dark oak': '#4B3621',
+            'varnish': '#D2691E',
+            'natural pine': '#F4A460',
+            'clear varnish': '#DEB887',
+            'peach': '#FFDAB9',
+            'terracotta': '#E2725B',
+            'sky blue': '#87CEEB',
+            'light grey': '#D3D3D3',
         };
         return map[colorName.toLowerCase()] || colorName.toLowerCase();
     };
 
     return (
         <div className="space-y-6">
+            {isCartMode && renderCartSummary()}
             <div className="text-center">
                 <h2 className="text-2xl font-semibold mb-2">
                     {currentView === 'categories' && (isPersonalProducts ? 'Select Product Category' : 'Select Business Category')}
@@ -709,7 +871,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 </div>
                             )}
 
-                            {/* Color Selection */}
+                            {/* Color Selection (Legacy - single color) */}
                             {selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -739,295 +901,405 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 </div>
                             )}
 
+                            {/* Interior Paint Color Selection */}
+                            {selectedBusiness.interiorColors && Array.isArray(selectedBusiness.interiorColors) && selectedBusiness.interiorColors.length > 0 && (
+                                <div className="mt-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        🎨 Interior Paint Color: <span className="text-gray-500 font-normal">{selectedInteriorColor || 'Select interior color'}</span>
+                                    </label>
+                                    <div className="flex flex-wrap gap-3">
+                                        {selectedBusiness.interiorColors.map((color) => (
+                                            <button
+                                                key={`interior-${color}`}
+                                                onClick={() => setSelectedInteriorColor(color)}
+                                                className={`
+                                                    w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all
+                                                    ${selectedInteriorColor === color
+                                                        ? 'border-blue-600 ring-2 ring-blue-100 scale-110'
+                                                        : 'border-transparent hover:scale-105'
+                                                    }
+                                                `}
+                                                style={{ backgroundColor: getColorHex(color), boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                                                title={`Interior: ${color}`}
+                                            >
+                                                {selectedInteriorColor === color && (
+                                                    <Check className={`h-5 w-5 ${['white', 'yellow', 'cream', 'light grey', 'peach', 'sky blue', 'lavender'].includes(color.toLowerCase()) ? 'text-black' : 'text-white'}`} />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Exterior Paint Color Selection */}
+                            {selectedBusiness.exteriorColors && Array.isArray(selectedBusiness.exteriorColors) && selectedBusiness.exteriorColors.length > 0 && (
+                                <div className="mt-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        🏠 Exterior Paint Color: <span className="text-gray-500 font-normal">{selectedExteriorColor || 'Select exterior color'}</span>
+                                    </label>
+                                    <div className="flex flex-wrap gap-3">
+                                        {selectedBusiness.exteriorColors.map((color) => (
+                                            <button
+                                                key={`exterior-${color}`}
+                                                onClick={() => setSelectedExteriorColor(color)}
+                                                className={`
+                                                    w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all
+                                                    ${selectedExteriorColor === color
+                                                        ? 'border-orange-600 ring-2 ring-orange-100 scale-110'
+                                                        : 'border-transparent hover:scale-105'
+                                                    }
+                                                `}
+                                                style={{ backgroundColor: getColorHex(color), boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                                                title={`Exterior: ${color}`}
+                                            >
+                                                {selectedExteriorColor === color && (
+                                                    <Check className={`h-5 w-5 ${['white', 'yellow', 'cream', 'light grey', 'sand'].includes(color.toLowerCase()) ? 'text-black' : 'text-white'}`} />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                             {/* Action Button */}
                             <div className="pt-6">
-                                <Button
-                                    onClick={handleProceedToTerms}
-                                    disabled={!selectedScale || (selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && !selectedColor)}
-                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg"
-                                >
-                                    Continue to Payment Terms
-                                    <ChevronRight className="ml-2 h-5 w-5" />
-                                </Button>
-                                <p className="text-xs text-gray-500 text-center mt-3">
-                                    {!selectedScale
-                                        ? "Please select an option to continue"
-                                        : (selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && !selectedColor)
-                                            ? "Please select a color to continue"
-                                            : "Next: Choose your repayment plan"
-                                    }
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {currentView === 'scales' && selectedBusiness && (
-                    <>
-                        {showZBBankingNotification && (
-                            <Alert className="mb-4 border-blue-500 bg-blue-50 dark:bg-blue-950">
-                                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                <AlertDescription className="text-blue-800 dark:text-blue-200">
-                                    Please make sure that this school or institution banks with ZB before proceeding.
-                                </AlertDescription>
-                            </Alert>
-                        )}
-                        {selectedBusiness.name === 'Starlink Internet Kit' && (
-                            <Alert className="mb-4 border-amber-500 bg-amber-50 dark:bg-amber-950">
-                                <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                <AlertDescription className="text-amber-800 dark:text-amber-200">
-                                    <strong>Note:</strong> Available for areas outside Harare and Chitungwiza
-                                </AlertDescription>
-                            </Alert>
-                        )}
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            {selectedBusiness.scales.map((scale, index) => {
-                                // Use custom_price if available, otherwise calculate from multiplier
-                                const amount = scale.custom_price || (selectedBusiness.basePrice * scale.multiplier);
-                                const isSelected = selectedScale?.name === scale.name;
-                                // Format scale name: add "Package" suffix for Lite, Standard, Full house and handle rebranding
-                                const formatScaleName = (name: string) => {
-                                    if (name === 'Lite') return 'Bronze Package';
-                                    if (name === 'Standard') return 'Silver Package';
-                                    if (name === 'Full house' || name === 'Full House') return 'Gold Package';
-
-                                    const packageScales = ['Bronze Package', 'Silver Package', 'Gold Package'];
-                                    if (packageScales.includes(name)) {
-                                        return name; // Already correct
-                                    }
-                                    return name;
-                                };
-                                return (
-                                    <Card
-                                        key={index}
-                                        className={`cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg text-center ${isSelected ? 'border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
-                                        onClick={() => handleScaleSelect(scale)}
-                                    >
-                                        <h3 className="text-lg font-medium mb-2">{formatScaleName(scale.name)}</h3>
-                                        <div className="text-xl font-bold text-emerald-600 mb-2">
-                                            Cost: {formatCurrency(isZiG ? amount * ZIG_RATE : amount)}
-                                        </div>
-                                    </Card>
-                                );
-                            })}
-                        </div>
-
-                        {/* Package Description Slide-in for MicroBiz and Zimparks */}
-                        {selectedScale && (isMicroBiz || selectedBusiness.name === 'Zimparks Vacation Package') && (
-                            <div className="mt-8 animate-in slide-in-from-bottom-4 fade-in duration-500">
-                                <Card className="p-6 border-emerald-200 bg-emerald-50/50 dark:bg-emerald-900/10">
-                                    <h3 className="text-lg font-semibold text-emerald-800 dark:text-emerald-400 mb-2">
-                                        Package Details
-                                    </h3>
-                                    <p className="text-gray-700 dark:text-gray-300 mb-6 text-lg">
-                                        {getPackageDescription(selectedBusiness.name, selectedScale.name)}
-                                    </p>
-                                    <div className="flex justify-end">
+                                {isCartMode ? (
+                                    <div className="flex flex-col gap-3">
                                         <Button
-                                            onClick={handleProceedToTerms}
-                                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
+                                            onClick={handleAddToCart}
+                                            disabled={
+                                                (selectedBusiness.scales && selectedBusiness.scales.length > 0 && !selectedScale) ||
+                                                (selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && !selectedColor)
+                                            }
+                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg"
                                         >
-                                            Continue
+                                            <ShoppingBasket className="mr-2 h-5 w-5" />
+                                            Add to Basket
+                                        </Button>
+                                        <p className="text-xs text-gray-500 text-center">
+                                            Add item to your basket to proceed
+                                        </p>
+
+                                        <div className="relative flex py-2 items-center">
+                                            <div className="flex-grow border-t border-gray-300"></div>
+                                            <span className="flex-shrink-0 mx-4 text-gray-400 text-sm">Review Cart</span>
+                                            <div className="flex-grow border-t border-gray-300"></div>
+                                        </div>
+
+                                        <Button
+                                            onClick={handleNext}
+                                            disabled={cart.length === 0}
+                                            variant="outline"
+                                            className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 py-4"
+                                        >
+                                            Proceed to Terms
                                             <ChevronRight className="ml-2 h-4 w-4" />
                                         </Button>
                                     </div>
-                                </Card>
+                                ) : (
+                                    <Button
+                                        onClick={handleNext}
+                                        disabled={
+                                            (selectedBusiness.scales && selectedBusiness.scales.length > 0 && !selectedScale) ||
+                                            (selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && !selectedColor) ||
+                                            (selectedBusiness.interiorColors && Array.isArray(selectedBusiness.interiorColors) && selectedBusiness.interiorColors.length > 0 && !selectedInteriorColor) ||
+                                            (selectedBusiness.exteriorColors && Array.isArray(selectedBusiness.exteriorColors) && selectedBusiness.exteriorColors.length > 0 && !selectedExteriorColor)
+                                        }
+                                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg"
+                                    >
+                                        Continue to Payment Terms
+                                        <ChevronRight className="ml-2 h-5 w-5" />
+                                    </Button>
+                                )}
+
+                                {!isCartMode && (
+                                    <p className="text-xs text-gray-500 text-center mt-3">
+                                        {!selectedScale && selectedBusiness.scales && selectedBusiness.scales.length > 0
+                                            ? "Please select an option to continue"
+                                            : (selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && !selectedColor)
+                                                ? "Please select a color to continue"
+                                                : (selectedBusiness.interiorColors && Array.isArray(selectedBusiness.interiorColors) && selectedBusiness.interiorColors.length > 0 && !selectedInteriorColor)
+                                                    ? "Please select an interior paint color"
+                                                    : (selectedBusiness.exteriorColors && Array.isArray(selectedBusiness.exteriorColors) && selectedBusiness.exteriorColors.length > 0 && !selectedExteriorColor)
+                                                        ? "Please select an exterior paint color"
+                                                        : "Next: Choose your repayment plan"
+                                        }
+                                    </p>
+                                )}
                             </div>
-                        )}
-                    </>
+                        </div >
+                    </div >
                 )}
 
-                {currentView === 'terms' && (
-                    <div className="space-y-6">
-                        {/* ME System and Training Options for MicroBiz */}
-                        {isMicroBiz && (
-                            <>
-                                <Card className="p-6 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-                                    <div className="flex items-start gap-4">
-                                        <input
-                                            type="checkbox"
-                                            id="me-system"
-                                            checked={includesMESystem}
-                                            onChange={(e) => setIncludesMESystem(e.target.checked)}
-                                            className="mt-1 h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                                        />
-                                        <div className="flex-1">
-                                            <label htmlFor="me-system" className="font-semibold text-lg cursor-pointer flex items-center gap-2">
-                                                <Monitor className="h-5 w-5" />
-                                                Add Monitoring & Evaluation System
-                                            </label>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                                Track your business performance, monitor inventory, manage finances, and get business insights with our advanced M&E system.
-                                            </p>
-                                            <div className="mt-2 flex items-center gap-2">
-                                                <span className="text-xl font-bold text-emerald-600">+{formatCurrency(finalAmount * ME_SYSTEM_PERCENTAGE)}</span>
-                                                <span className="text-sm text-gray-500">(10% of selling price)</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Card>
-
-                                <Card className="p-6 bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
-                                    <div className="flex items-start gap-4">
-                                        <input
-                                            type="checkbox"
-                                            id="training"
-                                            checked={includesTraining}
-                                            onChange={(e) => setIncludesTraining(e.target.checked)}
-                                            className="mt-1 h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                        />
-                                        <div className="flex-1">
-                                            <label htmlFor="training" className="font-semibold text-lg cursor-pointer flex items-center gap-2">
-                                                <GraduationCap className="h-5 w-5" />
-                                                Add Technical and Business Management Training
-                                            </label>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                                Get comprehensive training on technical skills and business management to help you succeed in your business venture.
-                                            </p>
-                                            <div className="mt-2 flex items-center gap-2">
-                                                <span className="text-xl font-bold text-purple-600">+{formatCurrency(finalAmount * TRAINING_PERCENTAGE)}</span>
-                                                <span className="text-sm text-gray-500">(5.5% of selling price)</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Card>
-                            </>
-                        )}
-
-                        {/* Total Amount Display */}
-                        <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">New Selling Price</p>
-                            <p className="text-3xl font-bold text-emerald-600">
-                                {formatCurrency((finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)) * 1.06)}
-                            </p>
-                            {(includesMESystem || includesTraining) && (
-                                <p className="text-sm text-gray-500 mt-1">
-                                    Base Price: {formatCurrency(finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0))}
-                                    {includesMESystem && ` (incl. M&E)`}
-                                    {includesTraining && ` (incl. Training)`}
-                                </p>
+                {
+                    currentView === 'scales' && selectedBusiness && (
+                        <>
+                            {showZBBankingNotification && (
+                                <Alert className="mb-4 border-blue-500 bg-blue-50 dark:bg-blue-950">
+                                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                    <AlertDescription className="text-blue-800 dark:text-blue-200">
+                                        Please make sure that this school or institution banks with ZB before proceeding.
+                                    </AlertDescription>
+                                </Alert>
                             )}
-                        </div>
+                            {selectedBusiness.name === 'Starlink Internet Kit' && (
+                                <Alert className="mb-4 border-amber-500 bg-amber-50 dark:bg-amber-950">
+                                    <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                    <AlertDescription className="text-amber-800 dark:text-amber-200">
+                                        <strong>Note:</strong> Available for areas outside Harare and Chitungwiza
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                {selectedBusiness.scales.map((scale, index) => {
+                                    // Use custom_price if available, otherwise calculate from multiplier
+                                    const amount = scale.custom_price || (selectedBusiness.basePrice * scale.multiplier);
+                                    const isSelected = selectedScale?.name === scale.name;
+                                    // Format scale name: add "Package" suffix for Lite, Standard, Full house and handle rebranding
+                                    const formatScaleName = (name: string) => {
+                                        if (name === 'Lite') return 'Bronze Package';
+                                        if (name === 'Standard') return 'Silver Package';
+                                        if (name === 'Full house' || name === 'Full House') return 'Gold Package';
 
-                        {/* Loan Duration Dropdown */}
-                        <div className="max-w-md mx-auto">
-                            <label htmlFor="loan-duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Select Loan Duration
-                            </label>
-                            <select
-                                id="loan-duration"
-                                value={selectedTermMonths || ''}
-                                onChange={handleTermDropdownChange}
-                                className="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all"
-                            >
-                                <option value="">Select duration</option>
-                                {creditTerms.map((term) => (
-                                    <option key={term.months} value={term.months}>
-                                        {term.months} months
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                                        const packageScales = ['Bronze Package', 'Silver Package', 'Gold Package'];
+                                        if (packageScales.includes(name)) {
+                                            return name; // Already correct
+                                        }
+                                        return name;
+                                    };
+                                    return (
+                                        <Card
+                                            key={index}
+                                            className={`cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg text-center ${isSelected ? 'border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
+                                            onClick={() => handleScaleSelect(scale)}
+                                        >
+                                            <h3 className="text-lg font-medium mb-2">{formatScaleName(scale.name)}</h3>
+                                            <div className="text-xl font-bold text-emerald-600 mb-2">
+                                                Cost: {formatCurrency(isZiG ? amount * ZIG_RATE : amount)}
+                                            </div>
+                                        </Card>
+                                    );
+                                })}
+                            </div>
 
-                        {/* Animated Loan Details Container */}
-                        {selectedTermMonths && (
-                            <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <Card className="p-6 border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20">
-                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                                        <Calendar className="h-5 w-5 text-emerald-600" />
-                                        Loan Details
-                                    </h3>
+                            {/* Package Description Slide-in for MicroBiz and Zimparks */}
+                            {selectedScale && (isMicroBiz || selectedBusiness.name === 'Zimparks Vacation Package') && (
+                                <div className="mt-8 animate-in slide-in-from-bottom-4 fade-in duration-500">
+                                    <Card className="p-6 border-emerald-200 bg-emerald-50/50 dark:bg-emerald-900/10">
+                                        <h3 className="text-lg font-semibold text-emerald-800 dark:text-emerald-400 mb-2">
+                                            Package Details
+                                        </h3>
+                                        <p className="text-gray-700 dark:text-gray-300 mb-6 text-lg">
+                                            {getPackageDescription(selectedBusiness.name, selectedScale.name)}
+                                        </p>
+                                        <div className="flex justify-end">
+                                            <Button
+                                                onClick={handleProceedToTerms}
+                                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
+                                            >
+                                                Continue
+                                                <ChevronRight className="ml-2 h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </Card>
+                                </div>
+                            )}
+                        </>
+                    )
+                }
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {/* Net Loan (Selling Price) */}
-                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Net Loan (selling price)</p>
-                                            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                                                {(() => {
-                                                    const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
-                                                    const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
-                                                    const netLoan = finalAmount + meSystemFee + trainingFee;
-                                                    return formatCurrency(netLoan);
-                                                })()}
-                                            </p>
+                {
+                    currentView === 'terms' && (
+                        <div className="space-y-6">
+                            {/* ME System and Training Options for MicroBiz */}
+                            {isMicroBiz && (
+                                <>
+                                    <Card className="p-6 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+                                        <div className="flex items-start gap-4">
+                                            <input
+                                                type="checkbox"
+                                                id="me-system"
+                                                checked={includesMESystem}
+                                                onChange={(e) => setIncludesMESystem(e.target.checked)}
+                                                className="mt-1 h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                            />
+                                            <div className="flex-1">
+                                                <label htmlFor="me-system" className="font-semibold text-lg cursor-pointer flex items-center gap-2">
+                                                    <Monitor className="h-5 w-5" />
+                                                    Add Monitoring & Evaluation System
+                                                </label>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                                    Track your business performance, monitor inventory, manage finances, and get business insights with our advanced M&E system.
+                                                </p>
+                                                <div className="mt-2 flex items-center gap-2">
+                                                    <span className="text-xl font-bold text-emerald-600">+{formatCurrency(finalAmount * ME_SYSTEM_PERCENTAGE)}</span>
+                                                    <span className="text-sm text-gray-500">(10% of selling price)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Card>
+
+                                    <Card className="p-6 bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
+                                        <div className="flex items-start gap-4">
+                                            <input
+                                                type="checkbox"
+                                                id="training"
+                                                checked={includesTraining}
+                                                onChange={(e) => setIncludesTraining(e.target.checked)}
+                                                className="mt-1 h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                            />
+                                            <div className="flex-1">
+                                                <label htmlFor="training" className="font-semibold text-lg cursor-pointer flex items-center gap-2">
+                                                    <GraduationCap className="h-5 w-5" />
+                                                    Add Technical and Business Management Training
+                                                </label>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                                    Get comprehensive training on technical skills and business management to help you succeed in your business venture.
+                                                </p>
+                                                <div className="mt-2 flex items-center gap-2">
+                                                    <span className="text-xl font-bold text-purple-600">+{formatCurrency(finalAmount * TRAINING_PERCENTAGE)}</span>
+                                                    <span className="text-sm text-gray-500">(5.5% of selling price)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Card>
+                                </>
+                            )}
+
+                            {/* Total Amount Display */}
+                            <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">New Selling Price</p>
+                                <p className="text-3xl font-bold text-emerald-600">
+                                    {formatCurrency((finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)) * 1.06)}
+                                </p>
+                                {(includesMESystem || includesTraining) && (
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Base Price: {formatCurrency(finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0))}
+                                        {includesMESystem && ` (incl. M&E)`}
+                                        {includesTraining && ` (incl. Training)`}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Loan Duration Dropdown */}
+                            <div className="max-w-md mx-auto">
+                                <label htmlFor="loan-duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Select Loan Duration
+                                </label>
+                                <select
+                                    id="loan-duration"
+                                    value={selectedTermMonths || ''}
+                                    onChange={handleTermDropdownChange}
+                                    className="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all"
+                                >
+                                    <option value="">Select duration</option>
+                                    {creditTerms.map((term) => (
+                                        <option key={term.months} value={term.months}>
+                                            {term.months} months
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Animated Loan Details Container */}
+                            {selectedTermMonths && (
+                                <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <Card className="p-6 border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20">
+                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                                            <Calendar className="h-5 w-5 text-emerald-600" />
+                                            Loan Details
+                                        </h3>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {/* Net Loan (Selling Price) */}
+                                            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Net Loan (selling price)</p>
+                                                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                                    {(() => {
+                                                        const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
+                                                        const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
+                                                        const netLoan = finalAmount + meSystemFee + trainingFee;
+                                                        return formatCurrency(netLoan);
+                                                    })()}
+                                                </p>
+                                            </div>
+
+                                            {/* Gross Loan */}
+                                            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">New Selling Price</p>
+                                                <p className="text-2xl font-bold text-emerald-600">
+                                                    {(() => {
+                                                        const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
+                                                        const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
+                                                        const netLoan = finalAmount + meSystemFee + trainingFee;
+                                                        const grossLoan = netLoan * 1.06;
+                                                        return formatCurrency(grossLoan);
+                                                    })()}
+                                                </p>
+                                            </div>
+
+                                            {/* Monthly Payment */}
+                                            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Monthly Payment</p>
+                                                <p className="text-2xl font-bold text-blue-600">
+                                                    {(() => {
+                                                        const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
+                                                        const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
+                                                        const netLoan = finalAmount + meSystemFee + trainingFee;
+                                                        const grossLoan = netLoan * 1.06;
+                                                        const interestRate = 0.96; // 96% annual
+                                                        const monthlyInterestRate = interestRate / 12;
+                                                        const monthlyPayment = grossLoan > 0
+                                                            ? (grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
+                                                            (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
+                                                            : 0;
+                                                        return formatCurrency(monthlyPayment);
+                                                    })()}
+                                                </p>
+                                            </div>
+
+                                            {/* First Payment */}
+                                            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">First Payment</p>
+                                                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                                    {(() => {
+                                                        const today = new Date();
+                                                        const firstPaymentDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+                                                        return firstPaymentDate.toLocaleDateString('en-US', {
+                                                            month: 'short',
+                                                            year: 'numeric'
+                                                        });
+                                                    })()}
+                                                </p>
+                                            </div>
                                         </div>
 
-                                        {/* Gross Loan */}
-                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">New Selling Price</p>
-                                            <p className="text-2xl font-bold text-emerald-600">
-                                                {(() => {
-                                                    const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
-                                                    const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
-                                                    const netLoan = finalAmount + meSystemFee + trainingFee;
-                                                    const grossLoan = netLoan * 1.06;
-                                                    return formatCurrency(grossLoan);
-                                                })()}
-                                            </p>
-                                        </div>
-
-                                        {/* Monthly Payment */}
-                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Monthly Payment</p>
-                                            <p className="text-2xl font-bold text-blue-600">
-                                                {(() => {
-                                                    const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
-                                                    const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
-                                                    const netLoan = finalAmount + meSystemFee + trainingFee;
-                                                    const grossLoan = netLoan * 1.06;
-                                                    const interestRate = 0.96; // 96% annual
-                                                    const monthlyInterestRate = interestRate / 12;
-                                                    const monthlyPayment = grossLoan > 0
-                                                        ? (grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
-                                                        (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
-                                                        : 0;
-                                                    return formatCurrency(monthlyPayment);
-                                                })()}
-                                            </p>
-                                        </div>
-
-                                        {/* First Payment */}
-                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">First Payment</p>
-                                            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                                {(() => {
+                                        {/* Additional Info */}
+                                        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                                            <p className="text-sm text-blue-800 dark:text-blue-300">
+                                                Loan Duration: {selectedTermMonths} months | Last Payment: {(() => {
                                                     const today = new Date();
-                                                    const firstPaymentDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-                                                    return firstPaymentDate.toLocaleDateString('en-US', {
+                                                    const lastPaymentDate = new Date(today.getFullYear(), today.getMonth() + selectedTermMonths, 1);
+                                                    return lastPaymentDate.toLocaleDateString('en-US', {
                                                         month: 'short',
                                                         year: 'numeric'
                                                     });
                                                 })()}
                                             </p>
                                         </div>
-                                    </div>
+                                    </Card>
+                                </div>
+                            )}
 
-                                    {/* Additional Info */}
-                                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                                        <p className="text-sm text-blue-800 dark:text-blue-300">
-                                            Loan Duration: {selectedTermMonths} months | Last Payment: {(() => {
-                                                const today = new Date();
-                                                const lastPaymentDate = new Date(today.getFullYear(), today.getMonth() + selectedTermMonths, 1);
-                                                return lastPaymentDate.toLocaleDateString('en-US', {
-                                                    month: 'short',
-                                                    year: 'numeric'
-                                                });
-                                            })()}
-                                        </p>
-                                    </div>
-                                </Card>
-                            </div>
-                        )}
-
-                        {/* Validation Error */}
-                        {validationError && (
-                            <div className="max-w-md mx-auto p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
-                                <p className="text-sm text-red-800 dark:text-red-300 font-medium">{validationError}</p>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
+                            {/* Validation Error */}
+                            {validationError && (
+                                <div className="max-w-md mx-auto p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <p className="text-sm text-red-800 dark:text-red-300 font-medium">{validationError}</p>
+                                </div>
+                            )}
+                        </div>
+                    )
+                }
+            </div >
 
             <div className="flex justify-between pt-4">
                 <Button
@@ -1039,6 +1311,17 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     <ArrowLeft className="h-4 w-4" />
                     Back
                 </Button>
+
+                {/* Cart Mode Done Button */}
+                {isCartMode && cart.length > 0 && currentView !== 'terms' && (
+                    <Button
+                        onClick={handleNext}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                        Proceed
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                )}
 
                 {currentView === 'terms' && (
                     <Button
@@ -1097,7 +1380,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     );
 };
 

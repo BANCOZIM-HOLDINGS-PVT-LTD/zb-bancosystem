@@ -222,10 +222,8 @@ const AccountVerification: React.FC<AccountVerificationProps> = ({ data, onNext,
                 <div className="space-y-6">
                     <div className="text-center">
                         <Building2 className="mx-auto h-12 w-12 text-blue-600 mb-4" />
-                        <h2 className="text-2xl font-semibold mb-2">Council Verification</h2>
-                        <p className="text-gray-600 dark:text-gray-400">
-                            Do you work for any of these councils?
-                        </p>
+                        <h2 className="text-2xl font-semibold mb-2">Which council listed below do you work for?</h2>
+                        {/* Subtext removed as per request */}
                     </div>
 
                     <Card className="p-6 max-h-[60vh] overflow-y-auto">

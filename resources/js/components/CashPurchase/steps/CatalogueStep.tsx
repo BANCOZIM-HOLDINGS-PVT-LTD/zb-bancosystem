@@ -36,7 +36,10 @@ const allowedZiGKeywords = [
     'Zimparks',
     'vacation',
     // Microbiz
-    'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries'
+    'Agriculture', // Allow full Agriculture category
+    'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries',
+    // Agricultural Mechanization specific items
+    'water storage', 'pumping system', 'maize sheller', 'irrigation', 'land security'
 ];
 
 export default function CatalogueStep({
@@ -194,16 +197,13 @@ export default function CatalogueStep({
                 }
             });
 
-            // Apply ZiG filtering
-            let finalProducts = allProducts;
-            if (currency === 'ZiG') {
-                finalProducts = allProducts.filter(p =>
-                    allowedZiGKeywords.some(k =>
-                        p.name.toLowerCase().includes(k.toLowerCase()) ||
-                        p.category.toLowerCase().includes(k.toLowerCase())
-                    )
-                );
-            }
+            // Apply filtering to match the approved list (same as ZiG loans) for ALL cash purchases
+            const finalProducts = allProducts.filter(p =>
+                allowedZiGKeywords.some(k =>
+                    p.name.toLowerCase().includes(k.toLowerCase()) ||
+                    p.category.toLowerCase().includes(k.toLowerCase())
+                )
+            );
 
             setProducts(finalProducts);
             setCategories(['all', ...categoryNames]);
@@ -244,7 +244,7 @@ export default function CatalogueStep({
         return Math.round(discount);
     };
 
-    // Cart Logic
+    // Shopping Basket Logic
     const addToCart = (product: Product) => {
         const existing = cart.find(item => item.id === product.id);
         if (existing) {
@@ -292,13 +292,13 @@ export default function CatalogueStep({
                         Add items to your cart. Cash prices are discounted!
                     </p>
                 </div>
-                {/* Floating Cart Trigger (Desktop) */}
+                {/* Floating Shopping Basket Trigger (Desktop) */}
                 <Button
                     onClick={() => setIsCartOpen(true)}
                     className="hidden md:flex bg-emerald-600 hover:bg-emerald-700 relative"
                 >
                     <ShoppingCart className="w-5 h-5 mr-2" />
-                    Cart ({cart.reduce((a, c) => a + c.quantity, 0)})
+                    Shopping Basket ({cart.reduce((a, c) => a + c.quantity, 0)})
                     {cart.length > 0 && <span className="ml-2 font-mono">{formatCurrency(cartTotal)}</span>}
                 </Button>
             </div>
@@ -385,7 +385,7 @@ export default function CatalogueStep({
                                         </div>
                                     ) : (
                                         <Button size="sm" onClick={() => addToCart(product)} className="bg-emerald-600 hover:bg-emerald-700">
-                                            <Plus className="w-4 h-4 mr-1" /> Add
+                                            <Plus className="w-4 h-4 mr-1" /> Add to Basket
                                         </Button>
                                     )}
                                 </div>
@@ -395,7 +395,7 @@ export default function CatalogueStep({
                 })}
             </div>
 
-            {/* Cart Drawer / Slide-over */}
+            {/* Shopping Basket Drawer / Slide-over */}
             {isCartOpen && (
                 <div className="fixed inset-0 z-50 flex justify-end">
                     <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsCartOpen(false)} />
@@ -404,7 +404,7 @@ export default function CatalogueStep({
                         <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
                             <h3 className="font-bold text-lg flex items-center">
                                 <ShoppingCart className="w-5 h-5 mr-2 text-emerald-600" />
-                                Your Cart ({cart.reduce((a, c) => a + c.quantity, 0)})
+                                Your Shopping Basket ({cart.reduce((a, c) => a + c.quantity, 0)})
                             </h3>
                             <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full">
                                 <X className="w-5 h-5" />

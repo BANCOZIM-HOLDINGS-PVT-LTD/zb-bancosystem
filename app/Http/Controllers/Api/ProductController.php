@@ -75,11 +75,25 @@ class ProductController extends Controller
                         $colors = is_string($product->colors) ? json_decode($product->colors, true) : $product->colors;
                     }
 
+                    // Parse interior and exterior colors
+                    $interiorColors = null;
+                    if (isset($product->interior_colors) && $product->interior_colors) {
+                        $interiorColors = is_string($product->interior_colors) ? json_decode($product->interior_colors, true) : $product->interior_colors;
+                    }
+                    $exteriorColors = null;
+                    if (isset($product->exterior_colors) && $product->exterior_colors) {
+                        $exteriorColors = is_string($product->exterior_colors) ? json_decode($product->exterior_colors, true) : $product->exterior_colors;
+                    }
+
                     $productData = [
+                        'id' => $product->id,
                         'name' => $product->name,
                         'basePrice' => (float) $product->base_price,
                         'imageUrl' => $imageUrl,
+                        'description' => $product->description ?? null,
                         'colors' => $colors,
+                        'interiorColors' => $interiorColors,
+                        'exteriorColors' => $exteriorColors,
                         'scales' => [],
                     ];
 
@@ -359,12 +373,25 @@ class ProductController extends Controller
                             ];
                         })->toArray(),
                         'businesses' => $directProducts->map(function ($product) {
+                            // Parse interior and exterior colors
+                            $interiorColors = null;
+                            if ($product->interior_colors) {
+                                $interiorColors = is_string($product->interior_colors) ? json_decode($product->interior_colors, true) : $product->interior_colors;
+                            }
+                            $exteriorColors = null;
+                            if ($product->exterior_colors) {
+                                $exteriorColors = is_string($product->exterior_colors) ? json_decode($product->exterior_colors, true) : $product->exterior_colors;
+                            }
+
                             return [
                                 'id' => $product->id,
                                 'name' => $product->name,
                                 'basePrice' => (float) $product->base_price,
                                 'image_url' => $product->image_url,
+                                'description' => $product->description,
                                 'colors' => $product->colors,
+                                'interiorColors' => $interiorColors,
+                                'exteriorColors' => $exteriorColors,
                                 'scales' => $product->packageSizes->map(function ($size) {
                                     return [
                                         'id' => $size->id,

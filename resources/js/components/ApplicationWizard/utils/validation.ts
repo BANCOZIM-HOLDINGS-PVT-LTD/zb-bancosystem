@@ -359,39 +359,65 @@ export const validateProductStep = (data: Partial<WizardData>): ValidationResult
   const errors: ValidationError[] = [];
   const fieldErrors: Record<string, string> = {};
 
-  const productFields = [
-    {
-      field: 'category',
-      rules: [
-        { rule: 'required', message: 'Please select a product category' }
-      ]
-    },
-    {
-      field: 'subcategory',
-      rules: [
-        { rule: 'required', message: 'Please select a product subcategory' }
-      ]
-    },
-    {
-      field: 'business',
-      rules: [
-        { rule: 'required', message: 'Please select a business' }
-      ]
-    },
-    {
-      field: 'scale',
-      rules: [
-        { rule: 'required', message: 'Please select a scale' }
-      ]
-    },
-    {
-      field: 'amount',
-      rules: [
-        { rule: 'required', message: 'Please enter an amount' },
-        { rule: 'minValue', params: 1, message: 'Amount must be greater than 0' }
-      ]
-    }
-  ];
+  // Check if in Cart Mode (Building Materials)
+  const isCartMode = data.cart && Array.isArray(data.cart) && data.cart.length > 0;
+
+  // Define fields to validate based on mode
+  let productFields: Array<{ field: string; rules: Array<{ rule: string; params?: any; message: string }> }>;
+
+  if (isCartMode) {
+    // In Cart Mode, only validate category, amount, and creditTerm
+    productFields = [
+      {
+        field: 'category',
+        rules: [
+          { rule: 'required', message: 'Please select a product category' }
+        ]
+      },
+      {
+        field: 'amount',
+        rules: [
+          { rule: 'required', message: 'Please enter an amount' },
+          { rule: 'minValue', params: 1, message: 'Amount must be greater than 0' }
+        ]
+      }
+    ];
+  } else {
+    // Standard Mode: validate all single-product fields
+    productFields = [
+      {
+        field: 'category',
+        rules: [
+          { rule: 'required', message: 'Please select a product category' }
+        ]
+      },
+      {
+        field: 'subcategory',
+        rules: [
+          { rule: 'required', message: 'Please select a product subcategory' }
+        ]
+      },
+      {
+        field: 'business',
+        rules: [
+          { rule: 'required', message: 'Please select a business' }
+        ]
+      },
+      {
+        field: 'scale',
+        rules: [
+          { rule: 'required', message: 'Please select a scale' }
+        ]
+      },
+      {
+        field: 'amount',
+        rules: [
+          { rule: 'required', message: 'Please enter an amount' },
+          { rule: 'minValue', params: 1, message: 'Amount must be greater than 0' }
+        ]
+      }
+    ];
+  }
 
   productFields.forEach(({ field, rules }) => {
     const value = data[field as keyof WizardData];

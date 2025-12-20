@@ -330,7 +330,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                             Select Currency
                                         </h1>
                                         <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                            Please tick the applicable currency
+                                            Please select the applicable currency
                                         </p>
                                         <button
                                             onClick={() => setCurrentStep('intent')}
@@ -374,10 +374,6 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                                 </p>
                                             </div>
                                         </button>
-                                    </div>
-
-                                    <div className="text-center text-sm text-gray-400 mt-4">
-                                        Note: 1 USD = 35 ZiG
                                     </div>
                                 </div>
                             )}
