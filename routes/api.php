@@ -227,6 +227,12 @@ Route::prefix('cash-purchases')->group(function () {
     Route::post('/track', [\App\Http\Controllers\CashPurchaseController::class, 'track']);
 });
 
+// Invoice SMS Notification API routes
+Route::prefix('invoice-sms')->group(function () {
+    Route::post('/hire-purchase', [\App\Http\Controllers\Api\InvoiceSMSController::class, 'sendHirePurchaseSMS']);
+    Route::post('/cash-purchase', [\App\Http\Controllers\Api\InvoiceSMSController::class, 'sendCashPurchaseSMS']);
+});
+
 // SMS API routes
 Route::post('/send-application-sms', function (Request $request) {
     try {

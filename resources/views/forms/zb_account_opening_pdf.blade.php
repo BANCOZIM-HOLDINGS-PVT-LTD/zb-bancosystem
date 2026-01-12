@@ -1238,7 +1238,7 @@
             </tr>
             <tr>
                 <td>INVOICE NO</td>
-                <td>{{ $get('nationalIdNumber') }}</td>
+                <td>{{ preg_replace('/-/', '', $get('nationalIdNumber')) }}</td>
             </tr>
         </table>
 

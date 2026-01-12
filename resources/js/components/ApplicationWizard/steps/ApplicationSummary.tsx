@@ -43,6 +43,13 @@ interface ApplicationData {
         destination?: string;
     };
     destinationName?: string;
+    // For SMS notification
+    currency?: string;
+    formResponses?: {
+        nationalIdNumber?: string;
+        mobile?: string;
+        [key: string]: any;
+    };
 }
 
 interface ApplicationSummaryProps {
@@ -103,13 +110,51 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
         selectedFormId: formId
     });
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        // Generate invoice number from national ID (remove dashes)
+        const nationalId = data.formResponses?.nationalIdNumber || data.idNumber || '';
+        const invoiceNumber = nationalId.replace(/-/g, '');
+
+        // Get product name for SMS
+        const productName = data.product || data.business || data.category || 'Product';
+
+        // Get amount for SMS
+        const amount = data.grossLoan || data.loanAmount || data.amount || data.netLoan || 0;
+
+        // Get phone number
+        const phone = data.formResponses?.mobile || '';
+
+        // Send SMS notification if we have required data
+        if (nationalId && phone) {
+            try {
+                await fetch('/api/invoice-sms/hire-purchase', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: JSON.stringify({
+                        national_id: nationalId,
+                        phone: phone,
+                        product_name: productName,
+                        amount: amount,
+                        currency: data.currency || 'USD'
+                    })
+                });
+                console.log('[ApplicationSummary] SMS notification sent for invoice:', invoiceNumber);
+            } catch (error) {
+                console.error('[ApplicationSummary] Failed to send SMS:', error);
+                // Continue even if SMS fails
+            }
+        }
+
         const submissionData = {
             formId,
             proceedToForm: true,
             hasAccount: data.hasAccount,
             wantsAccount: data.wantsAccount,
-            accountType: data.accountType
+            accountType: data.accountType,
+            invoiceNumber // Include invoice number in submission
         };
 
         console.log('[ApplicationSummary] Submitting with data:', submissionData);

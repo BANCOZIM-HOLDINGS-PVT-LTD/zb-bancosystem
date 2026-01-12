@@ -143,8 +143,38 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleProceedToPayment = () => {
+    const handleProceedToPayment = async () => {
         if (validateCustomerInfo()) {
+            // Generate invoice number from national ID (remove dashes)
+            const invoiceNumber = nationalId.replace(/-/g, '');
+
+            // Get product names for SMS
+            const productNames = cart.map(item => item.name).join(', ');
+
+            // Send SMS notification
+            if (nationalId && phone) {
+                try {
+                    await fetch('/api/invoice-sms/cash-purchase', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                        },
+                        body: JSON.stringify({
+                            national_id: nationalId,
+                            phone: phone,
+                            product_name: productNames || 'Items',
+                            amount: totalAmount,
+                            currency: 'USD'
+                        })
+                    });
+                    console.log('[CheckoutStep] SMS notification sent for invoice:', invoiceNumber);
+                } catch (error) {
+                    console.error('[CheckoutStep] Failed to send SMS:', error);
+                    // Continue even if SMS fails
+                }
+            }
+
             setShowPaymentForm(true);
         }
     };

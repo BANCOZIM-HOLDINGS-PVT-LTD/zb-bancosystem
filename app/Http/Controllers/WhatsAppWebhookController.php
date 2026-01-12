@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use App\Services\WhatsAppConversationService;
 use App\Services\ReferenceCodeService;
 use App\Services\StateManager;
@@ -61,11 +62,24 @@ class WhatsAppWebhookController extends Controller
              ?? $request->input('text', '');
         
         $numMedia = (int) $request->input('NumMedia', 0);
+        $numMedia = (int) $request->input('NumMedia', 0);
         $messageSid = $request->input('MessageSid');
 
         if (empty($from)) {
             Log::warning('WhatsApp webhook received without sender number');
             return response()->json(['status' => 'error', 'message' => 'Missing sender number'], 400);
+        }
+
+        // Idempotency Check: Prevent duplicate processing of the same message (Twilio retries)
+        if ($messageSid) {
+            $cacheKey = 'whatsapp_msg_' . $messageSid;
+            if (Cache::has($cacheKey)) {
+                Log::info("WhatsApp: Duplicate message ignored", ['sid' => $messageSid]);
+                // Return 200 OK immediately to stop Twilio from retrying further
+                return response()->json(['status' => 'ok', 'duplicate' => true], 200);
+            }
+            // Store MessageSid for 24 hours
+            Cache::put($cacheKey, true, 86400);
         }
 
         // Format the from number for consistency
@@ -124,11 +138,14 @@ class WhatsAppWebhookController extends Controller
         try {
             $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
             
-            // Get current state
-            $state = $this->stateManager->retrieveState('whatsapp_' . $phoneNumber, 'whatsapp');
+            // Get current state - Corrected to use phoneNumber instead of session ID string
+            $state = $this->stateManager->retrieveState($phoneNumber, 'whatsapp');
             
             if (!$state) {
-                Log::warning('Media message received but no active session', ['from' => $from]);
+                Log::warning('Media message received but no active session found', [
+                    'from' => $from,
+                    'phone_lookup' => $phoneNumber
+                ]);
                 $this->whatsAppService->sendMessage($from, "Please start a conversation first by sending 'Hi' or 'Hello'.");
                 return response()->json(['status' => 'ok'], 200);
             }
@@ -537,13 +554,13 @@ class WhatsAppWebhookController extends Controller
     {
         Log::info('WhatsApp status update received', $request->all());
         
-        // Extract status information from RapiWha payload
-        $messageId = $request->input('message_id') ?? $request->input('MessageId');
-        $status = $request->input('status') ?? $request->input('MessageStatus');
-        $to = $request->input('number') ?? $request->input('To');
+        // Extract status information from Twilio payload
+        $messageSid = $request->input('MessageSid');
+        $status = $request->input('MessageStatus') ?? $request->input('SmsStatus'); // Twilio sends MessageStatus or SmsStatus
+        $to = $request->input('To');
         
         // Log the status for monitoring
-        Log::info("Message {$messageId} to {$to} status: {$status}");
+        Log::info("Twilio Message {$messageSid} to {$to} status: {$status}");
         
         return response()->json(['status' => 'ok'], 200);
     }

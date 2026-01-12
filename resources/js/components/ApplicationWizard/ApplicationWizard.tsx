@@ -26,6 +26,7 @@ export interface WizardData {
     referenceCode?: string;
     referenceCodeGeneratedAt?: string;
     resumeCode?: string; // For resuming applications
+    invoiceNumber?: string; // National ID without dashes - used as invoice number
 
     // Product selection data
     category?: string;

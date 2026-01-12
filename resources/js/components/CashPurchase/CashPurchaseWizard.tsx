@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { router, usePage } from '@inertiajs/react';
-import { ChevronLeft, CheckCircle, ShoppingBasket, Truck, FileText, CreditCard, Package } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 
 // Step components
 import CatalogueStep from './steps/CatalogueStep';
@@ -65,6 +65,7 @@ export interface CashPurchaseData {
         paymentReference?: string;
         paymentStatus?: 'pending' | 'success' | 'failed';
     };
+    invoiceNumber?: string; // National ID without dashes - used as invoice number
 }
 
 interface CashPurchaseWizardProps {
@@ -76,10 +77,10 @@ interface CashPurchaseWizardProps {
 type StepType = 'catalogue' | 'delivery' | 'summary' | 'checkout';
 
 const steps = [
-    { id: 'catalogue', name: 'Select Product', icon: ShoppingBasket },
-    { id: 'delivery', name: 'Delivery Details', icon: Truck },
-    { id: 'summary', name: 'Review Order', icon: FileText },
-    { id: 'checkout', name: 'Payment', icon: CreditCard },
+    { id: 'catalogue', name: 'Select Product' },
+    { id: 'delivery', name: 'Delivery Details' },
+    { id: 'summary', name: 'Review Order' },
+    { id: 'checkout', name: 'Payment' },
 ];
 
 export default function CashPurchaseWizard({ purchaseType, language = 'en', currency = 'USD' }: CashPurchaseWizardProps) {
@@ -300,89 +301,25 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en', curr
     };
 
     return (
-        <div className="min-h-screen py-8 px-4 lg:px-8">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
+        <div className="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a]">
+            <div className="mx-auto max-w-4xl px-4 py-8">
+                {/* Progress Bar - ApplicationWizard style */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-[#1b1b18] dark:text-[#EDEDEC] mb-2">
-                        Buy with Cash - {purchaseType === 'personal' ? 'Personal Products' : 'MicroBiz Starter Pack'}
-                    </h1>
-                    <p className="text-[#706f6c] dark:text-[#A1A09A]">
-                        Complete your purchase in a few simple steps
-                    </p>
-                </div>
-
-                {/* Progress Steps */}
-                <div className="mb-8">
-                    <div className="flex items-center justify-between">
-                        {steps.map((step, index) => {
-                            const Icon = step.icon;
-                            const isActive = step.id === currentStep;
-                            const isCompleted = getCurrentStepIndex() > index;
-
-                            return (
-                                <div key={step.id} className="flex-1 flex items-center">
-                                    <div className="flex flex-col items-center flex-1">
-                                        <div
-                                            className={`
-                                                w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all
-                                                ${isActive
-                                                    ? 'bg-emerald-600 text-white shadow-lg scale-110'
-                                                    : isCompleted
-                                                        ? 'bg-emerald-500 text-white'
-                                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                                                }
-                                            `}
-                                        >
-                                            {isCompleted ? (
-                                                <CheckCircle className="h-6 w-6" />
-                                            ) : (
-                                                <Icon className="h-6 w-6" />
-                                            )}
-                                        </div>
-                                        <span
-                                            className={`
-                                                text-sm font-medium text-center
-                                                ${isActive
-                                                    ? 'text-emerald-600 dark:text-emerald-400'
-                                                    : isCompleted
-                                                        ? 'text-emerald-500 dark:text-emerald-400'
-                                                        : 'text-gray-500 dark:text-gray-400'
-                                                }
-                                            `}
-                                        >
-                                            {step.name}
-                                        </span>
-                                    </div>
-                                    {index < steps.length - 1 && (
-                                        <div
-                                            className={`
-                                                flex-1 h-1 mx-4 rounded transition-all
-                                                ${isCompleted
-                                                    ? 'bg-emerald-500'
-                                                    : 'bg-gray-200 dark:bg-gray-700'
-                                                }
-                                            `}
-                                        />
-                                    )}
-                                </div>
-                            );
-                        })}
+                    <div className="flex h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+                        <div
+                            className="transition-all duration-500 bg-emerald-600"
+                            style={{ width: `${((getCurrentStepIndex() + 1) / steps.length) * 100}%` }}
+                        />
+                    </div>
+                    <div className="flex justify-between mt-2 text-xs text-gray-500">
+                        <span>Step {getCurrentStepIndex() + 1} of {steps.length}</span>
+                        <span>{steps[getCurrentStepIndex()].name}</span>
                     </div>
                 </div>
 
                 {/* Step Content */}
-                <div className="bg-white dark:bg-[#161615] rounded-lg shadow-lg p-6 lg:p-8">
+                <div className="bg-white dark:bg-[#161615] rounded-lg shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d] p-6 lg:p-8">
                     {renderStep()}
-                </div>
-
-                {/* Help Text */}
-                <div className="mt-6 text-center text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                    <Package className="h-4 w-4 inline mr-1" />
-                    Need help? Contact our support team at{' '}
-                    <a href="tel:+263772000000" className="text-emerald-600 hover:text-emerald-700">
-                        +263 77 200 0000
-                    </a>
                 </div>
             </div>
         </div>

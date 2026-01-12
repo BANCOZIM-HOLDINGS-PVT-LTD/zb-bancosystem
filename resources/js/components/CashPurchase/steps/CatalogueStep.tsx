@@ -244,12 +244,18 @@ export default function CatalogueStep({
         return Math.round(discount);
     };
 
-    // Shopping Basket Logic
+    // Shopping Basket Logic - Max 3 distinct items allowed
     const addToCart = (product: Product) => {
         const existing = cart.find(item => item.id === product.id);
         if (existing) {
+            // Allow quantity increase on existing items
             updateQuantity(product.id, existing.quantity + 1);
         } else {
+            // Check if cart already has 3 distinct items
+            if (cart.length >= 3) {
+                alert('You can only add up to 3 different items to your cart. Remove an item to add a new one.');
+                return;
+            }
             onUpdateCart([...cart, { ...product, quantity: 1 }]);
         }
         setIsCartOpen(true);
