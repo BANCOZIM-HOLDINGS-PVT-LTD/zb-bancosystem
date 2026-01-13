@@ -105,6 +105,21 @@ class StateController extends Controller
             // Generate a proper user identifier for submission
             $userIdentifier = $this->getUserIdentifierForSubmission($request, $validated['data']);
 
+            // Update user's National ID if authenticated and missing
+            if (\Illuminate\Support\Facades\Auth::check()) {
+                $user = \Illuminate\Support\Facades\Auth::user();
+                if (empty($user->national_id)) {
+                    $nationalId = $validated['data']['formResponses']['nationalIdNumber'] ?? null;
+                    if ($nationalId && is_string($nationalId)) {
+                        // Clean and format the ID if needed, or just save as is
+                        // Using the same format typically expected: XX-XXXXXXX-Y-XX
+                        // We might want to run it through validator or formatter if available, 
+                        // but sticking to raw input from form which should optionally be validated on frontend
+                        $user->update(['national_id' => $nationalId]);
+                    }
+                }
+            }
+
             // Update the application state to completed
             $state = $this->stateManager->saveState(
                 $validated['sessionId'],

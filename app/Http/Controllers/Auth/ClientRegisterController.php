@@ -35,12 +35,6 @@ class ClientRegisterController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'national_id' => [
-                'required',
-                'string',
-                'regex:/^[0-9]{2}-[0-9]{6,7}-[A-Z]-[0-9]{2}$/', // Zimbabwe National ID format: XX-XXXXXXX-Y-XX
-                'unique:users,national_id'
-            ],
             'phone' => [
                 'required',
                 'string',
@@ -48,8 +42,6 @@ class ClientRegisterController extends Controller
                 'unique:users,phone'
             ],
         ], [
-            'national_id.regex' => 'Please enter a valid Zimbabwe National ID (e.g., 08-2047823-Q-29)',
-            'national_id.unique' => 'This National ID is already registered',
             'phone.regex' => 'Please enter a valid Zimbabwe phone number (e.g., +263771234567)',
             'phone.unique' => 'This phone number is already registered',
         ]);
@@ -60,7 +52,6 @@ class ClientRegisterController extends Controller
 
         // Create user without password (will be set during OTP verification)
         $user = User::create([
-            'national_id' => $request->national_id,
             'phone' => $request->phone,
             'name' => '', // Will be updated later during application
         ]);

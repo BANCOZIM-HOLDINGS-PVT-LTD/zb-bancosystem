@@ -1,6 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler, useState } from 'react';
+import { FormEventHandler } from 'react';
 
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -8,22 +8,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
-import { validateZimbabweanID } from '@/utils/zimbabwean-id-validator';
 import { countryCodes } from '@/data/countryCodes';
 import CountryCodeSelect from '@/components/ui/country-code-select';
 
 type ClientRegisterForm = {
-    national_id: string;
     phone: string;
 };
 
 export default function ClientRegister() {
     const { data, setData, post, processing, errors, reset } = useForm<Required<ClientRegisterForm>>({
-        national_id: '',
         phone: '+263', // Default country code
     });
-
-    const [idValidationError, setIdValidationError] = useState<string>('');
 
     // Helper to extract dial code from phone number
     const getDialCode = (phone: string) => {
@@ -39,129 +34,19 @@ export default function ClientRegister() {
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
-        // Validate ID before submitting
-        const validation = validateZimbabweanID(data.national_id);
-        if (!validation.valid) {
-            setIdValidationError(validation.message || 'Invalid National ID');
-            return;
-        }
-
         post(route('client.register'), {
             onFinish: () => reset('phone'),
         });
     };
 
-    const formatNationalId = (value: string) => {
-        // Remove any non-alphanumeric characters
-        const cleaned = value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
-
-        // Format logic to handle both 6 and 7 digit middle sections
-        // We'll rely on the validator for final correctness, here we just try to insert dashes intelligently
-
-        let formatted = '';
-        if (cleaned.length <= 2) {
-            formatted = cleaned;
-        } else {
-            // First 2 digits
-            formatted = cleaned.slice(0, 2) + '-';
-
-            // The rest
-            const rest = cleaned.slice(2);
-
-            if (rest.length > 0) {
-                // Try to find the letter which marks the end of the middle section
-                const letterMatch = rest.match(/[A-Z]/);
-
-                if (letterMatch && letterMatch.index !== undefined) {
-                    // Digits before letter
-                    const middleDigits = rest.slice(0, letterMatch.index);
-                    // The letter
-                    const letter = rest[letterMatch.index];
-                    // Digits after letter
-                    const endDigits = rest.slice(letterMatch.index + 1);
-
-                    formatted += middleDigits + '-' + letter;
-
-                    if (endDigits.length > 0) {
-                        formatted += '-' + endDigits.slice(0, 2);
-                    }
-                } else {
-                    // No letter yet, just dump the rest
-                    formatted += rest;
-                }
-            }
-        }
-
-        return formatted;
-    };
-
-    const handleNationalIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const formatted = formatNationalId(e.target.value);
-        setData('national_id', formatted);
-
-        // Real-time validation
-        if (formatted.length >= 11) {
-            const validation = validateZimbabweanID(formatted);
-            if (!validation.valid) {
-                setIdValidationError(validation.message || 'Invalid National ID');
-            } else {
-                setIdValidationError('');
-            }
-        } else {
-            setIdValidationError('');
-        }
-    };
-
-    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value;
-
-        // Ensure it starts with +263
-        if (!value.startsWith('+263')) {
-            value = '+263';
-        }
-
-        // Remove any non-digit characters except the leading +
-        value = '+263' + value.slice(4).replace(/\D/g, '');
-
-        // Limit to 13 characters (+263 + 9 digits)
-        if (value.length > 13) {
-            value = value.slice(0, 13);
-        }
-
-        setData('phone', value);
-    };
-
     return (
         <AuthLayout
             title="Register"
-            description="Enter your Zimbabwean National ID and phone number to register"
+            description="Enter your phone number to register"
         >
             <Head title="Register" />
             <form className="flex flex-col gap-6" onSubmit={submit}>
                 <div className="grid gap-6">
-                    <div className="grid gap-2">
-                        <Label htmlFor="national_id">National ID</Label>
-                        <Input
-                            id="national_id"
-                            type="text"
-                            required
-                            autoFocus
-                            tabIndex={1}
-                            value={data.national_id}
-                            onChange={handleNationalIdChange}
-                            disabled={processing}
-                            placeholder="08-2047823-Q-29"
-                            maxLength={15}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Format: XX-XXXXXXX-Y-XX (e.g., 08-2047823-Q-29)
-                        </p>
-                        {idValidationError && (
-                            <p className="text-xs text-destructive">{idValidationError}</p>
-                        )}
-                        <InputError message={errors.national_id} />
-                    </div>
-
                     <div className="grid gap-2">
                         <Label htmlFor="phone">Phone Number</Label>
                         <div className="flex gap-2">

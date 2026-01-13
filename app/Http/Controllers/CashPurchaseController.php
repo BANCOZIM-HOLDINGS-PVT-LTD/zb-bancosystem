@@ -100,6 +100,14 @@ class CashPurchaseController extends Controller
                 ], 422);
             }
 
+            // Update user's National ID if authenticated and missing
+            if (\Illuminate\Support\Facades\Auth::check()) {
+                $user = \Illuminate\Support\Facades\Auth::user();
+                if (empty($user->national_id)) {
+                    $user->update(['national_id' => $idValidation['formatted']]);
+                }
+            }
+
             // Calculate totals
             $itemsTotal = 0;
             $items = $data['items'];
