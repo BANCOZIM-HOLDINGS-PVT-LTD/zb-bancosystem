@@ -18,7 +18,7 @@ interface CartItem extends Product {
 }
 
 interface CatalogueStepProps {
-    purchaseType: 'personal' | 'microbiz';
+    purchaseType: 'personal' | 'microbiz' | string;
     cart: CartItem[];
     onUpdateCart: (cart: CartItem[]) => void;
     onNext: () => void;
@@ -70,7 +70,29 @@ export default function CatalogueStep({
         setLoading(true);
         try {
             // Get products based on purchase type
-            const intent = purchaseType === 'personal' ? 'hirePurchase' : 'microBiz';
+            let intent = purchaseType;
+            if (purchaseType === 'personal') intent = 'personalGadgets';
+            if (purchaseType === 'microbiz') intent = 'microBiz';
+
+            let intentKeywords: string[] = [];
+            switch (intent) {
+                case 'microBiz':
+                case 'microbiz':
+                    intentKeywords = ['Agriculture', 'Agricultural', 'Fertilizer', 'Seed', 'Chemicals', 'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries', 'Business', 'Maize', 'Irrigation', 'Water', 'Pumping', 'Planter', 'Sheller', 'Banking', 'Agency', 'POS', 'Purification', 'Refill', 'Cleaning', 'Beauty', 'Hair', 'Cosmetics', 'Food', 'Butchery', 'Events', 'Snack', 'Entertainment', 'Printing', 'Digital', 'Multimedia', 'Tailoring', 'Construction', 'Mining', 'Retailing', 'Delivery', 'Vehicle', 'Photocopying'];
+                    break;
+                case 'homeConstruction':
+                    intentKeywords = ['Building', 'Cement', 'Roofing', 'Plumbing', 'Hardware', 'Paint', 'Timber', 'Electrical', 'Tank', 'Brick', 'Door', 'Window', 'Construction', 'Solar', 'Tile', 'Glass', 'Steel', 'Core', 'House', 'Durawall', 'Gate', 'Fence', 'Mesh', 'Wall'];
+                    break;
+                case 'personalServices':
+                    intentKeywords = ['Nurse', 'License', 'Holiday', 'School', 'Fees', 'Vacation', 'Travel', 'Tourism', 'Clinic', 'Zimparks', 'Driving', 'Business', 'Consultancy', 'Aid', 'Support'];
+                    break;
+                case 'personalGadgets':
+                case 'personal':
+                default:
+                    intentKeywords = ['Phone', 'Laptop', 'TV', 'Fridge', 'Stove', 'Bed', 'Sofa', 'Furniture', 'Solar', 'Appliance', 'Techno', 'Redmi', 'Samsung', 'Gadget', 'Computer', 'Radio', 'Audio', 'Freezer', 'Microwave', 'Kettle', 'Iron', 'Starlink', 'Internet', 'Satellite', 'Kit', 'Agriculture', 'Fertilizer', 'Seed'];
+                    break;
+            }
+
             const categoriesData = await productService.getProductCategories(intent);
 
             // Flatten products from all categories and add cash pricing
@@ -197,16 +219,18 @@ export default function CatalogueStep({
                 }
             });
 
-            // Apply filtering to match the approved list (same as ZiG loans) for ALL cash purchases
+            // Apply filtering to match the intent
             const finalProducts = allProducts.filter(p =>
-                allowedZiGKeywords.some(k =>
+                intentKeywords.some(k =>
                     p.name.toLowerCase().includes(k.toLowerCase()) ||
                     p.category.toLowerCase().includes(k.toLowerCase())
                 )
             );
 
             setProducts(finalProducts);
-            setCategories(['all', ...categoryNames]);
+            // Extract unique categories from final products for the filter UI
+            const uniqueCategories = Array.from(new Set(finalProducts.map(p => p.category)));
+            setCategories(['all', ...uniqueCategories]);
         } catch (error) {
             console.error('Failed to load products:', error);
         } finally {

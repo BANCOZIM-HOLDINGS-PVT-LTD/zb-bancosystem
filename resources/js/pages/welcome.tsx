@@ -1,7 +1,7 @@
 import { type SharedData } from '@/types';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
-import { Globe, CreditCard, Briefcase, FileText, Package, ChevronRight, User, DollarSign, ShoppingBag } from 'lucide-react';
+import { Globe, CreditCard, Briefcase, FileText, Package, ChevronRight, User, DollarSign, ShoppingBag, Banknote, Hammer, GraduationCap, Laptop, Home } from 'lucide-react';
 
 interface WelcomeProps {
     hasApplications: boolean;
@@ -11,21 +11,49 @@ interface WelcomeProps {
     agentName?: string;
 }
 
+// Define the 4 main product/service categories
+const PRODUCT_INTENTS = [
+    {
+        id: 'microBiz',
+        name: 'MicroBiz',
+        description: 'Small Business Starter Pack',
+        icon: Briefcase,
+    },
+    {
+        id: 'homeConstruction',
+        name: 'Home Construction',
+        description: 'Building materials, hardware, and improvement',
+        icon: Hammer,
+    },
+    {
+        id: 'personalServices',
+        name: 'Personal Services',
+        description: 'Nurse Aid, Driving License, Holiday, School Fees, Business Support',
+        icon: GraduationCap,
+    },
+    {
+        id: 'personalGadgets',
+        name: 'Personal Products',
+        description: 'Gadgets, Furniture, Solar Products',
+        icon: Laptop,
+    }
+];
+
 export default function Welcome({ hasApplications, hasCompletedApplications, referralCode, agentId, agentName }: WelcomeProps) {
     const { auth } = usePage<SharedData>().props;
 
-    // If user is authenticated, skip directly to intent selection
-    // Otherwise, start with language selection
+    // Steps: language -> auth -> paymentMode -> intent -> currency
     const getInitialStep = () => {
         if (auth.user) {
-            return 'intent';
+            return 'paymentMode';
         }
         return 'language';
     };
 
-    const [currentStep, setCurrentStep] = useState<'language' | 'auth' | 'intent' | 'currency'>(getInitialStep());
+    const [currentStep, setCurrentStep] = useState<'language' | 'auth' | 'paymentMode' | 'intent' | 'currency'>(getInitialStep());
     const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
     const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
+    const [paymentMode, setPaymentMode] = useState<'cash' | 'credit' | null>(null);
     const [lastSelectedIntent, setLastSelectedIntent] = useState<string | null>(null);
 
     const languages = [
@@ -34,47 +62,14 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
         { code: 'nd', name: 'Ndebele', greeting: 'Ngiyakwemukela kuZB Bank' }
     ];
 
-    // All possible intents
-    const allIntents = [
-        {
-            id: 'hirePurchase',
-            name: 'Buy on Credit___________ (Hire Purchase)_________ Personal Products_______',
-            icon: CreditCard,
-            description: 'Get credit for phones, furniture, appliances and more',
-            route: 'application.wizard',
-            forNewUsers: true,  // Show only for new users
-        },
-        {
-            id: 'microBiz',
-            name: 'Buy on Credit________ Business Starter Pack (MicroBiz)__________',
-            icon: Briefcase,
-            description: 'A jump start into the world of entrepreneurship',
-            route: 'application.wizard',
-            forNewUsers: true,  // Show only for new users
-        },
-        {
-            id: 'cashPurchasePersonal',
-            name: 'Buy with Cash - Personal Products',
-            icon: ShoppingBag,
-            description: 'Purchase products directly with cash payment via Paynow',
-            route: 'cash.purchase',
-            forNewUsers: true,  // Show only for new users
-        },
-        {
-            id: 'cashPurchaseMicroBiz',
-            name: 'Buy with Cash - MicroBiz Starter Pack',
-            icon: DollarSign,
-            description: 'Get your business started with an instant cash purchase',
-            route: 'cash.purchase',
-            forNewUsers: true,  // Show only for new users
-        },
+    // Tracking intents for returning users
+    const trackingIntents = [
         {
             id: 'checkStatus',
             name: 'Track your application',
             icon: FileText,
             description: 'Check the status of your existing application',
             route: 'application.status',
-            forNewUsers: false,  // Show only for returning users
         },
         {
             id: 'trackDelivery',
@@ -82,77 +77,62 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
             icon: Package,
             description: 'Monitor the delivery of your product or equipment',
             route: 'delivery.tracking',
-            forNewUsers: false,  // Show only for returning users
         }
     ];
 
-    // Filter intents based on whether user has ANY applications
-    const intents = useMemo(() => {
-        if (hasApplications) {
-            // Returning user with applications - show only tracking options
-            return allIntents.filter(intent => !intent.forNewUsers);
-        } else {
-            // New user - show application options
-            return allIntents.filter(intent => intent.forNewUsers);
-        }
-    }, [hasApplications]);
-
     const handleLanguageSelect = (language: string) => {
         setSelectedLanguage(language);
-        // If user is authenticated, go directly to intent selection
         if (auth.user) {
-            setCurrentStep('intent');
+            setCurrentStep('paymentMode');
         } else {
-            // Otherwise, show auth options
             setCurrentStep('auth');
         }
     };
 
-    const handleIntentSelect = (intent: string) => {
-        const selectedIntent = intents.find(i => i.id === intent);
-        if (selectedIntent) {
-            // For tracking options, redirect immediately
-            if (!selectedIntent.forNewUsers) {
-                const params: Record<string, string> = { language: selectedLanguage };
-                router.visit(route(selectedIntent.route, params));
-                return;
-            }
+    const handlePaymentModeSelect = (mode: 'cash' | 'credit') => {
+        setPaymentMode(mode);
+        setCurrentStep('intent');
+    };
 
-            // For purchase options, proceed to currency selection
-            setLastSelectedIntent(intent);
-            setCurrentStep('currency');
+    const handleIntentSelect = (intentId: string) => {
+        // Check if it's a tracking intent
+        const trackingIntent = trackingIntents.find(i => i.id === intentId);
+        if (trackingIntent) {
+            const params: Record<string, string> = { language: selectedLanguage };
+            router.visit(route(trackingIntent.route, params));
+            return;
         }
+
+        // It's a product intent
+        setLastSelectedIntent(intentId);
+        setCurrentStep('currency');
     };
 
     const handleCurrencySelect = (currency: string) => {
         setSelectedCurrency(currency);
-        if (!lastSelectedIntent) return;
+        if (!lastSelectedIntent || !paymentMode) return;
 
-        const selectedIntent = intents.find(i => i.id === lastSelectedIntent);
-        if (selectedIntent) {
-            // Build base params
-            let params: Record<string, string> = {
-                language: selectedLanguage,
-                currency: currency
-            };
+        // Build route params
+        const params: Record<string, string> = {
+            language: selectedLanguage,
+            currency: currency
+        };
 
-            if (lastSelectedIntent === 'hirePurchase' || lastSelectedIntent === 'microBiz') {
-                params.intent = lastSelectedIntent;
-                // Add referral code if available
-                if (referralCode) {
-                    params.ref = referralCode;
-                }
-                router.visit(route(selectedIntent.route, params));
-            } else if (lastSelectedIntent === 'cashPurchasePersonal' || lastSelectedIntent === 'cashPurchaseMicroBiz') {
-                // Determine purchase type based on intent
-                const purchaseType = lastSelectedIntent === 'cashPurchasePersonal' ? 'personal' : 'microbiz';
-                params.type = purchaseType;
-                // Add referral code if available
-                if (referralCode) {
-                    params.ref = referralCode;
-                }
-                router.visit(route(selectedIntent.route, params));
-            }
+        if (referralCode) {
+            params.ref = referralCode;
+        }
+
+        if (paymentMode === 'cash') {
+            // Cash Purchase Flow
+            // We pass the new intent ID as the 'type' to the cash purchase page
+            // The CashPurchase component/wizard will need to handle these new types
+            params.type = lastSelectedIntent;
+            router.visit(route('cash.purchase', params));
+        } else {
+            // Credit/Loan Flow
+            // We pass the new intent ID as 'intent'
+            params.intent = lastSelectedIntent;
+            router.visit(route('application.wizard', params));
         }
     };
 
@@ -276,27 +256,111 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                 </div>
                             )}
 
-                            {currentStep === 'intent' && (
+                            {currentStep === 'paymentMode' && (
                                 <div className="space-y-8">
                                     <div className="text-center">
                                         <h1 className="text-3xl font-bold mb-4">
-                                            {selectedLang?.greeting}
+                                            Start Application
                                         </h1>
                                         <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                            How can we help you today?
+                                            How would you like to purchase today?
                                         </p>
                                         {!auth.user && (
                                             <button
                                                 onClick={() => setCurrentStep('language')}
                                                 className="mt-4 text-sm text-emerald-600 hover:text-emerald-700"
                                             >
-                                                ← Back to Start
+                                                ← Back
                                             </button>
                                         )}
                                     </div>
 
+                                    <div className="grid gap-4 sm:grid-cols-2 max-w-2xl mx-auto">
+                                        <button
+                                            onClick={() => handlePaymentModeSelect('credit')}
+                                            className="group p-8 text-center rounded-lg border border-[#e3e3e0] transition-all hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-lg dark:border-[#3E3E3A] dark:hover:border-emerald-500 dark:hover:bg-emerald-950/20"
+                                        >
+                                            <div className="flex flex-col items-center space-y-3">
+                                                <div className="p-3 bg-emerald-100 dark:bg-emerald-900 rounded-full">
+                                                    <CreditCard className="h-8 w-8 text-emerald-600" />
+                                                </div>
+                                                <h3 className="text-xl font-semibold group-hover:text-emerald-600">
+                                                    Buy on Credit
+                                                </h3>
+                                                <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                                    Apply for a loan or hire purchase
+                                                </p>
+                                                <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-emerald-600" />
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            onClick={() => handlePaymentModeSelect('cash')}
+                                            className="group p-8 text-center rounded-lg border border-[#e3e3e0] transition-all hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-lg dark:border-[#3E3E3A] dark:hover:border-emerald-500 dark:hover:bg-emerald-950/20"
+                                        >
+                                            <div className="flex flex-col items-center space-y-3">
+                                                <div className="p-3 bg-emerald-100 dark:bg-emerald-900 rounded-full">
+                                                    <Banknote className="h-8 w-8 text-emerald-600" />
+                                                </div>
+                                                <h3 className="text-xl font-semibold group-hover:text-emerald-600">
+                                                    Buy with Cash
+                                                </h3>
+                                                <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                                    Pay directly using Paynow, EcoCash, or Card
+                                                </p>
+                                                <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-emerald-600" />
+                                            </div>
+                                        </button>
+                                    </div>
+
+                                    {/* Tracking options for returning users */}
+                                    {hasApplications && (
+                                        <div className="pt-8 border-t border-dashed border-gray-200">
+                                            <h3 className="text-center text-sm font-medium text-gray-500 mb-4 uppercase tracking-wider">
+                                                Existing Applications
+                                            </h3>
+                                            <div className="grid gap-4 sm:grid-cols-2 max-w-2xl mx-auto">
+                                                {trackingIntents.map((intent) => {
+                                                    const Icon = intent.icon;
+                                                    return (
+                                                        <button
+                                                            key={intent.id}
+                                                            onClick={() => handleIntentSelect(intent.id)}
+                                                            className="flex items-center space-x-4 p-4 text-left rounded-lg border border-gray-100 hover:bg-gray-50 hover:border-gray-200 transition-all dark:border-gray-800 dark:hover:bg-gray-900"
+                                                        >
+                                                            <Icon className="h-5 w-5 text-gray-400" />
+                                                            <div>
+                                                                <h4 className="font-medium text-sm">{intent.name}</h4>
+                                                                <p className="text-xs text-gray-500">{intent.description}</p>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {currentStep === 'intent' && (
+                                <div className="space-y-8">
+                                    <div className="text-center">
+                                        <h1 className="text-3xl font-bold mb-4">
+                                            Select Category
+                                        </h1>
+                                        <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
+                                            You are viewing <strong>{paymentMode === 'cash' ? 'Cash Purchase' : 'Credit / Loan'}</strong> options.
+                                        </p>
+                                        <button
+                                            onClick={() => setCurrentStep('paymentMode')}
+                                            className="mt-4 text-sm text-emerald-600 hover:text-emerald-700"
+                                        >
+                                            ← Change Mode
+                                        </button>
+                                    </div>
+
                                     <div className="grid gap-4 sm:grid-cols-2 max-w-4xl mx-auto">
-                                        {intents.map((intent) => {
+                                        {PRODUCT_INTENTS.map((intent) => {
                                             const Icon = intent.icon;
                                             return (
                                                 <button
@@ -336,7 +400,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                             onClick={() => setCurrentStep('intent')}
                                             className="mt-4 text-sm text-emerald-600 hover:text-emerald-700"
                                         >
-                                            ← Back to Services
+                                            ← Back to Categories
                                         </button>
                                     </div>
 

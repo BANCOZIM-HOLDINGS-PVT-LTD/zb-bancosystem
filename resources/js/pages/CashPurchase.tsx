@@ -3,15 +3,32 @@ import { useState } from 'react';
 import CashPurchaseWizard from '@/components/CashPurchase/CashPurchaseWizard';
 
 interface CashPurchaseProps {
-    type: 'personal' | 'microbiz';
+    type: string;
     language?: string;
     currency?: string;
 }
 
+const getTitle = (type: string) => {
+    switch (type) {
+        case 'microBiz':
+        case 'microbiz':
+            return 'MicroBiz Starter Pack';
+        case 'homeConstruction':
+            return 'Home Construction';
+        case 'personalServices':
+            return 'Personal Services';
+        case 'personalGadgets':
+        case 'personal':
+            return 'Personal Products';
+        default:
+            return 'Cash Purchase';
+    }
+};
+
 export default function CashPurchase({ type, language = 'en', currency = 'USD' }: CashPurchaseProps) {
     return (
         <>
-            <Head title={`Buy with Cash - ${type === 'personal' ? 'Personal Products' : 'MicroBiz Starter Pack'}`}>
+            <Head title={`Buy with Cash - ${getTitle(type)}`}>
                 <link rel="preconnect" href="https://fonts.bunny.net" />
                 <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
             </Head>

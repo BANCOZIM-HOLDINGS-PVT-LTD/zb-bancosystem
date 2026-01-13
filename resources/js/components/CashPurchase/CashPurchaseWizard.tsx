@@ -10,7 +10,7 @@ import CheckoutStep from './steps/CheckoutStep';
 
 // Types
 export interface CashPurchaseData {
-    purchaseType: 'personal' | 'microbiz';
+    purchaseType: 'personal' | 'microbiz' | string;
     language: string;
     includesMESystem?: boolean;
     meSystemFee?: number;
@@ -69,7 +69,7 @@ export interface CashPurchaseData {
 }
 
 interface CashPurchaseWizardProps {
-    purchaseType: 'personal' | 'microbiz';
+    purchaseType: 'personal' | 'microbiz' | string;
     language?: string;
     currency?: string;
 }

@@ -50,7 +50,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     // Cart State
     const [cart, setCart] = useState<{ businessId: number; name: string; price: number; quantity: number; color?: string; interiorColor?: string; exteriorColor?: string; scale?: string }[]>(data.cart || []);
     const [cartQuantity, setCartQuantity] = useState<number>(1);
-    const isCartMode = selectedCategory?.name === 'Building Materials';
+    const isCartMode = selectedCategory?.name === 'Building Materials' || (selectedCategory?.name === 'Agricultural Inputs' && data.intent !== 'microBiz') || data.intent === 'homeConstruction';
 
     const ME_SYSTEM_PERCENTAGE = 0.10; // 10% of loan amount
     const TRAINING_PERCENTAGE = 0.055; // 5.5%
@@ -68,57 +68,72 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     };
 
     // Determine if this is a personal products or MicroBiz application
-    const isPersonalProducts = data.intent === 'hirePurchase';
+    const isPersonalProducts = data.intent === 'hirePurchase' || data.intent === 'personalGadgets';
     const isMicroBiz = data.intent === 'microBiz';
 
-    const filterProductsForZiG = (categories: Category[]) => {
-        if (!isZiG) return categories;
 
-        const allowedKeywords = [
-            // Personal
+
+    const filterProducts = (categories: Category[]) => {
+        let intentKeywords: string[] = [];
+
+        switch (data.intent) {
+            case 'microBiz':
+                intentKeywords = ['Agriculture', 'Agricultural', 'Fertilizer', 'Seed', 'Chemicals', 'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries', 'Business', 'Maize', 'Irrigation', 'Water', 'Pumping', 'Planter', 'Sheller', 'Banking', 'Agency', 'POS', 'Purification', 'Refill', 'Cleaning', 'Beauty', 'Hair', 'Cosmetics', 'Food', 'Butchery', 'Events', 'Snack', 'Entertainment', 'Printing', 'Digital', 'Multimedia', 'Tailoring', 'Construction', 'Mining', 'Retailing', 'Delivery', 'Vehicle', 'Photocopying'];
+                break;
+            case 'homeConstruction':
+                intentKeywords = ['Building', 'Cement', 'Roofing', 'Plumbing', 'Hardware', 'Paint', 'Timber', 'Electrical', 'Tank', 'Brick', 'Door', 'Window', 'Construction', 'Solar', 'Tile', 'Glass', 'Steel'];
+                break;
+            case 'personalServices':
+                intentKeywords = ['Nurse', 'License', 'Holiday', 'School', 'Fees', 'Vacation', 'Travel', 'Tourism', 'Clinic', 'Zimparks', 'Driving'];
+                break;
+            case 'personalGadgets':
+            case 'hirePurchase':
+            default:
+                intentKeywords = ['Phone', 'Laptop', 'TV', 'Fridge', 'Stove', 'Bed', 'Sofa', 'Furniture', 'Solar', 'Appliance', 'Techno', 'Redmi', 'Samsung', 'Gadget', 'Computer', 'Radio', 'Audio', 'Freezer', 'Microwave', 'Kettle', 'Iron', 'Agriculture', 'Fertilizer', 'Seed'];
+                break;
+        }
+
+        // ZiG allowed list (subset of everything that is allowed on ZiG)
+        const zigAllowedKeywords = [
             'Techno', 'Redmi', 'Samsung',
-            'Building materials', 'holiday', 'school fees',
-            'back to school', 'baby',
-            'Zimparks',
-            'vacation',
-            // Microbiz
-            'Agriculture', // Allow full Agriculture category
-            'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries',
-            // Agricultural Mechanization specific items
-            'water storage', 'pumping system', 'maize sheller', 'irrigation', 'land security'
+            'Building', 'Cement', 'Roofing', 'Plumbing', 'Hardware', 'Paint', 'Timber', 'Tank',
+            'holiday', 'vacation', 'Zimparks',
+            'school', 'fees',
+            'Agriculture', 'Broiler', 'Grocery', 'Tuckshop',
+            'water storage', 'pumping', 'maize', 'irrigation'
         ];
 
         return categories.map(cat => {
-            // Check if the category itself matches any allowed keyword (e.g. Tuckshop, Agriculture)
-            // Note: We use strict check for 'Agriculture' to avoid matching 'Agricultural Mechanization' by accident if logic changes,
-            // but currently 'Agriculture' doesn't match 'Agricultural'.
-            const isCategoryAllowed = allowedKeywords.some(k => cat.name.toLowerCase().includes(k.toLowerCase()));
+            const isIntentMatch = (text: string) => intentKeywords.some(k => text.toLowerCase().includes(k.toLowerCase()));
+            const isZiGMatch = (text: string) => !isZiG || zigAllowedKeywords.some(k => text.toLowerCase().includes(k.toLowerCase()));
 
-            if (isCategoryAllowed) {
-                return cat;
-            }
+            // Helper: Item is valid if it matches Intent AND (if ZiG, matches ZiG rules)
+            const isValid = (text: string) => isIntentMatch(text) && isZiGMatch(text);
+
+            // Optimization: If category itself is a strong match (e.g. "Building Materials" for Construction), 
+            // we might want to be permissive with children, but filtering deep is safer to avoid mix-ins.
+
+            const filteredSubcategories = cat.subcategories.map(sub => {
+                const filteredBusinesses = sub.businesses.filter(b =>
+                    isValid(b.name) || isValid(sub.name) || isValid(cat.name)
+                );
+
+                const filteredSeries = sub.series?.filter(s =>
+                    isValid(s.name) || isValid(sub.name) || isValid(cat.name) || s.products.some(p => isValid(p.name))
+                );
+
+                return {
+                    ...sub,
+                    businesses: filteredBusinesses,
+                    series: filteredSeries
+                };
+            }).filter(sub => sub.businesses.length > 0 || (sub.series && sub.series.length > 0));
 
             return {
                 ...cat,
-                subcategories: cat.subcategories.map(sub => ({
-                    ...sub,
-                    // Filter businesses
-                    businesses: sub.businesses.filter(b =>
-                        allowedKeywords.some(k => b.name.toLowerCase().includes(k.toLowerCase()) ||
-                            sub.name.toLowerCase().includes(k.toLowerCase()))
-                    ),
-                    // Filter series
-                    series: sub.series?.filter(s =>
-                        allowedKeywords.some(k => s.name.toLowerCase().includes(k.toLowerCase()) ||
-                            s.products.some(p => p.name.toLowerCase().includes(k.toLowerCase())))
-                    )
-                })).filter(sub => sub.businesses.length > 0 || (sub.series && sub.series.length > 0))
+                subcategories: filteredSubcategories
             };
-        }).filter(cat => {
-            const isCategoryAllowed = allowedKeywords.some(k => cat.name.toLowerCase().includes(k.toLowerCase()));
-            if (isCategoryAllowed) return true;
-            return cat.subcategories.length > 0;
-        });
+        }).filter(cat => cat.subcategories.length > 0);
     };
 
     // Load products from API on component mount
@@ -129,8 +144,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 setError(null);
                 const categories = await productService.getProductCategories(data.intent);
 
-                // Apply currency filtering
-                const filteredCategories = filterProductsForZiG(categories);
+                // Apply intent and currency filtering
+                const filteredCategories = filterProducts(categories);
                 setProductCategories(filteredCategories);
             } catch (err) {
                 console.error('Failed to load products:', err);

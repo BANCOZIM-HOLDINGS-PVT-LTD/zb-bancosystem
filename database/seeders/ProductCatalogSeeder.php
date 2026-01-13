@@ -13,8 +13,11 @@ class ProductCatalogSeeder extends Seeder
         // 22 MicroBiz Main Categories
         $categories = [
             ['id' => 'agric-mechanization', 'name' => 'Agricultural mechanization', 'emoji' => '🚜'],
-            ['id' => 'agriculture', 'name' => 'Agriculture', 'emoji' => '🌾'],
+            ['id' => 'agricultural-inputs', 'name' => 'Agricultural Inputs', 'emoji' => '🌾'],
+            ['id' => 'broiler-production', 'name' => 'Broiler Production', 'emoji' => '🐔'], // New Main Category
             ['id' => 'cleaning-services', 'name' => 'Cleaning Services', 'emoji' => '🧹'],
+
+
             ['id' => 'beauty-hair-cosmetics', 'name' => 'Beauty, Hair and Cosmetics', 'emoji' => '💇'],
             ['id' => 'food-production', 'name' => 'Food Production', 'emoji' => '🍞'],
             ['id' => 'butchery', 'name' => 'Butchery Equipment', 'emoji' => '🥩'],
@@ -26,22 +29,22 @@ class ProductCatalogSeeder extends Seeder
             ['id' => 'digital-multimedia', 'name' => 'Digital Multimedia Production', 'emoji' => '📸'],
             ['id' => 'tailoring', 'name' => 'Tailoring', 'emoji' => '✂️'],
             ['id' => 'building-construction', 'name' => 'Building & Construction Equipment', 'emoji' => '🔨'],
-            ['id' => 'business-licensing', 'name' => 'Municipal Business License Financing', 'emoji' => '📄'],
+            // Removed Business Licensing
             ['id' => 'small-scale-mining', 'name' => 'Small scale mining', 'emoji' => '⛏️'],
             ['id' => 'tuck-shop', 'name' => 'Tuck shop', 'emoji' => '🛍️'],
             ['id' => 'retail', 'name' => 'Retailing', 'emoji' => '🏪'],
-            ['id' => 'airtime', 'name' => 'Airtime Vending', 'emoji' => '📱'],
+            ['id' => 'banking-agency', 'name' => 'Banking Agency', 'emoji' => '🏦'], // Replaced Airtime
             ['id' => 'delivery-services', 'name' => 'Delivery Services', 'emoji' => '🏍️'],
             ['id' => 'motor-vehicle', 'name' => 'Motor Vehicle Sundries', 'emoji' => '🚗'],
             ['id' => 'photocopying-bulk-printing', 'name' => 'Photocopying & Bulk Printing', 'emoji' => '📄'],
-
+            ['id' => 'water-purification', 'name' => 'Water Purification', 'emoji' => '💧'], // Added
         ];
 
         foreach ($categories as $categoryData) {
             $categoryId = DB::table('product_categories')->insertGetId([
                 'name' => $categoryData['name'],
                 'emoji' => $categoryData['emoji'],
-                'type' => 'microbiz',
+                'type' => 'microBiz', // Updated to match frontend intent
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -113,11 +116,15 @@ class ProductCatalogSeeder extends Seeder
                 ['name' => 'Tobacco bailing machine', 'businesses' => [['name' => 'Tobacco bailing machine']]],
                 ['name' => 'Hatchery', 'businesses' => [['name' => 'Hatchery']]],
             ],
-            // 2. Agriculture
-            'agriculture' => [
-                ['name' => 'Cash crop production', 'businesses' => [['name' => 'Cash crop production']]],
-                ['name' => 'Supplementary inputs', 'businesses' => [['name' => 'Supplementary inputs']]],
-                ['name' => 'Broiler production', 'businesses' => [['name' => 'Broiler production']]],
+            // 2. Agricultural Inputs (Renamed & Restructured)
+            'agricultural-inputs' => [
+                ['name' => 'Fertilizer', 'businesses' => [['name' => 'Fertilizer']]],
+                ['name' => 'Seed + Chemicals', 'businesses' => [['name' => 'Seed + Chemicals']]],
+                ['name' => 'Combo (Fertilizer + Seed + Chemicals)', 'businesses' => [['name' => 'Combo (Fertilizer + Seed + Chemicals)']]],
+            ],
+            // 2b. Broiler Production
+            'broiler-production' => [
+                ['name' => 'Broiler Production', 'businesses' => [['name' => 'Broiler Production']]],
             ],
             // 3. Cleaning Services
             'cleaning-services' => [
@@ -212,10 +219,8 @@ class ProductCatalogSeeder extends Seeder
                 ['name' => 'Electrical', 'businesses' => [['name' => 'Electrical']]],
                 ['name' => 'Brick & pavers making', 'businesses' => [['name' => 'Brick & pavers making']]],
             ],
-            // 15. Municipal Business License Financing
-            'business-licensing' => [
-                ['name' => 'Business License', 'businesses' => [['name' => 'Business License']]],
-            ],
+            
+            
             // 16. Small scale mining
             'small-scale-mining' => [
                 ['name' => 'Mining Equipment', 'businesses' => [['name' => 'Mining Equipment']]],
@@ -230,9 +235,9 @@ class ProductCatalogSeeder extends Seeder
                 ['name' => 'Stationary shops', 'businesses' => [['name' => 'Stationary shops']]],
                 ['name' => 'Cellphone accessories', 'businesses' => [['name' => 'Cellphone accessories']]],
             ],
-            // 19. Airtime
-            'airtime' => [
-                ['name' => 'Airtime vending', 'businesses' => [['name' => 'Airtime vending']]],
+            // 19. Banking Agency (Replaced Airtime)
+            'banking-agency' => [
+                ['name' => 'Agency Equipment', 'businesses' => [['name' => 'Agency Equipment']]],
             ],
             // 20. Delivery Services
             'delivery-services' => [
@@ -252,6 +257,11 @@ class ProductCatalogSeeder extends Seeder
             'photocopying-bulk-printing' => [
                 ['name' => 'Laser printing', 'businesses' => [['name' => 'Laser printing']]],
                 ['name' => 'Litho Printing', 'businesses' => [['name' => 'Litho Printing']]],
+            ],
+            // 23. Water Purification (Added)
+            'water-purification' => [
+                ['name' => 'Water Refill Station', 'businesses' => [['name' => 'Water Refill Station']]],
+                ['name' => 'Purification Systems', 'businesses' => [['name' => 'Purification Systems']]],
             ],
         ];
 

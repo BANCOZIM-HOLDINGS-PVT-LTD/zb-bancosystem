@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('product_categories', function (Blueprint $table) {
-            $table->enum('type', ['hire_purchase', 'microbiz'])->default('hire_purchase')->after('emoji');
+            $table->string('type')->default('personalGadgets')->after('emoji');
         });
 
         // Update existing categories based on their names

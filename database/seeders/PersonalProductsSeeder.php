@@ -13,11 +13,11 @@ class PersonalProductsSeeder extends Seeder
      */
     public function run(): void
     {
-        // 15. School fees
+        // 1. School Fees Support
         $schoolFeesCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'School fees',
+            'name' => 'School Fees Support',
             'emoji' => '👫📚',
-            'type' => 'hire_purchase',
+            'type' => 'personalServices',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -66,15 +66,15 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $secondaryFeesId, 'name' => '3 Terms', 'multiplier' => 3.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        $polytechSubcategory = DB::table('product_sub_categories')->insertGetId([
+        $tertiarySubcategory = DB::table('product_sub_categories')->insertGetId([
             'product_category_id' => $schoolFeesCategory,
-            'name' => 'Polytech',
+            'name' => 'Tertiary Education',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         $polytechFeesId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $polytechSubcategory,
+            'product_sub_category_id' => $tertiarySubcategory,
             'name' => 'Polytech Fees',
             'base_price' => 500.00,
             'image_url' => null,
@@ -87,15 +87,8 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $polytechFeesId, 'name' => '2 Semesters', 'multiplier' => 2.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        $universitySubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $schoolFeesCategory,
-            'name' => 'University',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
         $universityFeesId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $universitySubcategory,
+            'product_sub_category_id' => $tertiarySubcategory,
             'name' => 'University Fees',
             'base_price' => 600.00,
             'image_url' => null,
@@ -108,25 +101,40 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $universityFeesId, 'name' => '2 Semesters', 'multiplier' => 2.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 17. Drivers License
+        // 2. Drivers License (Provisional & Drivers Edition)
         $licensingCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Drivers License',
             'emoji' => '🚗',
-            'type' => 'hire_purchase',
+            'type' => 'personalServices',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         $driversLicenseSubcategory = DB::table('product_sub_categories')->insertGetId([
             'product_category_id' => $licensingCategory,
-            'name' => 'Drivers License',
+            'name' => 'License Courses',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $driversLicenseId = DB::table('products')->insertGetId([
+        // Provisional
+        $provisionalId = DB::table('products')->insertGetId([
             'product_sub_category_id' => $driversLicenseSubcategory,
-            'name' => 'Drivers License Application',
+            'name' => 'Provisional License',
+            'base_price' => 20.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $provisionalId, 'name' => 'Study Pack & Exam', 'multiplier' => 1.00, 'custom_price' => 20.00, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // Drivers Edition (Full License lessons/test)
+        $driversEditionId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $driversLicenseSubcategory,
+            'name' => 'Drivers License Edition',
             'base_price' => 150.00,
             'image_url' => null,
             'created_at' => now(),
@@ -134,21 +142,52 @@ class PersonalProductsSeeder extends Seeder
         ]);
 
         DB::table('product_package_sizes')->insert([
-            ['product_id' => $driversLicenseId, 'name' => '1 Application', 'multiplier' => 1.00, 'custom_price' => null, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $driversEditionId, 'name' => 'Review & Test', 'multiplier' => 1.00, 'custom_price' => 150.00, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $driversEditionId, 'name' => 'Full Course (Lessons + Test)', 'multiplier' => 2.00, 'custom_price' => 300.00, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 18. Holiday Package
+        // 3. Nurse Aid Course
+        $nurseAidCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Nurse Aid Course',
+            'emoji' => '⚕️',
+            'type' => 'personalServices',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $nurseAidSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $nurseAidCategory,
+            'name' => 'Certification',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $nurseAidId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $nurseAidSubcategory,
+            'name' => 'Nurse Aid Certification',
+            'base_price' => 200.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $nurseAidId, 'name' => 'Registration & Theory', 'multiplier' => 1.00, 'custom_price' => 200.00, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $nurseAidId, 'name' => 'Full Course (Theory + Practicals)', 'multiplier' => 1.50, 'custom_price' => 300.00, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 4. Holiday Package
         $holidayPackageCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Holiday Package',
             'emoji' => '🎡',
-            'type' => 'hire_purchase',
+            'type' => 'personalServices',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         $vacationPackagesSubcategory = DB::table('product_sub_categories')->insertGetId([
             'product_category_id' => $holidayPackageCategory,
-            'name' => 'Zimparks Lodges/Cottages',
+            'name' => 'Destinations',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -168,11 +207,42 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $vacationId, 'name' => 'Gold Package', 'multiplier' => 3.32, 'custom_price' => 930.00, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 19. Starlink Internet Kit
+        // 5. Small Business Support
+        $businessSupportCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Small Business Support',
+            'emoji' => '💼',
+            'type' => 'personalServices',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $businessSupportSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $businessSupportCategory,
+            'name' => 'Business Services',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $consultancyId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $businessSupportSubcategory,
+            'name' => 'Business Consultancy',
+            'base_price' => 100.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $consultancyId, 'name' => 'Starter Session', 'multiplier' => 1.00, 'custom_price' => 100.00, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $consultancyId, 'name' => 'Full Business Plan', 'multiplier' => 3.00, 'custom_price' => 300.00, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+
+        // 6. Starlink Internet Kit (Personal Gadget)
         $starlinkCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Starlink Internet',
             'emoji' => '📡',
-            'type' => 'hire_purchase',
+            'type' => 'personalGadgets',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -199,11 +269,11 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $starlinkId, 'name' => 'Mobile Priority', 'multiplier' => 5.69, 'custom_price' => 2846.00, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 20. Construction Category
+        // 7. Construction Category (Home Construction)
         $constructionCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Construction',
             'emoji' => '🏗️',
-            'type' => 'hire_purchase',
+            'type' => 'homeConstruction', // Type Update
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -402,7 +472,7 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $diamondMeshId, 'name' => '100m Length', 'multiplier' => 3.20, 'custom_price' => 1600.00, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        $this->command->info('Personal Products (Services) seeded successfully!');
+        $this->command->info('Personal Products (Services & Construction) seeded successfully!');
     }
 }
 

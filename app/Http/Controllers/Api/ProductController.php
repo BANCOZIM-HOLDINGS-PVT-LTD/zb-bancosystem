@@ -20,10 +20,21 @@ class ProductController extends Controller
         $query = DB::table('product_categories');
 
         // Filter by type based on intent
-        if ($intent === 'hirePurchase') {
-            $query->where('type', 'hire_purchase');
-        } elseif ($intent === 'microBiz') {
-            $query->where('type', 'microbiz');
+        if ($intent) {
+            // Map legacy/alias intents
+            $typeMap = [
+                'hirePurchase' => 'personalGadgets',
+                'personal' => 'personalGadgets',
+                'microbiz' => 'microBiz',
+            ];
+            
+            $type = $typeMap[$intent] ?? $intent;
+            
+            $validTypes = ['microBiz', 'homeConstruction', 'personalServices', 'personalGadgets'];
+            
+            if (in_array($type, $validTypes)) {
+                $query->where('type', $type);
+            }
         }
 
         $categories = $query->get();
@@ -128,10 +139,21 @@ class ProductController extends Controller
         $query = ProductCategory::with(['subCategories.products.packageSizes']);
 
         // Filter by type based on intent
-        if ($intent === 'hirePurchase') {
-            $query->where('type', 'hire_purchase');
-        } elseif ($intent === 'microBiz') {
-            $query->where('type', 'microbiz');
+        if ($intent) {
+            // Map legacy/alias intents
+            $typeMap = [
+                'hirePurchase' => 'personalGadgets',
+                'personal' => 'personalGadgets',
+                'microbiz' => 'microBiz',
+            ];
+            
+            $type = $typeMap[$intent] ?? $intent;
+            
+            $validTypes = ['microBiz', 'homeConstruction', 'personalServices', 'personalGadgets'];
+            
+            if (in_array($type, $validTypes)) {
+                $query->where('type', $type);
+            }
         }
 
         $categories = $query->orderBy('name')->get();
@@ -320,10 +342,21 @@ class ProductController extends Controller
         $query = ProductCategory::with(['subCategories.products.packageSizes']);
 
         // Filter by type based on intent
-        if ($intent === 'hirePurchase') {
-            $query->where('type', 'hire_purchase');
-        } elseif ($intent === 'microBiz') {
-            $query->where('type', 'microbiz');
+        if ($intent) {
+            // Map legacy/alias intents
+            $typeMap = [
+                'hirePurchase' => 'personalGadgets',
+                'personal' => 'personalGadgets',
+                'microbiz' => 'microBiz',
+            ];
+            
+            $type = $typeMap[$intent] ?? $intent;
+            
+            $validTypes = ['microBiz', 'homeConstruction', 'personalServices', 'personalGadgets'];
+            
+            if (in_array($type, $validTypes)) {
+                $query->where('type', $type);
+            }
         }
 
         $categories = $query->orderBy('name')->get();
