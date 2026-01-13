@@ -78,7 +78,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
         switch (data.intent) {
             case 'microBiz':
-                intentKeywords = ['Agriculture', 'Agricultural', 'Fertilizer', 'Seed', 'Chemicals', 'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries', 'Business', 'Maize', 'Irrigation', 'Water', 'Pumping', 'Planter', 'Sheller', 'Banking', 'Agency', 'POS', 'Purification', 'Refill', 'Cleaning', 'Beauty', 'Hair', 'Cosmetics', 'Food', 'Butchery', 'Events', 'Snack', 'Entertainment', 'Printing', 'Digital', 'Multimedia', 'Tailoring', 'Construction', 'Mining', 'Retailing', 'Delivery', 'Vehicle', 'Photocopying'];
+                intentKeywords = ['Agriculture', 'Agricultural', 'Fertilizer', 'Seed', 'Chemicals', 'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries', 'Business', 'Maize', 'Irrigation', 'Water', 'Pumping', 'Planter', 'Sheller', 'Banking', 'Agency', 'POS', 'Purification', 'Refill', 'Cleaning', 'Beauty', 'Hair', 'Cosmetics', 'Food', 'Butchery', 'Events', 'Snack', 'Entertainment', 'Printing', 'Digital', 'Multimedia', 'Tailoring', 'Construction', 'Mining', 'Retailing', 'Delivery', 'Vehicle', 'Photocopying', 'Small', 'Support', 'Fee', 'Licens', 'Company', 'Reg'];
                 break;
             case 'homeConstruction':
                 intentKeywords = ['Building', 'Cement', 'Roofing', 'Plumbing', 'Hardware', 'Paint', 'Timber', 'Electrical', 'Tank', 'Brick', 'Door', 'Window', 'Construction', 'Solar', 'Tile', 'Glass', 'Steel'];
@@ -89,7 +89,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             case 'personalGadgets':
             case 'hirePurchase':
             default:
-                intentKeywords = ['Phone', 'Laptop', 'TV', 'Fridge', 'Stove', 'Bed', 'Sofa', 'Furniture', 'Solar', 'Appliance', 'Techno', 'Redmi', 'Samsung', 'Gadget', 'Computer', 'Radio', 'Audio', 'Freezer', 'Microwave', 'Kettle', 'Iron', 'Agriculture', 'Fertilizer', 'Seed'];
+                intentKeywords = ['Phone', 'Laptop', 'TV', 'Fridge', 'Stove', 'Bed', 'Sofa', 'Furniture', 'Solar', 'Appliance', 'Techno', 'Redmi', 'Samsung', 'Gadget', 'Computer', 'Radio', 'Audio', 'Freezer', 'Microwave', 'Kettle', 'Iron', 'Agriculture', 'Fertilizer', 'Seed', 'Small', 'Business', 'Support', 'Fee', 'Licens', 'Company', 'Reg'];
                 break;
         }
 
@@ -212,9 +212,56 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             setShowZBBankingNotification(false);
         }
 
+        if (business.name === 'Company Registration') {
+            if (business.scales.length > 0) {
+                const scale = business.scales[0];
+                const amount = scale.custom_price || 195.00;
+                const grossLoan = amount * 1.06; // Apply standard markup
+
+                // Pass a complete data payload so validation passes
+                onNext({
+                    // Legacy fields for backward compatibility
+                    category: selectedCategory?.name || 'Small Business Support',
+                    subcategory: selectedSubcategory?.name || 'Fees and Licensing',
+                    business: business.name,
+                    scale: scale.name,
+                    amount: grossLoan,
+                    creditTerm: null, // Will be selected in CreditTermSelection step
+                    monthlyPayment: 0, // Will be calculated later
+                    // New fields with IDs for better tracking
+                    productId: business.id,
+                    productName: business.name,
+                    scaleId: scale.id,
+                    categoryId: selectedCategory?.id,
+                    // Loan fields
+                    loanAmount: grossLoan,
+                    netLoan: amount,
+                    grossLoan: grossLoan,
+                    interestRate: '96%',
+                    firstPaymentDate: null,
+                    lastPaymentDate: null,
+                    // Product details
+                    selectedBusiness: {
+                        id: business.id?.toString(),
+                        name: business.name,
+                        basePrice: amount,
+                        salesData: []
+                    },
+                    selectedScale: {
+                        id: scale.id?.toString(),
+                        name: scale.name,
+                        custom_price: scale.custom_price
+                    },
+                    color: null,
+                    interiorColor: null,
+                    exteriorColor: null
+                });
+            }
+            return;
+        }
+
         if (isPersonalProducts) {
-            // For personal products, go to product detail view
-            // Select default scale if available (e.g. for phones with only one storage option)
+            // ... existing logic ...
             if (business.scales.length === 1) {
                 handleScaleSelect(business.scales[0]);
             }

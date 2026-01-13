@@ -6,8 +6,10 @@ import CreditTypeSelection from './steps/CreditTypeSelection';
 import DeliverySelection from './steps/DeliverySelection';
 import DepositPaymentStep from './steps/DepositPaymentStep';
 import AccountVerification from './steps/AccountVerification';
+import CreditTermSelection from './steps/CreditTermSelection';
 import ApplicationSummary from './steps/ApplicationSummary';
 import FormStep from './steps/FormStep';
+import CompanyRegistrationStep from './steps/CompanyRegistrationStep';
 import DocumentUploadStep from '../DocumentUpload/DocumentUploadStep';
 import { StateManager } from './services/StateManager';
 import { LocalStateManager } from './services/LocalStateManager';
@@ -476,6 +478,8 @@ interface ApplicationWizardProps {
 const allSteps = [
     'employer',
     'product',
+    'companyRegistration',
+    'creditTerm', // New step for duration selection
     'creditType',
     'delivery',
     'depositPayment',
@@ -536,13 +540,28 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
     const steps = React.useMemo(() => {
         let filteredSteps = [...allSteps];
 
+        const isCompanyReg = wizardData.subcategory === 'Fees and Licensing' ||
+            (wizardData.selectedBusiness?.name === 'Company Registration' || wizardData.business === 'Company Registration'); // Robust check
+
+        if (!isCompanyReg) {
+            filteredSteps = filteredSteps.filter(step => step !== 'companyRegistration');
+            // Standard flow usually does terms inside ProductSelection, so we might not need creditTerm step?
+            // Actually, if ProductSelection handles it internaly, we filter out creditTerm for standard flow.
+            filteredSteps = filteredSteps.filter(step => step !== 'creditTerm');
+        } else {
+            // For Company Registration flow:
+            // - Keep companyRegistration step
+            // - Keep creditTerm step (since ProductSelection skipped internal terms)
+            // - Keep delivery step (user selects depot for document delivery)
+        }
+
         // Only show depositPayment step for PDC credit type
         if (wizardData.creditType !== 'PDC') {
             filteredSteps = filteredSteps.filter(step => step !== 'depositPayment');
         }
 
         return filteredSteps;
-    }, [wizardData.creditType]);
+    }, [wizardData.creditType, wizardData.subcategory, wizardData.selectedBusiness, wizardData.business]);
 
     // Effect to save state whenever it changes
     useEffect(() => {
@@ -697,8 +716,23 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             }
         }
 
-        const currentIndex = steps.indexOf(currentStep);
-        const nextStep = steps[currentIndex + 1];
+        // Recalculate steps based on updatedData to avoid timing issues
+        const isCompanyRegUpdated = updatedData.subcategory === 'Fees and Licensing' ||
+            (updatedData.selectedBusiness?.name === 'Company Registration' || updatedData.business === 'Company Registration');
+
+        let currentFilteredSteps = [...allSteps];
+        if (!isCompanyRegUpdated) {
+            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'companyRegistration');
+            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'creditTerm');
+        } else {
+            // For Company Registration: keep companyRegistration, creditTerm, and delivery steps
+        }
+        if (updatedData.creditType !== 'PDC') {
+            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'depositPayment');
+        }
+
+        const currentIndex = currentFilteredSteps.indexOf(currentStep);
+        const nextStep = currentFilteredSteps[currentIndex + 1];
 
         if (nextStep) {
             setLoading(true);
@@ -873,6 +907,22 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                 return <EmployerSelection {...commonProps} />;
             case 'product':
                 return <ProductSelection {...commonProps} />;
+            case 'companyRegistration':
+                return (
+                    <CompanyRegistrationStep
+                        data={wizardData}
+                        onNext={(data) => handleNext({ ...data, companyRegistrationData: data })}
+                        onBack={handleBack}
+                    />
+                );
+            case 'creditTerm':
+                return (
+                    <CreditTermSelection
+                        data={wizardData}
+                        onNext={(data) => handleNext(data)}
+                        onBack={handleBack}
+                    />
+                );
             case 'creditType':
                 return <CreditTypeSelection {...commonProps} onNext={(creditType) => handleNext({ creditType })} />;
             case 'delivery':

@@ -3,6 +3,7 @@ import { router, usePage } from '@inertiajs/react';
 import { ChevronLeft } from 'lucide-react';
 
 // Step components
+import CompanyRegistrationStep from '../ApplicationWizard/steps/CompanyRegistrationStep';
 import CatalogueStep from './steps/CatalogueStep';
 import DeliveryStep from './steps/DeliveryStep';
 import SummaryStep from './steps/SummaryStep';
@@ -74,7 +75,7 @@ interface CashPurchaseWizardProps {
     currency?: string;
 }
 
-type StepType = 'catalogue' | 'delivery' | 'summary' | 'checkout';
+type StepType = 'catalogue' | 'delivery' | 'summary' | 'checkout' | 'companyRegistration';
 
 const steps = [
     { id: 'catalogue', name: 'Select Product' },
@@ -181,9 +182,19 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en', curr
     const handleNext = (stepData: Partial<CashPurchaseData>) => {
         updateWizardData(stepData);
 
+        // Check for Company Registration in the updated context
+        const cart = stepData.cart || wizardData.cart;
+        const isCompanyReg = cart && cart.some(item => item.name === 'Company Registration');
+
         // Navigate to next step
         if (currentStep === 'catalogue') {
-            setCurrentStep('delivery');
+            if (isCompanyReg) {
+                setCurrentStep('companyRegistration');
+            } else {
+                setCurrentStep('delivery');
+            }
+        } else if (currentStep === 'companyRegistration') {
+            setCurrentStep('summary');
         } else if (currentStep === 'delivery') {
             setCurrentStep('summary');
         } else if (currentStep === 'summary') {
@@ -194,8 +205,15 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en', curr
     const handleBack = () => {
         if (currentStep === 'delivery') {
             setCurrentStep('catalogue');
+        } else if (currentStep === 'companyRegistration') {
+            setCurrentStep('catalogue');
         } else if (currentStep === 'summary') {
-            setCurrentStep('delivery');
+            const isCompanyReg = wizardData.cart.some(item => item.name === 'Company Registration');
+            if (isCompanyReg) {
+                setCurrentStep('companyRegistration');
+            } else {
+                setCurrentStep('delivery');
+            }
         } else if (currentStep === 'checkout') {
             setCurrentStep('summary');
         }
@@ -268,6 +286,15 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en', curr
                     <DeliveryStep
                         data={wizardData}
                         onNext={(data) => handleNext({ delivery: data })}
+                        onBack={handleBack}
+                    />
+                );
+
+            case 'companyRegistration':
+                return (
+                    <CompanyRegistrationStep
+                        data={wizardData}
+                        onNext={(data) => handleNext(data)}
                         onBack={handleBack}
                     />
                 );

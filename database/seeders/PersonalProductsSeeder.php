@@ -237,6 +237,26 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $consultancyId, 'name' => 'Full Business Plan', 'multiplier' => 3.00, 'custom_price' => 300.00, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
+        $feesLicensingSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $businessSupportCategory,
+            'name' => 'Fees and Licensing',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $companyRegId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $feesLicensingSubcategory,
+            'name' => 'Company Registration',
+            'base_price' => 130.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $companyRegId, 'name' => 'Standard', 'multiplier' => 1.00, 'custom_price' => 130.00, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
 
         // 6. Starlink Internet Kit (Personal Gadget)
         $starlinkCategory = DB::table('product_categories')->insertGetId([

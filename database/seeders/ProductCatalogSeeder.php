@@ -37,7 +37,8 @@ class ProductCatalogSeeder extends Seeder
             ['id' => 'delivery-services', 'name' => 'Delivery Services', 'emoji' => '🏍️'],
             ['id' => 'motor-vehicle', 'name' => 'Motor Vehicle Sundries', 'emoji' => '🚗'],
             ['id' => 'photocopying-bulk-printing', 'name' => 'Photocopying & Bulk Printing', 'emoji' => '📄'],
-            ['id' => 'water-purification', 'name' => 'Water Purification', 'emoji' => '💧'], // Added
+            ['id' => 'water-purification', 'name' => 'Water Purification', 'emoji' => '💧'],
+            ['id' => 'small-business-support', 'name' => 'Small Business Support', 'emoji' => '💼'],
         ];
 
         foreach ($categories as $categoryData) {
@@ -68,6 +69,19 @@ class ProductCatalogSeeder extends Seeder
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
+
+                    if ($businessData['name'] === 'Company Registration') {
+                        // Company Registration has no variants/scales, just one standard price
+                        DB::table('product_package_sizes')->insert([
+                            'product_id' => $productId,
+                            'name' => 'Standard',
+                            'multiplier' => 1.0,
+                            'custom_price' => 195.00, // Fixed price for Company Registration
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                        continue;
+                    }
 
                     // Standard scales for ALL MicroBiz products
                     $scales = [
@@ -262,6 +276,10 @@ class ProductCatalogSeeder extends Seeder
             'water-purification' => [
                 ['name' => 'Water Refill Station', 'businesses' => [['name' => 'Water Refill Station']]],
                 ['name' => 'Purification Systems', 'businesses' => [['name' => 'Purification Systems']]],
+            ],
+            // 24. Small Business Support
+            'small-business-support' => [
+                ['name' => 'Fees and Licensing', 'businesses' => [['name' => 'Company Registration']]],
             ],
         ];
 

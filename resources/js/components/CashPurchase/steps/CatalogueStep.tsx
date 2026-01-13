@@ -78,7 +78,7 @@ export default function CatalogueStep({
             switch (intent) {
                 case 'microBiz':
                 case 'microbiz':
-                    intentKeywords = ['Agriculture', 'Agricultural', 'Fertilizer', 'Seed', 'Chemicals', 'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries', 'Business', 'Maize', 'Irrigation', 'Water', 'Pumping', 'Planter', 'Sheller', 'Banking', 'Agency', 'POS', 'Purification', 'Refill', 'Cleaning', 'Beauty', 'Hair', 'Cosmetics', 'Food', 'Butchery', 'Events', 'Snack', 'Entertainment', 'Printing', 'Digital', 'Multimedia', 'Tailoring', 'Construction', 'Mining', 'Retailing', 'Delivery', 'Vehicle', 'Photocopying'];
+                    intentKeywords = ['Agriculture', 'Agricultural', 'Fertilizer', 'Seed', 'Chemicals', 'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries', 'Business', 'Maize', 'Irrigation', 'Water', 'Pumping', 'Planter', 'Sheller', 'Banking', 'Agency', 'POS', 'Purification', 'Refill', 'Cleaning', 'Beauty', 'Hair', 'Cosmetics', 'Food', 'Butchery', 'Events', 'Snack', 'Entertainment', 'Printing', 'Digital', 'Multimedia', 'Tailoring', 'Construction', 'Mining', 'Retailing', 'Delivery', 'Vehicle', 'Photocopying', 'Small', 'Support', 'Fee', 'Licens', 'Company', 'Reg'];
                     break;
                 case 'homeConstruction':
                     intentKeywords = ['Building', 'Cement', 'Roofing', 'Plumbing', 'Hardware', 'Paint', 'Timber', 'Electrical', 'Tank', 'Brick', 'Door', 'Window', 'Construction', 'Solar', 'Tile', 'Glass', 'Steel', 'Core', 'House', 'Durawall', 'Gate', 'Fence', 'Mesh', 'Wall'];
@@ -89,7 +89,7 @@ export default function CatalogueStep({
                 case 'personalGadgets':
                 case 'personal':
                 default:
-                    intentKeywords = ['Phone', 'Laptop', 'TV', 'Fridge', 'Stove', 'Bed', 'Sofa', 'Furniture', 'Solar', 'Appliance', 'Techno', 'Redmi', 'Samsung', 'Gadget', 'Computer', 'Radio', 'Audio', 'Freezer', 'Microwave', 'Kettle', 'Iron', 'Starlink', 'Internet', 'Satellite', 'Kit', 'Agriculture', 'Fertilizer', 'Seed'];
+                    intentKeywords = ['Phone', 'Laptop', 'TV', 'Fridge', 'Stove', 'Bed', 'Sofa', 'Furniture', 'Solar', 'Appliance', 'Techno', 'Redmi', 'Samsung', 'Gadget', 'Computer', 'Radio', 'Audio', 'Freezer', 'Microwave', 'Kettle', 'Iron', 'Starlink', 'Internet', 'Satellite', 'Kit', 'Agriculture', 'Fertilizer', 'Seed', 'Small', 'Business', 'Support', 'Fee', 'Licens', 'Company', 'Reg'];
                     break;
             }
 
