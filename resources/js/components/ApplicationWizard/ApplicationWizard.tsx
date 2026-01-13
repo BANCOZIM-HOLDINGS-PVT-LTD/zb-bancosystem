@@ -10,6 +10,7 @@ import CreditTermSelection from './steps/CreditTermSelection';
 import ApplicationSummary from './steps/ApplicationSummary';
 import FormStep from './steps/FormStep';
 import CompanyRegistrationStep from './steps/CompanyRegistrationStep';
+import LicenseCoursesStep from './steps/LicenseCoursesStep';
 import DocumentUploadStep from '../DocumentUpload/DocumentUploadStep';
 import { StateManager } from './services/StateManager';
 import { LocalStateManager } from './services/LocalStateManager';
@@ -479,11 +480,12 @@ const allSteps = [
     'employer',
     'product',
     'companyRegistration',
-    'creditTerm', // New step for duration selection
+    'licenseCourses', // License/Driving school courses step
+    'creditTerm', // Duration selection
     'creditType',
     'delivery',
     'depositPayment',
-    'account',  // Moved BEFORE summary so hasAccount is set before determining formId
+    'account',
     'summary',
     'form',
     'documents'
@@ -541,18 +543,29 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         let filteredSteps = [...allSteps];
 
         const isCompanyReg = wizardData.subcategory === 'Fees and Licensing' ||
-            (wizardData.selectedBusiness?.name === 'Company Registration' || wizardData.business === 'Company Registration'); // Robust check
+            (wizardData.selectedBusiness?.name === 'Company Registration' || wizardData.business === 'Company Registration');
 
+        const isLicenseCourses = wizardData.subcategory === 'Driving School' ||
+            (wizardData.selectedBusiness?.name === 'License Courses' || wizardData.business === 'License Courses');
+
+        // Filter out steps based on product type
         if (!isCompanyReg) {
             filteredSteps = filteredSteps.filter(step => step !== 'companyRegistration');
-            // Standard flow usually does terms inside ProductSelection, so we might not need creditTerm step?
-            // Actually, if ProductSelection handles it internaly, we filter out creditTerm for standard flow.
+        }
+
+        if (!isLicenseCourses) {
+            filteredSteps = filteredSteps.filter(step => step !== 'licenseCourses');
+        }
+
+        // For Company Reg and License Courses, keep creditTerm step (since ProductSelection skipped internal terms)
+        // For standard products, filter out creditTerm (handled internally in ProductSelection)
+        if (!isCompanyReg && !isLicenseCourses) {
             filteredSteps = filteredSteps.filter(step => step !== 'creditTerm');
-        } else {
-            // For Company Registration flow:
-            // - Keep companyRegistration step
-            // - Keep creditTerm step (since ProductSelection skipped internal terms)
-            // - Keep delivery step (user selects depot for document delivery)
+        }
+
+        // Skip delivery step for License Courses (location is selected in LicenseCoursesStep)
+        if (isLicenseCourses) {
+            filteredSteps = filteredSteps.filter(step => step !== 'delivery');
         }
 
         // Only show depositPayment step for PDC credit type
@@ -720,13 +733,30 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         const isCompanyRegUpdated = updatedData.subcategory === 'Fees and Licensing' ||
             (updatedData.selectedBusiness?.name === 'Company Registration' || updatedData.business === 'Company Registration');
 
+        const isLicenseCoursesUpdated = updatedData.subcategory === 'Driving School' ||
+            (updatedData.selectedBusiness?.name === 'License Courses' || updatedData.business === 'License Courses');
+
         let currentFilteredSteps = [...allSteps];
+
         if (!isCompanyRegUpdated) {
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'companyRegistration');
-            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'creditTerm');
-        } else {
-            // For Company Registration: keep companyRegistration, creditTerm, and delivery steps
         }
+
+        if (!isLicenseCoursesUpdated) {
+            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'licenseCourses');
+        }
+
+        // For Company Reg and License Courses, keep creditTerm step
+        // For standard products, filter out creditTerm (handled internally in ProductSelection)
+        if (!isCompanyRegUpdated && !isLicenseCoursesUpdated) {
+            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'creditTerm');
+        }
+
+        // Skip delivery step for License Courses (location is selected in LicenseCoursesStep)
+        if (isLicenseCoursesUpdated) {
+            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'delivery');
+        }
+
         if (updatedData.creditType !== 'PDC') {
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'depositPayment');
         }
@@ -912,6 +942,14 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                     <CompanyRegistrationStep
                         data={wizardData}
                         onNext={(data) => handleNext({ ...data, companyRegistrationData: data })}
+                        onBack={handleBack}
+                    />
+                );
+            case 'licenseCourses':
+                return (
+                    <LicenseCoursesStep
+                        data={wizardData}
+                        onNext={(data) => handleNext({ ...data, licenseCoursesData: data })}
                         onBack={handleBack}
                     />
                 );

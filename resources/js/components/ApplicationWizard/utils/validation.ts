@@ -383,6 +383,15 @@ export const validateProductStep = (data: Partial<WizardData>): ValidationResult
       }
     ];
   } else {
+    // Check if this is License Courses - amount is calculated in LicenseCoursesStep
+    const isLicenseCourses = data.subcategory === 'License Courses' ||
+      data.subcategory === 'Driving School' ||
+      data.business === 'License Courses';
+
+    // Check if this is Company Registration - amount is calculated later
+    const isCompanyReg = data.subcategory === 'Fees and Licensing' ||
+      data.business === 'Company Registration';
+
     // Standard Mode: validate all single-product fields
     productFields = [
       {
@@ -402,21 +411,25 @@ export const validateProductStep = (data: Partial<WizardData>): ValidationResult
         rules: [
           { rule: 'required', message: 'Please select a business' }
         ]
-      },
-      {
+      }
+    ];
+
+    // Only require scale and amount for standard products (not License Courses or Company Reg)
+    if (!isLicenseCourses && !isCompanyReg) {
+      productFields.push({
         field: 'scale',
         rules: [
           { rule: 'required', message: 'Please select a scale' }
         ]
-      },
-      {
+      });
+      productFields.push({
         field: 'amount',
         rules: [
           { rule: 'required', message: 'Please enter an amount' },
           { rule: 'minValue', params: 1, message: 'Amount must be greater than 0' }
         ]
-      }
-    ];
+      });
+    }
   }
 
   productFields.forEach(({ field, rules }) => {

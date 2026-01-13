@@ -176,6 +176,33 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             }
         }
 
+        // Special handling for Driving School / License Courses: Skip directly to LicenseCoursesStep
+        if (subcategory.name === 'Driving School' || subcategory.name === 'License Courses') {
+            onNext({
+                category: selectedCategory?.name || 'Drivers License',
+                subcategory: subcategory.name,
+                business: 'License Courses',
+                scale: 'Standard',
+                amount: 0, // Will be calculated in LicenseCoursesStep
+                creditTerm: null,
+                monthlyPayment: 0,
+                productId: null,
+                productName: 'License Courses',
+                categoryId: selectedCategory?.id,
+                selectedBusiness: {
+                    id: null,
+                    name: 'License Courses',
+                    basePrice: 0,
+                    salesData: []
+                },
+                selectedScale: null,
+                color: null,
+                interiorColor: null,
+                exteriorColor: null
+            });
+            return;
+        }
+
         // Check if subcategory has series
         if (subcategory.series && subcategory.series.length > 0) {
             setCurrentView('series');
@@ -257,6 +284,33 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     exteriorColor: null
                 });
             }
+            return;
+        }
+
+        // Handle License Courses - skip to dedicated step
+        if (business.name === 'License Courses') {
+            onNext({
+                category: selectedCategory?.name || 'Small Business Support',
+                subcategory: selectedSubcategory?.name || 'Driving School',
+                business: business.name,
+                scale: 'Standard',
+                amount: 0, // Will be calculated in LicenseCoursesStep
+                creditTerm: null,
+                monthlyPayment: 0,
+                productId: business.id,
+                productName: business.name,
+                categoryId: selectedCategory?.id,
+                selectedBusiness: {
+                    id: business.id?.toString(),
+                    name: business.name,
+                    basePrice: 0,
+                    salesData: []
+                },
+                selectedScale: null,
+                color: null,
+                interiorColor: null,
+                exteriorColor: null
+            });
             return;
         }
 

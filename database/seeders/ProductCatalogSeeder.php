@@ -280,6 +280,7 @@ class ProductCatalogSeeder extends Seeder
             // 24. Small Business Support
             'small-business-support' => [
                 ['name' => 'Fees and Licensing', 'businesses' => [['name' => 'Company Registration']]],
+                ['name' => 'Driving School', 'businesses' => [['name' => 'License Courses']]],
             ],
         ];
 
