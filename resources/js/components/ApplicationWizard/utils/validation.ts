@@ -392,6 +392,12 @@ export const validateProductStep = (data: Partial<WizardData>): ValidationResult
     const isCompanyReg = data.subcategory === 'Fees and Licensing' ||
       data.business === 'Company Registration';
 
+    // Check if this is Zimparks Holiday - amount is calculated in ZimparksHolidayStep
+    const isZimparksHoliday = data.category === 'Holiday Package' ||
+      data.category === 'Zimparks Holiday Package' ||
+      data.subcategory === 'Destinations' ||
+      data.business === 'Zimparks Vacation Package';
+
     // Standard Mode: validate all single-product fields
     productFields = [
       {
@@ -414,8 +420,8 @@ export const validateProductStep = (data: Partial<WizardData>): ValidationResult
       }
     ];
 
-    // Only require scale and amount for standard products (not License Courses or Company Reg)
-    if (!isLicenseCourses && !isCompanyReg) {
+    // Only require scale and amount for standard products (not License Courses, Company Reg, or Zimparks)
+    if (!isLicenseCourses && !isCompanyReg && !isZimparksHoliday) {
       productFields.push({
         field: 'scale',
         rules: [

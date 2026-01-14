@@ -467,7 +467,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                     </div>
                                     <div>
                                         <p className="text-sm text-gray-500 dark:text-gray-400">Monthly Payment</p>
-                                        <p className="font-medium">${data.monthlyPayment}</p>
+                                        <p className="font-medium">${Number(data.monthlyPayment).toFixed(2)}</p>
                                     </div>
                                 </div>
                             )}

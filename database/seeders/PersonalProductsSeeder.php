@@ -176,10 +176,10 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $nurseAidId, 'name' => 'Full Course (Theory + Practicals)', 'multiplier' => 1.50, 'custom_price' => 300.00, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 4. Holiday Package
+        // 4. Zimparks Holiday Package
         $holidayPackageCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'Holiday Package',
-            'emoji' => '🎡',
+            'name' => 'Zimparks Holiday Package',
+            'emoji' => '🏕️',
             'type' => 'personalServices',
             'created_at' => now(),
             'updated_at' => now(),

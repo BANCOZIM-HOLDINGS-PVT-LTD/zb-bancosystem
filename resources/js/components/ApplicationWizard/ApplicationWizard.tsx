@@ -11,6 +11,7 @@ import ApplicationSummary from './steps/ApplicationSummary';
 import FormStep from './steps/FormStep';
 import CompanyRegistrationStep from './steps/CompanyRegistrationStep';
 import LicenseCoursesStep from './steps/LicenseCoursesStep';
+import ZimparksHolidayStep from './steps/ZimparksHolidayStep';
 import DocumentUploadStep from '../DocumentUpload/DocumentUploadStep';
 import { StateManager } from './services/StateManager';
 import { LocalStateManager } from './services/LocalStateManager';
@@ -481,6 +482,7 @@ const allSteps = [
     'product',
     'companyRegistration',
     'licenseCourses', // License/Driving school courses step
+    'zimparksHoliday', // Zimparks Holiday booking step
     'creditTerm', // Duration selection
     'creditType',
     'delivery',
@@ -546,7 +548,13 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             (wizardData.selectedBusiness?.name === 'Company Registration' || wizardData.business === 'Company Registration');
 
         const isLicenseCourses = wizardData.subcategory === 'Driving School' ||
+            wizardData.subcategory === 'License Courses' ||
             (wizardData.selectedBusiness?.name === 'License Courses' || wizardData.business === 'License Courses');
+
+        const isZimparksHoliday = wizardData.category === 'Zimparks Holiday Package' ||
+            wizardData.category === 'Holiday Package' ||
+            wizardData.subcategory === 'Destinations' ||
+            (wizardData.selectedBusiness?.name === 'Zimparks Vacation Package' || wizardData.business === 'Zimparks Vacation Package');
 
         // Filter out steps based on product type
         if (!isCompanyReg) {
@@ -557,14 +565,18 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             filteredSteps = filteredSteps.filter(step => step !== 'licenseCourses');
         }
 
-        // For Company Reg and License Courses, keep creditTerm step (since ProductSelection skipped internal terms)
+        if (!isZimparksHoliday) {
+            filteredSteps = filteredSteps.filter(step => step !== 'zimparksHoliday');
+        }
+
+        // For Company Reg, License Courses, and Zimparks, keep creditTerm step
         // For standard products, filter out creditTerm (handled internally in ProductSelection)
-        if (!isCompanyReg && !isLicenseCourses) {
+        if (!isCompanyReg && !isLicenseCourses && !isZimparksHoliday) {
             filteredSteps = filteredSteps.filter(step => step !== 'creditTerm');
         }
 
-        // Skip delivery step for License Courses (location is selected in LicenseCoursesStep)
-        if (isLicenseCourses) {
+        // Skip delivery step for License Courses and Zimparks Holiday (location selected in dedicated step)
+        if (isLicenseCourses || isZimparksHoliday) {
             filteredSteps = filteredSteps.filter(step => step !== 'delivery');
         }
 
@@ -574,7 +586,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         }
 
         return filteredSteps;
-    }, [wizardData.creditType, wizardData.subcategory, wizardData.selectedBusiness, wizardData.business]);
+    }, [wizardData.creditType, wizardData.subcategory, wizardData.selectedBusiness, wizardData.business, wizardData.category]);
 
     // Effect to save state whenever it changes
     useEffect(() => {
@@ -738,6 +750,11 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
 
         let currentFilteredSteps = [...allSteps];
 
+        const isZimparksHolidayUpdated = updatedData.category === 'Zimparks Holiday Package' ||
+            updatedData.category === 'Holiday Package' ||
+            updatedData.subcategory === 'Destinations' ||
+            (updatedData.selectedBusiness?.name === 'Zimparks Vacation Package' || updatedData.business === 'Zimparks Vacation Package');
+
         if (!isCompanyRegUpdated) {
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'companyRegistration');
         }
@@ -746,14 +763,18 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'licenseCourses');
         }
 
-        // For Company Reg and License Courses, keep creditTerm step
+        if (!isZimparksHolidayUpdated) {
+            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'zimparksHoliday');
+        }
+
+        // For Company Reg, License Courses, and Zimparks, keep creditTerm step
         // For standard products, filter out creditTerm (handled internally in ProductSelection)
-        if (!isCompanyRegUpdated && !isLicenseCoursesUpdated) {
+        if (!isCompanyRegUpdated && !isLicenseCoursesUpdated && !isZimparksHolidayUpdated) {
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'creditTerm');
         }
 
-        // Skip delivery step for License Courses (location is selected in LicenseCoursesStep)
-        if (isLicenseCoursesUpdated) {
+        // Skip delivery step for License Courses and Zimparks Holiday
+        if (isLicenseCoursesUpdated || isZimparksHolidayUpdated) {
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'delivery');
         }
 
@@ -950,6 +971,14 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                     <LicenseCoursesStep
                         data={wizardData}
                         onNext={(data) => handleNext({ ...data, licenseCoursesData: data })}
+                        onBack={handleBack}
+                    />
+                );
+            case 'zimparksHoliday':
+                return (
+                    <ZimparksHolidayStep
+                        data={wizardData}
+                        onNext={(data) => handleNext({ ...data, zimparksHolidayData: data })}
                         onBack={handleBack}
                     />
                 );

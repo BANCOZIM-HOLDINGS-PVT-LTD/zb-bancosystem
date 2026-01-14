@@ -166,14 +166,31 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const handleSubcategorySelect = (subcategory: Subcategory) => {
         setSelectedSubcategory(subcategory);
 
-        // Special handling for Zimparks: Skip product selection and go straight to destinations
-        if (subcategory.name === 'Zimparks Lodges/Cottages') {
-            const zimparksProduct = subcategory.businesses.find(b => b.name === 'Zimparks Vacation Package');
-            if (zimparksProduct) {
-                setSelectedBusiness(zimparksProduct);
-                setCurrentView('zimparks_destinations');
-                return;
-            }
+        // Special handling for Zimparks Holiday: Skip directly to ZimparksHolidayStep
+        if (subcategory.name === 'Destinations' || subcategory.name === 'Zimparks Lodges/Cottages') {
+            onNext({
+                category: selectedCategory?.name || 'Zimparks Holiday Package',
+                subcategory: subcategory.name,
+                business: 'Zimparks Vacation Package',
+                scale: 'Standard',
+                amount: 0, // Will be calculated in ZimparksHolidayStep
+                creditTerm: null,
+                monthlyPayment: 0,
+                productId: null,
+                productName: 'Zimparks Holiday Package',
+                categoryId: selectedCategory?.id,
+                selectedBusiness: {
+                    id: null,
+                    name: 'Zimparks Vacation Package',
+                    basePrice: 0,
+                    salesData: []
+                },
+                selectedScale: null,
+                color: null,
+                interiorColor: null,
+                exteriorColor: null
+            });
+            return;
         }
 
         // Special handling for Driving School / License Courses: Skip directly to LicenseCoursesStep

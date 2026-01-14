@@ -59,7 +59,7 @@ const CreditTermSelection: React.FC<CreditTermSelectionProps> = ({ data, onNext,
 
             onNext({
                 creditTerm: selectedTermMonths,
-                monthlyPayment: monthlyPayment,
+                monthlyPayment: parseFloat(monthlyPayment.toFixed(2)),
                 loanAmount: grossLoan, // or net loan? Usually loanAmount = gross loan
                 amount: finalAmount // Base amount
             });
