@@ -15,26 +15,26 @@ interface WelcomeProps {
 const PRODUCT_INTENTS = [
     {
         id: 'microBiz',
-        name: 'MicroBiz',
-        description: 'Small Business Starter Pack',
+        name: 'Small to Medium Business Starter Pack',
+        description: '(empower yourself for income generating projects)',
         icon: Briefcase,
     },
     {
         id: 'homeConstruction',
-        name: 'Home Construction',
-        description: 'Building materials, hardware, and improvement',
+        name: 'Home Construction and Improvements',
+        description: '(build your house or improve your home living space)',
         icon: Hammer,
     },
     {
         id: 'personalServices',
-        name: 'Personal Services',
-        description: 'Nurse Aid, Driving License, Holiday, School Fees, Business Support',
+        name: 'Invest in Personal Development',
+        description: '(equip yourself or your loved ones with life changing skills )',
         icon: GraduationCap,
     },
     {
         id: 'personalGadgets',
-        name: 'Personal Products',
-        description: 'Gadgets, Furniture, Solar Products',
+        name: 'Personal and Homeware Products',
+        description: '(improve your lifestyle with the latest gadgets & furniture)',
         icon: Laptop,
     }
 ];
@@ -129,7 +129,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
             params.type = lastSelectedIntent;
             router.visit(route('cash.purchase', params));
         } else {
-            // Credit/Loan Flow
+            // Credit Flow
             // We pass the new intent ID as 'intent'
             params.intent = lastSelectedIntent;
             router.visit(route('application.wizard', params));
@@ -288,7 +288,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                                     Buy on Credit
                                                 </h3>
                                                 <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                    Apply for a loan or hire purchase
+                                                    (apply for hire purchase)
                                                 </p>
                                                 <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-emerald-600" />
                                             </div>
@@ -306,7 +306,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                                     Buy with Cash
                                                 </h3>
                                                 <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                    Pay directly using Paynow, EcoCash, or Card
+                                                 (EcoCash/Zimswitch/Mastercard/Visa)
                                                 </p>
                                                 <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-emerald-600" />
                                             </div>
@@ -349,7 +349,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                             Select Category
                                         </h1>
                                         <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                            You are viewing <strong>{paymentMode === 'cash' ? 'Cash Purchase' : 'Credit / Loan'}</strong> options.
+                                            You are viewing <strong>{paymentMode === 'cash' ? 'Cash Purchase' : 'Credit'}</strong> options.
                                         </p>
                                         <button
                                             onClick={() => setCurrentStep('paymentMode')}

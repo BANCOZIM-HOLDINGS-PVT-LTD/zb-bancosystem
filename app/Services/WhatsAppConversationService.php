@@ -216,12 +216,8 @@ class WhatsAppConversationService
      */
     private function sendWelcomeMessage(string $from): void
     {
-        $message = "👋 *Welcome to Microbiz Zimbabwe*\n\n";
-        $message .= "The home of innovation and where entrepreneurs are born.\n\n";
-        $message .= "Say *'hi'* or *'hello'* to get started!\n\n";
-        $message .= "Or type *'resume XXXXXX'* to continue a saved application.";
-
-        $this->whatsAppService->sendMessage($from, $message);
+        // Use the state machine to start a conversation with Adala greeting
+        $this->stateMachine->startConversation($from);
     }
 
     /**

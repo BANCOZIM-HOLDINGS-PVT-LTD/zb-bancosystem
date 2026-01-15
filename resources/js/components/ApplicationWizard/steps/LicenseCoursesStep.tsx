@@ -74,18 +74,18 @@ const LICENSE_CLASSES = [
 
 // EasyGo Office Locations
 const LESSON_LOCATIONS = [
-    { id: 'harare-hq', name: 'Harare (Head Office) - CNR 3rd/K Nkrumah Ave' },
-    { id: 'bulawayo', name: 'Bulawayo - Old Memorial Hospital, CR 11th & Herbert Chitepo' },
-    { id: 'mutare', name: 'Mutare - 1st Floor, Bhahela Arcade' },
-    { id: 'gweru', name: 'Gweru - RG Complex, Main Street' },
-    { id: 'bindura', name: 'Bindura - 768 York Street' },
-    { id: 'beitbridge', name: 'Beitbridge - No 10 Old Custom House, Old Bolder' },
-    { id: 'chitungwiza', name: 'Chitungwiza - DA Office Makoni' },
-    { id: 'marondera', name: 'Marondera - Musiyandaita Building' },
-    { id: 'masvingo', name: 'Masvingo - 74 Timber Road' },
-    { id: 'chinhoyi', name: 'Chinhoyi - Old Mutual Office 4, Magamba Way' },
+    { id: 'harare-hq', name: 'Harare CBD'},
+    { id: 'bulawayo', name: 'Bulawayo'},
+    { id: 'mutare', name: 'Mutare'},
+    { id: 'gweru', name: 'Gweru'},
+    { id: 'bindura', name: 'Bindura' },
+    { id: 'beitbridge', name: 'Beitbridge' },
+    { id: 'chitungwiza', name: 'Chitungwiza' },
+    { id: 'marondera', name: 'Marondera' },
+    { id: 'masvingo', name: 'Masvingo' },
+    { id: 'chinhoyi', name: 'Chinhoyi' },
     { id: 'victoria-falls', name: 'Victoria Falls' },
-    { id: 'gwanda', name: 'Gwanda - 369 Enterprise Crescent' },
+    { id: 'gwanda', name: 'Gwanda' },
 ];
 
 const LicenseCoursesStep: React.FC<LicenseCoursesStepProps> = ({ data, onNext, onBack }) => {

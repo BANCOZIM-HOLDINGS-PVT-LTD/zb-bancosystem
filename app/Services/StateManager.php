@@ -125,12 +125,55 @@ class StateManager
     private function validateStep(string $step): string
     {
         $validSteps = [
+            // Original web flow steps
             'language', 'intent', 'employer', 'product', 'account',
             'summary', 'form', 'documents', 'completed', 'in_review',
-            'approved', 'rejected', 'pending_documents', 'processing'
+            'approved', 'rejected', 'pending_documents', 'processing',
+            
+            // WhatsApp Adala conversation flow
+            'language_selection', 'payment_method', 'main_menu', 'currency_selection',
+            
+            // Website redirect states
+            'redirect_to_product', 'redirect_starter_pack_credit', 'redirect_gadgets_credit',
+            'redirect_chicken_projects', 'redirect_building_materials',
+            'redirect_driving_school', 'redirect_zimparks',
+            'redirect_school_fees', 'redirect_company_registration',
+            'redirect_tracking', 'redirect_delivery_tracking', 
+            'redirect_application_status', 'redirect_agent_login',
+            
+            // Customer service and FAQs
+            'customer_service_wait', 'show_faqs',
+            
+            // Agent application flow
+            'agent_age_check', 'agent_underage', 'agent_province',
+            'agent_name', 'agent_surname', 'agent_gender', 'agent_age_range',
+            'agent_voice_number', 'agent_whatsapp_number', 'agent_ecocash_number',
+            'agent_id_upload', 'agent_id_back_upload',
+            
+            // Idle timeout and survey
+            'idle_continue', 'survey_question',
+            
+            // Legacy MicroBiz states
+            'microbiz_main_menu', 'redirect_cash', 'redirect_credit',
+            'employment_check', 'formal_employment_check', 'unemployment_category',
+            'employer_category', 'sme_salary_method', 'beneficiary_question',
+            'monitoring_question', 'training_question', 'agent_offer_after_rejection',
         ];
         
-        return in_array($step, $validSteps) ? $step : 'language';
+        // Allow any step that starts with known prefixes (for flexibility)
+        if (in_array($step, $validSteps)) {
+            return $step;
+        }
+        
+        // Check for known prefixes
+        $validPrefixes = ['agent_', 'redirect_', 'microbiz_', 'employment_', 'customer_', 'show_'];
+        foreach ($validPrefixes as $prefix) {
+            if (str_starts_with($step, $prefix)) {
+                return $step;
+            }
+        }
+        
+        return 'language_selection'; // Default to language selection for WhatsApp
     }
     
     /**
