@@ -10,6 +10,7 @@ use App\Services\WhatsAppConversationService;
 use App\Services\ReferenceCodeService;
 use App\Services\StateManager;
 use App\Services\TwilioWhatsAppService;
+use App\Services\WhatsAppCloudApiService;
 // use App\Services\RapiWhaService; // DEPRECATED: Switched to Twilio 2025-12-06
 
 class WhatsAppWebhookController extends Controller
@@ -18,17 +19,51 @@ class WhatsAppWebhookController extends Controller
     private $referenceCodeService;
     private $stateManager;
     private TwilioWhatsAppService $whatsAppService;
+    private WhatsAppCloudApiService $cloudApiService;
 
     public function __construct(
         WhatsAppConversationService $conversationService,
         ReferenceCodeService $referenceCodeService,
         StateManager $stateManager,
-        TwilioWhatsAppService $whatsAppService
+        TwilioWhatsAppService $whatsAppService,
+        WhatsAppCloudApiService $cloudApiService
     ) {
         $this->conversationService = $conversationService;
         $this->referenceCodeService = $referenceCodeService;
         $this->stateManager = $stateManager;
         $this->whatsAppService = $whatsAppService;
+        $this->cloudApiService = $cloudApiService;
+    }
+
+    /**
+     * Verify webhook for WhatsApp Cloud API setup
+     * 
+     * Meta requires this endpoint to respond to a GET request with hub.challenge
+     * when setting up webhooks in the Facebook Developer Dashboard.
+     */
+    public function verifyWebhook(Request $request)
+    {
+        $mode = $request->query('hub_mode');
+        $token = $request->query('hub_verify_token');
+        $challenge = $request->query('hub_challenge');
+
+        Log::info('WhatsApp Cloud API webhook verification attempt', [
+            'mode' => $mode,
+            'token_provided' => !empty($token),
+            'challenge' => $challenge
+        ]);
+
+        // Check if mode and token are correct
+        if ($mode === 'subscribe' && $token === $this->cloudApiService->getVerifyToken()) {
+            Log::info('WhatsApp Cloud API webhook verified successfully');
+            return response($challenge, 200)->header('Content-Type', 'text/plain');
+        }
+
+        Log::warning('WhatsApp Cloud API webhook verification failed', [
+            'expected_token' => $this->cloudApiService->getVerifyToken(),
+            'received_token' => $token
+        ]);
+        return response('Forbidden', 403);
     }
 
     /**
@@ -45,6 +80,248 @@ class WhatsAppWebhookController extends Controller
     {
         Log::info('WhatsApp webhook received', $request->all());
 
+        // Detect if this is a WhatsApp Cloud API webhook (Meta format)
+        if ($request->input('object') === 'whatsapp_business_account') {
+            return $this->handleCloudApiWebhook($request);
+        }
+
+        // Otherwise, handle as Twilio webhook (legacy format)
+        return $this->handleTwilioWebhook($request);
+    }
+
+    /**
+     * Handle WhatsApp Cloud API webhooks from Meta
+     */
+    protected function handleCloudApiWebhook(Request $request)
+    {
+        try {
+            $entries = $request->input('entry', []);
+
+            foreach ($entries as $entry) {
+                $changes = $entry['changes'] ?? [];
+
+                foreach ($changes as $change) {
+                    $value = $change['value'] ?? [];
+                    
+                    // Handle incoming messages
+                    if (isset($value['messages'])) {
+                        foreach ($value['messages'] as $message) {
+                            $this->processCloudApiMessage($message, $value);
+                        }
+                    }
+
+                    // Handle status updates
+                    if (isset($value['statuses'])) {
+                        foreach ($value['statuses'] as $status) {
+                            $this->processCloudApiStatus($status);
+                        }
+                    }
+                }
+            }
+
+            // Always return 200 to acknowledge receipt
+            return response()->json(['status' => 'ok'], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error processing WhatsApp Cloud API webhook', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Still return 200 to prevent Meta from retrying
+            return response()->json(['status' => 'ok'], 200);
+        }
+    }
+
+    /**
+     * Process a single message from WhatsApp Cloud API
+     */
+    protected function processCloudApiMessage(array $message, array $value): void
+    {
+        $messageId = $message['id'] ?? null;
+        $from = $message['from'] ?? null;
+        $timestamp = $message['timestamp'] ?? null;
+        $type = $message['type'] ?? 'text';
+
+        if (!$from) {
+            Log::warning('Cloud API message missing from field');
+            return;
+        }
+
+        // Idempotency check
+        if ($messageId) {
+            $cacheKey = 'whatsapp_msg_' . $messageId;
+            if (Cache::has($cacheKey)) {
+                Log::info('WhatsApp Cloud API: Duplicate message ignored', ['id' => $messageId]);
+                return;
+            }
+            Cache::put($cacheKey, true, 86400); // 24 hours
+        }
+
+        // Format phone number to consistent format
+        $formattedFrom = 'whatsapp:+' . $from;
+
+        Log::info('WhatsApp Cloud API message received', [
+            'from' => $from,
+            'type' => $type,
+            'message_id' => $messageId
+        ]);
+
+        // Mark message as read
+        if ($messageId) {
+            $this->cloudApiService->markAsRead($messageId);
+        }
+
+        // Handle different message types
+        switch ($type) {
+            case 'text':
+                $text = $message['text']['body'] ?? '';
+                $this->processTextMessage($formattedFrom, $text);
+                break;
+
+            case 'image':
+            case 'document':
+            case 'video':
+            case 'audio':
+                $this->processCloudApiMediaMessage($formattedFrom, $message, $type);
+                break;
+
+            case 'interactive':
+                // Handle button replies
+                $interactive = $message['interactive'] ?? [];
+                $interactiveType = $interactive['type'] ?? '';
+                
+                if ($interactiveType === 'button_reply') {
+                    $buttonId = $interactive['button_reply']['id'] ?? '';
+                    $buttonTitle = $interactive['button_reply']['title'] ?? '';
+                    $this->processTextMessage($formattedFrom, $buttonTitle ?: $buttonId);
+                } elseif ($interactiveType === 'list_reply') {
+                    $listId = $interactive['list_reply']['id'] ?? '';
+                    $listTitle = $interactive['list_reply']['title'] ?? '';
+                    $this->processTextMessage($formattedFrom, $listTitle ?: $listId);
+                }
+                break;
+
+            case 'button':
+                // Template button replies
+                $buttonText = $message['button']['text'] ?? '';
+                $this->processTextMessage($formattedFrom, $buttonText);
+                break;
+
+            default:
+                Log::info('Unhandled Cloud API message type', [
+                    'type' => $type,
+                    'from' => $from
+                ]);
+        }
+    }
+
+    /**
+     * Process media message from Cloud API
+     */
+    protected function processCloudApiMediaMessage(string $from, array $message, string $type): void
+    {
+        $mediaId = $message[$type]['id'] ?? null;
+        $caption = $message[$type]['caption'] ?? '';
+        $mimeType = $message[$type]['mime_type'] ?? '';
+
+        if (!$mediaId) {
+            Log::warning('Cloud API media message missing media ID');
+            return;
+        }
+
+        Log::info('Processing Cloud API media message', [
+            'from' => $from,
+            'type' => $type,
+            'media_id' => $mediaId
+        ]);
+
+        // Download the media
+        $mediaData = $this->cloudApiService->downloadMedia($mediaId);
+
+        if (!$mediaData) {
+            Log::error('Failed to download Cloud API media', ['media_id' => $mediaId]);
+            $this->cloudApiService->sendMessage($from, "Sorry, we couldn't process your media. Please try again.");
+            return;
+        }
+
+        // Create a simulated request for the existing media handler
+        $request = new Request();
+        $request->merge([
+            'cloud_api_media' => true,
+            'media_content' => base64_encode($mediaData['content']),
+            'media_mime_type' => $mediaData['mime_type'] ?? $mimeType,
+            'media_type' => $type,
+            'caption' => $caption
+        ]);
+
+        $this->handleMediaMessage($from, $request);
+    }
+
+    /**
+     * Process status update from Cloud API
+     */
+    protected function processCloudApiStatus(array $status): void
+    {
+        $messageId = $status['id'] ?? null;
+        $statusType = $status['status'] ?? null;
+        $recipientId = $status['recipient_id'] ?? null;
+        $timestamp = $status['timestamp'] ?? null;
+
+        Log::info('WhatsApp Cloud API status update', [
+            'message_id' => $messageId,
+            'status' => $statusType,
+            'recipient' => $recipientId
+        ]);
+
+        // Handle delivery errors
+        if (isset($status['errors'])) {
+            foreach ($status['errors'] as $error) {
+                Log::error('WhatsApp Cloud API delivery error', [
+                    'message_id' => $messageId,
+                    'error_code' => $error['code'] ?? null,
+                    'error_title' => $error['title'] ?? null,
+                    'error_message' => $error['message'] ?? null
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Process text message (shared between Cloud API and Twilio)
+     */
+    protected function processTextMessage(string $from, string $body): void
+    {
+        try {
+            // DEBUG: Test direct message sending
+            if (strtolower(trim($body)) === 'test') {
+                Log::info('WhatsApp TEST: Attempting direct message send');
+                $result = $this->cloudApiService->sendMessage($from, 'Test message received! Bot is working with Cloud API.');
+                Log::info('WhatsApp TEST: Send result', ['success' => $result]);
+                return;
+            }
+
+            // Check for reference code commands
+            if ($this->handleReferenceCodeCommands($from, $body)) {
+                return;
+            }
+
+            // Process through conversation service
+            $this->conversationService->processIncomingMessage($from, $body);
+
+        } catch (\Exception $e) {
+            Log::error('Error processing text message', [
+                'error' => $e->getMessage(),
+                'from' => $from,
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    /**
+     * Handle Twilio webhook format (legacy)
+     */
+    protected function handleTwilioWebhook(Request $request)
+    {
         // Twilio webhook payload
         // - From: sender phone number (whatsapp:+1234567890)
         // - Body: message content
@@ -61,7 +338,6 @@ class WhatsAppWebhookController extends Controller
              ?? $request->input('message')
              ?? $request->input('text', '');
         
-        $numMedia = (int) $request->input('NumMedia', 0);
         $numMedia = (int) $request->input('NumMedia', 0);
         $messageSid = $request->input('MessageSid');
 

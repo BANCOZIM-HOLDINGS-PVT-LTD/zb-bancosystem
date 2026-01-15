@@ -3,8 +3,9 @@
 namespace App\Services;
 
 use App\Services\StateManager;
-use App\Services\TwilioWhatsAppService;
+use App\Services\WhatsAppCloudApiService;
 use App\Services\WhatsAppStateMachine;
+// use App\Services\TwilioWhatsAppService; // DEPRECATED: Switched to Cloud API 2026-01-14
 // use App\Services\RapiWhaService; // DEPRECATED: Switched to Twilio 2025-12-06
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
@@ -12,13 +13,13 @@ use Illuminate\Support\Facades\Http;
 
 class WhatsAppConversationService
 {
-    private TwilioWhatsAppService $whatsAppService;
+    private WhatsAppCloudApiService $whatsAppService;
     private WhatsAppStateMachine $stateMachine;
     private $stateManager;
     private $syncService;
 
     public function __construct(
-        TwilioWhatsAppService $whatsAppService, 
+        WhatsAppCloudApiService $whatsAppService, 
         StateManager $stateManager,
         CrossPlatformSyncService $syncService
     ) {
@@ -34,7 +35,7 @@ class WhatsAppConversationService
      */
     public function processIncomingMessage(string $from, string $message): void
     {
-        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
+        $phoneNumber = WhatsAppCloudApiService::extractPhoneNumber($from);
         $message = trim(strtolower($message));
         
         // Greetings that should always restart the conversation
@@ -77,7 +78,7 @@ class WhatsAppConversationService
      */
     private function handleNewConversation(string $from, string $message): void
     {
-        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
+        $phoneNumber = WhatsAppCloudApiService::extractPhoneNumber($from);
 
         // Microbiz greetings - main entry point
         $microbizGreetings = ['hi', 'hie', 'hallo', 'hello', 'hey', 'hesi', 'start', 'begin'];
@@ -175,7 +176,7 @@ class WhatsAppConversationService
      */
     public function resumeApplication(string $from, string $resumeCode): void
     {
-        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
+        $phoneNumber = WhatsAppCloudApiService::extractPhoneNumber($from);
         
         // Find session by resume code
         $linkedState = $this->stateManager->getStateByResumeCode($resumeCode);
@@ -241,7 +242,7 @@ class WhatsAppConversationService
      */
     private function showMicrobizMainMenu(string $from): void
     {
-        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
+        $phoneNumber = WhatsAppCloudApiService::extractPhoneNumber($from);
         $sessionId = 'whatsapp_' . $phoneNumber;
         
         Log::info("showMicrobizMainMenu called", ['from' => $from, 'phoneNumber' => $phoneNumber]);
@@ -1166,7 +1167,7 @@ class WhatsAppConversationService
      */
     private function saveAgentApplication(string $from, $state, array $formData): void
     {
-        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
+        $phoneNumber = WhatsAppCloudApiService::extractPhoneNumber($from);
         
         try {
             $application = \App\Models\AgentApplication::create([

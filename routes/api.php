@@ -9,9 +9,13 @@ use App\Http\Controllers\Api\ReferenceCodeController;
 use App\Http\Controllers\Api\IDVerificationController;
 use App\Http\Controllers\WhatsAppWebhookController;
 
-// WhatsApp Webhook routes (RapiWha)
+// WhatsApp Webhook routes (supports both Twilio and Cloud API)
 Route::prefix('whatsapp')->group(function () {
+    // WhatsApp Cloud API webhook verification (GET request from Meta)
+    Route::get('/webhook', [WhatsAppWebhookController::class, 'verifyWebhook'])->name('whatsapp.verify');
+    // Incoming messages (POST from Twilio or Cloud API)
     Route::post('/webhook', [WhatsAppWebhookController::class, 'handleWebhook'])->name('whatsapp.webhook');
+    // Status updates
     Route::post('/status', [WhatsAppWebhookController::class, 'handleStatusUpdate'])->name('whatsapp.status');
 });
 

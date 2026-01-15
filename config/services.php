@@ -41,9 +41,19 @@ return [
         'api_key_sid' => env('TWILIO_API_KEY_SID'),
         'api_key_secret' => env('TWILIO_API_KEY_SECRET'),
         'from' => env('TWILIO_FROM'),
-        // WhatsApp configuration
+        // WhatsApp configuration (DEPRECATED - use whatsapp_cloud instead)
         'whatsapp_from' => env('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886'), // Sandbox default
         'whatsapp_business_id' => env('TWILIO_WHATSAPP_BUSINESS_ID'),
+    ],
+
+    // WhatsApp Cloud API (Direct Meta Integration)
+    'whatsapp_cloud' => [
+        'api_token' => env('WHATSAPP_CLOUD_API_TOKEN'),
+        'phone_number_id' => env('WHATSAPP_CLOUD_API_PHONE_NUMBER_ID'),
+        'business_id' => env('WHATSAPP_CLOUD_API_BUSINESS_ID'),
+        'verify_token' => env('WHATSAPP_CLOUD_API_VERIFY_TOKEN', 'zb_bancosystem_whatsapp_verify'),
+        'api_version' => env('WHATSAPP_CLOUD_API_VERSION', 'v18.0'),
+        'api_url' => 'https://graph.facebook.com',
     ],
 
     // DEPRECATED: Switched to Twilio WhatsApp on 2025-12-06

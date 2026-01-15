@@ -9,23 +9,44 @@ use Illuminate\Support\Facades\Log;
  * WhatsApp Conversation State Machine
  * 
  * Manages state transitions and actions for WhatsApp conversations
+ * Updated: New "Adala" persona with expanded menu and language selection
  */
 class WhatsAppStateMachine
 {
-    private TwilioWhatsAppService $whatsAppService;
+    private WhatsAppCloudApiService $whatsAppService;
     private StateManager $stateManager;
+    
+    // Website base URL for redirects
+    private string $websiteUrl = 'https://bancosystem.fly.dev';
     
     /**
      * State transition map: current_state => [input => next_state]
      */
     private array $transitions = [
-        'microbiz_main_menu' => [
-            '1' => 'agent_age_check',
-            '2' => 'redirect_cash',
-            '3' => 'employment_check',
-            '4' => 'redirect_cash',
-            '5' => 'employment_check',
+        // Language selection
+        'language_selection' => [
+            '1' => 'main_menu',    // English
+            '2' => 'main_menu',    // ChiShona -> redirect to English
+            '3' => 'main_menu',    // Ndau -> redirect to English
+            '4' => 'main_menu',    // Chichewa -> redirect to English
         ],
+        
+        // Main menu - 11 options
+        'main_menu' => [
+            '1' => 'redirect_starter_pack_credit',
+            '2' => 'redirect_gadgets_credit',
+            '3' => 'redirect_chicken_projects',
+            '4' => 'redirect_building_materials',
+            '5' => 'redirect_driving_school',
+            '6' => 'redirect_zimparks',
+            '7' => 'redirect_school_fees',
+            '8' => 'redirect_company_registration',
+            '9' => 'agent_age_check',
+            '10' => 'redirect_tracking',
+            '11' => 'customer_service_wait',
+        ],
+        
+        // Agent application flow (preserved from original)
         'agent_age_check' => [
             '1' => 'agent_province',  // 18 and above
             '2' => 'agent_underage',  // Under 18
@@ -35,7 +56,6 @@ class WhatsAppStateMachine
             '4' => 'agent_name', '5' => 'agent_name', '6' => 'agent_name',
             '7' => 'agent_name', '8' => 'agent_name', '9' => 'agent_name', '10' => 'agent_name',
         ],
-        // Agent name, surname, etc. accept free text - handled specially
         'agent_gender' => [
             '1' => 'agent_age_range', // Male
             '2' => 'agent_age_range', // Female
@@ -45,46 +65,15 @@ class WhatsAppStateMachine
             '3' => 'agent_voice_number', '4' => 'agent_voice_number',
             '5' => 'agent_voice_number', '6' => 'agent_voice_number',
         ],
-        // Phone numbers accept free text
-        'employment_check' => [
-            'yes' => 'formal_employment_check',
-            'no' => 'unemployment_category',
+        
+        // Idle timeout flow
+        'idle_continue' => [
+            'yes' => 'main_menu',
+            'no' => 'survey_question',
         ],
-        'formal_employment_check' => [
-            'yes' => 'employer_category',
-            'no' => 'agent_offer_after_rejection',
-        ],
-        'unemployment_category' => [
-            '1' => 'redirect_credit', // Government Pensioner
-            '2' => 'agent_offer_after_rejection', // Self-employed
-            '3' => 'agent_offer_after_rejection', // Unemployed
-            '4' => 'agent_offer_after_rejection', // School leaver
-        ],
-        'employer_category' => [
-            '1' => 'redirect_credit', // Government
-            '2' => 'sme_salary_method', // SME
-            '3' => 'redirect_credit', // Parastatal
-            '4' => 'agent_offer_after_rejection', // Other
-        ],
-        'sme_salary_method' => [
-            '1' => 'beneficiary_question', // Bank transfer
-            '2' => 'agent_offer_after_rejection', // Cash
-        ],
-        'beneficiary_question' => [
-            'yes' => 'redirect_credit',
-            'no' => 'monitoring_question',
-        ],
-        'monitoring_question' => [
-            'yes' => 'redirect_credit',
-            'no' => 'training_question',
-        ],
-        'training_question' => [
-            'yes' => 'redirect_credit',
-            'no' => 'agent_offer_after_rejection',
-        ],
-        'agent_offer_after_rejection' => [
-            'yes' => 'agent_age_check',
-            'no' => 'completed',
+        'survey_question' => [
+            '1' => 'completed', '2' => 'completed', '3' => 'completed',
+            '4' => 'completed', '5' => 'completed',
         ],
     ];
     
@@ -100,7 +89,7 @@ class WhatsAppStateMachine
     ];
     
     public function __construct(
-        TwilioWhatsAppService $whatsAppService,
+        WhatsAppCloudApiService $whatsAppService,
         StateManager $stateManager
     ) {
         $this->whatsAppService = $whatsAppService;
@@ -112,7 +101,7 @@ class WhatsAppStateMachine
      */
     public function process(string $from, string $input, $state): void
     {
-        $currentStep = $state->current_step ?? 'microbiz_main_menu';
+        $currentStep = $state->current_step ?? 'language_selection';
         $input = strtolower(trim($input));
         
         Log::info("StateMachine: Processing", [
@@ -213,6 +202,14 @@ class WhatsAppStateMachine
         // Add input-specific data based on state
         $formData = $this->enrichFormData($fromState, $input, $formData);
         
+        // Handle language selection - show "not available" for non-English
+        if ($fromState === 'language_selection' && $input !== '1') {
+            $this->whatsAppService->sendMessage($from, 
+                "🌐 This language is not available at the moment. Please proceed with English.\n\n" .
+                "_Rurimi urwu harusi rwuripo panguva ino. Ndapota enderera neChirungu._"
+            );
+        }
+        
         // Save new state
         $this->stateManager->saveState(
             $state->session_id,
@@ -233,7 +230,12 @@ class WhatsAppStateMachine
     private function enrichFormData(string $state, string $input, array $formData): array
     {
         switch ($state) {
-            case 'microbiz_main_menu':
+            case 'language_selection':
+                $languages = ['English', 'ChiShona', 'Ndau', 'Chichewa'];
+                $formData['selected_language'] = $languages[(int)$input - 1] ?? 'English';
+                $formData['language'] = 'English'; // Always use English for now
+                break;
+            case 'main_menu':
                 $formData['main_menu_choice'] = $input;
                 break;
             case 'agent_age_check':
@@ -252,29 +254,9 @@ class WhatsAppStateMachine
                 $ranges = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
                 $formData['age_range'] = $ranges[(int)$input - 1] ?? $input;
                 break;
-            case 'employment_check':
-                $formData['is_employed'] = ($input === 'yes');
-                break;
-            case 'formal_employment_check':
-                $formData['is_formally_employed'] = ($input === 'yes');
-                break;
-            case 'unemployment_category':
-                $categories = ['Government Pensioner', 'Self-employed', 'Unemployed', 'School Leaver'];
-                $formData['unemployment_category'] = $categories[(int)$input - 1] ?? $input;
-                break;
-            case 'employer_category':
-                $employers = ['Government', 'SME/Private Company', 'Parastatal', 'Other'];
-                $formData['employer_category'] = $employers[(int)$input - 1] ?? $input;
-                break;
-            case 'sme_salary_method':
-                $formData['salary_via_bank'] = ($input === '1');
-                break;
-                
-            case 'beneficiary_question':
-            case 'monitoring_question':
-            case 'training_question':
-                $fieldName = str_replace('_question', '', $state);
-                $formData[$fieldName] = ($input === 'yes');
+            case 'survey_question':
+                $ratings = ['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'];
+                $formData['survey_rating'] = $ratings[(int)$input - 1] ?? $input;
                 break;
         }
         
@@ -301,6 +283,71 @@ class WhatsAppStateMachine
     private function getStateMessage(string $state, array $formData = []): ?string
     {
         switch ($state) {
+            case 'main_menu':
+                return $this->getMainMenuMessage();
+                
+            // Website redirects (options 1-8 and 10)
+            case 'redirect_starter_pack_credit':
+                return "📦 *Small Business Starter Pack on Credit*\n\n" .
+                       "Please click here to view our catalogue and complete your application:\n\n" .
+                       "🔗 {$this->websiteUrl}/starter-pack\n\n" .
+                       "Say 'hi' anytime to start a new conversation.";
+                       
+            case 'redirect_gadgets_credit':
+                return "📱 *Gadgets, Furniture & Solar Products on Credit*\n\n" .
+                       "Please click here to view our catalogue and complete your application:\n\n" .
+                       "🔗 {$this->websiteUrl}/products\n\n" .
+                       "Say 'hi' anytime to start a new conversation.";
+                       
+            case 'redirect_chicken_projects':
+                return "🐔 *Chicken Projects (Broilers, Hatchery)*\n\n" .
+                       "Please click here to learn more about our poultry packages:\n\n" .
+                       "🔗 {$this->websiteUrl}/poultry\n\n" .
+                       "Say 'hi' anytime to start a new conversation.";
+                       
+            case 'redirect_building_materials':
+                return "🧱 *Building Materials*\n\n" .
+                       "Please click here to view our building materials catalogue:\n\n" .
+                       "🔗 {$this->websiteUrl}/building-materials\n\n" .
+                       "Say 'hi' anytime to start a new conversation.";
+                       
+            case 'redirect_driving_school':
+                return "🚗 *Driving School Fees Assistance*\n\n" .
+                       "We can help you from provisional to license! Please click here:\n\n" .
+                       "🔗 {$this->websiteUrl}/driving-school\n\n" .
+                       "Say 'hi' anytime to start a new conversation.";
+                       
+            case 'redirect_zimparks':
+                return "🦁 *Zimparks Package Booking*\n\n" .
+                       "Please click here to explore our Zimparks holiday packages:\n\n" .
+                       "🔗 {$this->websiteUrl}/zimparks\n\n" .
+                       "Say 'hi' anytime to start a new conversation.";
+                       
+            case 'redirect_school_fees':
+                return "🎓 *School Fees Assistance*\n\n" .
+                       "Available for ZB institutions only. Please click here:\n\n" .
+                       "🔗 {$this->websiteUrl}/school-fees\n\n" .
+                       "Say 'hi' anytime to start a new conversation.";
+                       
+            case 'redirect_company_registration':
+                return "🏢 *Company Registration Assistance*\n\n" .
+                       "We can help with registration fees and paperwork! Please click here:\n\n" .
+                       "🔗 {$this->websiteUrl}/company-registration\n\n" .
+                       "Say 'hi' anytime to start a new conversation.";
+                       
+            case 'redirect_tracking':
+                return "📍 *Track Your Delivery or Application*\n\n" .
+                       "Please click here to login and track your status:\n\n" .
+                       "🔗 {$this->websiteUrl}/track\n\n" .
+                       "Say 'hi' anytime to start a new conversation.";
+                       
+            // Customer service flow
+            case 'customer_service_wait':
+                return "👨‍💼 *Connecting to Customer Service*\n\n" .
+                       "Please wait a few minutes while we connect you to a representative...\n\n" .
+                       "🔄 A team member will be with you shortly.";
+                       
+            // Agent application flow (option 9 - preserved)
             case 'agent_age_check':
                 return "🌟 *Agent Application*\n\n" .
                        "Great choice! Let's get you set up as an online agent.\n\n" .
@@ -355,78 +402,28 @@ class WhatsAppStateMachine
                 return "📸 *ID Verification*\n\n" .
                        "Almost done! Please send a clear photo of the *front* of your ID card.";
                        
-            case 'redirect_cash':
-                $productType = ($formData['main_menu_choice'] ?? '2') === '2' ? 'Starter Pack' : 'Gadgets/Furniture';
-                return "✅ Thank you for choosing to purchase *{$productType}* for cash!\n\n" .
-                       "Please proceed to our website to complete your purchase:\n\n" .
-                       "🌐 *https://bancosystem.fly.dev*\n\n" .
-                       "Or tap the link below to get started! 👇";
-                       
-            case 'redirect_credit':
-                return "✅ *Great news!*\n\n" .
-                       "Based on your responses, you may be eligible for credit.\n\n" .
-                       "Please visit our website to complete your application:\n\n" .
-                       "🌐 *https://bancosystem.fly.dev*\n\n" .
-                       "Our team will review your application and get back to you.";
-                       
-            case 'employment_check':
-                $productType = ($formData['main_menu_choice'] ?? '3') === '3' ? 'Starter Pack' : 'Gadgets/Furniture';
-                return "📋 Let's check your eligibility for credit purchase of *{$productType}*.\n\n" .
-                       "Are you currently employed?\n\n" .
-                       "Reply with:\n" .
-                       "• *YES* if you are employed\n" .
-                       "• *NO* if you are not employed";
-                       
-            case 'formal_employment_check':
-                return "Great! Are you *formally employed*?\n\n" .
-                       "Reply with:\n" .
-                       "• *YES* if formally employed (receiving salary into a bank account)\n" .
-                       "• *NO* if informally employed";
-                       
-            case 'unemployment_category':
-                return "Thank you. Which category best describes your situation?\n\n" .
-                       "1. Government Pensioner\n" .
-                       "2. Self-employed individual\n" .
-                       "3. Unemployed\n" .
-                       "4. School leaver\n\n" .
-                       "Reply with the number (1-4).";
-                       
-            case 'employer_category':
-                return "What type of employer do you work for?\n\n" .
-                       "1. Government\n" .
-                       "2. SME/Private Company\n" .
-                       "3. Parastatal\n" .
-                       "4. Other\n\n" .
-                       "Reply with the number (1-4).";
-                       
-            case 'sme_salary_method':
-                return "How do you receive your salary?\n\n" .
-                       "1. Bank transfer\n" .
-                       "2. Cash\n\n" .
-                       "Reply with 1 or 2.";
-                       
-            case 'beneficiary_question':
-                return "Are you a ZB Bank account holder?\n\n" .
+            // Idle timeout flow
+            case 'idle_continue':
+                return "⏰ *Session Idle*\n\n" .
+                       "This session has been idle for some time.\n\n" .
+                       "Would you like to continue with another service?\n\n" .
                        "Reply with *YES* or *NO*.";
                        
-            case 'monitoring_question':
-                return "Would you like us to help you open a ZB Bank account?\n\n" .
-                       "Reply with *YES* or *NO*.";
-                       
-            case 'training_question':
-                return "Would you be interested in business training?\n\n" .
-                       "Reply with *YES* or *NO*.";
-                       
-            case 'agent_offer_after_rejection':
-                return "Thank you for your responses.\n\n" .
-                       "Unfortunately, you don't qualify for credit at this time.\n\n" .
-                       "However, you can still earn income by becoming an online agent!\n\n" .
-                       "Would you like to apply to become an agent?\n\n" .
-                       "Reply with *YES* or *NO*.";
+            case 'survey_question':
+                return "📝 *Quick Survey*\n\n" .
+                       "How was your experience today?\n\n" .
+                       "1. ⭐ Very Poor\n" .
+                       "2. ⭐⭐ Poor\n" .
+                       "3. ⭐⭐⭐ Average\n" .
+                       "4. ⭐⭐⭐⭐ Good\n" .
+                       "5. ⭐⭐⭐⭐⭐ Excellent\n\n" .
+                       "Reply with a number (1-5).";
                        
             case 'completed':
-                return "Thank you for using Microbiz Zimbabwe! 🙏\n\n" .
-                       "Have a great day! 👋\n\n" .
+                $rating = $formData['survey_rating'] ?? null;
+                $thankYou = $rating ? "Thank you for rating us *{$rating}*! " : "";
+                return "🙏 {$thankYou}Thank you for your interest in *Bancosystem*!\n\n" .
+                       "Come again soon! 👋\n\n" .
                        "Say 'hi' anytime to start a new conversation.";
                        
             default:
@@ -435,21 +432,40 @@ class WhatsAppStateMachine
     }
     
     /**
+     * Get main menu message
+     */
+    private function getMainMenuMessage(): string
+    {
+        return "🛒 *WHAT PRODUCT OR SERVICE DO YOU WANT TO ACQUIRE?*\n\n" .
+               "1. A small business starter pack on credit\n" .
+               "2. Gadgets, furniture, solar products etc on credit\n" .
+               "3. Chicken Projects (broilers, hatchery)\n" .
+               "4. Building Materials\n" .
+               "5. Driving school fees assistance (provisional to license)\n" .
+               "6. Zimparks Package booking\n" .
+               "7. School Fees Assistance (for ZB institutions only)\n" .
+               "8. Assistance to register a company (fees and paperwork)\n\n" .
+               "—————— or ——————\n\n" .
+               "9. Apply to become an online agent\n" .
+               "10. Login to track your delivery or application status\n" .
+               "11. Talk to a customer services representative\n\n" .
+               "Reply with a number (1-11).";
+    }
+    
+    /**
      * Send invalid input message based on current state
      */
     private function sendInvalidInputMessage(string $to, string $state): void
     {
         $message = match($state) {
-            'microbiz_main_menu' => "Please select a number from 1-5.",
+            'language_selection' => "Please select a number from 1-4.",
+            'main_menu' => "Please select a number from 1-11.",
             'agent_age_check' => "Please reply with 1 or 2.",
             'agent_province' => "Please reply with a number from 1-10.",
             'agent_gender' => "Please reply with 1 or 2.",
             'agent_age_range' => "Please reply with a number from 1-6.",
-            'employment_check', 'formal_employment_check', 'beneficiary_question',
-            'monitoring_question', 'training_question', 'agent_offer_after_rejection' => 
-                "Please reply with YES or NO.",
-            'unemployment_category', 'employer_category' => "Please reply with a number from 1-4.",
-            'sme_salary_method' => "Please reply with 1 or 2.",
+            'idle_continue' => "Please reply with YES or NO.",
+            'survey_question' => "Please reply with a number from 1-5.",
             default => "Invalid input. Please try again.",
         };
         
@@ -465,36 +481,58 @@ class WhatsAppStateMachine
     }
     
     /**
-     * Start a new conversation with main menu
+     * Start a new conversation with greeting and language selection
      */
-    public function startConversation(string $from): void
+    public function startConversation(string $from, ?string $userName = null): void
     {
-        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
+        $phoneNumber = WhatsAppCloudApiService::extractPhoneNumber($from);
         $sessionId = 'whatsapp_' . $phoneNumber;
         
         Log::info("StateMachine: Starting new conversation", ['from' => $from, 'sessionId' => $sessionId]);
         
-        // Initialize state
+        // Initialize state with language selection
         $this->stateManager->saveState(
             $sessionId,
             'whatsapp',
             $phoneNumber,
-            'microbiz_main_menu',
-            [],
-            ['phone_number' => $phoneNumber, 'started_at' => now(), 'flow_type' => 'microbiz']
+            'language_selection',
+            ['phone_number' => $phoneNumber],
+            ['phone_number' => $phoneNumber, 'started_at' => now(), 'flow_type' => 'adala']
         );
         
-        // Send welcome menu
-        $message = "Hello *there*, welcome to *Microbiz Zimbabwe*, the home of innovation and where entrepreneurs are born.\n\n";
-        $message .= "How can I help you today?\n\n";
-        $message .= "1. Apply to become an online agent and earn a passive income through referral commissions\n";
-        $message .= "2. Purchase microbiz starter pack for cash\n";
-        $message .= "3. Purchase microbiz starter pack for credit\n";
-        $message .= "4. Purchase gadgets, furniture, solar systems, laptops, cellphones, kitchenware for cash\n";
-        $message .= "5. Purchase gadgets, furniture, solar systems, laptops, cellphones, kitchenware for credit\n\n";
-        $message .= "Reply with the number of your choice (1-5).";
+        // Get user display name
+        $displayName = $userName ?: 'there';
+        
+        // Send welcome message with Adala persona
+        $message = "Hello *{$displayName}* 👋\n\n";
+        $message .= "I am *Adala*, consider me your digital uncle, here to assist you to get the best digital experience, because we are family.\n\n";
+        $message .= "Welcome to *Bancosystem*, the home of innovation.\n\n";
+        $message .= "🌐 *Select your preferred language:*\n\n";
+        $message .= "1. English\n";
+        $message .= "2. ChiShona\n";
+        $message .= "3. Ndau\n";
+        $message .= "4. Chichewa\n\n";
+        $message .= "Reply with a number (1-4).";
         
         $result = $this->whatsAppService->sendMessage($from, $message);
         Log::info("StateMachine: Welcome message sent", ['success' => $result]);
+    }
+    
+    /**
+     * Send idle timeout message (called by scheduler after 3 minutes of inactivity)
+     */
+    public function sendIdleTimeoutMessage(string $from, $state): void
+    {
+        // Update state to idle_continue
+        $this->stateManager->saveState(
+            $state->session_id,
+            'whatsapp',
+            $state->user_identifier,
+            'idle_continue',
+            $state->form_data ?? [],
+            $state->metadata ?? []
+        );
+        
+        $this->sendStateMessage($from, 'idle_continue', $state->form_data ?? []);
     }
 }

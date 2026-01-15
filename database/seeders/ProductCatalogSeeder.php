@@ -14,7 +14,7 @@ class ProductCatalogSeeder extends Seeder
         $categories = [
             ['id' => 'agric-mechanization', 'name' => 'Agricultural mechanization', 'emoji' => '🚜'],
             ['id' => 'agricultural-inputs', 'name' => 'Agricultural Inputs', 'emoji' => '🌾'],
-            ['id' => 'broiler-production', 'name' => 'Broiler Production', 'emoji' => '🐔'], // New Main Category
+            ['id' => 'chicken-projects', 'name' => 'Chicken Projects', 'emoji' => '🐔'],
             ['id' => 'cleaning-services', 'name' => 'Cleaning Services', 'emoji' => '🧹'],
 
 
@@ -128,7 +128,6 @@ class ProductCatalogSeeder extends Seeder
                 ['name' => 'Incubation', 'businesses' => [['name' => 'Incubation']]],
                 ['name' => 'Greenhouses', 'businesses' => [['name' => 'Greenhouses']]],
                 ['name' => 'Tobacco bailing machine', 'businesses' => [['name' => 'Tobacco bailing machine']]],
-                ['name' => 'Hatchery', 'businesses' => [['name' => 'Hatchery']]],
             ],
             // 2. Agricultural Inputs (Renamed & Restructured)
             'agricultural-inputs' => [
@@ -136,9 +135,10 @@ class ProductCatalogSeeder extends Seeder
                 ['name' => 'Seed + Chemicals', 'businesses' => [['name' => 'Seed + Chemicals']]],
                 ['name' => 'Combo (Fertilizer + Seed + Chemicals)', 'businesses' => [['name' => 'Combo (Fertilizer + Seed + Chemicals)']]],
             ],
-            // 2b. Broiler Production
-            'broiler-production' => [
+            // Chicken Projects (Poultry)
+            'chicken-projects' => [
                 ['name' => 'Broiler Production', 'businesses' => [['name' => 'Broiler Production']]],
+                ['name' => 'Egg Hatchery', 'businesses' => [['name' => 'Egg Hatchery']]],
             ],
             // 3. Cleaning Services
             'cleaning-services' => [
