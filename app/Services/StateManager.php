@@ -131,7 +131,7 @@ class StateManager
             'approved', 'rejected', 'pending_documents', 'processing',
             
             // WhatsApp Adala conversation flow
-            'language_selection', 'payment_method', 'main_menu', 'currency_selection',
+            'language_selection', 'intent_selection', 'intent_selection_page2', 'payment_method', 'main_menu', 'currency_selection',
             
             // Website redirect states
             'redirect_to_product', 'redirect_starter_pack_credit', 'redirect_gadgets_credit',

@@ -21,42 +21,57 @@ class WhatsAppStateMachine
     
     /**
      * State transition map: current_state => [input => next_state]
+     * Updated: Language → Intent Selection (18 options)
+     *   Options 1-13: Cash/Credit → Currency → Product redirect
+     *   Options 14-18: Direct handling (no cash/credit or currency)
      */
     private array $transitions = [
-        // Language selection (5 languages)
+        // Language selection (5 languages) → goes to intent_selection
         'language_selection' => [
-            '1' => 'payment_method',    // English
-            '2' => 'payment_method',    // ChiShona -> redirect to English
-            '3' => 'payment_method',    // Ndau -> redirect to English
-            '4' => 'payment_method',    // isiNdebele -> redirect to English
-            '5' => 'payment_method',    // Chichewa -> redirect to English
+            '1' => 'intent_selection',    // English
+            '2' => 'intent_selection',    // ChiShona -> redirect to English
+            '3' => 'intent_selection',    // Ndau -> redirect to English
+            '4' => 'intent_selection',    // isiNdebele -> redirect to English
+            '5' => 'intent_selection',    // Chichewa -> redirect to English
         ],
         
-        // Cash or Credit selection
+        // Intent selection - 18 options
+        // Options 1-13 → payment method
+        // Options 14-18 → direct handling
+        'intent_selection' => [
+            '1' => 'payment_method',   // SME Starter Pack
+            '2' => 'payment_method',   // Personal & Homeware
+            '3' => 'payment_method',   // Personal Development
+            '4' => 'payment_method',   // House Construction
+            '5' => 'payment_method',   // Chicken Projects
+            '6' => 'payment_method',   // Cellphones & Laptops
+            '7' => 'payment_method',   // Solar Systems
+            '8' => 'payment_method',   // Agricultural Inputs
+            '9' => 'payment_method',   // Building Materials
+            'next_page' => 'intent_selection_page2', // Navigation to Page 2
+        ],
+
+        // Intent selection Page 2
+        'intent_selection_page2' => [
+            '10' => 'payment_method',  // Driving School
+            '11' => 'payment_method',  // Zimparks Holiday
+            '12' => 'payment_method',  // School Fees
+            '13' => 'payment_method',  // ZB Banking Agency
+            '14' => 'agent_age_check',              // Apply to become agent
+            '15' => 'redirect_application_status',  // Track application
+            '16' => 'redirect_delivery_tracking',   // Track delivery
+            '17' => 'show_faqs',                    // FAQs
+            '18' => 'customer_service_wait',        // Talk to rep
+            'prev_page' => 'intent_selection',       // Navigation back to Page 1
+        ],
+        
+        // Cash or Credit selection → currency
         'payment_method' => [
-            '1' => 'main_menu',    // Cash
-            '2' => 'main_menu',    // Credit
+            '1' => 'currency_selection',  // Cash
+            '2' => 'currency_selection',  // Credit
         ],
         
-        // Main menu - 14 options
-        'main_menu' => [
-            '1' => 'currency_selection',   // Starter pack
-            '2' => 'currency_selection',   // Gadgets/furniture
-            '3' => 'currency_selection',   // Chicken projects
-            '4' => 'currency_selection',   // Building materials
-            '5' => 'currency_selection',   // Driving school
-            '6' => 'currency_selection',   // Zimparks
-            '7' => 'currency_selection',   // School fees
-            '8' => 'currency_selection',   // Company registration
-            '9' => 'agent_age_check',      // Apply to become agent
-            '10' => 'redirect_delivery_tracking',  // Track delivery
-            '11' => 'redirect_application_status', // Track application
-            '12' => 'redirect_agent_login',        // Agent login
-            '13' => 'show_faqs',                   // FAQs
-            '14' => 'customer_service_wait',       // Talk to rep
-        ],
-        
-        // Currency selection
+        // Currency selection → product redirect
         'currency_selection' => [
             '1' => 'redirect_to_product',  // USD
             '2' => 'redirect_to_product',  // ZiG
@@ -84,12 +99,12 @@ class WhatsAppStateMachine
         
         // FAQs
         'show_faqs' => [
-            '1' => 'main_menu', // Back to menu
+            '1' => 'intent_selection', // Back to menu
         ],
         
         // Idle timeout flow
         'idle_continue' => [
-            'yes' => 'main_menu',
+            'yes' => 'intent_selection',
             'no' => 'survey_question',
         ],
         'survey_question' => [
@@ -110,17 +125,41 @@ class WhatsAppStateMachine
     ];
     
     /**
-     * Intent mapping for URL generation
+     * Intent mapping for URL generation (options 1-13)
      */
     private array $intentMap = [
-        '1' => 'microBiz',           // Starter pack
-        '2' => 'personal',           // Gadgets/furniture
-        '3' => 'microBiz',           // Chicken projects
-        '4' => 'construction',       // Building materials
-        '5' => 'personalServices',   // Driving school
-        '6' => 'personalServices',   // Zimparks
-        '7' => 'personalServices',   // School fees
-        '8' => 'personalServices',   // Company registration
+        '1' => 'microBiz',           // SME Starter Pack
+        '2' => 'personal',           // Personal & Homeware
+        '3' => 'personalServices',   // Personal Development
+        '4' => 'construction',       // House Construction
+        '5' => 'microBiz',           // Chicken Projects
+        '6' => 'personal',           // Cellphones & Laptops
+        '7' => 'personal',           // Solar Systems
+        '8' => 'microBiz',           // Agricultural Inputs
+        '9' => 'construction',       // Building Materials
+        '10' => 'personalServices',  // Driving School
+        '11' => 'personalServices',  // Zimparks Holiday
+        '12' => 'personalServices',  // School Fees
+        '13' => 'personalServices',  // ZB Banking Agency
+    ];
+    
+    /**
+     * Product names for display (options 1-13)
+     */
+    private array $productNames = [
+        '1' => 'Small to Medium Business Starter Pack',
+        '2' => 'Personal and Homeware Products',
+        '3' => 'Invest in Personal Development',
+        '4' => 'House Construction and Improvements',
+        '5' => 'Chicken Projects',
+        '6' => 'Cellphones and Laptops',
+        '7' => 'Solar Systems',
+        '8' => 'Agricultural Inputs',
+        '9' => 'Building Materials',
+        '10' => 'Driving School Fees Assistance',
+        '11' => 'Zimparks Holiday Booking Package',
+        '12' => 'School Fees Assistance',
+        '13' => 'Apply for ZB Banking Agency',
     ];
     
     public function __construct(
@@ -251,7 +290,7 @@ class WhatsAppStateMachine
         // Handle language selection - show "not available" for non-English
         if ($fromState === 'language_selection' && $input !== '1') {
             $this->whatsAppService->sendMessage($from, 
-                "🌐 This language is not available at the moment. Please proceed with English."
+                "🌐 This language is not available at the moment. Proceeding with English."
             );
         }
         
@@ -283,9 +322,16 @@ class WhatsAppStateMachine
             case 'payment_method':
                 $formData['payment_method'] = ($input === '1') ? 'cash' : 'credit';
                 break;
-            case 'main_menu':
-                $formData['main_menu_choice'] = $input;
+            case 'intent_selection':
+            case 'intent_selection_page2':
+                // Skip processing for navigation buttons
+                if ($input === 'next_page' || $input === 'prev_page') {
+                    return $formData;
+                }
+                
+                $formData['intent_choice'] = $input;
                 $formData['intent'] = $this->intentMap[$input] ?? 'personal';
+                $formData['product_name'] = $this->productNames[$input] ?? 'Selected Product';
                 break;
             case 'currency_selection':
                 $formData['currency'] = ($input === '1') ? 'USD' : 'ZiG';
@@ -317,39 +363,169 @@ class WhatsAppStateMachine
     
     /**
      * Send message for a given state
+     * Uses interactive buttons/lists where appropriate
      */
     private function sendStateMessage(string $to, string $state, array $formData = []): void
     {
-        $message = $this->getStateMessage($state, $formData);
+        Log::info("StateMachine: Sending message for state", ['state' => $state, 'to' => $to]);
         
-        if ($message) {
-            Log::info("StateMachine: Sending message for state", ['state' => $state, 'to' => $to]);
-            $result = $this->whatsAppService->sendMessage($to, $message);
-            Log::info("StateMachine: Message send result", ['success' => $result]);
+        $result = false;
+        
+        // Use interactive messages for specific states
+        switch ($state) {
+            case 'intent_selection':
+                $result = $this->sendIntentSelectionList($to, 1);
+                break;
+
+            case 'intent_selection_page2':
+                $result = $this->sendIntentSelectionList($to, 2);
+                break;
+                
+            case 'payment_method':
+                $result = $this->whatsAppService->sendInteractiveButtons(
+                    $to,
+                    "💳 *Kindly select your payment method?*\n\n",
+                    [
+                        ['id' => '1', 'title' => '💵 Cash'],
+                        ['id' => '2', 'title' => '📋 Credit'],
+                    ],
+                    "Payment Method"
+                );
+                break;
+                
+            case 'currency_selection':
+                $productName = $formData['product_name'] ?? 'Your selected product';
+                $result = $this->whatsAppService->sendInteractiveButtons(
+                    $to,
+                    "💱 *Select your preferred currency for:*\n\n📦 {$productName}",
+                    [
+                        ['id' => '1', 'title' => '🇺🇸 USD'],
+                        ['id' => '2', 'title' => '🇿🇼 ZiG'],
+                    ],
+                    "Currency Selection"
+                );
+                break;
+                
+            case 'agent_gender':
+                $result = $this->whatsAppService->sendInteractiveButtons(
+                    $to,
+                    "👤 *What is your gender?*",
+                    [
+                        ['id' => '1', 'title' => '👨 Male'],
+                        ['id' => '2', 'title' => '👩 Female'],
+                    ]
+                );
+                break;
+                
+            default:
+                // Use regular text message for other states
+                $message = $this->getStateMessage($state, $formData);
+                if ($message) {
+                    $result = $this->whatsAppService->sendMessage($to, $message);
+                }
+                break;
         }
+        
+        Log::info("StateMachine: Message send result", ['success' => $result]);
+    }
+    
+    private function sendIntentSelectionList(string $to, int $page = 1): bool
+    {
+        $bodyText = "🛒 *What would you like to do today?* (Page $page of 2)\n\nTap the button below to see available options.";
+        $buttonText = ($page === 1) ? "View Options (1-9)" : "View Options (10-18)";
+        
+        $sections = [];
+        
+        if ($page === 1) {
+            // PAGE 1: Options 1-9 + Next Button
+            // Total items: 9 + 1 = 10 (Max allowed)
+            
+            $sections[] = [
+                'title' => '🏪 Business & Development',
+                'rows' => [
+                    ['id' => '1', 'title' => 'SME Starter Pack', 'description' => 'Empower income projects'],
+                    ['id' => '2', 'title' => 'Personal & Homeware', 'description' => 'Improve lifestyle'],
+                    ['id' => '3', 'title' => 'Personal Development', 'description' => 'Life changing skills'],
+                    ['id' => '4', 'title' => 'House Construction', 'description' => 'Build/improve home'],
+                    ['id' => '5', 'title' => 'Chicken Projects', 'description' => 'Broiler & egg production'],
+                    ['id' => '6', 'title' => 'Cellphones & Laptops', 'description' => 'Mobile & computers'],
+                ],
+            ];
+            
+            $sections[] = [
+                'title' => '🌾 Materials (Part 1)',
+                'rows' => [
+                    ['id' => '7', 'title' => 'Solar Systems', 'description' => 'Solar power solutions'],
+                    ['id' => '8', 'title' => 'Agricultural Inputs', 'description' => 'Farming supplies'],
+                    ['id' => '9', 'title' => 'Building Materials', 'description' => 'Construction materials'],
+                ],
+            ];
+            
+            // Navigation Section
+            $sections[] = [
+                'title' => '➡️ More',
+                'rows' => [
+                    ['id' => 'next_page', 'title' => 'More Options ➡️', 'description' => 'See items 10-18'],
+                ],
+            ];
+            
+        } else {
+            // PAGE 2: Options 10-18 + Back Button
+            // Total items: 9 + 1 = 10 (Max allowed)
+            
+            $sections[] = [
+                'title' => '🌾 Materials (Part 2)',
+                'rows' => [
+                    ['id' => '10', 'title' => 'Driving School', 'description' => 'Provisional to license'],
+                    ['id' => '11', 'title' => 'Zimparks Holiday', 'description' => 'Holiday package'],
+                ],
+            ];
+            
+            $sections[] = [
+                'title' => '🎓 Education & Banking',
+                'rows' => [
+                    ['id' => '12', 'title' => 'School Fees', 'description' => 'ZB institutions only'],
+                    ['id' => '13', 'title' => 'ZB Banking Agency', 'description' => 'Apply for agency'],
+                ],
+            ];
+            
+            $sections[] = [
+                'title' => '⚡ Quick Actions',
+                'rows' => [
+                    ['id' => '14', 'title' => 'Become Agent', 'description' => 'Online agent application'],
+                    ['id' => '15', 'title' => 'Track Application', 'description' => 'Check your status'],
+                    ['id' => '16', 'title' => 'Track Delivery', 'description' => 'Track your order'],
+                    ['id' => '17', 'title' => 'FAQs', 'description' => 'Get answers'],
+                    ['id' => '18', 'title' => 'Customer Service', 'description' => 'Talk to us'],
+                ],
+            ];
+            
+            // Navigation Section
+            $sections[] = [
+                'title' => '⬅️ Back',
+                'rows' => [
+                    ['id' => 'prev_page', 'title' => '⬅️ Previous Options', 'description' => 'Go back to 1-9'],
+                ],
+            ];
+        }
+        
+        return $this->whatsAppService->sendInteractiveList(
+            $to,
+            $bodyText,
+            $buttonText,
+            $sections,
+            "Microbiz Implementation"
+        );
     }
     
     /**
-     * Get message template for a state
+     * Get message template for a state (text-only messages)
      */
     private function getStateMessage(string $state, array $formData = []): ?string
     {
         switch ($state) {
-            case 'payment_method':
-                return "💳 *How would you like to pay?*\n\n" .
-                       "1. Cash 💵\n" .
-                       "2. Credit (Hire Purchase) 📋\n\n" .
-                       "Reply with 1 or 2.";
-                       
-            case 'main_menu':
-                return $this->getMainMenuMessage();
+            // payment_method and currency_selection handled by sendStateMessage with buttons
                 
-            case 'currency_selection':
-                return "💱 *Select your preferred currency:*\n\n" .
-                       "1. USD 🇺🇸\n" .
-                       "2. ZiG 🇿🇼\n\n" .
-                       "Reply with 1 or 2.";
-                       
             case 'redirect_to_product':
                 return $this->getProductRedirectMessage($formData);
                        
@@ -467,30 +643,6 @@ class WhatsAppStateMachine
     }
     
     /**
-     * Get main menu message with 14 options
-     */
-    private function getMainMenuMessage(): string
-    {
-        return "🛒 *WHAT PRODUCT OR SERVICE DO YOU WANT TO ACQUIRE?*\n\n" .
-               "1. A small business starter pack\n" .
-               "2. Gadgets, furniture, solar products etc\n" .
-               "3. Chicken Projects (broilers, hatchery)\n" .
-               "4. Building Materials\n" .
-               "5. Driving school fees assistance (provisional to license)\n" .
-               "6. Zimparks Package booking\n" .
-               "7. School Fees Assistance (for ZB institutions only)\n" .
-               "8. Assistance to register a company (fees and paperwork)\n\n" .
-               "—————— or ——————\n\n" .
-               "9. Apply to become our online agent\n" .
-               "10. Login to track your delivery\n" .
-               "11. Login to track your application status\n" .
-               "12. Online agent login\n" .
-               "13. FAQs\n" .
-               "14. Talk to a customer services representative\n\n" .
-               "Reply with a number (1-14).";
-    }
-    
-    /**
      * Get product redirect message with personalized link
      */
     private function getProductRedirectMessage(array $formData): string
@@ -499,21 +651,9 @@ class WhatsAppStateMachine
         $intent = $formData['intent'] ?? 'personal';
         $language = $formData['language'] ?? 'en';
         $paymentMethod = $formData['payment_method'] ?? 'credit';
-        $menuChoice = $formData['main_menu_choice'] ?? '1';
+        $intentChoice = $formData['intent_choice'] ?? '1';
         
-        // Product names for display
-        $productNames = [
-            '1' => 'Small Business Starter Pack',
-            '2' => 'Gadgets, Furniture & Solar Products',
-            '3' => 'Chicken Projects (Broilers, Hatchery)',
-            '4' => 'Building Materials',
-            '5' => 'Driving School Fees Assistance',
-            '6' => 'Zimparks Package Booking',
-            '7' => 'School Fees Assistance',
-            '8' => 'Company Registration Assistance',
-        ];
-        
-        $productName = $productNames[$menuChoice] ?? 'Selected Product';
+        $productName = $formData['product_name'] ?? $this->productNames[$intentChoice] ?? 'Selected Product';
         
         // Build application URL with query params
         $applicationUrl = "{$this->websiteUrl}/application?currency={$currency}&intent={$intent}&language={$language}";
@@ -521,8 +661,8 @@ class WhatsAppStateMachine
         $loginUrl = "{$this->websiteUrl}/client/login";
         
         return "✅ *{$productName}*\n\n" .
-               "Payment Method: *" . ucfirst($paymentMethod) . "*\n" .
-               "Currency: *{$currency}*\n\n" .
+               "💳 Payment: *" . ucfirst($paymentMethod) . "*\n" .
+               "💱 Currency: *{$currency}*\n\n" .
                "To proceed, please:\n\n" .
                "1️⃣ *New user?* Register here first:\n" .
                "🔗 {$registerUrl}\n\n" .
@@ -543,13 +683,13 @@ class WhatsAppStateMachine
                "*Q: What is Bancosystem?*\n" .
                "A: Bancosystem is a digital platform that helps you access products and services on cash or credit.\n\n" .
                "*Q: How do I apply for credit?*\n" .
-               "A: Select option 2 (Credit) when asked about payment method, then choose your product.\n\n" .
+               "A: Select Credit when asked about payment method, then choose your product.\n\n" .
                "*Q: What are the requirements?*\n" .
                "A: Requirements vary by product. Generally, you need a valid ID and proof of income for credit.\n\n" .
                "*Q: How long does approval take?*\n" .
                "A: Most applications are processed within 24-48 hours.\n\n" .
                "*Q: How do I become an agent?*\n" .
-               "A: Say 'hi' and select option 9 from the main menu.\n\n" .
+               "A: Say 'hi' and select 'Become Agent' from the menu.\n\n" .
                "Reply *1* to go back to the main menu.";
     }
     
@@ -560,12 +700,13 @@ class WhatsAppStateMachine
     {
         $message = match($state) {
             'language_selection' => "Please select a number from 1-5.",
-            'payment_method' => "Please select 1 for Cash or 2 for Credit.",
-            'main_menu' => "Please select a number from 1-14.",
-            'currency_selection' => "Please select 1 for USD or 2 for ZiG.",
+            'intent_selection' => "Please select an option from the menu.",
+            'intent_selection_page2' => "Please select an option from the menu.",
+            'payment_method' => "Please select Cash or Credit.",
+            'currency_selection' => "Please select USD or ZiG.",
             'agent_age_check' => "Please reply with 1 or 2.",
             'agent_province' => "Please reply with a number from 1-10.",
-            'agent_gender' => "Please reply with 1 or 2.",
+            'agent_gender' => "Please select Male or Female.",
             'agent_age_range' => "Please reply with a number from 1-6.",
             'show_faqs' => "Please reply with 1 to go back to the menu.",
             'idle_continue' => "Please reply with YES or NO.",
@@ -608,17 +749,32 @@ class WhatsAppStateMachine
         $displayName = $userName ?: 'there';
         
         // Send welcome message with Adala persona
-        $message = "Hello *{$displayName}*! 👋\n\n";
-        $message .= "I am *Adala*, consider me your smart uncle and digital assistant. My mission is to ensure you get the best user experience for your intended acquisition.\n\n";
-        $message .= "🌐 *Select your preferred language:*\n\n";
-        $message .= "1. English\n";
-        $message .= "2. ChiShona\n";
-        $message .= "3. Ndau\n";
-        $message .= "4. isiNdebele\n";
-        $message .= "5. Chichewa\n\n";
-        $message .= "Reply with a number (1-5).";
+        $welcomeText = "Hello *{$displayName}*! 👋\n\n";
+        $welcomeText .= "Welcome to *Microbiz Zimbabwe* powered by *Qupa Microfinance* (a division of ZB Bank).\n\n";
+        $welcomeText .= "I am *Adala*, consider me your smart uncle and digital assistant. My mission is to ensure you get the best user experience for your intended acquisition.\n\n";
+        $welcomeText .= "🌐 Please select your preferred language:";
         
-        $result = $this->whatsAppService->sendMessage($from, $message);
+        // Send language selection as interactive list
+        $sections = [
+            [
+                'title' => '🌐 Languages',
+                'rows' => [
+                    ['id' => '1', 'title' => '🇬🇧 English', 'description' => 'Continue in English'],
+                    ['id' => '2', 'title' => '🇿🇼 ChiShona', 'description' => 'Edzai muChiShona'],
+                    ['id' => '3', 'title' => '🇿🇼 Ndau', 'description' => 'Edzai muNdau'],
+                    ['id' => '4', 'title' => '🇿🇼 isiNdebele', 'description' => 'Qhubekela ngesiNdebele'],
+                    ['id' => '5', 'title' => '🇲🇼 Chichewa', 'description' => 'Pitilizani mu Chichewa'],
+                ],
+            ],
+        ];
+        
+        $result = $this->whatsAppService->sendInteractiveList(
+            $from,
+            $welcomeText,
+            "🌐 Select Language",
+            $sections
+        );
+        
         Log::info("StateMachine: Welcome message sent", ['success' => $result]);
     }
     

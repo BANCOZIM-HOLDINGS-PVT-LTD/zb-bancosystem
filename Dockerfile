@@ -134,4 +134,4 @@ RUN chmod +x /entrypoint.sh
 EXPOSE 80
 
 # Start via entrypoint (handles caches then supervisord)
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["/entrypoint.sh"]

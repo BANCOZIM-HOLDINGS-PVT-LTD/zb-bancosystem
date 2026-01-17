@@ -9,30 +9,26 @@ use Illuminate\Support\Facades\Cache;
 use App\Services\WhatsAppConversationService;
 use App\Services\ReferenceCodeService;
 use App\Services\StateManager;
-use App\Services\TwilioWhatsAppService;
 use App\Services\WhatsAppCloudApiService;
-// use App\Services\RapiWhaService; // DEPRECATED: Switched to Twilio 2025-12-06
+
 
 class WhatsAppWebhookController extends Controller
 {
     private $conversationService;
     private $referenceCodeService;
     private $stateManager;
-    private TwilioWhatsAppService $whatsAppService;
-    private WhatsAppCloudApiService $cloudApiService;
+    private WhatsAppCloudApiService $whatsAppService;
 
     public function __construct(
         WhatsAppConversationService $conversationService,
         ReferenceCodeService $referenceCodeService,
         StateManager $stateManager,
-        TwilioWhatsAppService $whatsAppService,
-        WhatsAppCloudApiService $cloudApiService
+        WhatsAppCloudApiService $whatsAppService
     ) {
         $this->conversationService = $conversationService;
         $this->referenceCodeService = $referenceCodeService;
         $this->stateManager = $stateManager;
         $this->whatsAppService = $whatsAppService;
-        $this->cloudApiService = $cloudApiService;
     }
 
     /**
@@ -54,13 +50,13 @@ class WhatsAppWebhookController extends Controller
         ]);
 
         // Check if mode and token are correct
-        if ($mode === 'subscribe' && $token === $this->cloudApiService->getVerifyToken()) {
+        if ($mode === 'subscribe' && $token === $this->whatsAppService->getVerifyToken()) {
             Log::info('WhatsApp Cloud API webhook verified successfully');
             return response($challenge, 200)->header('Content-Type', 'text/plain');
         }
 
         Log::warning('WhatsApp Cloud API webhook verification failed', [
-            'expected_token' => $this->cloudApiService->getVerifyToken(),
+            'expected_token' => $this->whatsAppService->getVerifyToken(),
             'received_token' => $token
         ]);
         return response('Forbidden', 403);
@@ -168,7 +164,7 @@ class WhatsAppWebhookController extends Controller
 
         // Mark message as read
         if ($messageId) {
-            $this->cloudApiService->markAsRead($messageId);
+            $this->whatsAppService->markAsRead($messageId);
         }
 
         // Handle different message types
@@ -186,18 +182,16 @@ class WhatsAppWebhookController extends Controller
                 break;
 
             case 'interactive':
-                // Handle button replies
+                // Handle button replies - use ID not title (state machine expects IDs like '1', '2', etc.)
                 $interactive = $message['interactive'] ?? [];
                 $interactiveType = $interactive['type'] ?? '';
                 
                 if ($interactiveType === 'button_reply') {
                     $buttonId = $interactive['button_reply']['id'] ?? '';
-                    $buttonTitle = $interactive['button_reply']['title'] ?? '';
-                    $this->processTextMessage($formattedFrom, $buttonTitle ?: $buttonId);
+                    $this->processTextMessage($formattedFrom, $buttonId);
                 } elseif ($interactiveType === 'list_reply') {
                     $listId = $interactive['list_reply']['id'] ?? '';
-                    $listTitle = $interactive['list_reply']['title'] ?? '';
-                    $this->processTextMessage($formattedFrom, $listTitle ?: $listId);
+                    $this->processTextMessage($formattedFrom, $listId);
                 }
                 break;
 
@@ -236,11 +230,11 @@ class WhatsAppWebhookController extends Controller
         ]);
 
         // Download the media
-        $mediaData = $this->cloudApiService->downloadMedia($mediaId);
+        $mediaData = $this->whatsAppService->downloadMedia($mediaId);
 
         if (!$mediaData) {
             Log::error('Failed to download Cloud API media', ['media_id' => $mediaId]);
-            $this->cloudApiService->sendMessage($from, "Sorry, we couldn't process your media. Please try again.");
+            $this->whatsAppService->sendMessage($from, "Sorry, we couldn't process your media. Please try again.");
             return;
         }
 
@@ -295,7 +289,7 @@ class WhatsAppWebhookController extends Controller
             // DEBUG: Test direct message sending
             if (strtolower(trim($body)) === 'test') {
                 Log::info('WhatsApp TEST: Attempting direct message send');
-                $result = $this->cloudApiService->sendMessage($from, 'Test message received! Bot is working with Cloud API.');
+                $result = $this->whatsAppService->sendMessage($from, 'Test message received! Bot is working with Cloud API.');
                 Log::info('WhatsApp TEST: Send result', ['success' => $result]);
                 return;
             }

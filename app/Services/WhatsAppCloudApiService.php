@@ -305,6 +305,95 @@ class WhatsAppCloudApiService
     }
 
     /**
+     * Send interactive list message (for menus with up to 10 sections)t
+     * 
+     * @param string $to Phone number to send to
+     * @param string $bodyText Main message body
+     * @param string $buttonText Text on the list button (max 20 chars)
+     * @param array $sections Array of sections, each with 'title' and 'rows' (max 10 rows per section)
+     * @param string|null $headerText Optional header text
+     * @param string|null $footerText Optional footer text
+     */
+    public function sendInteractiveList(string $to, string $bodyText, string $buttonText, array $sections, ?string $headerText = null, ?string $footerText = null): bool
+    {
+        try {
+            if (!$this->isConfigured()) {
+                Log::error('WhatsApp Cloud API: Service not configured');
+                return false;
+            }
+
+            $phoneNumber = $this->formatPhoneNumber($to);
+
+            $interactive = [
+                'type' => 'list',
+                'body' => [
+                    'text' => $bodyText,
+                ],
+                'action' => [
+                    'button' => substr($buttonText, 0, 20), // Max 20 chars
+                    'sections' => array_map(function ($section) {
+                        return [
+                            'title' => substr($section['title'] ?? 'Options', 0, 24), // Max 24 chars
+                            'rows' => array_map(function ($row) {
+                                return [
+                                    'id' => $row['id'] ?? '',
+                                    'title' => substr($row['title'] ?? '', 0, 24), // Max 24 chars
+                                    'description' => substr($row['description'] ?? '', 0, 72), // Max 72 chars
+                                ];
+                            }, array_slice($section['rows'] ?? [], 0, 10)), // Max 10 rows per section
+                        ];
+                    }, $sections),
+                ],
+            ];
+
+            if ($headerText) {
+                $interactive['header'] = [
+                    'type' => 'text',
+                    'text' => substr($headerText, 0, 60), // Max 60 chars
+                ];
+            }
+
+            if ($footerText) {
+                $interactive['footer'] = [
+                    'text' => substr($footerText, 0, 60), // Max 60 chars
+                ];
+            }
+
+            $response = Http::withToken($this->apiToken)
+                ->post($this->getMessagesEndpoint(), [
+                    'messaging_product' => 'whatsapp',
+                    'recipient_type' => 'individual',
+                    'to' => $phoneNumber,
+                    'type' => 'interactive',
+                    'interactive' => $interactive,
+                ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                Log::info('WhatsApp Cloud API list message sent', [
+                    'to' => $phoneNumber,
+                    'message_id' => $data['messages'][0]['id'] ?? null,
+                ]);
+                return true;
+            }
+
+            Log::error('WhatsApp Cloud API list send error', [
+                'to' => $phoneNumber,
+                'status' => $response->status(),
+                'error' => $response->json(),
+            ]);
+            return false;
+
+        } catch (\Exception $e) {
+            Log::error('WhatsApp Cloud API list exception: ' . $e->getMessage(), [
+                'to' => $to,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * Download media from WhatsApp Cloud API
      * 
      * When receiving media messages, the webhook only provides a media ID.

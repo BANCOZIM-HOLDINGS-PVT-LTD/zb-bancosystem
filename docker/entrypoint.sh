@@ -13,6 +13,10 @@ mkdir -p bootstrap/cache 2>/dev/null || true
 chown -R www:www storage 2>/dev/null || true
 chmod -R 775 storage 2>/dev/null || true
 
+# Ensure permissions for bootstrap/cache (critical for Laravel)
+chown -R www:www bootstrap/cache 2>/dev/null || true
+chmod -R 775 bootstrap/cache 2>/dev/null || true
+
 # Create log files if they don't exist and set proper permissions
 touch storage/logs/nginx-error.log 2>/dev/null || true
 touch storage/logs/nginx-access.log 2>/dev/null || true
