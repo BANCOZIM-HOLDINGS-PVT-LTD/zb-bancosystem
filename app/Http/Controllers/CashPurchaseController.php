@@ -27,12 +27,12 @@ class CashPurchaseController extends Controller
      */
     public function index(Request $request): Response
     {
-        $type = $request->query('type', 'personal');
+        $type = $request->query('type', 'personal'); // personal or microbiz
         $language = $request->query('language', 'en');
         $currency = $request->query('currency', 'USD');
 
         return Inertia::render('CashPurchase', [
-            'type' => $type,
+            'purchaseType' => $type,
             'language' => $language,
             'currency' => $currency,
         ]);

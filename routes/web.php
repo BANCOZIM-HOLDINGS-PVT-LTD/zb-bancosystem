@@ -38,6 +38,11 @@ Route::get('/application/success', [ApplicationWizardController::class, 'success
 Route::get('/delivery/tracking', [ApplicationWizardController::class, 'tracking'])->name('delivery.tracking');
 Route::get('/reference-code', [ApplicationWizardController::class, 'referenceCodeLookup'])->name('reference.code.lookup');
 
+// Deposit Payment Routes
+Route::post('/deposit/initiate', [\App\Http\Controllers\DepositPaymentController::class, 'initiatePayment'])->name('deposit.initiate');
+Route::post('/deposit/callback', [\App\Http\Controllers\DepositPaymentController::class, 'paymentCallback'])->name('deposit.callback');
+Route::get('/deposit/status/{referenceCode}', [\App\Http\Controllers\DepositPaymentController::class, 'getPaymentStatus'])->name('deposit.status');
+
 // Cash Purchase Routes
 Route::get('/cash-purchase', [\App\Http\Controllers\CashPurchaseController::class, 'index'])->name('cash.purchase');
 Route::get('/cash-purchase/success/{purchase}', [\App\Http\Controllers\CashPurchaseController::class, 'success'])->name('cash.purchase.success');

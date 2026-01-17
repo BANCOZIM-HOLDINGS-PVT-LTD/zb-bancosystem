@@ -38,7 +38,7 @@ class ApplicationWizardController extends Controller
         $referralCode = $request->query('ref');
 
         $initialData = [];
-        $initialStep = 'employer'; // Start at employer step since auth is required
+        $initialStep = 'product'; // Start at product step
         $agentId = null;
 
         // Handle referral code if provided (from welcome page)

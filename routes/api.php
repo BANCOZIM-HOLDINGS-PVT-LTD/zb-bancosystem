@@ -159,6 +159,9 @@ Route::prefix('application')->group(function () {
     Route::get('/insights/{reference}', [\App\Http\Controllers\ApplicationStatusController::class, 'getApplicationInsights']);
 });
 
+// User Pending Applications Check
+Route::get('/user/pending-applications', [\App\Http\Controllers\PendingApplicationController::class, 'check']);
+
 // SSB Loan Workflow API routes (Public - for clients)
 Route::prefix('ssb')->group(function () {
     // Client-facing endpoints

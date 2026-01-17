@@ -2,6 +2,7 @@ import { type SharedData } from '@/types';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
 import { Globe, CreditCard, Briefcase, FileText, Package, ChevronRight, User, DollarSign, ShoppingBag, Banknote, Hammer, GraduationCap, Laptop, Home } from 'lucide-react';
+import Footer from '@/components/Footer';
 
 interface WelcomeProps {
     hasApplications: boolean;
@@ -21,7 +22,7 @@ const PRODUCT_INTENTS = [
     },
     {
         id: 'homeConstruction',
-        name: 'Home Construction and Improvements',
+        name: 'House Construction and Improvements',
         description: '(build your house or improve your home living space)',
         icon: Hammer,
     },
@@ -42,15 +43,13 @@ const PRODUCT_INTENTS = [
 export default function Welcome({ hasApplications, hasCompletedApplications, referralCode, agentId, agentName }: WelcomeProps) {
     const { auth } = usePage<SharedData>().props;
 
-    // Steps: language -> auth -> paymentMode -> intent -> currency
+    // Steps: language -> paymentMode -> intent -> currency
     const getInitialStep = () => {
-        if (auth.user) {
-            return 'paymentMode';
-        }
+        // Always start at language, regardless of auth status
         return 'language';
     };
 
-    const [currentStep, setCurrentStep] = useState<'language' | 'auth' | 'paymentMode' | 'intent' | 'currency'>(getInitialStep());
+    const [currentStep, setCurrentStep] = useState<'language' | 'paymentMode' | 'intent' | 'currency'>('language');
     const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
     const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
     const [paymentMode, setPaymentMode] = useState<'cash' | 'credit' | null>(null);
@@ -82,11 +81,8 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
 
     const handleLanguageSelect = (language: string) => {
         setSelectedLanguage(language);
-        if (auth.user) {
-            setCurrentStep('paymentMode');
-        } else {
-            setCurrentStep('auth');
-        }
+        // Skip auth step - go directly to payment mode
+        setCurrentStep('paymentMode');
     };
 
     const handlePaymentModeSelect = (mode: 'cash' | 'credit') => {
@@ -199,62 +195,6 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                 </div>
                             )}
 
-                            {currentStep === 'auth' && (
-                                <div className="space-y-8">
-                                    <div className="text-center">
-                                        <h1 className="text-3xl font-bold mb-4">
-                                            {selectedLang?.greeting}
-                                        </h1>
-                                        <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                            Please register or login to continue
-                                        </p>
-                                        <button
-                                            onClick={() => setCurrentStep('language')}
-                                            className="mt-4 text-sm text-emerald-600 hover:text-emerald-700"
-                                        >
-                                            ← Back to Start
-                                        </button>
-                                    </div>
-
-                                    <div className="grid gap-4 sm:grid-cols-2 max-w-2xl mx-auto">
-                                        <Link
-                                            href={route('client.login')}
-                                            className="group p-8 text-center rounded-lg border border-[#e3e3e0] transition-all hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-lg dark:border-[#3E3E3A] dark:hover:border-emerald-500 dark:hover:bg-emerald-950/20"
-                                        >
-                                            <div className="flex flex-col items-center space-y-3">
-                                                <div className="p-3 bg-emerald-100 dark:bg-emerald-900 rounded-full">
-                                                    <User className="h-8 w-8 text-emerald-600" />
-                                                </div>
-                                                <h3 className="text-xl font-semibold group-hover:text-emerald-600">
-                                                    Log in
-                                                </h3>
-                                                <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                    Already have an account? Sign in with your National ID
-                                                </p>
-                                                <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-emerald-600" />
-                                            </div>
-                                        </Link>
-
-                                        <Link
-                                            href={route('client.register')}
-                                            className="group p-8 text-center rounded-lg border border-[#e3e3e0] transition-all hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-lg dark:border-[#3E3E3A] dark:hover:border-emerald-500 dark:hover:bg-emerald-950/20"
-                                        >
-                                            <div className="flex flex-col items-center space-y-3">
-                                                <div className="p-3 bg-emerald-100 dark:bg-emerald-900 rounded-full">
-                                                    <User className="h-8 w-8 text-emerald-600" />
-                                                </div>
-                                                <h3 className="text-xl font-semibold group-hover:text-emerald-600">
-                                                    Register
-                                                </h3>
-                                                <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                    New here? Create an account to get started
-                                                </p>
-                                                <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-emerald-600" />
-                                            </div>
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
 
                             {currentStep === 'paymentMode' && (
                                 <div className="space-y-8">
@@ -278,6 +218,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                     <div className="grid gap-4 sm:grid-cols-2 max-w-2xl mx-auto">
                                         <button
                                             onClick={() => handlePaymentModeSelect('credit')}
+
                                             className="group p-8 text-center rounded-lg border border-[#e3e3e0] transition-all hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-lg dark:border-[#3E3E3A] dark:hover:border-emerald-500 dark:hover:bg-emerald-950/20"
                                         >
                                             <div className="flex flex-col items-center space-y-3">
@@ -306,39 +247,12 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                                     Buy with Cash
                                                 </h3>
                                                 <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                 (EcoCash/Zimswitch/Mastercard/Visa)
+                                                    (EcoCash/Zimswitch/Mastercard/Visa)
                                                 </p>
                                                 <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-emerald-600" />
                                             </div>
                                         </button>
                                     </div>
-
-                                    {/* Tracking options for returning users */}
-                                    {hasApplications && (
-                                        <div className="pt-8 border-t border-dashed border-gray-200">
-                                            <h3 className="text-center text-sm font-medium text-gray-500 mb-4 uppercase tracking-wider">
-                                                Existing Applications
-                                            </h3>
-                                            <div className="grid gap-4 sm:grid-cols-2 max-w-2xl mx-auto">
-                                                {trackingIntents.map((intent) => {
-                                                    const Icon = intent.icon;
-                                                    return (
-                                                        <button
-                                                            key={intent.id}
-                                                            onClick={() => handleIntentSelect(intent.id)}
-                                                            className="flex items-center space-x-4 p-4 text-left rounded-lg border border-gray-100 hover:bg-gray-50 hover:border-gray-200 transition-all dark:border-gray-800 dark:hover:bg-gray-900"
-                                                        >
-                                                            <Icon className="h-5 w-5 text-gray-400" />
-                                                            <div>
-                                                                <h4 className="font-medium text-sm">{intent.name}</h4>
-                                                                <p className="text-xs text-gray-500">{intent.description}</p>
-                                                            </div>
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             )}
 
@@ -446,6 +360,8 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                     </main>
                 </div>
             </div>
+
+            <Footer />
         </>
     );
 }

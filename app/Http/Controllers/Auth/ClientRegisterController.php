@@ -24,8 +24,13 @@ class ClientRegisterController extends Controller
     /**
      * Show the client registration page
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        // Store returnUrl in session if provided
+        if ($request->has('returnUrl')) {
+            session(['registration_return_url' => $request->query('returnUrl')]);
+        }
+
         return Inertia::render('auth/client-register');
     }
 
@@ -126,8 +131,17 @@ class ClientRegisterController extends Controller
         Auth::login($user);
         session()->forget('pending_user_id');
 
-        // Redirect to home page - will show application options for new users
-        return redirect()->route('home');
+        // Check if there's a returnUrl from the wizard flow
+        $returnUrl = session('registration_return_url');
+        session()->forget('registration_return_url');
+
+        if ($returnUrl) {
+            // Force full page reload by using location redirect
+            return redirect()->to($returnUrl);
+        }
+
+        // Default redirect to welcome page
+        return redirect()->route('welcome');
     }
 
     /**

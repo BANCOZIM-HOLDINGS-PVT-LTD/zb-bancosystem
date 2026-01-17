@@ -1,6 +1,7 @@
 import { CheckCircle, Package, MapPin, DollarSign, User, Phone, Mail, CreditCard, Printer, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Head, Link } from '@inertiajs/react';
+import Footer from '@/components/Footer';
 
 interface CashPurchaseSuccessProps {
     purchase: {
@@ -289,6 +290,8 @@ export default function CashPurchaseSuccess({ purchase }: CashPurchaseSuccessPro
                     </div>
                 </div>
             </div>
+
+            <Footer />
         </>
     );
 }

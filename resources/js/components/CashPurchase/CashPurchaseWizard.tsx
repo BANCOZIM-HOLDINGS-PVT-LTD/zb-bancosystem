@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import { ChevronLeft } from 'lucide-react';
 
@@ -8,6 +8,7 @@ import CatalogueStep from './steps/CatalogueStep';
 import DeliveryStep from './steps/DeliveryStep';
 import SummaryStep from './steps/SummaryStep';
 import CheckoutStep from './steps/CheckoutStep';
+import RegistrationPrompt from './steps/RegistrationPrompt';
 
 // Types
 export interface CashPurchaseData {
@@ -75,11 +76,12 @@ interface CashPurchaseWizardProps {
     currency?: string;
 }
 
-type StepType = 'catalogue' | 'delivery' | 'summary' | 'checkout' | 'companyRegistration';
+type StepType = 'catalogue' | 'delivery' | 'registration' | 'summary' | 'checkout' | 'companyRegistration';
 
-const steps = [
+const allSteps = [
     { id: 'catalogue', name: 'Select Product' },
     { id: 'delivery', name: 'Delivery Details' },
+    { id: 'registration', name: 'Registration' },
     { id: 'summary', name: 'Review Order' },
     { id: 'checkout', name: 'Payment' },
 ];
@@ -99,10 +101,31 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en', curr
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    // Pre-fill user data from auth
+    // Get authenticated user
     const { props } = usePage<any>();
     const user = props.auth?.user;
 
+    // Create filtered steps based on auth status
+    const steps = React.useMemo(() => {
+        let filteredSteps = [...allSteps];
+
+        // Skip registration step if user is already authenticated
+        if (user) {
+            filteredSteps = filteredSteps.filter(step => step.id !== 'registration');
+        }
+
+        return filteredSteps;
+    }, [user]);
+
+    // Effect to auto-skip registration step if user is already authenticated
+    useEffect(() => {
+        if (currentStep === 'registration' && user) {
+            // User is authenticated but on registration step - skip to next step (summary)
+            setCurrentStep('summary');
+        }
+    }, [currentStep, user]);
+
+    // Initialize wizard data from props
     useEffect(() => {
         if (user) {
             setWizardData(prev => {
@@ -194,8 +217,22 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en', curr
                 setCurrentStep('delivery');
             }
         } else if (currentStep === 'companyRegistration') {
-            setCurrentStep('summary');
+            // After company registration, go to delivery or registration
+            if (user) {
+                setCurrentStep('summary');
+            } else {
+                setCurrentStep('registration');
+            }
         } else if (currentStep === 'delivery') {
+            // After delivery, check if user is authenticated
+            if (user) {
+                setCurrentStep('summary');
+            } else {
+                setCurrentStep('registration');
+            }
+        } else if (currentStep === 'registration') {
+            // Registration will redirect to auth page
+            // When user returns, they'll be authenticated and go to summary
             setCurrentStep('summary');
         } else if (currentStep === 'summary') {
             setCurrentStep('checkout');
@@ -207,12 +244,19 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en', curr
             setCurrentStep('catalogue');
         } else if (currentStep === 'companyRegistration') {
             setCurrentStep('catalogue');
+        } else if (currentStep === 'registration') {
+            setCurrentStep('delivery');
         } else if (currentStep === 'summary') {
-            const isCompanyReg = wizardData.cart.some(item => item.name === 'Company Registration');
-            if (isCompanyReg) {
-                setCurrentStep('companyRegistration');
+            // Check if user went through registration
+            if (!user) {
+                setCurrentStep('registration');
             } else {
-                setCurrentStep('delivery');
+                const isCompanyReg = wizardData.cart.some(item => item.name === 'Company Registration');
+                if (isCompanyReg) {
+                    setCurrentStep('companyRegistration');
+                } else {
+                    setCurrentStep('delivery');
+                }
             }
         } else if (currentStep === 'checkout') {
             setCurrentStep('summary');
@@ -286,6 +330,14 @@ export default function CashPurchaseWizard({ purchaseType, language = 'en', curr
                     <DeliveryStep
                         data={wizardData}
                         onNext={(data) => handleNext({ delivery: data })}
+                        onBack={handleBack}
+                    />
+                );
+
+            case 'registration':
+                return (
+                    <RegistrationPrompt
+                        data={wizardData}
                         onBack={handleBack}
                     />
                 );

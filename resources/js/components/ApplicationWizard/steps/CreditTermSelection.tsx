@@ -26,10 +26,18 @@ const CreditTermSelection: React.FC<CreditTermSelectionProps> = ({ data, onNext,
 
     useEffect(() => {
         // Calculate base amount from selected product/scale
-        // data.selectedScale should have the price info
-        // data.selectedBusiness should have basePrice
         let amount = 0;
-        if (data.selectedScale) {
+
+        // Priority 1: Use explicitly set amount (e.g. from Core House flow)
+        if (data.amount) {
+            amount = data.amount;
+        }
+        // Priority 2: Use cart total if valid cart exists
+        else if (data.cart && data.cart.length > 0) {
+            amount = data.cart.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+        }
+        // Priority 3: Fallback to selected business/scale logic
+        else if (data.selectedScale) {
             if (data.selectedScale.custom_price) {
                 amount = data.selectedScale.custom_price;
             } else if (data.selectedBusiness) {
@@ -37,10 +45,9 @@ const CreditTermSelection: React.FC<CreditTermSelectionProps> = ({ data, onNext,
             }
         } else if (data.selectedBusiness) {
             // Fallback for single-price items like Company Reg if passed without scale
-            amount = data.selectedBusiness.basePrice || 195.00; // Hardcoded fallback for now if missing
+            amount = data.selectedBusiness.basePrice || 195.00;
         }
 
-        // If we have a specific cart total, usage might differ, but for single product flow:
         setFinalAmount(amount);
     }, [data]);
 

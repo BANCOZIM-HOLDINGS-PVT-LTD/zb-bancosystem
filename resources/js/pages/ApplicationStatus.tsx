@@ -11,9 +11,12 @@ import {
     XCircle,
     AlertCircle,
     ArrowLeft,
-    Phone
+    Phone,
+    CreditCard,
+    DollarSign
 } from 'lucide-react';
 import { Link } from '@inertiajs/react';
+import Footer from '@/components/Footer';
 
 interface ApplicationDetails {
     sessionId: string;
@@ -22,6 +25,12 @@ interface ApplicationDetails {
     business: string;
     loanAmount: string;
     submittedAt: string;
+    creditType?: string;
+    depositAmount?: number;
+    depositPaid?: boolean;
+    depositPaidAt?: string;
+    depositTransactionId?: string;
+    depositPaymentMethod?: string;
 }
 
 export default function ApplicationStatus() {
@@ -30,6 +39,8 @@ export default function ApplicationStatus() {
     const [applicationDetails, setApplicationDetails] = useState<ApplicationDetails | null>(null);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('ecocash');
+    const [processingPayment, setProcessingPayment] = useState(false);
 
     // Check for success redirect from application submission
     useEffect(() => {
@@ -158,6 +169,40 @@ export default function ApplicationStatus() {
         return { Icon, ...config };
     };
 
+    const handleDepositPayment = async () => {
+        if (!applicationDetails) return;
+
+        setProcessingPayment(true);
+        setError('');
+
+        try {
+            const response = await fetch('/deposit/initiate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                body: JSON.stringify({
+                    reference_code: applicationDetails.sessionId,
+                    payment_method: selectedPaymentMethod,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.data.redirect_url) {
+                // Redirect to Paynow payment page
+                window.location.href = data.data.redirect_url;
+            } else {
+                setError(data.message || 'Failed to initiate payment. Please try again.');
+                setProcessingPayment(false);
+            }
+        } catch (err) {
+            setError('Failed to process payment. Please try again.');
+            setProcessingPayment(false);
+        }
+    };
+
     return (
         <>
             <Head title="BancoSystem - Application Status" />
@@ -259,6 +304,91 @@ export default function ApplicationStatus() {
                                     </div>
                                 </div>
                             </Card>
+
+                            {/* Deposit Payment Section - Only for approved PDC applications with unpaid deposit */}
+                            {applicationDetails.status === 'approved' &&
+                                applicationDetails.creditType === 'PDC' &&
+                                !applicationDetails.depositPaid &&
+                                applicationDetails.depositAmount &&
+                                applicationDetails.depositAmount > 0 && (
+                                    <Card className="p-8 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 border-2 border-emerald-200 dark:border-emerald-800">
+                                        <div className="text-center mb-6">
+                                            <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 dark:bg-emerald-900 rounded-full mb-4">
+                                                <DollarSign className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                                            </div>
+                                            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                                                Pay Your Deposit
+                                            </h2>
+                                            <p className="text-gray-600 dark:text-gray-400">
+                                                Your application has been approved! Please pay your deposit to proceed with delivery.
+                                            </p>
+                                        </div>
+
+                                        <div className="max-w-md mx-auto space-y-6">
+                                            {/* Deposit Amount */}
+                                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Deposit Amount</p>
+                                                <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                                                    ${applicationDetails.depositAmount.toFixed(2)}
+                                                </p>
+                                            </div>
+
+                                            {/* Payment Method Selector */}
+                                            <div>
+                                                <Label className="text-base font-semibold mb-3 block">Select Payment Method</Label>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {[
+                                                        { id: 'ecocash', label: 'EcoCash', icon: Phone },
+                                                        { id: 'smilecash', label: 'OneMoney', icon: Phone },
+                                                        { id: 'card', label: 'Debit Card', icon: CreditCard },
+                                                        { id: 'mastercard', label: 'Mastercard', icon: CreditCard },
+                                                    ].map((method) => {
+                                                        const MethodIcon = method.icon;
+                                                        const isSelected = selectedPaymentMethod === method.id;
+                                                        return (
+                                                            <button
+                                                                key={method.id}
+                                                                onClick={() => setSelectedPaymentMethod(method.id)}
+                                                                className={`p-4 rounded-lg border-2 transition-all ${isSelected
+                                                                    ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:border-emerald-500'
+                                                                    : 'border-gray-200 hover:border-emerald-300 dark:border-gray-700 dark:hover:border-emerald-700'
+                                                                    }`}
+                                                            >
+                                                                <div className="flex flex-col items-center gap-2">
+                                                                    <MethodIcon className={`h-6 w-6 ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                                                                    <span className={`text-sm font-medium ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                                        {method.label}
+                                                                    </span>
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* Pay Now Button */}
+                                            <Button
+                                                onClick={handleDepositPayment}
+                                                disabled={processingPayment}
+                                                size="lg"
+                                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-lg py-6"
+                                            >
+                                                {processingPayment ? (
+                                                    <>Processing...</>
+                                                ) : (
+                                                    <>
+                                                        <CreditCard className="h-5 w-5 mr-2" />
+                                                        Pay ${applicationDetails.depositAmount.toFixed(2)} Now
+                                                    </>
+                                                )}
+                                            </Button>
+
+                                            <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                                                Secure payment powered by Paynow. Your delivery will be initiated once payment is confirmed.
+                                            </p>
+                                        </div>
+                                    </Card>
+                                )}
 
                             {/* Customer Support */}
                             <Card className="p-6 bg-gradient-to-br from-emerald-50 to-blue-50 dark:from-emerald-900/20 dark:to-blue-900/20">

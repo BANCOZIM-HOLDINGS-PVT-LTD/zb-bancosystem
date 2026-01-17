@@ -181,21 +181,7 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                 </Card>
             </div>
 
-            {/* Important Information */}
-            <div className="max-w-4xl mx-auto">
-                <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                    <h4 className="font-semibold text-sm mb-2 text-yellow-900 dark:text-yellow-100">
-                        Important Information:
-                    </h4>
-                    <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
-                        <li>• <strong>ZDC:</strong> No upfront payment required. Proceed directly to application form.</li>
-                        <li>• <strong>DPC:</strong> After selecting delivery details, you'll be redirected to make the 25% deposit payment via Ecocash, Onemoney, Visa or Mastercard.</li>
-                        <li>• <strong>DPC:</strong> Once payment is confirmed, you'll continue with the application form.</li>
-                        <li>• Both options require verification and approval before delivery.</li>
-                    </ul>
-                </div>
-            </div>
-
+    
             {/* Navigation */}
             <div className="flex justify-between pt-4 max-w-4xl mx-auto">
                 <Button

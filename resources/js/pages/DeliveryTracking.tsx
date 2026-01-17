@@ -18,6 +18,7 @@ import {
     ShoppingBag
 } from 'lucide-react';
 import { Link } from '@inertiajs/react';
+import Footer from '@/components/Footer';
 
 interface DeliveryDetails {
     sessionId: string;
@@ -352,6 +353,8 @@ export default function DeliveryTracking() {
                     )}
                 </div >
             </div >
+            
+            <Footer />
         </>
     );
 }

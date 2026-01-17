@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
+import Footer from '@/components/Footer';
 
 interface ApplicationSuccessProps {
     referenceCode: string;
@@ -202,6 +203,8 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({ referenceCode, 
                     </div>
                 </div>
             </div>
+
+            <Footer />
         </>
     );
 };

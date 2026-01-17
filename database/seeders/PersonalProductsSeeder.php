@@ -309,7 +309,7 @@ class PersonalProductsSeeder extends Seeder
         // Core House Option 1: Basic without finishings
         $basicNoFinishId = DB::table('products')->insertGetId([
             'product_sub_category_id' => $coreHouseSubcategory,
-            'name' => 'Basic Core House (No Finishings)',
+            'name' => 'Core House - Basic (No Finishings)',
             'base_price' => 8500.00,
             'description' => 'A compact, affordable starter home with essential structural elements. Includes foundation, walls, roof, doors, and windows. Perfect for those who prefer to customize their own interior finishes over time.',
             'image_url' => null,
@@ -325,7 +325,7 @@ class PersonalProductsSeeder extends Seeder
         // Core House Option 2: Basic core house complete
         $basicCompleteId = DB::table('products')->insertGetId([
             'product_sub_category_id' => $coreHouseSubcategory,
-            'name' => 'Basic Core House (Complete)',
+            'name' => ' Core House - Basic (Complete)',
             'base_price' => 12000.00,
             'description' => 'A fully finished basic home ready for immediate occupancy. Includes plastered walls, floor screed, ceiling, electrical wiring, plumbing, interior and exterior paint, and all essential fixtures.',
             'image_url' => null,
@@ -342,10 +342,10 @@ class PersonalProductsSeeder extends Seeder
         // Core House Option 3: Deluxe complete
         $deluxeCompleteId = DB::table('products')->insertGetId([
             'product_sub_category_id' => $coreHouseSubcategory,
-            'name' => 'Deluxe Core House (Complete)',
+            'name' => 'Core House - Deluxe (Complete)',
             'base_price' => 18000.00,
             'description' => 'A premium finished home with upgraded features including quality tiles, modern kitchen fittings, built-in wardrobes, premium paint finishes, and enhanced security features. Move-in ready with a touch of luxury.',
-            'image_url' => null,
+            'image_url' => null,    
             'interior_colors' => json_encode(['White', 'Cream', 'Light Grey', 'Peach', 'Sky Blue', 'Sage Green', 'Lavender']),
             'exterior_colors' => json_encode(['White', 'Cream', 'Sand', 'Terracotta', 'Light Grey', 'Charcoal', 'Olive']),
             'created_at' => now(),
@@ -356,22 +356,6 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $deluxeCompleteId, 'name' => 'Standard', 'multiplier' => 1.00, 'custom_price' => 18000.00, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // Core House Option 4: Deluxe non complete
-        $deluxeNonCompleteId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $coreHouseSubcategory,
-            'name' => 'Deluxe Core House (Non-Complete)',
-            'base_price' => 14500.00,
-            'description' => 'A deluxe-spec structure with premium materials and design, leaving interior touches for personal customization. Features upgraded roofing, pre-wired electrics, plumbing rough-ins, and quality plastering. Ideal for those wanting luxury foundations with custom finishes.',
-            'image_url' => null,
-            'interior_colors' => json_encode(['White', 'Cream', 'Light Grey', 'Peach', 'Sky Blue', 'Sage Green', 'Lavender']),
-            'exterior_colors' => json_encode(['White', 'Cream', 'Sand', 'Terracotta', 'Light Grey', 'Charcoal', 'Olive']),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        DB::table('product_package_sizes')->insert([
-            ['product_id' => $deluxeNonCompleteId, 'name' => 'Standard', 'multiplier' => 1.00, 'custom_price' => 14500.00, 'created_at' => now(), 'updated_at' => now()],
-        ]);
 
         // Durawall Subcategory
         $durawallSubcategory = DB::table('product_sub_categories')->insertGetId([

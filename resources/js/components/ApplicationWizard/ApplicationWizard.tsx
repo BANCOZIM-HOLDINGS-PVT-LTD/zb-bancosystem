@@ -13,6 +13,9 @@ import CompanyRegistrationStep from './steps/CompanyRegistrationStep';
 import LicenseCoursesStep from './steps/LicenseCoursesStep';
 import ZimparksHolidayStep from './steps/ZimparksHolidayStep';
 import DocumentUploadStep from '../DocumentUpload/DocumentUploadStep';
+import RegistrationPrompt from './steps/RegistrationPrompt';
+import HousePlanApprovalStep from './steps/HousePlanApprovalStep';
+import ConstructionDetailsStep from './steps/ConstructionDetailsStep';
 import { StateManager } from './services/StateManager';
 import { LocalStateManager } from './services/LocalStateManager';
 import { validateStep, ValidationResult, ValidationError, formatFieldName } from './utils/validation';
@@ -469,6 +472,8 @@ export interface WizardData {
     approvalDate?: string;
     approvedBy?: string;
     rejectionReason?: string;
+    // Flag to explicitly track Core House flow
+    isCoreHouseFlow?: boolean;
 }
 
 interface ApplicationWizardProps {
@@ -477,24 +482,28 @@ interface ApplicationWizardProps {
     sessionId?: string;
 }
 
+
 const allSteps = [
-    'employer',
     'product',
+    'housePlanApproval', // NEW: Core House plan approval
+    'constructionDetails', // NEW: Construction site details
     'companyRegistration',
     'licenseCourses', // License/Driving school courses step
     'zimparksHoliday', // Zimparks Holiday booking step
     'creditTerm', // Duration selection
     'creditType',
     'delivery',
-    'depositPayment',
-    'account',
+    'registration', // NEW: Registration prompt after delivery
+    'employer', // MOVED: Now after registration
+    'account', // MOVED: Now after employer
     'summary',
     'form',
     'documents'
 ];
 
+
 const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
-    initialStep = 'employer',
+    initialStep = 'product',
     initialData = {},
     sessionId: propSessionId
 }) => {
@@ -517,8 +526,18 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
 
         const savedState = localStateManager.getLocalState();
         if (savedState && savedState.sessionId && savedState.currentStep && savedState.formData) {
+            // Check if we're resuming after registration (user just logged in)
+            const urlParams = new URLSearchParams(window.location.search);
+            const isResuming = urlParams.get('resume') === 'true';
+
+            let resumeStep = savedState.currentStep;
+            // If resuming from registration and user is authenticated, skip to employer
+            if (isResuming && savedState.currentStep === 'registration') {
+                resumeStep = 'employer';
+            }
+
             return {
-                currentStep: savedState.currentStep,
+                currentStep: resumeStep,
                 wizardData: { ...initialData, ...savedState.formData },
                 sessionId: savedState.sessionId
             };
@@ -539,6 +558,10 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
     const [sessionId, setSessionId] = useState(initializedState.sessionId);
     const [isStateRestored, setIsStateRestored] = useState(false);
 
+    // Get authenticated user for auth checks
+    const { props } = usePage<any>();
+    const authenticatedUser = props.auth?.user;
+
     // Create filtered steps based on conditions
     // Filter out depositPayment if credit type is not PDC
     const steps = React.useMemo(() => {
@@ -556,6 +579,9 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             wizardData.subcategory === 'Destinations' ||
             (wizardData.selectedBusiness?.name === 'Zimparks Vacation Package' || wizardData.business === 'Zimparks Vacation Package');
 
+        const isHomeConstructionHub = wizardData.intent === 'homeConstruction';
+        const isCoreHouse = wizardData.subcategory === 'Core House' || wizardData.isCoreHouseFlow || (wizardData.cart || []).some(item => item.name.toLowerCase().includes('core house'));
+
         // Filter out steps based on product type
         if (!isCompanyReg) {
             filteredSteps = filteredSteps.filter(step => step !== 'companyRegistration');
@@ -569,24 +595,28 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             filteredSteps = filteredSteps.filter(step => step !== 'zimparksHoliday');
         }
 
-        // For Company Reg, License Courses, and Zimparks, keep creditTerm step
+        if (!isHomeConstructionHub || !isCoreHouse) {
+            filteredSteps = filteredSteps.filter(step => step !== 'housePlanApproval' && step !== 'constructionDetails');
+        }
+
+        // For Company Reg, License Courses, Zimparks, AND Core House, keep creditTerm step
         // For standard products, filter out creditTerm (handled internally in ProductSelection)
-        if (!isCompanyReg && !isLicenseCourses && !isZimparksHoliday) {
+        if (!isCompanyReg && !isLicenseCourses && !isZimparksHoliday && !(isHomeConstructionHub && isCoreHouse)) {
             filteredSteps = filteredSteps.filter(step => step !== 'creditTerm');
         }
 
-        // Skip delivery step for License Courses and Zimparks Holiday (location selected in dedicated step)
-        if (isLicenseCourses || isZimparksHoliday) {
+        // Skip delivery step for License Courses, Zimparks Holiday, and Core House (location captured in details)
+        if (isLicenseCourses || isZimparksHoliday || (isHomeConstructionHub && isCoreHouse)) {
             filteredSteps = filteredSteps.filter(step => step !== 'delivery');
         }
 
-        // Only show depositPayment step for PDC credit type
-        if (wizardData.creditType !== 'PDC') {
-            filteredSteps = filteredSteps.filter(step => step !== 'depositPayment');
+        // Skip registration step if user is already authenticated
+        if (authenticatedUser) {
+            filteredSteps = filteredSteps.filter(step => step !== 'registration');
         }
 
         return filteredSteps;
-    }, [wizardData.creditType, wizardData.subcategory, wizardData.selectedBusiness, wizardData.business, wizardData.category]);
+    }, [wizardData.creditType, wizardData.subcategory, wizardData.selectedBusiness, wizardData.business, wizardData.category, authenticatedUser, wizardData.cart, wizardData.intent, wizardData.isCoreHouseFlow]);
 
     // Effect to save state whenever it changes
     useEffect(() => {
@@ -600,10 +630,18 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         setIsStateRestored(true);
     }, []);
 
-    // Effect to pre-fill user data from auth context
-    const { props } = usePage<any>();
-    const authenticatedUser = props.auth?.user;
+    // Effect to auto-skip registration step if user is already authenticated
+    useEffect(() => {
+        if (currentStep === 'registration' && authenticatedUser) {
+            // User is authenticated but on registration step - skip to next step
+            const currentIndex = steps.findIndex(s => s === 'registration');
+            if (currentIndex >= 0 && currentIndex < steps.length - 1) {
+                setCurrentStep(steps[currentIndex + 1] as any);
+            }
+        }
+    }, [currentStep, authenticatedUser, steps]);
 
+    // Effect to pre-fill user data from auth context
     useEffect(() => {
         if (authenticatedUser && isStateRestored) {
             setWizardData(prev => {
@@ -755,6 +793,9 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             updatedData.subcategory === 'Destinations' ||
             (updatedData.selectedBusiness?.name === 'Zimparks Vacation Package' || updatedData.business === 'Zimparks Vacation Package');
 
+        const isHomeConstructionHubUpdated = updatedData.intent === 'homeConstruction';
+        const isCoreHouseUpdated = updatedData.subcategory === 'Core House' || updatedData.isCoreHouseFlow || (updatedData.cart || []).some(item => item.name.toLowerCase().includes('core house'));
+
         if (!isCompanyRegUpdated) {
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'companyRegistration');
         }
@@ -767,14 +808,18 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'zimparksHoliday');
         }
 
-        // For Company Reg, License Courses, and Zimparks, keep creditTerm step
+        if (!isHomeConstructionHubUpdated || !isCoreHouseUpdated) {
+            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'housePlanApproval' && step !== 'constructionDetails');
+        }
+
+        // For Company Reg, License Courses, Zimparks, AND Core House, keep creditTerm step
         // For standard products, filter out creditTerm (handled internally in ProductSelection)
-        if (!isCompanyRegUpdated && !isLicenseCoursesUpdated && !isZimparksHolidayUpdated) {
+        if (!isCompanyRegUpdated && !isLicenseCoursesUpdated && !isZimparksHolidayUpdated && !(isHomeConstructionHubUpdated && isCoreHouseUpdated)) {
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'creditTerm');
         }
 
-        // Skip delivery step for License Courses and Zimparks Holiday
-        if (isLicenseCoursesUpdated || isZimparksHolidayUpdated) {
+        // Skip delivery step for License Courses, Zimparks Holiday, and Core House (location captured in details)
+        if (isLicenseCoursesUpdated || isZimparksHolidayUpdated || (isHomeConstructionHubUpdated && isCoreHouseUpdated)) {
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'delivery');
         }
 
@@ -982,6 +1027,24 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                         onBack={handleBack}
                     />
                 );
+            case 'housePlanApproval':
+                return (
+                    <HousePlanApprovalStep
+                        data={wizardData}
+                        updateData={(data) => setWizardData({ ...wizardData, ...data })}
+                        onNext={() => handleNext({})}
+                        onBack={handleBack}
+                    />
+                );
+            case 'constructionDetails':
+                return (
+                    <ConstructionDetailsStep
+                        data={wizardData}
+                        updateData={(data) => setWizardData({ ...wizardData, ...data })}
+                        onNext={() => handleNext({})}
+                        onBack={handleBack}
+                    />
+                );
             case 'creditTerm':
                 return (
                     <CreditTermSelection
@@ -994,8 +1057,14 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                 return <CreditTypeSelection {...commonProps} onNext={(creditType) => handleNext({ creditType })} />;
             case 'delivery':
                 return <DeliverySelection {...commonProps} />;
-            case 'depositPayment':
-                return <DepositPaymentStep {...commonProps} />;
+            case 'registration':
+                return (
+                    <RegistrationPrompt
+                        data={wizardData}
+                        onBack={handleBack}
+                        sessionId={sessionId}
+                    />
+                );
             case 'summary':
                 return (
                     <ApplicationSummary

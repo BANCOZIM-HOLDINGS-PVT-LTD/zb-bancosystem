@@ -22,6 +22,11 @@ class ApplicationState extends Model
         'reference_code_expires_at',
         'agent_id',
         'exempt_from_auto_deletion',
+        'deposit_amount',
+        'deposit_paid',
+        'deposit_paid_at',
+        'deposit_transaction_id',
+        'deposit_payment_method',
     ];
 
     protected $casts = [
@@ -30,6 +35,8 @@ class ApplicationState extends Model
         'expires_at' => 'datetime',
         'reference_code_expires_at' => 'datetime',
         'exempt_from_auto_deletion' => 'boolean',
+        'deposit_paid' => 'boolean',
+        'deposit_paid_at' => 'datetime',
     ];
 
     public function transitions(): HasMany

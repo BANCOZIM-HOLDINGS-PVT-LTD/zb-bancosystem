@@ -265,6 +265,37 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                     </div>
                 </Card>
 
+                {/* Construction Details for Core House */}
+                {data.formResponses?.constructionSetting && (
+                    <Card className="p-6">
+                        <div className="flex items-center mb-4">
+                            <MapPin className="h-6 w-6 text-emerald-600 mr-3" />
+                            <h3 className="text-lg font-semibold">Construction Details</h3>
+                        </div>
+                        <div className="space-y-3">
+                            <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Setting</p>
+                                <p className="font-medium">
+                                    {data.formResponses.constructionSetting}
+                                    {data.formResponses.constructionProvince ? ` (${data.formResponses.constructionProvince})` : ''}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Water Source</p>
+                                <p className="font-medium">
+                                    {data.formResponses.waterSourceNearby === 'Yes'
+                                        ? `Available - ${data.formResponses.waterSourceType === 'well_borehole' ? 'Well/Borehole' : 'Stream/River/Dam'}`
+                                        : 'None nearby'}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Stand Owner</p>
+                                <p className="font-medium">{data.formResponses.standOwner}</p>
+                            </div>
+                        </div>
+                    </Card>
+                )}
+
                 {data.product && (
                     <Card className="p-6">
                         <div className="flex items-center mb-4">

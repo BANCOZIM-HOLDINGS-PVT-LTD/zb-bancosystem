@@ -3,6 +3,7 @@ import ApplicationWizard from '@/components/ApplicationWizard/ApplicationWizard'
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { ApplicationProvider } from '@/contexts/ApplicationContext';
 import { ApplicationState } from '@/types/application';
+import Footer from '@/components/Footer';
 
 interface ApplicationWizardPageProps {
     initialStep?: string;
@@ -32,6 +33,8 @@ export default function ApplicationWizardPage({
                     />
                 </ApplicationProvider>
             </ErrorBoundary>
+
+            <Footer />
         </>
     );
 }

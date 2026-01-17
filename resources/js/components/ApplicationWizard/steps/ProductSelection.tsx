@@ -331,7 +331,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             return;
         }
 
-        if (isPersonalProducts) {
+        if (isPersonalProducts || data.intent === 'homeConstruction') {
             // ... existing logic ...
             if (business.scales.length === 1) {
                 handleScaleSelect(business.scales[0]);
@@ -364,7 +364,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         // For Zimparks and MicroBiz, stay on scales view to show description
         const isZimparks = selectedBusiness?.name === 'Zimparks Vacation Package';
 
-        if (isPersonalProducts) {
+        if (isPersonalProducts || data.intent === 'homeConstruction') {
             // Stay on product detail view
         } else if (isMicroBiz || isZimparks) {
             // Stay on current view
@@ -545,7 +545,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 setSelectedDestination(null);
                 break;
             case 'terms':
-                if (isPersonalProducts) {
+                if (isPersonalProducts || isCartMode) {
                     setCurrentView('product_detail');
                 } else {
                     setCurrentView('scales');
@@ -583,7 +583,22 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             scale: scale?.name
         };
 
-        setCart([...cart, newItem]);
+        const newCart = [...cart, newItem];
+        setCart(newCart);
+
+        // Auto-proceed for Core House in Construction flow
+        if (data.intent === 'homeConstruction' && selectedBusiness.name.toLowerCase().includes('core house')) {
+            onNext({
+                cart: newCart,
+                // Provide validation data required by validateProductStep
+                category: 'Construction', // Ensure a category is present
+                subcategory: 'Core House', // Ensure subcategory is present for step filtering
+                amount: price, // Ensure an amount is present
+                isCoreHouseFlow: true // Explicitly flag as Core House flow
+            });
+            return;
+        }
+
         setCartQuantity(1);
         setSelectedBusiness(null);
         setSelectedSubcategory(null);
@@ -641,42 +656,51 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     };
 
     // If isCartMode, render Basket Summary
-    const renderCartSummary = () => (
-        <Card className="p-4 mb-6 bg-white dark:bg-[#1b1b18] border-[#e5e7eb] dark:border-[#27272a]">
-            <h3 className="font-semibold mb-4 text-[#1b1b18] dark:text-[#EDEDEC] flex items-center">
-                <ShoppingBasket className="w-5 h-5 mr-2" />
-                Shopping Basket
-            </h3>
-            {cart.length === 0 ? (
-                <p className="text-sm text-gray-500">Your basket is empty.</p>
-            ) : (
-                <div className="space-y-3">
-                    {cart.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center text-sm">
-                            <div>
-                                <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{item.name}</span>
-                                <div className="text-xs text-gray-500">
-                                    {item.color && <span className="mr-2">Color: {item.color}</span>}
-                                    {item.scale && <span>Size: {item.scale}</span>}
-                                    <span className="ml-2">x{item.quantity}</span>
+    const renderCartSummary = () => {
+        // If it's a Core House flow and we have items, we might not want to show the specific cart if it's just the core house
+        // However, the user said "only building materials should add to basket".
+        // Let's hide the basket display if the ONLY thing in it is a Core House
+        // This makes it feel like "Selection" rather than "Shopping"
+        const hasCoreHouse = cart.some(item => item.name.toLowerCase().includes('core house'));
+        if (hasCoreHouse && cart.length === 1 && data.intent === 'homeConstruction') return null;
+
+        return (
+            <Card className="p-4 mb-6 bg-white dark:bg-[#1b1b18] border-[#e5e7eb] dark:border-[#27272a]">
+                <h3 className="font-semibold mb-4 text-[#1b1b18] dark:text-[#EDEDEC] flex items-center">
+                    <ShoppingBasket className="w-5 h-5 mr-2" />
+                    Shopping Basket
+                </h3>
+                {cart.length === 0 ? (
+                    <p className="text-sm text-gray-500">Your basket is empty.</p>
+                ) : (
+                    <div className="space-y-3">
+                        {cart.map((item, index) => (
+                            <div key={index} className="flex justify-between items-center text-sm">
+                                <div>
+                                    <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{item.name}</span>
+                                    <div className="text-xs text-gray-500">
+                                        {item.color && <span className="mr-2">Color: {item.color}</span>}
+                                        {item.scale && <span>Size: {item.scale}</span>}
+                                        <span className="ml-2">x{item.quantity}</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center">
+                                    <span className="font-medium mr-3">{formatCurrency(item.price * item.quantity)}</span>
+                                    <Button variant="ghost" size="sm" onClick={() => handleRemoveFromCart(index)} className="text-red-500 h-6 w-6 p-0 hover:bg-red-50">
+                                        <X className="w-4 h-4" />
+                                    </Button>
                                 </div>
                             </div>
-                            <div className="flex items-center">
-                                <span className="font-medium mr-3">{formatCurrency(item.price * item.quantity)}</span>
-                                <Button variant="ghost" size="sm" onClick={() => handleRemoveFromCart(index)} className="text-red-500 h-6 w-6 p-0 hover:bg-red-50">
-                                    <X className="w-4 h-4" />
-                                </Button>
-                            </div>
+                        ))}
+                        <div className="border-t pt-2 mt-2 flex justify-between font-bold">
+                            <span>Total</span>
+                            <span>{formatCurrency(cartTotal)}</span>
                         </div>
-                    ))}
-                    <div className="border-t pt-2 mt-2 flex justify-between font-bold">
-                        <span>Total</span>
-                        <span>{formatCurrency(cartTotal)}</span>
                     </div>
-                </div>
-            )}
-        </Card>
-    );
+                )}
+            </Card>
+        );
+    };
 
     const creditTerms = (selectedBusiness || isCartMode) ? getCreditTermOptions(finalAmount) : [];
 
@@ -1101,12 +1125,26 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             onClick={handleAddToCart}
                                             disabled={
                                                 (selectedBusiness.scales && selectedBusiness.scales.length > 0 && !selectedScale) ||
-                                                (selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && !selectedColor)
+                                                (selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && !selectedColor) ||
+                                                (selectedBusiness.interiorColors && Array.isArray(selectedBusiness.interiorColors) && selectedBusiness.interiorColors.length > 0 && !selectedInteriorColor) ||
+                                                (selectedBusiness.exteriorColors && Array.isArray(selectedBusiness.exteriorColors) && selectedBusiness.exteriorColors.length > 0 && !selectedExteriorColor)
                                             }
-                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg"
+                                            className={`w-full text-white py-6 text-lg ${selectedBusiness.name.toLowerCase().includes('core house')
+                                                ? 'bg-emerald-600 hover:bg-emerald-700'
+                                                : 'bg-blue-600 hover:bg-blue-700'
+                                                }`}
                                         >
-                                            <ShoppingBasket className="mr-2 h-5 w-5" />
-                                            Add to Basket
+                                            {selectedBusiness.name.toLowerCase().includes('core house') ? (
+                                                <>
+                                                    Select & Continue
+                                                    <ChevronRight className="ml-2 h-5 w-5" />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ShoppingBasket className="mr-2 h-5 w-5" />
+                                                    Add to Basket
+                                                </>
+                                            )}
                                         </Button>
                                         <p className="text-xs text-gray-500 text-center">
                                             Add item to your basket to proceed
@@ -1456,7 +1494,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     </Button>
                 )}
 
-                {currentView === 'terms' && (
+                {/* Hide Continue button for Core House as it has its own flow */}
+                {currentView === 'terms' && (!data.intent || data.intent !== 'homeConstruction') && (
                     <Button
                         onClick={handleContinue}
                         disabled={loading || !selectedTermMonths}
