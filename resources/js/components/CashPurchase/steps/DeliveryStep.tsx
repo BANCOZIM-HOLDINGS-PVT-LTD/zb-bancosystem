@@ -201,14 +201,14 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
     const isPostOfficeDisabled = (selectedAgent === 'Swift' || selectedAgent === 'Gain Cash & Carry') && !deliveryAgentInfo.isEditable;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-24 sm:pb-8">
             {/* Header */}
             <div>
-                <h2 className="text-2xl font-bold mb-2 text-[#1b1b18] dark:text-[#EDEDEC]">
+                <h2 className="text-xl sm:text-2xl font-bold mb-2 text-[#1b1b18] dark:text-[#EDEDEC]">
                     Delivery Depot
                 </h2>
-                <p className="text-[#706f6c] dark:text-[#A1A09A]">
-                    Please be advised that all delivery services are done via our courier, Zimpost Courier Connect to all urban and rural destinations in Zimbabwe. You will collect your product from the Post Office nearest to you.
+                <p className="text-sm sm:text-base text-[#706f6c] dark:text-[#A1A09A]">
+                    Delivery via Zimpost Courier Connect to all Zimbabwe destinations. Collect from your nearest Post Office.
                 </p>
             </div>
 
@@ -383,17 +383,13 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
                 </div>
             )}
 
-            {/* Actions */}
-            <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+            {/* Navigation Buttons */}
+            <div className="flex justify-between gap-4 pt-6 border-t border-gray-200 dark:border-gray-700 mb-32">
                 <Button onClick={onBack} variant="outline" size="lg">
                     <ChevronLeft className="mr-2 h-5 w-5" />
                     Back
                 </Button>
-                <Button
-                    onClick={validateAndContinue}
-                    size="lg"
-                    className="bg-emerald-600 hover:bg-emerald-700"
-                >
+                <Button onClick={validateAndContinue} size="lg" className="bg-emerald-600 hover:bg-emerald-700">
                     Continue
                     <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>

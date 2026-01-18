@@ -76,15 +76,15 @@ const ConstructionDetailsStep: React.FC<ConstructionDetailsStepProps> = ({ data,
     ];
 
     return (
-        <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500">
-            <div className="text-center mb-6">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Construction Details</h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                    Tell us about the site where the house will be built.
+        <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500 pb-24 sm:pb-8">
+            <div className="text-center mb-4 sm:mb-6">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Construction Details</h2>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    Tell us about the construction site.
                 </p>
             </div>
 
-            <Card className="p-8 space-y-8 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm">
+            <Card className="p-4 sm:p-8 space-y-6 sm:space-y-8 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm">
 
                 {/* Setting & Province */}
                 <div className="space-y-4">
@@ -256,15 +256,17 @@ const ConstructionDetailsStep: React.FC<ConstructionDetailsStepProps> = ({ data,
                     </p>
                 )}
 
-                <div className="flex justify-between pt-4">
-                    <Button variant="outline" onClick={onBack}>
-                        Back
-                    </Button>
-                    <Button onClick={handleNext} className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-[120px]">
-                        Continue
-                    </Button>
-                </div>
             </Card>
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between gap-4 pt-4 mb-32">
+                <Button variant="outline" onClick={onBack}>
+                    Back
+                </Button>
+                <Button onClick={handleNext} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                    Continue
+                </Button>
+            </div>
         </div>
     );
 };

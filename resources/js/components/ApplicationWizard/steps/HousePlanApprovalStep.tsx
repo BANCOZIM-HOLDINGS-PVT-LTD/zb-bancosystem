@@ -24,11 +24,11 @@ const HousePlanApprovalStep: React.FC<HousePlanApprovalStepProps> = ({ data, upd
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
-            <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">House Plan Approval</h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                    Please review and approve the standard design plan for your Core House.
+        <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500 pb-24 sm:pb-8">
+            <div className="text-center mb-4 sm:mb-8">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">House Plan Approval</h2>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    Review and approve the standard design plan.
                 </p>
             </div>
 
@@ -55,19 +55,18 @@ const HousePlanApprovalStep: React.FC<HousePlanApprovalStepProps> = ({ data, upd
                     </div>
                 </div>
 
-                <div className="flex justify-between items-center pt-4">
-                    <Button variant="outline" onClick={onBack}>
-                        Back
-                    </Button>
-                    <Button
-                        onClick={handleAccept}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
-                    >
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Accept Plan & Continue
-                    </Button>
-                </div>
             </Card>
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between gap-4 pt-4 mb-32">
+                <Button variant="outline" onClick={onBack}>
+                    Back
+                </Button>
+                <Button onClick={handleAccept} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Accept & Continue
+                </Button>
+            </div>
         </div>
     );
 };

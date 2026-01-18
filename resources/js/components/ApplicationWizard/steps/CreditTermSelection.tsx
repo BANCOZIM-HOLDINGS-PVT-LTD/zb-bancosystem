@@ -138,7 +138,8 @@ const CreditTermSelection: React.FC<CreditTermSelectionProps> = ({ data, onNext,
                 </div>
             )}
 
-            <div className="flex justify-between pt-4">
+            {/* Navigation Buttons */}
+            <div className="flex justify-between gap-4 pt-8">
                 <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
                     <ChevronLeft className="h-4 w-4" />
                     Back

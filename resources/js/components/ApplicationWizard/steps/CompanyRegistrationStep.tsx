@@ -126,10 +126,10 @@ const CompanyRegistrationStep: React.FC<CompanyRegistrationStepProps> = ({ data,
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 sm:pb-8">
             <div className="text-center">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Company Registration</h2>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">Complete the details below to register your business.</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Company Registration</h2>
+                <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">Complete the details below.</p>
             </div>
 
             {/* 1. Company Type */}
@@ -305,7 +305,8 @@ const CompanyRegistrationStep: React.FC<CompanyRegistrationStepProps> = ({ data,
                 </div>
             </div>
 
-            <div className="flex justify-between pt-6">
+            {/* Navigation Buttons */}
+            <div className="flex justify-between gap-4 pt-6 mb-32">
                 <button
                     onClick={onBack}
                     className="px-6 py-2.5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"

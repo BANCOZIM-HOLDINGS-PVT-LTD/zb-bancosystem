@@ -205,13 +205,13 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-24 sm:pb-8">
             <div>
-                <h2 className="text-2xl font-bold mb-2 text-[#1b1b18] dark:text-[#EDEDEC]">
-                    Payment & Contact Details
+                <h2 className="text-xl sm:text-2xl font-bold mb-2 text-[#1b1b18] dark:text-[#EDEDEC]">
+                    Payment & Details
                 </h2>
-                <p className="text-[#706f6c] dark:text-[#A1A09A]">
-                    Enter your details required for delivery and complete payment
+                <p className="text-sm sm:text-base text-[#706f6c] dark:text-[#A1A09A]">
+                    Enter your details for delivery and payment
                 </p>
             </div>
 
@@ -527,26 +527,19 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
                 )}
             </div>
 
-            {/* Actions */}
-            {
-                !showPaymentForm && (
-                    <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <Button onClick={onBack} variant="outline" size="lg" disabled={loading}>
-                            <ChevronLeft className="mr-2 h-5 w-5" />
-                            Back
-                        </Button>
-                        <Button
-                            onClick={handleProceedToPayment}
-                            disabled={loading}
-                            size="lg"
-                            className="bg-emerald-600 hover:bg-emerald-700"
-                        >
-                            <CreditCard className="mr-2 h-5 w-5" />
-                            Continue to Payment
-                        </Button>
-                    </div>
-                )
-            }
-        </div >
+            {/* Navigation Buttons */}
+            {!showPaymentForm && (
+                <div className="flex justify-between gap-4 pt-6 border-t border-gray-200 dark:border-gray-700 mb-32">
+                    <Button onClick={onBack} variant="outline" size="lg" disabled={loading}>
+                        <ChevronLeft className="mr-2 h-5 w-5" />
+                        Back
+                    </Button>
+                    <Button onClick={handleProceedToPayment} disabled={loading} size="lg" className="bg-emerald-600 hover:bg-emerald-700">
+                        <CreditCard className="mr-2 h-5 w-5" />
+                        Continue to Pay
+                    </Button>
+                </div>
+            )}
+        </div>
     );
 }

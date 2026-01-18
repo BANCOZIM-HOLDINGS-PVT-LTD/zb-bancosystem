@@ -1092,7 +1092,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
     const wasStateRestored = savedState && savedState.currentStep !== initialStep;
 
     return (
-        <div className="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a]">
+        <div className="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a] pb-24">
             <div className="mx-auto max-w-4xl px-4 py-8">
                 {/* State restoration notification */}
                 {wasStateRestored && !loading && (

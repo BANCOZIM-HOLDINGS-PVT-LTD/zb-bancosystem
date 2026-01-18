@@ -74,10 +74,10 @@ const LICENSE_CLASSES = [
 
 // EasyGo Office Locations
 const LESSON_LOCATIONS = [
-    { id: 'harare-hq', name: 'Harare CBD'},
-    { id: 'bulawayo', name: 'Bulawayo'},
-    { id: 'mutare', name: 'Mutare'},
-    { id: 'gweru', name: 'Gweru'},
+    { id: 'harare-hq', name: 'Harare CBD' },
+    { id: 'bulawayo', name: 'Bulawayo' },
+    { id: 'mutare', name: 'Mutare' },
+    { id: 'gweru', name: 'Gweru' },
     { id: 'bindura', name: 'Bindura' },
     { id: 'beitbridge', name: 'Beitbridge' },
     { id: 'chitungwiza', name: 'Chitungwiza' },
@@ -154,10 +154,10 @@ const LicenseCoursesStep: React.FC<LicenseCoursesStepProps> = ({ data, onNext, o
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 sm:pb-8">
             <div className="text-center">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">License Courses</h2>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">Select your driving license course options.</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">License Courses</h2>
+                <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">Select your driving license options.</p>
             </div>
 
             {/* 1. License Type */}
@@ -365,8 +365,8 @@ const LicenseCoursesStep: React.FC<LicenseCoursesStepProps> = ({ data, onNext, o
                 </div>
             </div>
 
-            {/* Navigation */}
-            <div className="flex justify-between pt-6">
+            {/* Navigation Buttons */}
+            <div className="flex justify-between gap-4 pt-6 mb-32">
                 <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
                     <ChevronLeft className="h-4 w-4" />
                     Back
