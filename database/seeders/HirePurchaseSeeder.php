@@ -64,9 +64,9 @@ class HirePurchaseSeeder extends Seeder
 
     private function seedAgriculturalInputs()
     {
-        // Explicitly create/find with type='personalGadgets' so it shows in that flow
+        // Explicitly create/find with type='hire_purchase' so it shows in that flow
         $category = ProductCategory::firstOrCreate(
-            ['name' => 'Agricultural Inputs', 'type' => 'personalGadgets'],
+            ['name' => 'Agricultural Inputs', 'type' => 'hire_purchase'],
             ['emoji' => '🌾']
         );
 
@@ -100,7 +100,7 @@ class HirePurchaseSeeder extends Seeder
     {
         $category = ProductCategory::firstOrCreate(
             ['name' => 'Cellphones'],
-            ['emoji' => '📱', 'type' => 'personalGadgets']
+            ['emoji' => '📱', 'type' => 'hire_purchase']
         );
 
         $brands = [
@@ -207,7 +207,7 @@ class HirePurchaseSeeder extends Seeder
     {
         $category = ProductCategory::firstOrCreate(
             ['name' => 'Laptops & Printers'],
-            ['emoji' => '💻', 'type' => 'personalGadgets']
+            ['emoji' => '💻', 'type' => 'hire_purchase']
         );
 
         // Subcategory: Dual Core
@@ -295,7 +295,7 @@ class HirePurchaseSeeder extends Seeder
     {
         $category = ProductCategory::firstOrCreate(
             ['name' => 'ICT Accessories'],
-            ['emoji' => '🎧', 'type' => 'personalGadgets']
+            ['emoji' => '🎧', 'type' => 'hire_purchase']
         );
 
         $this->seedSubcategoryData($category, 'Projectors', [
@@ -325,7 +325,7 @@ class HirePurchaseSeeder extends Seeder
     {
         $category = ProductCategory::firstOrCreate(
             ['name' => 'Kitchen ware'],
-            ['emoji' => '🥡', 'type' => 'personalGadgets']
+            ['emoji' => '🥡', 'type' => 'hire_purchase']
         );
 
         // Kitchen Unit
@@ -370,7 +370,7 @@ class HirePurchaseSeeder extends Seeder
     {
         $category = ProductCategory::firstOrCreate(
             ['name' => 'Television & Decoders'],
-            ['emoji' => '📺', 'type' => 'personalGadgets']
+            ['emoji' => '📺', 'type' => 'hire_purchase']
         );
 
         $this->seedSubcategoryData($category, 'Televisions', [
@@ -393,7 +393,7 @@ class HirePurchaseSeeder extends Seeder
     {
         $category = ProductCategory::firstOrCreate(
             ['name' => 'Lounge Furniture'],
-            ['emoji' => '🛋️', 'type' => 'personalGadgets']
+            ['emoji' => '🛋️', 'type' => 'hire_purchase']
         );
 
         // Lounge Suite
@@ -429,7 +429,7 @@ class HirePurchaseSeeder extends Seeder
     {
         $category = ProductCategory::firstOrCreate(
             ['name' => 'Bedroom ware'],
-            ['emoji' => '🛏️', 'type' => 'personalGadgets']
+            ['emoji' => '🛏️', 'type' => 'hire_purchase']
         );
 
         // Bed
@@ -458,7 +458,7 @@ class HirePurchaseSeeder extends Seeder
     {
         $category = ProductCategory::firstOrCreate(
             ['name' => 'Solar systems'],
-            ['emoji' => '☀️', 'type' => 'personalGadgets']
+            ['emoji' => '☀️', 'type' => 'hire_purchase']
         );
 
         $this->seedSubcategoryData($category, 'Batteries', [
@@ -488,7 +488,7 @@ class HirePurchaseSeeder extends Seeder
     {
         $category = ProductCategory::firstOrCreate(
             ['name' => 'Grooming Accessories'],
-            ['emoji' => '💈', 'type' => 'personalGadgets']
+            ['emoji' => '💈', 'type' => 'hire_purchase']
         );
 
         $this->seedSubcategoryData($category, 'Shaving Kits', [
@@ -515,7 +515,7 @@ class HirePurchaseSeeder extends Seeder
     {
         $category = ProductCategory::firstOrCreate(
             ['name' => 'Motor Sundries'],
-            ['emoji' => '🔧', 'type' => 'personalGadgets']
+            ['emoji' => '🔧', 'type' => 'hire_purchase']
         );
 
         $this->seedSubcategoryData($category, 'Motor Parts', [
@@ -534,7 +534,7 @@ class HirePurchaseSeeder extends Seeder
     {
         $category = ProductCategory::firstOrCreate(
             ['name' => 'Motor cycles & Bicycle'],
-            ['emoji' => '🏍️', 'type' => 'personalGadgets']
+            ['emoji' => '🏍️', 'type' => 'hire_purchase']
         );
 
         $this->seedSubcategoryData($category, 'Motorcycles', [
@@ -555,7 +555,7 @@ class HirePurchaseSeeder extends Seeder
     {
         $category = ProductCategory::firstOrCreate(
             ['name' => 'Building Materials'],
-            ['emoji' => '🧱', 'type' => 'homeConstruction']
+            ['emoji' => '🧱', 'type' => 'hire_purchase']
         );
 
         // Create subcategories and products using the existing helper
@@ -612,7 +612,7 @@ class HirePurchaseSeeder extends Seeder
     {
         $category = ProductCategory::firstOrCreate(
             ['name' => 'Agricultural Equipment'],
-            ['emoji' => '🚜', 'type' => 'personalGadgets']
+            ['emoji' => '🚜', 'type' => 'hire_purchase']
         );
 
         $this->seedSubcategoryData($category, 'Tractors', [
@@ -647,7 +647,7 @@ class HirePurchaseSeeder extends Seeder
     {
         $category = ProductCategory::firstOrCreate(
             ['name' => 'Mother-to-be preparation'],
-            ['emoji' => '🤰', 'type' => 'personalGadgets']
+            ['emoji' => '🤰', 'type' => 'hire_purchase']
         );
 
         $this->seedSubcategoryData($category, 'Baby Items', [

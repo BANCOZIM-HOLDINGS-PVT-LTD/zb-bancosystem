@@ -45,7 +45,7 @@ class ProductCatalogSeeder extends Seeder
             $categoryId = DB::table('product_categories')->insertGetId([
                 'name' => $categoryData['name'],
                 'emoji' => $categoryData['emoji'],
-                'type' => 'microBiz', // Updated to match frontend intent
+                'type' => 'microbiz', // Updated to match frontend intent
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

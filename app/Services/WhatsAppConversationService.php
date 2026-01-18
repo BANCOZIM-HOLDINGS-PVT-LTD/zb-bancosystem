@@ -36,17 +36,18 @@ class WhatsAppConversationService
     public function processIncomingMessage(string $from, string $message): void
     {
         $phoneNumber = WhatsAppCloudApiService::extractPhoneNumber($from);
-        $message = trim(strtolower($message));
+        $originalMessage = trim($message);
+        $lowerMessage = trim(strtolower($message));
         
         // Greetings that should always restart the conversation
-        $greetings = ['hi', 'hie', 'hallo', 'hello', 'hey', 'hesi', 'start', 'begin', 'restart', 'menu'];
+        $greetings = ['hi', 'hie', 'hallo', 'hello', 'hey', 'hesi', 'makadii', 'start', 'begin', 'restart', 'menu'];
 
-        Log::info("WhatsApp message received from {$phoneNumber}: {$message}");
+        Log::info("WhatsApp message received from {$phoneNumber}: {$originalMessage}");
 
         try {
             // If user sends a greeting, ALWAYS start fresh conversation
-            if (in_array($message, $greetings)) {
-                Log::info("Greeting received, starting fresh conversation", ['message' => $message]);
+            if (in_array($lowerMessage, $greetings)) {
+                Log::info("Greeting received, starting fresh conversation", ['message' => $lowerMessage]);
                 $this->stateMachine->startConversation($from);
                 return;
             }
@@ -63,7 +64,8 @@ class WhatsAppConversationService
                     'currentStep' => $state->current_step,
                     'sessionId' => $state->session_id
                 ]);
-                $this->stateMachine->process($from, $message, $state);
+                // Pass ORIGINAL message casing to state machine for proper name matching
+                $this->stateMachine->process($from, $originalMessage, $state);
             }
         } catch (\Exception $e) {
             Log::error("Error processing WhatsApp message: " . $e->getMessage(), [
@@ -81,7 +83,7 @@ class WhatsAppConversationService
         $phoneNumber = WhatsAppCloudApiService::extractPhoneNumber($from);
 
         // Microbiz greetings - main entry point
-        $microbizGreetings = ['hi', 'hie', 'hallo', 'hello', 'hey', 'hesi', 'start', 'begin'];
+        $microbizGreetings = ['hi', 'hie', 'hallo', 'hello', 'hey', 'hesi', 'makadii', 'start', 'begin'];
         
         if (in_array($message, $microbizGreetings)) {
             // Use state machine to start conversation

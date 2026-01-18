@@ -17,7 +17,7 @@ class PersonalProductsSeeder extends Seeder
         $schoolFeesCategory = DB::table('product_categories')->insertGetId([
             'name' => 'School Fees Support',
             'emoji' => '👫📚',
-            'type' => 'personalServices',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -105,7 +105,7 @@ class PersonalProductsSeeder extends Seeder
         $licensingCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Drivers License',
             'emoji' => '🚗',
-            'type' => 'personalServices',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -150,7 +150,7 @@ class PersonalProductsSeeder extends Seeder
         $nurseAidCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Nurse Aid Course',
             'emoji' => '⚕️',
-            'type' => 'personalServices',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -180,7 +180,7 @@ class PersonalProductsSeeder extends Seeder
         $holidayPackageCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Zimparks Holiday Package',
             'emoji' => '🏕️',
-            'type' => 'personalServices',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -211,7 +211,7 @@ class PersonalProductsSeeder extends Seeder
         $businessSupportCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Small Business Support',
             'emoji' => '💼',
-            'type' => 'personalServices',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -262,7 +262,7 @@ class PersonalProductsSeeder extends Seeder
         $starlinkCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Starlink Internet',
             'emoji' => '📡',
-            'type' => 'personalGadgets',
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -293,7 +293,7 @@ class PersonalProductsSeeder extends Seeder
         $constructionCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Construction',
             'emoji' => '🏗️',
-            'type' => 'homeConstruction', // Type Update
+            'type' => 'hire_purchase', // Type Update
             'created_at' => now(),
             'updated_at' => now(),
         ]);

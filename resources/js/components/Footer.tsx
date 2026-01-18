@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Phone, Globe } from 'lucide-react';
+import { Mail, Phone, Globe, MapPin } from 'lucide-react';
 
 const Footer: React.FC = () => {
     return (
@@ -13,7 +13,7 @@ const Footer: React.FC = () => {
                         className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                     >
                         <Globe className="h-3.5 w-3.5" />
-                        <span>microbizimbabwe.co.zw</span>
+                        <span>microbizimbabwe.com</span>
                     </a>
 
                     <span className="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
@@ -25,18 +25,46 @@ const Footer: React.FC = () => {
                         className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                     >
                         <Phone className="h-3.5 w-3.5" />
-                        <span>WhatsApp: 0773 988 988</span>
+                        <span>Customer Support: 077x xxx xxx</span>
+                    </a>
+                    <a
+                        href="tel:(0242) 744 840"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                    >
+                        <Phone className="h-3.5 w-3.5" />
+                        <span>Landline:  (0242) 744 840</span>
                     </a>
 
                     <span className="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
 
                     <a
-                        href="mailto:support@bancozim.com"
+                        href="mailto:sales@bancozim.com"
                         className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                     >
                         <Mail className="h-3.5 w-3.5" />
-                        <span>support@bancozim.com</span>
+                        <span>sales@bancozim.com</span>
                     </a>
+                    <a
+                        href="mailto:info@bancozim.com"
+                        className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                    >
+                        <Mail className="h-3.5 w-3.5" />
+                        <span>info@bancozim.com</span>
+                    </a>
+                    <span className="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
+
+                    <a
+                        href="https://maps.google.com/?q=Joina+City,+Harare"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                    >
+                        <MapPin className="h-3.5 w-3.5" />
+                        <span>Joina City, Harare</span>
+                    </a>
+
                 </div>
             </div>
         </footer>

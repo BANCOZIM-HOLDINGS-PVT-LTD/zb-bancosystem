@@ -21,16 +21,24 @@ class ProductController extends Controller
 
         // Filter by type based on intent
         if ($intent) {
-            // Map legacy/alias intents
+            // Map legacy/alias intents to database types
             $typeMap = [
-                'hirePurchase' => 'personalGadgets',
-                'personal' => 'personalGadgets',
-                'microbiz' => 'microBiz',
+                // Microbiz mappings
+                'microBiz' => 'microbiz',
+                'microbiz' => 'microbiz',
+                
+                // Hire Purchase mappings (Personal, Construction, Services)
+                'personal' => 'hire_purchase',
+                'personalGadgets' => 'hire_purchase',
+                'personalServices' => 'hire_purchase',
+                'hirePurchase' => 'hire_purchase',
+                'homeConstruction' => 'hire_purchase',
+                'construction' => 'hire_purchase',
             ];
             
             $type = $typeMap[$intent] ?? $intent;
             
-            $validTypes = ['microBiz', 'homeConstruction', 'personalServices', 'personalGadgets'];
+            $validTypes = ['microbiz', 'hire_purchase'];
             
             if (in_array($type, $validTypes)) {
                 $query->where('type', $type);
@@ -140,16 +148,24 @@ class ProductController extends Controller
 
         // Filter by type based on intent
         if ($intent) {
-            // Map legacy/alias intents
+            // Map legacy/alias intents to database types
             $typeMap = [
-                'hirePurchase' => 'personalGadgets',
-                'personal' => 'personalGadgets',
-                'microbiz' => 'microBiz',
+                // Microbiz mappings
+                'microBiz' => 'microbiz',
+                'microbiz' => 'microbiz',
+                
+                // Hire Purchase mappings (Personal, Construction, Services)
+                'personal' => 'hire_purchase',
+                'personalGadgets' => 'hire_purchase',
+                'personalServices' => 'hire_purchase',
+                'hirePurchase' => 'hire_purchase',
+                'homeConstruction' => 'hire_purchase',
+                'construction' => 'hire_purchase',
             ];
             
             $type = $typeMap[$intent] ?? $intent;
             
-            $validTypes = ['microBiz', 'homeConstruction', 'personalServices', 'personalGadgets'];
+            $validTypes = ['microbiz', 'hire_purchase'];
             
             if (in_array($type, $validTypes)) {
                 $query->where('type', $type);
@@ -343,16 +359,24 @@ class ProductController extends Controller
 
         // Filter by type based on intent
         if ($intent) {
-            // Map legacy/alias intents
+            // Map legacy/alias intents to database types
             $typeMap = [
-                'hirePurchase' => 'personalGadgets',
-                'personal' => 'personalGadgets',
-                'microbiz' => 'microBiz',
+                // Microbiz mappings
+                'microBiz' => 'microbiz',
+                'microbiz' => 'microbiz',
+                
+                // Hire Purchase mappings (Personal, Construction, Services)
+                'personal' => 'hire_purchase',
+                'personalGadgets' => 'hire_purchase',
+                'personalServices' => 'hire_purchase',
+                'hirePurchase' => 'hire_purchase',
+                'homeConstruction' => 'hire_purchase',
+                'construction' => 'hire_purchase',
             ];
             
             $type = $typeMap[$intent] ?? $intent;
             
-            $validTypes = ['microBiz', 'homeConstruction', 'personalServices', 'personalGadgets'];
+            $validTypes = ['microbiz', 'hire_purchase'];
             
             if (in_array($type, $validTypes)) {
                 $query->where('type', $type);

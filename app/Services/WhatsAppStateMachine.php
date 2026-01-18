@@ -5,11 +5,18 @@ namespace App\Services;
 use App\Enums\ConversationState;
 use Illuminate\Support\Facades\Log;
 
+use App\Models\ProductCategory;
+use App\Models\ProductSubCategory;
+use App\Models\ProductSeries;
+use App\Models\ProductPackageSize; // Added
+use App\Models\Product;
+use Illuminate\Support\Str;
+
 /**
  * WhatsApp Conversation State Machine
  * 
  * Manages state transitions and actions for WhatsApp conversations
- * Updated: Adala persona with 14-option menu, cash/credit and currency selection
+ * Updated: Adala persona with dynamic product catalog browsing
  */
 class WhatsAppStateMachine
 {
@@ -22,8 +29,8 @@ class WhatsAppStateMachine
     /**
      * State transition map: current_state => [input => next_state]
      * Updated: Language → Intent Selection (18 options)
-     *   Options 1-13: Cash/Credit → Currency → Product redirect
-     *   Options 14-18: Direct handling (no cash/credit or currency)
+     *   Options 1-13: Browse Categories → Products → Link
+     *   Options 14-18: Direct handling
      */
     private array $transitions = [
         // Language selection (5 languages) → goes to intent_selection
@@ -35,47 +42,49 @@ class WhatsAppStateMachine
             '5' => 'intent_selection',    // Chichewa -> redirect to English
         ],
         
-        // Intent selection - 18 options
-        // Options 1-13 → payment method
-        // Options 14-18 → direct handling
+        // Intent selection - 10 options (Single Page)
+        // Options 1-4 → browse catalog
+        // Options 5-10 → direct handling
         'intent_selection' => [
-            '1' => 'payment_method',   // SME Starter Pack
-            '2' => 'payment_method',   // Personal & Homeware
-            '3' => 'payment_method',   // Personal Development
-            '4' => 'payment_method',   // House Construction
-            '5' => 'payment_method',   // Chicken Projects
-            '6' => 'payment_method',   // Cellphones & Laptops
-            '7' => 'payment_method',   // Solar Systems
-            '8' => 'payment_method',   // Agricultural Inputs
-            '9' => 'payment_method',   // Building Materials
-            'next_page' => 'intent_selection_page2', // Navigation to Page 2
-        ],
-
-        // Intent selection Page 2
-        'intent_selection_page2' => [
-            '10' => 'payment_method',  // Driving School
-            '11' => 'payment_method',  // Zimparks Holiday
-            '12' => 'payment_method',  // School Fees
-            '13' => 'payment_method',  // ZB Banking Agency
-            '14' => 'agent_age_check',              // Apply to become agent
-            '15' => 'redirect_application_status',  // Track application
-            '16' => 'redirect_delivery_tracking',   // Track delivery
-            '17' => 'show_faqs',                    // FAQs
-            '18' => 'customer_service_wait',        // Talk to rep
-            'prev_page' => 'intent_selection',       // Navigation back to Page 1
+            '1' => 'browse_categories',             // SME Starter Pack
+            '2' => 'browse_categories',             // Personal & Homeware
+            '3' => 'browse_categories',             // Personal Development
+            '4' => 'browse_categories',             // House Construction
+            '5' => 'redirect_zb_account',           // Apply for ZB Account
+            '6' => 'agent_age_check',               // Become Agent
+            '7' => 'redirect_application_status',   // Track Application
+            '8' => 'redirect_delivery_tracking',    // Track Delivery
+            '9' => 'show_faqs',                     // FAQs
+            '10' => 'customer_service_wait',        // Customer Services
         ],
         
-        // Cash or Credit selection → currency
+        // Cash or Credit selection -> currency
         'payment_method' => [
-            '1' => 'currency_selection',  // Cash
-            '2' => 'currency_selection',  // Credit
+            '1' => 'currency_selection',      // Credit (Assuming credit goes straight to currency as before?)
+            '2' => 'cash_payment_selection',  // Cash -> New Step
         ],
         
-        // Currency selection → product redirect
-        'currency_selection' => [
-            '1' => 'redirect_to_product',  // USD
-            '2' => 'redirect_to_product',  // ZiG
+        // Cash Payment Selection -> currency
+        'cash_payment_selection' => [
+             '1' => 'currency_selection', // SmileCash
+             '2' => 'currency_selection', // Ecocash
+             '3' => 'currency_selection', // Zimswitch
+             '4' => 'currency_selection', // Mastercard/Visa
+             '5' => 'currency_selection', // Sahwira Money
         ],
+        
+        // Currency selection -> product redirect
+        'currency_selection' => [
+            '1' => 'product_link_sent',  // USD
+            '2' => 'product_link_sent',  // ZiG
+        ],
+        
+        // Dynamic Catalog
+        'browse_categories' => [], 
+        'browse_subcategories' => [], 
+        'browse_series' => [], 
+        'browse_products' => [],
+        'browse_packages' => [],
         
         // Agent application flow (preserved from original)
         'agent_age_check' => [
@@ -125,41 +134,155 @@ class WhatsAppStateMachine
     ];
     
     /**
-     * Intent mapping for URL generation (options 1-13)
+     * Intent mapping for URL generation (options 1-4)
      */
     private array $intentMap = [
         '1' => 'microBiz',           // SME Starter Pack
         '2' => 'personal',           // Personal & Homeware
         '3' => 'personalServices',   // Personal Development
         '4' => 'construction',       // House Construction
-        '5' => 'microBiz',           // Chicken Projects
-        '6' => 'personal',           // Cellphones & Laptops
-        '7' => 'personal',           // Solar Systems
-        '8' => 'microBiz',           // Agricultural Inputs
-        '9' => 'construction',       // Building Materials
-        '10' => 'personalServices',  // Driving School
-        '11' => 'personalServices',  // Zimparks Holiday
-        '12' => 'personalServices',  // School Fees
-        '13' => 'personalServices',  // ZB Banking Agency
     ];
     
     /**
-     * Product names for display (options 1-13)
+     * Product names for display (options 1-4)
      */
     private array $productNames = [
         '1' => 'Small to Medium Business Starter Pack',
         '2' => 'Personal and Homeware Products',
         '3' => 'Invest in Personal Development',
         '4' => 'House Construction and Improvements',
-        '5' => 'Chicken Projects',
-        '6' => 'Cellphones and Laptops',
-        '7' => 'Solar Systems',
-        '8' => 'Agricultural Inputs',
-        '9' => 'Building Materials',
-        '10' => 'Driving School Fees Assistance',
-        '11' => 'Zimparks Holiday Booking Package',
-        '12' => 'School Fees Assistance',
-        '13' => 'Apply for ZB Banking Agency',
+    ];
+    
+    /**
+     * Hardcoded Categories by Intent (FROM SEEDERS - First 10 due to WhatsApp limit)
+     */
+    private array $hardcodedCategories = [
+        // Option 1: Microbiz (from ProductCatalogSeeder - 22 total, showing first 10)
+        'microBiz' => [
+            ['id' => 'mb_agric', 'name' => 'Agricultural mechanization', 'desc' => '🚜 Farming equipment'],
+            ['id' => 'mb_inputs', 'name' => 'Agricultural Inputs', 'desc' => '🌾 Seeds & Fertilizer'],
+            ['id' => 'mb_chicken', 'name' => 'Chicken Projects', 'desc' => '🐔 Poultry farming'],
+            ['id' => 'mb_cleaning', 'name' => 'Cleaning Services', 'desc' => '🧹 Laundry & Car wash'],
+            ['id' => 'mb_beauty', 'name' => 'Beauty, Hair & Cosmetics', 'desc' => '💇 Salon & Barber'],
+            ['id' => 'mb_food', 'name' => 'Food Production', 'desc' => '🍞 Baking & Takeaway'],
+            ['id' => 'mb_butchery', 'name' => 'Butchery Equipment', 'desc' => '🥩 Meat processing'],
+            ['id' => 'mb_events', 'name' => 'Events Management', 'desc' => '🎉 PA & Tents'],
+            ['id' => 'mb_snack', 'name' => 'Snack Production', 'desc' => '🍿 Maputi & Popcorn'],
+        ],
+        // Option 2: Personal & Homeware (from HirePurchaseSeeder - 15 categories, showing first 9)
+        'personal' => [
+            ['id' => 'hp_cell', 'name' => 'Cellphones', 'desc' => '📱 Smartphones'],
+            ['id' => 'hp_laptop', 'name' => 'Laptops & Printers', 'desc' => '💻 Computers'],
+            ['id' => 'hp_ict', 'name' => 'ICT Accessories', 'desc' => '🖥️ Tech accessories'],
+            ['id' => 'hp_kitchen', 'name' => 'Kitchen ware', 'desc' => '🍳 Appliances'],
+            ['id' => 'hp_tv', 'name' => 'Television & Decoders', 'desc' => '📺 Entertainment'],
+            ['id' => 'hp_lounge', 'name' => 'Lounge Furniture', 'desc' => '🛋️ Sofas'],
+            ['id' => 'hp_bedroom', 'name' => 'Bedroom ware', 'desc' => '🛏️ Beds'],
+            ['id' => 'hp_solar', 'name' => 'Solar systems', 'desc' => '☀️ Solar panels'],
+            ['id' => 'hp_motor', 'name' => 'Motor Sundries', 'desc' => '🚗 Vehicle parts'],
+        ],
+        // Option 3: Personal Services (from PersonalProductsSeeder)
+        'personalServices' => [
+            ['id' => 'ps_school', 'name' => 'School Fees Support', 'desc' => '📚 Education financing'],
+            ['id' => 'ps_license', 'name' => 'Drivers License', 'desc' => '🚗 Provisional & Full'],
+            ['id' => 'ps_nurse', 'name' => 'Nurse Aid Course', 'desc' => '⚕️ Healthcare training'],
+            ['id' => 'ps_zimparks', 'name' => 'Zimparks Holiday', 'desc' => '🏕️ Vacation packages'],
+        ],
+        // Option 4: Construction (from PersonalProductsSeeder + HirePurchaseSeeder)
+        'construction' => [
+            ['id' => 'cn_core', 'name' => 'Core House', 'desc' => '🏠 Full house build'],
+            ['id' => 'cn_materials', 'name' => 'Building Materials', 'desc' => '🧱 Cement, Doors, etc.'],
+        ],
+    ];
+    
+    /**
+     * Hardcoded Subcategories/Businesses by Category (FROM SEEDERS)
+     */
+    private array $hardcodedSubcategories = [
+        // Microbiz Subcategories (from ProductCatalogSeeder)
+        'mb_agric' => [
+            ['id' => 'sub_maize', 'name' => 'Maize sheller'],
+            ['id' => 'sub_water', 'name' => 'Water storage & pumping'],
+            ['id' => 'sub_tractors', 'name' => 'Tractors'],
+            ['id' => 'sub_irrigation', 'name' => 'Irrigation systems'],
+            ['id' => 'sub_greenhouse', 'name' => 'Greenhouses'],
+        ],
+        'mb_inputs' => [
+            ['id' => 'sub_fertilizer', 'name' => 'Fertilizer'],
+            ['id' => 'sub_seed', 'name' => 'Seed + Chemicals'],
+            ['id' => 'sub_combo', 'name' => 'Combo Package'],
+        ],
+        'mb_chicken' => [
+            ['id' => 'sub_broiler', 'name' => 'Broiler Production'],
+            ['id' => 'sub_hatchery', 'name' => 'Egg Hatchery'],
+        ],
+        'mb_cleaning' => [
+            ['id' => 'sub_laundry', 'name' => 'Laundry'],
+            ['id' => 'sub_carwash', 'name' => 'Car wash'],
+            ['id' => 'sub_carpet', 'name' => 'Carpet and fabric'],
+        ],
+        'mb_beauty' => [
+            ['id' => 'sub_barber', 'name' => 'Barber & Rasta'],
+            ['id' => 'sub_braiding', 'name' => 'Braiding and weaving'],
+            ['id' => 'sub_nails', 'name' => 'Nails and makeup'],
+            ['id' => 'sub_saloon', 'name' => 'Saloon equipment'],
+        ],
+        'mb_food' => [
+            ['id' => 'sub_baking', 'name' => 'Baking'],
+            ['id' => 'sub_foodcart', 'name' => 'Mobile food cart'],
+            ['id' => 'sub_takeaway', 'name' => 'Takeaway Canteen'],
+            ['id' => 'sub_fryer', 'name' => 'Chip and burger fryer'],
+        ],
+        'mb_butchery' => [
+            ['id' => 'sub_fridge', 'name' => 'Commercial Fridges'],
+            ['id' => 'sub_bonecutter', 'name' => 'Bone cutter'],
+            ['id' => 'sub_sausage', 'name' => 'Sausage maker'],
+        ],
+        'mb_events' => [
+            ['id' => 'sub_pa', 'name' => 'PA system'],
+            ['id' => 'sub_chairs', 'name' => 'Chairs, tables & décor'],
+            ['id' => 'sub_tents', 'name' => 'Tents'],
+        ],
+        'mb_snack' => [
+            ['id' => 'sub_freezit', 'name' => 'Freezit making'],
+            ['id' => 'sub_maputi', 'name' => 'Maputi making'],
+            ['id' => 'sub_popcorn', 'name' => 'Popcorn making'],
+        ],
+        // Personal & Homeware Brands (from HirePurchaseSeeder)
+        'hp_cell' => [
+            ['id' => 'br_samsung', 'name' => 'Samsung'],
+            ['id' => 'br_apple', 'name' => 'Apple iPhone'],
+            ['id' => 'br_zte', 'name' => 'ZTE'],
+            ['id' => 'br_redmi', 'name' => 'Redmi'],
+            ['id' => 'br_tecno', 'name' => 'Tecno'],
+        ],
+        'hp_laptop' => [
+            ['id' => 'br_laptops', 'name' => 'Laptops'],
+            ['id' => 'br_printers', 'name' => 'Printers'],
+        ],
+        'hp_ict' => [
+            ['id' => 'br_accessories', 'name' => 'ICT Accessories'],
+        ],
+        'hp_kitchen' => [
+            ['id' => 'br_stove', 'name' => 'Stoves'],
+            ['id' => 'br_fridge', 'name' => 'Fridges'],
+        ],
+        'hp_tv' => [
+            ['id' => 'br_tv', 'name' => 'Smart TVs'],
+            ['id' => 'br_decoder', 'name' => 'Decoders'],
+        ],
+        'hp_lounge' => [
+            ['id' => 'br_sofa', 'name' => 'Sofas'],
+        ],
+        'hp_bedroom' => [
+            ['id' => 'br_beds', 'name' => 'Beds & Mattresses'],
+        ],
+        'hp_solar' => [
+            ['id' => 'br_solar', 'name' => 'Solar Systems'],
+        ],
+        'hp_motor' => [
+            ['id' => 'br_motor', 'name' => 'Motor Sundries'],
+        ],
     ];
     
     public function __construct(
@@ -187,6 +310,129 @@ class WhatsAppStateMachine
         // Check if this is a free text state
         if ($this->isFreeTextState($currentStep)) {
             $this->handleFreeTextInput($from, $input, $state, $currentStep);
+            return;
+        }
+        
+        Log::info("StateMachine: Transition Check", [
+            'step' => $currentStep, 
+            'input' => $input,
+            'is_cat_start' => str_starts_with($input, 'cat_')
+        ]);
+        
+        // Dynamic Catalog Flow (HARDCODED)
+        // 1. Browse Categories -> Select Category (cat_ID) -> Browse Subcategories or Payment
+        if ($currentStep === 'browse_categories') {
+            if ($input === 'back') {
+                $this->executeTransition($from, $state, $currentStep, 'intent_selection', $input);
+                return;
+            }
+            
+            // Accept any cat_ prefixed input (hardcoded IDs)
+            if (str_starts_with($input, 'cat_')) {
+                Log::info("StateMachine: Category selected", ['input' => $input]);
+                
+                // Get intent to determine next step
+                $formData = $state->form_data ?? [];
+                $intent = $formData['intent'] ?? 'personal';
+                
+                // Options 3 (personalServices) and 4 (construction) go directly to payment
+                if (in_array($intent, ['personalServices', 'construction'])) {
+                    $this->executeTransition($from, $state, $currentStep, 'payment_method', $input);
+                    return;
+                }
+                
+                // Options 1 (microBiz) and 2 (personal) browse subcategories
+                $this->executeTransition($from, $state, $currentStep, 'browse_subcategories', $input);
+                return;
+            } else {
+                 Log::warning("StateMachine: Invalid category input", ['input' => $input]);
+                 $this->whatsAppService->sendMessage($from, "⚠️ Please select a category from the list.");
+                 return;
+            }
+        }
+
+        // 2. Browse Subcategories -> Select Subcategory (sub_ID) -> Payment
+        if ($currentStep === 'browse_subcategories') {
+             if ($input === 'back') {
+                $this->executeTransition($from, $state, $currentStep, 'browse_categories', $input);
+                return;
+            }
+            
+            // Accept any sub_ prefixed input (hardcoded IDs)
+            if (str_starts_with($input, 'sub_')) {
+                Log::info("StateMachine: Subcategory selected", ['input' => $input]);
+                
+                // Both Microbiz and Personal go to payment after subcategory selection
+                $this->executeTransition($from, $state, $currentStep, 'payment_method', $input);
+                return;
+            } else {
+                 Log::warning("StateMachine: Invalid subcategory input", ['input' => $input]);
+                 $this->whatsAppService->sendMessage($from, "⚠️ Please select an option from the list.");
+                 return;
+            }
+        }
+
+        // 3. Browse Series -> Select Series (ser_ID) -> Browse Products
+        // 3. Browse Series -> Select Series (ser_ID or Name) -> Browse Products
+        if ($currentStep === 'browse_series') {
+            if ($input === 'back') {
+                $this->executeTransition($from, $state, $currentStep, 'browse_subcategories', $input);
+                return;
+            }
+            if (str_starts_with($input, 'ser_') || ProductSeries::where('name', 'like', $input)->exists()) {
+                $this->executeTransition($from, $state, $currentStep, 'browse_products', $input);
+                return;
+            }
+            $this->whatsAppService->sendMessage($from, "⚠️ Series/Brand not found. Please select from the list.");
+            return;
+        }
+
+        // 4. Browse Products -> Select Product (prod_ID) -> Get Link
+
+        // 3. Browse Products -> Select Product (prod_ID) -> Get Link
+        // 4. Browse Products -> Select Product (prod_ID or Name) -> Get Link
+        if ($currentStep === 'browse_products') {
+            if ($input === 'back') {
+                 // Determining back state is tricky (series vs subcategory). 
+                 // We can check formData in state, or just default to one.
+                 // For now, let's default to browse_subcategories as it's safer, 
+                 // or ideally we should know where we came from.
+                 // Let's go to browse_subcategories to be safe, users can navigate forward.
+                 // OR check if we have series_id in the previous state's data? 
+                 // $state->form_data is available.
+                 $fd = $state->form_data ?? [];
+                 $hasSeriesId = !empty($fd['selected_series_id']);
+                 $backState = $hasSeriesId ? 'browse_series' : 'browse_subcategories';
+                 
+                 $this->executeTransition($from, $state, $currentStep, $backState, $input);
+                 return;
+            }
+            
+            if (str_starts_with($input, 'prod_') || ($product = Product::where('name', 'like', $input)->first())) {
+                $prodId = str_starts_with($input, 'prod_') ? substr($input, 5) : $product->id;
+                
+                // Check for Packages
+                $hasPackages = ProductPackageSize::where('product_id', $prodId)->exists();
+                $nextState = $hasPackages ? 'browse_packages' : 'payment_method';
+                
+                $this->executeTransition($from, $state, $currentStep, $nextState, $input);
+                return;
+            }
+            $this->whatsAppService->sendMessage($from, "⚠️ Product not found. Please select from the list.");
+            return;
+        }
+
+        // 5. Browse Packages -> Select Package (pkg_ID or Name) -> Payment Method
+        if ($currentStep === 'browse_packages') {
+             if ($input === 'back') {
+                $this->executeTransition($from, $state, $currentStep, 'browse_products', $input);
+                return;
+            }
+            if (str_starts_with($input, 'pkg_') || ProductPackageSize::where('name', 'like', $input)->exists()) {
+                $this->executeTransition($from, $state, $currentStep, 'payment_method', $input);
+                return;
+            }
+            $this->whatsAppService->sendMessage($from, "⚠️ Package not found. Please select from the list.");
             return;
         }
         
@@ -320,15 +566,22 @@ class WhatsAppStateMachine
                 $formData['language'] = 'en';
                 break;
             case 'payment_method':
-                $formData['payment_method'] = ($input === '1') ? 'cash' : 'credit';
+                // 1=Credit, 2=Cash
+                $formData['payment_method'] = ($input === '1') ? 'credit' : 'cash';
+                break;
+                
+            case 'cash_payment_selection':
+                $cashOptions = [
+                    '1' => 'SmileCash (ZB wallet)',
+                    '2' => 'Ecocash',
+                    '3' => 'Zimswitch',
+                    '4' => 'Mastercard or Visa',
+                    '5' => 'Sahwira Money (ZB diaspora)'
+                ];
+                $formData['payment_details'] = $cashOptions[$input] ?? 'Cash';
                 break;
             case 'intent_selection':
-            case 'intent_selection_page2':
-                // Skip processing for navigation buttons
-                if ($input === 'next_page' || $input === 'prev_page') {
-                    return $formData;
-                }
-                
+                // No more next_page/prev_page check needed
                 $formData['intent_choice'] = $input;
                 $formData['intent'] = $this->intentMap[$input] ?? 'personal';
                 $formData['product_name'] = $this->productNames[$input] ?? 'Selected Product';
@@ -356,6 +609,97 @@ class WhatsAppStateMachine
                 $ratings = ['Very Poor', 'Poor', 'Average', 'Good', 'Excellent'];
                 $formData['survey_rating'] = $ratings[(int)$input - 1] ?? $input;
                 break;
+            
+            // Dynamic Catalog Data (HARDCODED)
+            case 'browse_categories':
+                Log::info("StateMachine: processing browse_categories input", ['input' => $input]);
+                if (str_starts_with($input, 'cat_')) {
+                    $catId = substr($input, 4);
+                    Log::info("StateMachine: extracted category ID", ['catId' => $catId]);
+                    $formData['selected_category_id'] = $catId;
+                    
+                    // Lookup name from hardcoded arrays
+                    $catName = 'Category';
+                    foreach ($this->hardcodedCategories as $intent => $cats) {
+                        foreach ($cats as $cat) {
+                            if ($cat['id'] === $catId) {
+                                $catName = $cat['name'];
+                                break 2;
+                            }
+                        }
+                    }
+                    $formData['selected_category_name'] = $catName;
+                }
+                break;
+
+            case 'browse_subcategories':
+                if (str_starts_with($input, 'sub_')) {
+                    $subId = substr($input, 4);
+                    $formData['selected_subcategory_id'] = $subId;
+                    
+                    // Lookup name from hardcoded arrays
+                    $subName = 'Business';
+                    foreach ($this->hardcodedSubcategories as $catId => $subs) {
+                        foreach ($subs as $sub) {
+                            if ($sub['id'] === $subId) {
+                                $subName = $sub['name'];
+                                break 2;
+                            }
+                        }
+                    }
+                    $formData['selected_subcategory_name'] = $subName;
+                }
+                break;
+            
+            case 'browse_series':
+                if (str_starts_with($input, 'ser_')) {
+                    $serId = substr($input, 4);
+                    $formData['selected_series_id'] = $serId;
+                    $series = ProductSeries::find($serId);
+                    $formData['selected_series_name'] = $series ? $series->name : 'Series';
+                } else {
+                     // Fallback: Lookup by Name
+                    $series = ProductSeries::where('name', 'like', $input)->first();
+                    if ($series) {
+                        $formData['selected_series_id'] = $series->id;
+                        $formData['selected_series_name'] = $series->name;
+                    }
+                }
+                break;
+                
+            case 'browse_packages':
+                if (str_starts_with($input, 'pkg_')) {
+                    $pkgId = substr($input, 4);
+                    $formData['selected_package_id'] = $pkgId;
+                    $package = ProductPackageSize::find($pkgId);
+                    $formData['selected_package_name'] = $package ? $package->name : 'Package';
+                    $formData['selected_package_price'] = $package ? $package->custom_price : null;
+                } else {
+                    // Fallback Name Lookup
+                    $package = ProductPackageSize::where('name', 'like', $input)->first();
+                    if ($package) {
+                        $formData['selected_package_id'] = $package->id;
+                        $formData['selected_package_name'] = $package->name;
+                        $formData['selected_package_price'] = $package->custom_price;
+                    }
+                }
+                break;
+                
+            case 'browse_products':
+                if (str_starts_with($input, 'prod_')) {
+                    $prodId = substr($input, 5);
+                    $formData['selected_product_id'] = $prodId;
+                    $product = Product::find($prodId);
+                    $formData['selected_product_name'] = $product ? $product->name : 'Product';
+                } else {
+                    // Fallback: Lookup by Name
+                    $product = Product::where('name', 'like', $input)->first();
+                    if ($product) {
+                        $formData['selected_product_id'] = $product->id;
+                        $formData['selected_product_name'] = $product->name;
+                    }
+                }
+                break;
         }
         
         return $formData;
@@ -374,22 +718,60 @@ class WhatsAppStateMachine
         // Use interactive messages for specific states
         switch ($state) {
             case 'intent_selection':
-                $result = $this->sendIntentSelectionList($to, 1);
+                $result = $this->sendIntentSelectionList($to);
                 break;
 
-            case 'intent_selection_page2':
-                $result = $this->sendIntentSelectionList($to, 2);
+            case 'browse_categories':
+                $result = $this->sendCategoryList($to, $formData);
+                break;
+
+            case 'browse_subcategories':
+                $result = $this->sendSubCategoryList($to, $formData);
+                break;
+
+            case 'browse_series':
+                $result = $this->sendSeriesList($to, $formData);
+                break;
+
+            case 'browse_products':
+                $result = $this->sendProductList($to, $formData);
+                break;
+
+            case 'browse_packages':
+                $result = $this->sendPackageList($to, $formData);
+                break;
+                
+            case 'product_link_sent':
+                $result = $this->sendProductLink($to, $formData);
                 break;
                 
             case 'payment_method':
                 $result = $this->whatsAppService->sendInteractiveButtons(
                     $to,
-                    "💳 *Kindly select your payment method?*\n\n",
+                    "💳 *Kindly select your payment option?*\n\n",
                     [
-                        ['id' => '1', 'title' => '💵 Cash'],
-                        ['id' => '2', 'title' => '📋 Credit'],
+                        ['id' => '1', 'title' => '📋 Credit'],
+                        ['id' => '2', 'title' => '💵 Cash'],
                     ],
-                    "Payment Method"
+                    "Payment Option"
+                );
+                break;
+                
+            case 'cash_payment_selection':
+                 $result = $this->whatsAppService->sendInteractiveList(
+                    $to,
+                    "💵 *Select your Cash Payment Option*\n\nChoose a provider:",
+                    "View Options",
+                    [[
+                        'title' => 'Cash Options', 
+                        'rows' => [
+                            ['id' => '1', 'title' => 'SmileCash', 'description' => 'ZB wallet'],
+                            ['id' => '2', 'title' => 'Ecocash', 'description' => 'Mobile Money'],
+                            ['id' => '3', 'title' => 'Zimswitch', 'description' => 'Bank Transfer'],
+                            ['id' => '4', 'title' => 'Mastercard / Visa', 'description' => 'Card Payment'],
+                            ['id' => '5', 'title' => 'Sahwira Money', 'description' => 'ZB diaspora'],
+                        ]
+                    ]]
                 );
                 break;
                 
@@ -429,85 +811,40 @@ class WhatsAppStateMachine
         Log::info("StateMachine: Message send result", ['success' => $result]);
     }
     
-    private function sendIntentSelectionList(string $to, int $page = 1): bool
+    private function sendIntentSelectionList(string $to): bool
     {
-        $bodyText = "🛒 *What would you like to do today?* (Page $page of 2)\n\nTap the button below to see available options.";
-        $buttonText = ($page === 1) ? "View Options (1-9)" : "View Options (10-18)";
+        $bodyText = "🛒 *What would you like to do today?*\n\nTap the button below to see available options.";
+        $buttonText = "View Options (1-10)";
         
         $sections = [];
         
-        if ($page === 1) {
-            // PAGE 1: Options 1-9 + Next Button
-            // Total items: 9 + 1 = 10 (Max allowed)
-            
-            $sections[] = [
-                'title' => '🏪 Business & Development',
-                'rows' => [
-                    ['id' => '1', 'title' => 'SME Starter Pack', 'description' => 'Empower income projects'],
-                    ['id' => '2', 'title' => 'Personal & Homeware', 'description' => 'Improve lifestyle'],
-                    ['id' => '3', 'title' => 'Personal Development', 'description' => 'Life changing skills'],
-                    ['id' => '4', 'title' => 'House Construction', 'description' => 'Build/improve home'],
-                    ['id' => '5', 'title' => 'Chicken Projects', 'description' => 'Broiler & egg production'],
-                    ['id' => '6', 'title' => 'Cellphones & Laptops', 'description' => 'Mobile & computers'],
-                ],
-            ];
-            
-            $sections[] = [
-                'title' => '🌾 Materials (Part 1)',
-                'rows' => [
-                    ['id' => '7', 'title' => 'Solar Systems', 'description' => 'Solar power solutions'],
-                    ['id' => '8', 'title' => 'Agricultural Inputs', 'description' => 'Farming supplies'],
-                    ['id' => '9', 'title' => 'Building Materials', 'description' => 'Construction materials'],
-                ],
-            ];
-            
-            // Navigation Section
-            $sections[] = [
-                'title' => '➡️ More',
-                'rows' => [
-                    ['id' => 'next_page', 'title' => 'More Options ➡️', 'description' => 'See items 10-18'],
-                ],
-            ];
-            
-        } else {
-            // PAGE 2: Options 10-18 + Back Button
-            // Total items: 9 + 1 = 10 (Max allowed)
-            
-            $sections[] = [
-                'title' => '🌾 Materials (Part 2)',
-                'rows' => [
-                    ['id' => '10', 'title' => 'Driving School', 'description' => 'Provisional to license'],
-                    ['id' => '11', 'title' => 'Zimparks Holiday', 'description' => 'Holiday package'],
-                ],
-            ];
-            
-            $sections[] = [
-                'title' => '🎓 Education & Banking',
-                'rows' => [
-                    ['id' => '12', 'title' => 'School Fees', 'description' => 'ZB institutions only'],
-                    ['id' => '13', 'title' => 'ZB Banking Agency', 'description' => 'Apply for agency'],
-                ],
-            ];
-            
-            $sections[] = [
-                'title' => '⚡ Quick Actions',
-                'rows' => [
-                    ['id' => '14', 'title' => 'Become Agent', 'description' => 'Online agent application'],
-                    ['id' => '15', 'title' => 'Track Application', 'description' => 'Check your status'],
-                    ['id' => '16', 'title' => 'Track Delivery', 'description' => 'Track your order'],
-                    ['id' => '17', 'title' => 'FAQs', 'description' => 'Get answers'],
-                    ['id' => '18', 'title' => 'Customer Service', 'description' => 'Talk to us'],
-                ],
-            ];
-            
-            // Navigation Section
-            $sections[] = [
-                'title' => '⬅️ Back',
-                'rows' => [
-                    ['id' => 'prev_page', 'title' => '⬅️ Previous Options', 'description' => 'Go back to 1-9'],
-                ],
-            ];
-        }
+        $sections[] = [
+            'title' => '📦 Product Catalog',
+            'rows' => [
+                ['id' => '1', 'title' => 'Small & Medium Business', 'description' => 'Business Starter pack'],
+                ['id' => '2', 'title' => 'Personal & Homeware', 'description' => 'Gadgets & Furniture'],
+                ['id' => '3', 'title' => 'Personal Development', 'description' => 'Life changing skills'],
+                ['id' => '4', 'title' => 'House Construction', 'description' => 'Build/improve home'],
+            ],
+        ];
+        
+        $sections[] = [
+            'title' => '⚡ Services & Account',
+            'rows' => [
+                ['id' => '5', 'title' => 'Apply for a ZB Account', 'description' => 'Open an account'],
+                ['id' => '6', 'title' => 'Become an Online Agent', 'description' => 'Earn passive income'],
+            ],
+        ];
+
+        $sections[] = [
+            'title' => 'ℹ️ Support',
+            'rows' => [
+                ['id' => '7', 'title' => 'Track Application', 'description' => 'Check status'],
+                ['id' => '8', 'title' => 'Track Delivery', 'description' => 'Order tracking'],
+                ['id' => '9', 'title' => 'FAQs', 'description' => 'Get answers'],
+                ['id' => '10', 'title' => 'Customer Service', 'description' => 'Talk to representative'],
+            ],
+        ];
         
         return $this->whatsAppService->sendInteractiveList(
             $to,
@@ -540,6 +877,12 @@ class WhatsAppStateMachine
                        "Please login to check your application status:\n\n" .
                        "🔗 {$this->websiteUrl}/client/login\n\n" .
                        "Say 'hi' anytime to start a new conversation.";
+
+            case 'redirect_zb_account':
+                return "🏦 *Open a ZB Account*\n\n" .
+                       "You can open a ZB account online instantly:\n\n" .
+                       "🔗 https://my.zb.co.zw/\n\n" .
+                       "Say 'hi' anytime to start a new conversation.";
                        
             case 'redirect_agent_login':
                 return "👤 *Online Agent Login*\n\n" .
@@ -555,8 +898,8 @@ class WhatsAppStateMachine
                        "Please wait a few minutes while we connect you to a representative...\n\n" .
                        "🔄 A team member will be with you shortly.\n\n" .
                        "In the meantime, you can also reach us at:\n" .
-                       "📧 support@bancosystem.co.zw\n" .
-                       "📞 +263 242 XXX XXX";
+                       "📧 support@bancozim.com\n" .
+                       "📞 +263 (0242) 744 840";
                        
             // Agent application flow (option 9 - preserved)
             case 'agent_age_check':
@@ -611,7 +954,9 @@ class WhatsAppStateMachine
                        
             case 'agent_id_upload':
                 return "📸 *ID Verification*\n\n" .
-                       "Almost done! Please send a clear photo of the *front* of your ID card.";
+                       "Almost done! Please send a clear photo of the *front* of your ID card.\n\n" .
+                       "After sending your ID, your application will be processed and you'll receive an SMS with confirmation and login details.\n\n" .
+                       "🔗 Agent Login Portal:\n{$this->websiteUrl}/agent/login";
                        
             // Idle timeout flow
             case 'idle_continue':
@@ -650,28 +995,12 @@ class WhatsAppStateMachine
         $currency = $formData['currency'] ?? 'USD';
         $intent = $formData['intent'] ?? 'personal';
         $language = $formData['language'] ?? 'en';
-        $paymentMethod = $formData['payment_method'] ?? 'credit';
-        $intentChoice = $formData['intent_choice'] ?? '1';
-        
-        $productName = $formData['product_name'] ?? $this->productNames[$intentChoice] ?? 'Selected Product';
         
         // Build application URL with query params
         $applicationUrl = "{$this->websiteUrl}/application?currency={$currency}&intent={$intent}&language={$language}";
-        $registerUrl = "{$this->websiteUrl}/client/register";
-        $loginUrl = "{$this->websiteUrl}/client/login";
         
-        return "✅ *{$productName}*\n\n" .
-               "💳 Payment: *" . ucfirst($paymentMethod) . "*\n" .
-               "💱 Currency: *{$currency}*\n\n" .
-               "To proceed, please:\n\n" .
-               "1️⃣ *New user?* Register here first:\n" .
-               "🔗 {$registerUrl}\n\n" .
-               "2️⃣ *Already registered?* Login here:\n" .
-               "🔗 {$loginUrl}\n\n" .
-               "3️⃣ After logging in, proceed to the catalogue:\n" .
-               "🔗 {$applicationUrl}\n\n" .
-               "⚠️ _You must be logged in to access the catalogue._\n\n" .
-               "Say 'hi' anytime to start a new conversation.";
+        return "Click to view product catalog:\n\n" .
+               "🔗 {$applicationUrl}";
     }
     
     /**
@@ -750,8 +1079,8 @@ class WhatsAppStateMachine
         
         // Send welcome message with Adala persona
         $welcomeText = "Hello *{$displayName}*! 👋\n\n";
-        $welcomeText .= "Welcome to *Microbiz Zimbabwe* powered by *Qupa Microfinance* (a division of ZB Bank).\n\n";
-        $welcomeText .= "I am *Adala*, consider me your smart uncle and digital assistant. My mission is to ensure you get the best user experience for your intended acquisition.\n\n";
+        $welcomeText .= "Welcome to *Microbiz Zimbabwe* powered by Qupa (a division of *ZB Bank*).\n\n";
+        $welcomeText .= "I am *Adala*, consider me your smart uncle and digital assistant. My mission is to ensure you get the best user experience for your intended acquisition because we are family.\n\n";
         $welcomeText .= "🌐 Please select your preferred language:";
         
         // Send language selection as interactive list
@@ -794,5 +1123,259 @@ class WhatsAppStateMachine
         );
         
         $this->sendStateMessage($from, 'idle_continue', $state->form_data ?? []);
+    }
+    /**
+     * Send list of categories based on selected intent (HARDCODED)
+     */
+    private function sendCategoryList(string $to, array $formData): bool
+    {
+        $intent = $formData['intent'] ?? 'personal';
+        
+        // Use hardcoded categories
+        $categories = $this->hardcodedCategories[$intent] ?? $this->hardcodedCategories['personal'];
+        
+        if (empty($categories)) {
+            return $this->whatsAppService->sendMessage($to, "⚠️ No categories found for this selection. Please try another option.");
+        }
+
+        $sections = [['title' => '📂 Categories', 'rows' => []]];
+        
+        foreach ($categories as $category) {
+            $sections[0]['rows'][] = [
+                'id' => 'cat_' . $category['id'],
+                'title' => substr($category['name'], 0, 24),
+                'description' => substr($category['desc'] ?? 'Browse options', 0, 72)
+            ];
+        }
+        
+        // Add back button
+        $sections[0]['rows'][] = ['id' => 'back', 'title' => '🔙 Back'];
+        
+        return $this->whatsAppService->sendInteractiveList(
+            $to, 
+            "📂 *Product Categories*\n\nPlease select a category:", 
+            "View Categories", 
+            $sections
+        );
+    }
+    
+    /**
+     * Send list of subcategories for a category (HARDCODED)
+     */
+    private function sendSubCategoryList(string $to, array $formData): bool
+    {
+        $catId = $formData['selected_category_id'] ?? null;
+        $catName = $formData['selected_category_name'] ?? 'Category';
+        
+        if (!$catId) {
+            Log::warning("sendSubCategoryList: No category ID provided");
+            return $this->whatsAppService->sendMessage($to, "⚠️ Please select a category first.");
+        }
+        
+        // Use hardcoded subcategories
+        $subcategories = $this->hardcodedSubcategories[$catId] ?? [];
+        
+        if (empty($subcategories)) {
+            $this->whatsAppService->sendMessage($to, "⚠️ No options found for {$catName}. Proceeding to payment...");
+            return true;
+        }
+        
+        $rows = [];
+        foreach ($subcategories as $sub) {
+            $rows[] = [
+                'id' => 'sub_' . $sub['id'],
+                'title' => Str::limit($sub['name'], 24)
+            ];
+        }
+        
+        $rows[] = ['id' => 'back', 'title' => '🔙 Back'];
+
+        return $this->whatsAppService->sendInteractiveList(
+            $to,
+            "📂 *{$catName}*\n\nSelect an option:",
+            "View Options",
+            [['title' => 'Options', 'rows' => $rows]]
+        );
+    }
+
+    private function sendSeriesList(string $to, array $formData): bool
+    {
+        $subId = $formData['selected_subcategory_id'] ?? null;
+        $subName = $formData['selected_subcategory_name'] ?? 'Subcategory';
+        
+        if (!$subId) return false;
+        
+        $series = ProductSeries::where('product_sub_category_id', $subId)->limit(9)->get();
+        
+        if ($series->isEmpty()) {
+            // Should have been skipped by logic in process(), but just in case
+            return $this->sendProductList($to, $formData);
+        }
+        
+        $rows = [];
+        foreach ($series as $ser) {
+            $rows[] = [
+                'id' => 'ser_' . $ser->id,
+                'title' => Str::limit($ser->name, 24)
+            ];
+        }
+        
+        $rows[] = ['id' => 'back', 'title' => '🔙 Back'];
+
+        return $this->whatsAppService->sendInteractiveList(
+            $to,
+            "✨ *Select Series/Brand*",
+            "Option: {$subName}\nSelect a series:",
+            "View Series",
+            [['title' => 'Series', 'rows' => $rows]]
+        );
+    }
+    
+    /**
+     * Send list of products for a subcategory
+     */
+    private function sendProductList(string $to, array $formData): bool
+    {
+        $subId = $formData['selected_subcategory_id'] ?? null;
+        $serId = $formData['selected_series_id'] ?? null;
+        $subName = $formData['selected_subcategory_name'] ?? 'Subcategory';
+        $serName = $formData['selected_series_name'] ?? 'Series';
+        
+        if (!$subId && !$serId) return false;
+        
+        $query = Product::query();
+        $displayTitle = "Option: {$subName}";
+        
+        if ($serId) {
+            $query->where('product_series_id', $serId);
+            $displayTitle = "Series: {$serName}";
+        } elseif ($subId) {
+            $query->where('product_sub_category_id', $subId);
+        }
+        
+        $products = $query->limit(9)->get();
+        
+        if ($products->isEmpty()) {
+            $this->whatsAppService->sendMessage($to, "⚠️ No products avaliable in this selection yet.");
+            return true;
+        }
+        
+        $rows = [];
+        foreach ($products as $product) {
+            $rows[] = [
+                'id' => 'prod_' . $product->id,
+                'title' => Str::limit($product->name, 24),
+                'description' => '$' . number_format($product->base_price, 2)
+            ];
+        }
+        
+        $rows[] = ['id' => 'back', 'title' => '🔙 Back'];
+
+        return $this->whatsAppService->sendInteractiveList(
+            $to,
+            "📦 *Select a Product*",
+            "{$displayTitle}\nChoose a product:",
+            "View Products",
+            [['title' => 'Products', 'rows' => $rows]]
+        );
+    }
+    
+    private function sendPackageList(string $to, array $formData): bool
+    {
+        $prodId = $formData['selected_product_id'] ?? null;
+        $prodName = $formData['selected_product_name'] ?? 'Product';
+        
+        if (!$prodId) return false;
+        
+        $packages = ProductPackageSize::where('product_id', $prodId)->limit(9)->get();
+        
+        if ($packages->isEmpty()) {
+             // Should not be here if no packages, but proceed to payment if so.
+             // This method is called by sendStateMessage, so we can't easily valid transition here.
+             // But process() checked ->exists().
+             // Just in case:
+             return $this->whatsAppService->sendMessage($to, "⚠️ No packages found. Type 'back' to go back.");
+        }
+        
+        $rows = [];
+        foreach ($packages as $pkg) {
+            $price = $pkg->custom_price;
+            $rows[] = [
+                'id' => 'pkg_' . $pkg->id,
+                'title' => Str::limit($pkg->name, 24),
+                'description' => '$' . number_format($price, 2)
+            ];
+        }
+        
+        $rows[] = ['id' => 'back', 'title' => '🔙 Back'];
+
+        return $this->whatsAppService->sendInteractiveList(
+            $to,
+            "📦 *Select Package/Size*",
+            "Product: {$prodName}\nChoose a package:",
+            "View Packages",
+            [['title' => 'Packages', 'rows' => $rows]]
+        );
+    }
+    /**
+     * Send the final product link (HARDCODED FLOW)
+     * Cash goes to /cash-purchase, Credit goes to /application
+     */
+    private function sendProductLink(string $to, array $formData): bool
+    {
+        $intent = $formData['intent'] ?? 'personal';
+        $categoryId = $formData['selected_category_id'] ?? '';
+        $categoryName = $formData['selected_category_name'] ?? 'Selected Product';
+        $subcategoryId = $formData['selected_subcategory_id'] ?? '';
+        $subcategoryName = $formData['selected_subcategory_name'] ?? '';
+        $payment = $formData['payment_method'] ?? 'credit';
+        $currency = $formData['currency'] ?? 'USD';
+        $paymentDetails = $formData['payment_details'] ?? '';
+        $language = $formData['language'] ?? 'en';
+        
+        // Display name: use subcategory if set, else category
+        $displayName = $subcategoryName ?: $categoryName;
+        
+        // Map intent to type parameter for cash purchase
+        $typeMap = [
+            'microBiz' => 'microBiz',
+            'personal' => 'personalGadgets',
+            'personalServices' => 'personalServices',
+            'construction' => 'construction',
+        ];
+        $type = $typeMap[$intent] ?? 'personalGadgets';
+        
+        // Build link based on payment method
+        if ($payment === 'cash') {
+            // Cash purchase URL
+            $link = "{$this->websiteUrl}/cash-purchase?currency={$currency}&language={$language}&type={$type}";
+        } else {
+            // Credit/Application URL
+            $link = "{$this->websiteUrl}/application?intent={$intent}&currency={$currency}&payment_method={$payment}";
+            
+            if ($categoryId) {
+                $link .= "&category=" . urlencode($categoryId);
+            }
+            if ($subcategoryId) {
+                $link .= "&subcategory=" . urlencode($subcategoryId);
+            }
+        }
+        
+        if ($paymentDetails) {
+            $link .= "&payment_details=" . urlencode($paymentDetails);
+        }
+        
+        Log::info("StateMachine: Sending product link", ['to' => $to, 'payment' => $payment, 'link' => $link]);
+        
+        $paymentLabel = ($payment === 'cash') ? '💵 Cash Purchase' : '📋 Credit Application';
+        
+        return $this->whatsAppService->sendMessage(
+            $to,
+            "✅ *Ready to proceed with: {$displayName}*\n\n" .
+            "💰 Currency: {$currency}\n" .
+            "{$paymentLabel}\n\n" .
+            "🔗 Click here to continue:\n{$link}\n\n" .
+            "Type 'hi' to start a new conversation."
+        );
     }
 }

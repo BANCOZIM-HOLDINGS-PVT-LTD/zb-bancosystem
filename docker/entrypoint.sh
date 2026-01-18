@@ -4,18 +4,9 @@ set -e
 # Switch to app directory
 cd /var/www/html
 
-# Ensure storage directories exist (permissions already set in Dockerfile)
-mkdir -p storage/framework/{cache,sessions,views} 2>/dev/null || true
-mkdir -p storage/logs 2>/dev/null || true
-mkdir -p storage/nginx/{client_body,proxy,fastcgi,uwsgi,scgi} 2>/dev/null || true
-mkdir -p storage/app/public 2>/dev/null || true
-mkdir -p bootstrap/cache 2>/dev/null || true
-chown -R www:www storage 2>/dev/null || true
-chmod -R 775 storage 2>/dev/null || true
 
-# Ensure permissions for bootstrap/cache (critical for Laravel)
-chown -R www:www bootstrap/cache 2>/dev/null || true
-chmod -R 775 bootstrap/cache 2>/dev/null || true
+
+
 
 # Create log files if they don't exist and set proper permissions
 touch storage/logs/nginx-error.log 2>/dev/null || true
@@ -48,6 +39,20 @@ if [ -n "$DATABASE_URL" ] || [ -n "$DB_HOST" ]; then
 else
   echo "[entrypoint] Skipping migrations (DATABASE_URL or DB_HOST not set)"
 fi
+
+# Ensure storage directories exist and have correct permissions (run AFTER cache generation)
+mkdir -p storage/framework/{cache,sessions,views} 2>/dev/null || true
+mkdir -p storage/logs 2>/dev/null || true
+mkdir -p storage/nginx/{client_body,proxy,fastcgi,uwsgi,scgi} 2>/dev/null || true
+mkdir -p storage/app/public 2>/dev/null || true
+mkdir -p bootstrap/cache 2>/dev/null || true
+
+# Set permissions for storage and bootstrap/cache
+echo "[entrypoint] Setting permissions for storage and bootstrap/cache..."
+chown -R www:www storage 2>/dev/null || true
+chown -R www:www bootstrap/cache 2>/dev/null || true
+chmod -R 775 storage 2>/dev/null || true
+chmod -R 775 bootstrap/cache 2>/dev/null || true
 
 # Start supervisor (nginx + php-fpm)
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf

@@ -167,7 +167,7 @@ const RegistrationPrompt: React.FC<RegistrationPromptProps> = ({ data, onBack, s
         <div className="space-y-6">
             <div className="text-center">
                 <UserPlus className="mx-auto h-16 w-16 text-emerald-600 mb-4" />
-                <h2 className="text-2xl font-semibold mb-2">Login or Register to Continue</h2>
+                <h2 className="text-2xl font-semibold mb-2">Register or Login to Continue</h2>
                 <p className="text-gray-600 dark:text-gray-400">
                     To proceed with your application, please login or create an account
                 </p>

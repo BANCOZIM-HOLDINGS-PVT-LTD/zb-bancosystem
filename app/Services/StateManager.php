@@ -13,7 +13,7 @@ class StateManager
      * Default TTL for states in seconds
      */
     private const DEFAULT_TTL = 86400; // 24 hours
-    private const WHATSAPP_TTL = 604800; // 7 days
+    private const WHATSAPP_TTL = 600; // 10 minutes
     
     /**
      * @var ReferenceCodeService
@@ -132,6 +132,7 @@ class StateManager
             
             // WhatsApp Adala conversation flow
             'language_selection', 'intent_selection', 'intent_selection_page2', 'payment_method', 'main_menu', 'currency_selection',
+            'browse_categories', 'browse_subcategories', 'browse_series', 'browse_products', 'browse_packages', 'product_link_sent', 'cash_payment_selection',
             
             // Website redirect states
             'redirect_to_product', 'redirect_starter_pack_credit', 'redirect_gadgets_credit',

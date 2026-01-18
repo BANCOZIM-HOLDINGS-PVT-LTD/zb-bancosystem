@@ -46,7 +46,11 @@ class SaveApplicationStateRequest extends FormRequest
                 Rule::in([
                     'language', 'intent', 'employer', 'product', 'account',
                     'summary', 'form', 'documents', 'completed', 'in_review',
-                    'approved', 'rejected', 'pending_documents', 'processing'
+                    'approved', 'rejected', 'pending_documents', 'processing',
+                    // Add missing steps
+                    'housePlanApproval', 'constructionDetails', 'companyRegistration',
+                    'licenseCourses', 'zimparksHoliday', 'creditTerm', 'creditType',
+                    'delivery', 'registration'
                 ]),
             ],
             'form_data' => [
@@ -117,7 +121,7 @@ class SaveApplicationStateRequest extends FormRequest
             'metadata.user_agent' => [
                 'nullable',
                 'string',
-                'max:500',
+                'max:2048', // Increased from 500
             ],
         ];
     }
