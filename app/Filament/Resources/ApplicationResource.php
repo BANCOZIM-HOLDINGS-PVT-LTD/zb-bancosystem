@@ -1125,7 +1125,12 @@ class ApplicationResource extends BaseResource
             // Exclude agent application states from Loan Applications
             ->where(function ($query) {
                 $query->where('current_step', 'not like', 'agent_%')
-                    ->whereRaw("JSON_EXTRACT(form_data, '$.outcome') IS NULL OR JSON_EXTRACT(form_data, '$.outcome') != 'agent_application_submitted'");
+                    // Use PostgreSQL JSON operators instead of MySQL JSON_EXTRACT
+                    ->where(function ($q) {
+                        $q->whereNull('form_data')
+                          ->orWhereRaw("(form_data->>'outcome') IS NULL")
+                          ->orWhereRaw("(form_data->>'outcome') != 'agent_application_submitted'");
+                    });
             });
     }
     

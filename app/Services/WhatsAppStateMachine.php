@@ -825,30 +825,31 @@ class WhatsAppStateMachine
         $sections = [];
         
         $sections[] = [
-            'title' => '📦 Product Catalog',
+            'title' => '💰 PURCHASE ',
             'rows' => [
-                ['id' => '1', 'title' => 'Small & Medium Business', 'description' => 'Business Starter pack'],
-                ['id' => '2', 'title' => 'Personal & Homeware', 'description' => 'Gadgets & Furniture'],
+                ['id' => '1', 'title' => 'Small & Medium Business', 'description' => 'Starter pack'],
+                ['id' => '2', 'title' => 'Homeware & Electronics', 'description' => 'Gadgets, Solar Systems & Furniture'],
                 ['id' => '3', 'title' => 'Personal Development', 'description' => 'Life changing skills'],
-                ['id' => '4', 'title' => 'House Construction', 'description' => 'Build/improve home'],
+                ['id' => '4', 'title' => 'Building materials', 'description' => 'Home improvements'],
             ],
         ];
         
         $sections[] = [
-            'title' => '⚡ Services & Account',
+            'title' => '🤝 SERVICES ',
             'rows' => [
-                ['id' => '5', 'title' => 'Apply for a ZB Account', 'description' => 'Open an account'],
-                ['id' => '6', 'title' => 'Become an Online Agent', 'description' => 'Earn passive income'],
+                ['id' => '5', 'title' => 'Apply for a ZB Bank Acc', 'description' => 'Individual Account'],
+                ['id' => '6', 'title' => 'Apply to become an Agent', 'description' => 'Earn passive income online'],
+                ['id' => '7', 'title' => 'Track Credit Application', 'description' => 'Check status'],
+                ['id' => '8', 'title' => 'Track Product Delivery', 'description' => 'Order tracking'],
             ],
         ];
 
+        
         $sections[] = [
-            'title' => 'ℹ️ Support',
+            'title' => 'ℹ️ SUPPORT',
             'rows' => [
-                ['id' => '7', 'title' => 'Track Application', 'description' => 'Check status'],
-                ['id' => '8', 'title' => 'Track Delivery', 'description' => 'Order tracking'],
-                ['id' => '9', 'title' => 'FAQs', 'description' => 'Get answers'],
-                ['id' => '10', 'title' => 'Customer Service', 'description' => 'Talk to representative'],
+                ['id' => '9', 'title' => 'FAQs', 'description' => 'Get quick answers'],
+                ['id' => '10', 'title' => 'Customer Service', 'description' => 'Talk to a representative'],
             ],
         ];
         
@@ -857,7 +858,7 @@ class WhatsAppStateMachine
             $bodyText,
             $buttonText,
             $sections,
-            "Microbiz Implementation"
+            " "
         );
     }
     
@@ -887,7 +888,7 @@ class WhatsAppStateMachine
             case 'redirect_zb_account':
                 return "🏦 *Open a ZB Account*\n\n" .
                        "You can open a ZB account online instantly:\n\n" .
-                       "🔗 https://my.zb.co.zw/\n\n" .
+                       "🔗 https://zb.co.zw/banking/accounts\n\n" .
                        "Say 'hi' anytime to start a new conversation.";
                        
             case 'redirect_agent_login':
@@ -1086,7 +1087,7 @@ class WhatsAppStateMachine
         // Send welcome message with Adala persona
         $welcomeText = "Hello *{$displayName}*! 👋\n\n";
         $welcomeText .= "Welcome to *Microbiz Zimbabwe* powered by Qupa (a division of *ZB Bank*).\n\n";
-        $welcomeText .= "I am *Adala*, consider me your smart uncle and digital assistant. My mission is to ensure you get the best user experience for your intended acquisition because we are family.\n\n";
+        $welcomeText .= "I am *Adala*, consider me your smart uncle and digital assistant. My mission is to ensure you get the best user experience for your intended acquisition, because we are family.\n\n";
         $welcomeText .= "🌐 Please select your preferred language:";
         
         // Send language selection as interactive list
