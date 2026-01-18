@@ -94,10 +94,6 @@ class CashPurchaseResource extends BaseResource
                             ])
                             ->required()
                             ->helperText('Only delivery status can be manually updated'),
-                        Forms\Components\TextInput::make('swift_tracking_number')
-                            ->label('Swift Tracking Number')
-                            ->maxLength(255)
-                            ->helperText('For Swift deliveries only'),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Payment Information')
@@ -249,7 +245,7 @@ class CashPurchaseResource extends BaseResource
                 Tables\Filters\SelectFilter::make('delivery_type')
                     ->label('Delivery Type')
                     ->options([
-                        'swift' => 'Swift',
+                        'zimpost' => 'Zimpost',
                         'gain_outlet' => 'Gain Outlet',
                     ]),
                 Tables\Filters\Filter::make('created_at')

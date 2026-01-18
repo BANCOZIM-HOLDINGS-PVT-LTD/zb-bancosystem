@@ -262,7 +262,7 @@ class ZBStatusService
             // Determine depot
             $depot = '';
             if (!empty($deliverySelection['city'])) {
-                $depot = $deliverySelection['city'] . ' (' . ($deliverySelection['agent'] ?? 'Swift') . ')';
+                $depot = $deliverySelection['city'] . ' (' . ($deliverySelection['agent'] ?? 'Zim Post Office') . ')';
             } elseif (!empty($deliverySelection['depot'])) {
                 $depot = $deliverySelection['depot'];
             }
@@ -274,7 +274,7 @@ class ZBStatusService
                 'recipient_phone' => $formResponses['mobile'] ?? $formResponses['cellNumber'] ?? null,
                 'client_national_id' => $formResponses['nationalIdNumber'] ?? $formResponses['idNumber'] ?? null,
                 'product_type' => $formData['business'] ?? $formData['category'] ?? 'N/A',
-                'courier_type' => $deliverySelection['agent'] ?? 'Swift',
+                'courier_type' => $deliverySelection['agent'] ?? 'Zim Post Office',
                 'delivery_depot' => $depot,
                 'delivery_address' => $depot, // Use depot as address for now
             ]);

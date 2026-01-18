@@ -1338,7 +1338,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
                             {/* Total Amount Display */}
                             <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">New Selling Price</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Gross Loan inclusive of 6% bank charges</p>
                                 <p className="text-3xl font-bold text-emerald-600">
                                     {formatCurrency((finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)) * 1.06)}
                                 </p>
@@ -1396,7 +1396,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
                                             {/* Gross Loan */}
                                             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">New Selling Price</p>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Gross Loan</p>
                                                 <p className="text-2xl font-bold text-emerald-600">
                                                     {(() => {
                                                         const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;

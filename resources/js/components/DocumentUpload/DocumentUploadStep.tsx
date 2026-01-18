@@ -1537,7 +1537,7 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                             </p>
                             <Button onClick={startCamera} className="bg-emerald-600 hover:bg-emerald-700">
                                 <Camera className="h-5 w-5 mr-2" />
-                                Start Camera
+                                Take Selfie
                             </Button>
                         </div>
                         <div className="text-xs text-gray-500">
@@ -1583,11 +1583,20 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
 
                 {selfieDataUrl && (
                     <div className="space-y-4">
-                        <img
-                            src={selfieDataUrl}
-                            alt="Selfie"
-                            className="w-48 h-48 object-cover rounded-lg mx-auto"
-                        />
+                        <div className="relative">
+                            <img
+                                src={selfieDataUrl}
+                                alt="Selfie"
+                                className="w-48 h-48 object-cover rounded-lg mx-auto border-2 border-green-500"
+                            />
+                            <div className="absolute -top-2 -right-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Ready
+                            </div>
+                        </div>
+                        <p className="text-center text-sm text-green-600 dark:text-green-400 font-medium">
+                            Selfie captured successfully
+                        </p>
                         <div className="flex justify-center gap-3">
                             <Button onClick={retakeSelfie} variant="outline">
                                 <Camera className="h-5 w-5 mr-2" />
@@ -1609,20 +1618,30 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
 
             {/* Digital Signature */}
             <Card className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900 rounded-lg">
-                        <Edit3 className="h-6 w-6" />
+                <div className="flex items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-100 dark:bg-emerald-900 rounded-lg">
+                            <Edit3 className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <h3 className="font-semibold">Digital Signature</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Sign with your finger or mouse to confirm your application
+                            </p>
+                            {!signatureDataUrl && (
+                                <span className="text-xs text-red-600">Required</span>
+                            )}
+                        </div>
                     </div>
-                    <div>
-                        <h3 className="font-semibold">Digital Signature</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Sign with your finger or mouse to confirm your application
-                        </p>
-                        <span className="text-xs text-red-600">Required</span>
-                    </div>
+                    {signatureDataUrl && (
+                        <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Ready
+                        </div>
+                    )}
                 </div>
 
-                <div className="border border-gray-300 dark:border-gray-600 rounded-lg">
+                <div className={`border rounded-lg ${signatureDataUrl ? 'border-green-500 border-2' : 'border-gray-300 dark:border-gray-600'}`}>
                     <SignatureCanvas
                         ref={signatureRef}
                         canvasProps={{
@@ -1638,9 +1657,15 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                     <Button onClick={clearSignature} variant="outline" size="sm">
                         Clear
                     </Button>
-                    <p className="text-xs text-gray-500">
-                        Sign above to complete your application
-                    </p>
+                    {signatureDataUrl ? (
+                        <p className="text-xs text-green-600 font-medium">
+                            Signature captured successfully
+                        </p>
+                    ) : (
+                        <p className="text-xs text-gray-500">
+                            Sign above to complete your application
+                        </p>
+                    )}
                 </div>
 
                 {errors.signature && (

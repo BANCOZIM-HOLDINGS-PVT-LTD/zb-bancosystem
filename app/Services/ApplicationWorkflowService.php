@@ -332,13 +332,13 @@ class ApplicationWorkflowService
             // Extract delivery information
             $depot = '';
             if (!empty($deliverySelection['city'])) {
-                $depot = $deliverySelection['city'] . ' (' . ($deliverySelection['agent'] ?? 'Swift') . ')';
+                $depot = $deliverySelection['city'] . ' (' . ($deliverySelection['agent'] ?? 'Zim Post Office') . ')';
             } elseif (!empty($deliverySelection['depot'])) {
                 $depot = $deliverySelection['depot'];
             }
 
             // Determine courier type from delivery selection
-            $courierType = $deliverySelection['agent'] ?? 'Swift';
+            $courierType = $deliverySelection['agent'] ?? 'Zim Post Office';
 
             // Create delivery tracking record
             DeliveryTracking::create([

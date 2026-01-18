@@ -889,34 +889,21 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
     const handleComplete = useCallback(async (finalData: WizardData) => {
         setLoading(true);
         try {
+            // Get reference code from finalData or extract national ID from form responses
             let referenceCode = finalData.referenceCode;
 
-            // Generate reference code if not already present
-            if (!referenceCode) {
-                try {
-                    const response = await fetch('/api/reference-code/generate', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                        },
-                        body: JSON.stringify({
-                            sessionId
-                        })
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.success) {
-                            referenceCode = result.reference_code;
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error generating reference code:', error);
+            // If no reference code, extract national ID from form responses
+            if (!referenceCode && finalData.formResponses) {
+                const nationalId = finalData.formResponses.idNumber
+                    || finalData.formResponses.nationalIdNumber
+                    || finalData.formResponses.nationalId;
+                if (nationalId) {
+                    // Remove dashes and spaces, convert to uppercase
+                    referenceCode = String(nationalId).replace(/[-\s]/g, '').toUpperCase();
                 }
             }
 
-            // Add reference code and timestamp to the final data
+            // Prepare the final data with timestamp and status
             const dataWithReference = {
                 ...finalData,
                 referenceCode,
@@ -934,10 +921,10 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                 completedSteps: allSteps
             };
 
-            // Save state as completed with reference code
+            // Save state as completed first
             await stateManager.saveState(sessionId, 'completed', dataWithReference);
 
-            // Submit application via API
+            // Submit application via API - this will also generate the reference code if needed
             const response = await fetch('/api/states/create-application', {
                 method: 'POST',
                 headers: {
@@ -955,8 +942,8 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                 const result = await response.json();
                 // Clear local storage since application is complete
                 localStateManager.clearLocalState();
-                // Redirect to thank you page with reference code
-                router.visit(`/application/success?ref=${result.reference_code || referenceCode}`);
+                // Redirect to thank you page with reference code (from response or original)
+                router.visit(`/application/success?ref=${result.reference_code || referenceCode || 'submitted'}`);
             } else {
                 const error = await response.json();
                 console.error('Application submission failed:', error);

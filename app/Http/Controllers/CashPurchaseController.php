@@ -55,11 +55,11 @@ class CashPurchaseController extends Controller
                 'items.*.category' => 'nullable|string',
 
                 // Delivery
-                'delivery.type' => ['required', Rule::in(['swift', 'gain_outlet'])],
+                'delivery.type' => ['required', Rule::in(['zimpost', 'gain_outlet'])],
                 'delivery.depot' => 'required|string',
                 'delivery.depotName' => 'nullable|string',
-                'delivery.address' => 'required_if:delivery.type,swift|nullable|string',
-                'delivery.city' => 'required_if:delivery.type,swift|nullable|string',
+                'delivery.address' => 'required_if:delivery.type,zimpost|nullable|string',
+                'delivery.city' => 'required_if:delivery.type,zimpost|nullable|string',
                 'delivery.region' => 'required_if:delivery.type,gain_outlet|nullable|string',
                 'delivery.includesMESystem' => 'nullable|boolean',
                 'delivery.includesTraining' => 'nullable|boolean',
@@ -116,7 +116,7 @@ class CashPurchaseController extends Controller
             }
 
             // Calculate delivery fee
-            $deliveryFee = $data['delivery']['type'] === 'swift' ? 10.00 : 0.00;
+            $deliveryFee = $data['delivery']['type'] === 'zimpost' ? 10.00 : 0.00;
 
             // Calculate M&E and Training fees (Applied on total or per item? Assuming Total for now relative to hardware cost)
             // But wait, user said "add items so they can pay". Usually fees are fixed or % of total.

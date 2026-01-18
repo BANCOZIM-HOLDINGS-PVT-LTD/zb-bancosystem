@@ -244,7 +244,7 @@ class CashPurchase extends Model
     public function getDeliveryTypeLabelAttribute(): string
     {
         return match($this->delivery_type) {
-            'swift' => 'Swift Home Delivery',
+            'zimpost' => 'Zimpost Courier Connect',
             'gain_outlet' => 'Gain Outlet Depot Collection',
             default => ucfirst($this->delivery_type),
         };
@@ -321,9 +321,9 @@ class CashPurchase extends Model
     /**
      * Scope: Filter by delivery type
      */
-    public function scopeSwiftDelivery($query)
+    public function scopeZimpostDelivery($query)
     {
-        return $query->where('delivery_type', 'swift');
+        return $query->where('delivery_type', 'zimpost');
     }
 
     public function scopeDepotCollection($query)

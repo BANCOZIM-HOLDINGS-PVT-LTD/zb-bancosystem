@@ -176,7 +176,7 @@ class SSBStatusService
         // Determine depot
         $depot = '';
         if (!empty($deliverySelection['city'])) {
-            $depot = $deliverySelection['city'] . ' (' . ($deliverySelection['agent'] ?? 'Swift') . ')';
+            $depot = $deliverySelection['city'] . ' (' . ($deliverySelection['agent'] ?? 'Zim Post Office') . ')';
         } elseif (!empty($deliverySelection['depot'])) {
             $depot = $deliverySelection['depot'];
         }
@@ -188,7 +188,7 @@ class SSBStatusService
             'recipient_phone' => $formResponses['mobile'] ?? $formResponses['cellNumber'] ?? null,
             'client_national_id' => $formResponses['idNumber'] ?? $formResponses['nationalIdNumber'] ?? null,
             'product_type' => $formData['business'] ?? $formData['category'] ?? 'SSB Loan Product',
-            'courier_type' => $deliverySelection['agent'] ?? 'Swift',
+            'courier_type' => $deliverySelection['agent'] ?? 'Zim Post Office',
             'delivery_depot' => $depot,
             'delivery_address' => $depot,
         ]);

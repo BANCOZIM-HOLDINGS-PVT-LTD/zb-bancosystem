@@ -87,9 +87,9 @@ class DeliveryTrackingController extends Controller
         $trackingType = null;
 
         if ($deliveryTracking) {
-            if ($deliveryTracking->swift_tracking_number) {
-                $trackingNumber = $deliveryTracking->swift_tracking_number;
-                $trackingType = "Swift Tracking Number";
+            if ($deliveryTracking->post_office_tracking_number) {
+                $trackingNumber = $deliveryTracking->post_office_tracking_number;
+                $trackingType = "Zimpost Tracking Number";
             } elseif ($deliveryTracking->gain_voucher_number) {
                 $trackingNumber = $deliveryTracking->gain_voucher_number;
                 $trackingType = "Gain Voucher Number";
@@ -136,13 +136,13 @@ class DeliveryTrackingController extends Controller
         $depot = "Not yet assigned";
         if ($purchase->delivery_type === 'gain_outlet' && $purchase->depot_name) {
             $depot = $purchase->depot_name . ($purchase->region ? " ({$purchase->region})" : "");
-        } elseif ($purchase->delivery_type === 'swift' && $purchase->city) {
-            $depot = "Swift Delivery - {$purchase->city}";
+        } elseif ($purchase->delivery_type === 'zimpost' && $purchase->city) {
+            $depot = "Zimpost Delivery - {$purchase->city}";
         }
 
         // Determine tracking number
-        $trackingNumber = $purchase->swift_tracking_number ?? "Not yet assigned";
-        $trackingType = $purchase->delivery_type === 'swift' ? "Swift Tracking Number" : "Depot Collection";
+        $trackingNumber = "Not yet assigned";
+        $trackingType = $purchase->delivery_type === 'zimpost' ? "Zimpost Tracking Number" : "Depot Collection";
 
         return response()->json([
             "sessionId" => $purchase->purchase_number,

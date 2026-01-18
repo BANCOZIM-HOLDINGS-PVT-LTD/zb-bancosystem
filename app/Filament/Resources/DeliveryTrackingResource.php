@@ -73,14 +73,14 @@ class DeliveryTrackingResource extends BaseResource
                                         // Set delivery depot from deliverySelection
                                         $depot = '';
                                         if (!empty($deliverySelection['city'])) {
-                                            $depot = $deliverySelection['city'] . ' (' . ($deliverySelection['agent'] ?? 'Swift') . ')';
+                                            $depot = $deliverySelection['city'] . ' (' . ($deliverySelection['agent'] ?? 'Zim Post Office') . ')';
                                         } elseif (!empty($deliverySelection['depot'])) {
                                             $depot = $deliverySelection['depot'];
                                         }
                                         $set('delivery_depot', $depot);
 
                                         // Auto-assign courier based on deliverySelection agent
-                                        $agent = $deliverySelection['agent'] ?? 'Swift';
+                                        $agent = $deliverySelection['agent'] ?? 'Zim Post Office';
                                         $set('courier_type', $agent);
                                     }
                                 }
@@ -141,7 +141,6 @@ class DeliveryTrackingResource extends BaseResource
                         Forms\Components\Select::make('courier_type')
                             ->label('Delivery Service')
                             ->options([
-                                'Swift' => 'Swift',
                                 'Gain Cash & Carry' => 'Gain Cash & Carry',
                                 'Bancozim' => 'Bancozim',
                                 'Bus Courier' => 'Bus Courier',
@@ -157,14 +156,7 @@ class DeliveryTrackingResource extends BaseResource
                             ->maxLength(255)
                             ->columnSpanFull(),
 
-                        // Swift Details
-                        Forms\Components\TextInput::make('swift_tracking_number')
-                            ->label('Swift Tracking Number')
-                            ->placeholder('Enter Swift tracking number')
-                            ->maxLength(100)
-                            ->visible(fn (Get $get) => $get('courier_type') === 'Swift')
-                            ->required(fn (Get $get) => $get('courier_type') === 'Swift')
-                            ->columnSpanFull(),
+
 
                         // Post Office Details
                         Forms\Components\TextInput::make('post_office_tracking_number')
@@ -274,10 +266,7 @@ class DeliveryTrackingResource extends BaseResource
                                         if (in_array($value, ['dispatched', 'in_transit', 'out_for_delivery'])) {
                                             $courierType = $get('courier_type');
 
-                                            // Validate Swift
-                                            if ($courierType === 'Swift' && empty($get('swift_tracking_number'))) {
-                                                $fail('Swift tracking number is required before dispatching.');
-                                            }
+
 
                                             // Validate Gain Outlet
                                             if ($courierType === 'Gain Outlet' && empty($get('gain_voucher_number'))) {
@@ -392,10 +381,10 @@ class DeliveryTrackingResource extends BaseResource
                     ->label('Courier')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'Swift' => 'success',
                         'Gain Outlet' => 'warning',
                         'Bancozim' => 'info',
                         'Bus Courier' => 'primary',
+                        'Zim Post Office' => 'success',
                         default => 'secondary',
                     })
                     ->searchable(),
@@ -412,12 +401,7 @@ class DeliveryTrackingResource extends BaseResource
                     ])
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('swift_tracking_number')
-                    ->label('Swift Tracking')
-                    ->searchable()
-                    ->copyable()
-                    ->toggleable()
-                    ->placeholder('N/A'),
+
 
                 Tables\Columns\TextColumn::make('gain_voucher_number')
                     ->label('Gain Voucher')
@@ -486,10 +470,10 @@ class DeliveryTrackingResource extends BaseResource
                 Tables\Filters\SelectFilter::make('courier_type')
                     ->label('Courier Service')
                     ->options([
-                        'Swift' => 'Swift',
                         'Gain Outlet' => 'Gain Outlet',
                         'Bancozim' => 'Bancozim',
                         'Bus Courier' => 'Bus Courier',
+                        'Zim Post Office' => 'Zim Post Office',
                     ]),
 
                 Tables\Filters\Filter::make('dispatched')
@@ -528,9 +512,7 @@ class DeliveryTrackingResource extends BaseResource
                         if (in_array($data['status'], ['dispatched', 'in_transit', 'out_for_delivery'])) {
                             $errors = [];
 
-                            if ($record->courier_type === 'Swift' && empty($record->swift_tracking_number)) {
-                                $errors[] = 'Swift tracking number is required before dispatching.';
-                            }
+
 
                             if ($record->courier_type === 'Gain Outlet' && empty($record->gain_voucher_number)) {
                                 $errors[] = 'Gain voucher number is required before dispatching.';

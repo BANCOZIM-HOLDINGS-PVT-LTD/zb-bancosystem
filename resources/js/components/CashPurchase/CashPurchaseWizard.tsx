@@ -31,7 +31,7 @@ export interface CashPurchaseData {
     // Deprecated single product field, keeping for type safety in legacy checks
     product?: any;
     delivery?: {
-        type: 'swift' | 'gain_outlet';
+        type: 'zimpost' | 'gain_outlet';
         depot: string;
         depotName?: string;
         address?: string;

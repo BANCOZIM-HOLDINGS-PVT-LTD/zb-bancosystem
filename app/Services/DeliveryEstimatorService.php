@@ -45,8 +45,6 @@ class DeliveryEstimatorService
                     // Rural / Other cities
                     $daysToAdd = 4;
                 }
-            } elseif ($courier === 'Swift') {
-                $daysToAdd = 2;
             } elseif ($courier === 'Bus Courier') {
                 $daysToAdd = 1; // Same day or next day usually
             }

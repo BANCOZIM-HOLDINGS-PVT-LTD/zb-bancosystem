@@ -12,15 +12,7 @@ interface DeliverySelectionProps {
     loading?: boolean;
 }
 
-// Cities for Swift deliveries (Keeping as is for reference or if Swift option remains valid for other contexts, though user focused on Zimpost)
-const SWIFT_CITIES = [
-    'Beitbridge', 'Bindura', 'Bulawayo', 'Checheche', 'Chegutu', 'Chinhoyi', 'Chiredzi',
-    'Chivhu', 'Chivi', 'Chipinge', 'Glendale/Mazowe', 'Gokwe', 'Gutu', 'Gwanda', 'Gweru',
-    'Hwange', 'Jerera/Nyika', 'Kadoma', 'Kariba', 'Kwekwe', 'Marondera', 'Masvingo',
-    'Mazowe', 'Mt Darwin', 'Murambinda', 'Murehwa', 'Mutare', 'Mutoko', 'Mvurwi',
-    'Ngezi', 'Norton', 'Nyanga', 'Nyika', 'Plumtree', 'Rusape', 'Shurugwi', 'Triangle',
-    'Victoria Falls', 'Zvishavane'
-].sort();
+
 
 // Gain Outlet depots
 const GAIN_DEPOTS = [
@@ -53,55 +45,51 @@ const GAIN_DEPOTS = [
     'WX Gokwe - gokwe', 'ZX Zvishavane - zvishavane'
 ].sort();
 
-// Grouped Zimpost Offices
+// Grouped Zimpost Offices - Updated 2026 (5 Provinces)
 const ZIMPOST_LOCATIONS: Record<string, string[]> = {
-    'Harare': [
-        'Amby Post Office', 'Avondale Post Office', 'Belvedere Post Office', 'Borrowdale Post Office',
-        'Causeway Post Office', 'Chisipite Post Office', 'Chitungwiza Post Office', 'Dzivarasekwa Post Office',
-        'Emerald Hill Post Office', 'Glen Norah Post Office', 'Glen View Post Office', 'Graniteside Post Office',
-        'Greendale Post Office', 'Harare Main Post Office (Cnr Inez Terrace)', 'Hatfield Post Office',
-        'Highfield Post Office', 'Highlands Post Office', 'Kambuzuma Post Office', 'Mabelreign Post Office',
-        'Mabvuku Post Office', 'Machipisa Post Office', 'Marlborough Post Office', 'Mbare Musika Post Office',
-        'Mbare West Post Office', 'Mt Pleasant Post Office', 'Mufakose Post Office', 'Norton Post Office',
-        'Ruwa Post Office', 'Seke Post Office', 'Southerton Post Office', 'Tafara Post Office',
-        'Waterfalls Post Office', 'Zimpost Central Sorting Office', 'Acturus Post Office', 'Beatrice Post Office',
-        'Bromley Post Office', 'Goromonzi Post Office', 'Juru Post Office', 'Zengeza Post Office'
+    'Harare City & Chitungwiza': [
+        'Avondale', 'Borrowdale', 'Causeway', 'Chisipite', 'Chitungwiza',
+        'Dzivarasekwa', 'Glen Norah', 'Graniteside', 'Greendale', 'Harare Main',
+        'Hatfield', 'Highfield', 'Highlands', 'Kambuzuma', 'Mabelreign',
+        'Marlborough', 'Mt. Pleasant', 'Southerton', 'Tafara', 'Waterfalls'
     ],
-    'Bulawayo': [
-        'Ascot Post Office', 'Belmont Post Office', 'Bulawayo Main Post Office', 'Entumbane Post Office',
-        'Famona Post Office', 'Hillside Post Office', 'Llewellin Barracks Post Office', 'Luveve Post Office',
-        'Magwegwe Post Office', 'Mpopoma Post Office', 'Morningside Post Office', 'Mzilikazi Post Office',
-        'Nkulumane Post Office', 'Northend Post Office', 'Pumula Post Office', 'Raylton Post Office',
-        'Tsholotsho Post Office'
+    'Mashonaland': [
+        'Arcturus', 'Banket', 'Bindura', 'Beatrice', 'Bromley', 'Centenary',
+        'Chakari', 'Chegutu', 'Chikonohono', 'Chinhoyi', 'Chirundu', 'Chivhu',
+        'Concession', 'Darwendale', 'Glendale', 'Goromonzi', 'Guruve', 'Juru',
+        'Kadoma', 'Kariba', 'Karoi', 'Macheke', 'Magunje', 'Marondera',
+        'Marondera Womens Prison', 'Mazowe', 'Mhangura', 'Mhondoro-Ngezi',
+        'Mt Darwin', 'Mubayira', 'Mudzi', 'Murewa', 'Murombedzi', 'Mutawatawa',
+        'Mutoko', 'Mutorashanga', 'Muzarabani', 'Mvurwi', 'Nyamhunga', 'Norton',
+        'Raffingora', 'Rimuka', 'Rushinga', 'Ruwa', 'Sadza', 'Sanyati', 'Selous', 'Seke',
+        'Shamva', 'Wedza'
     ],
-    'Masvingo': [
-        'Masvingo Main Post Office', 'Chikato Post Office', 'Morgenster Post Office', 'Mashava Post Office',
-        'Jerera Post Office', 'Nyika Post Office', 'Gutu Post Office', 'Chiredzi Post Office', 'Triangle Post Office',
-        'Mwenezi Post Office', 'Rutenga Post Office', 'Ngundu Post Office', 'Chikombedzi Post Office',
-        'Renco Post Office', 'Chatsworth Post Office', 'Mupandawana Post Office'
+    'Manicaland': [
+        'Birchenough', 'Chimanimani', 'Chipinge', 'Checheche', 'Dangamvura',
+        'Dorowa', 'Headlands', 'Hauna', 'Murambinda', 'Mutare', 'Mt Selinda',
+        'Marange', 'Mutasa', 'Nyanga', 'Nyamaropa', 'Nhedziwa', 'Nyazura',
+        'Nyanyadzi', 'Rusape', 'Sakubva', 'Odzi', 'Penhalonga', 'Watsomba'
     ],
-    'Mutare': [
-        'Mutare Main Post Office', 'Sakubva Post Office', 'Dangamvura Post Office', 'Chimba Post Office',
-        'Penhalonga Post Office', 'Odzi Post Office', 'Watsomba Post Office', 'Nyazura Post Office',
-        'Rusape Post Office', 'Headlands Post Office', 'Nyanga Post Office', 'Hauna Post Office',
-        'Chipinge Post Office', 'Chimanimani Post Office', 'Checheche Post Office',
-        'Birchenough Post Office', 'Murambinda Post Office'
+    'Midlands': [
+        'Chachacha', 'Charandura', 'Chivi', 'Chirumhanzu', 'Gokwe', 'Gutu',
+        'Gweru', 'Gweru Station', 'Jerera', 'Kaguvi', 'Lalapanzi', 'Kwekwe',
+        'Manoti', 'Makuvatsine', 'Mataga', 'Mashava', 'Masase', 'Masvingo',
+        'Mberengwa', 'Mbizo', 'Morgenster', 'Mkoba', 'Mpandawana', 'Mvuma',
+        'Mwenezi', 'Nembudziya', 'Ngundu', 'Nyika', 'Renco', 'Rimuka',
+        'Rutenga', 'Sanyati', 'Shangani', 'Shurugwi', 'Triangle', 'Zhombe',
+        'Zvishavane'
     ],
-    'Gweru': [
-        'Gweru Main Post Office', 'Mkoba Post Office', 'Ascot Post Office', 'Mvuma Post Office',
-        'Shurugwi Post Office', 'Charandura Post Office', 'Lalapanzi Post Office'
+    'Matebeleland': [
+        'Beitbridge', 'Colleen Bawn', 'Cowdray Park',
+        'Dete', 'Donnington', 'Enqameni', 'Gwanda', 'Hillside', 'Hwange',
+        'Lupane', 'Magwegwe', 'Maphisa', 'Matabisa', 'Mbalabala',
+        'Northend',
+        'Turkmine', 'Victoria Falls', 'West Nich'
     ],
-    'Kwekwe': [
-        'Kwekwe Main Post Office', 'Kwekwe (Mbizo) Post Office', 'Redcliff Post Office',
-        'Zhombe Post Office', 'Gokwe Post Office', 'Nembudziya Post Office', 'Manoti Post Office'
-    ],
-    'Kadoma': [
-        'Kadoma Post Office', 'Rimuka Post Office', 'Chegutu Post Office', 'Chakari Post Office',
-        'Sanyati Post Office', 'Mubayira Post Office', 'Mhondoro-Ngezi Post Office'
-    ],
-    'Victoria Falls': [
-        'Victoria Falls Post Office', 'Chinotimba Post Office', 'Hwange Post Office', 'Dete Post Office',
-        'Binga Post Office', 'Lupane Post Office'
+    'Bulawayo City ': [
+        'Ascot','Belmont','Bulawayo Main', 'Entumbane','Esigodini', 'Famona',
+        'Filabusi',  'Llewellin Barracks',  'Luveve','Mzilikazi','Mpopoma', 'Morningside',  'Nkayi', 'Nkulumane',
+        'Plumtree', 'Pumula', 'Raylton', 'Shangani', 'Solusi', 'Tsholotsho',
     ]
 };
 
@@ -155,7 +143,7 @@ const determineDeliveryAgent = (category?: string, subcategory?: string, busines
 const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onBack, loading }) => {
     const deliveryAgentInfo = determineDeliveryAgent(data.category, data.subcategory, data.business);
 
-    const [selectedAgent, setSelectedAgent] = useState<'Swift' | 'Gain Cash & Carry' | 'Zim Post Office'>(
+    const [selectedAgent, setSelectedAgent] = useState<'Gain Cash & Carry' | 'Zim Post Office'>(
         (data.deliverySelection?.agent as any) || deliveryAgentInfo.agent
     );
 
@@ -248,9 +236,8 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
         });
     };
 
-    const isSwiftDisabled = (selectedAgent === 'Gain Cash & Carry' || selectedAgent === 'Zim Post Office') && !deliveryAgentInfo.isEditable;
-    const isGainDisabled = (selectedAgent === 'Swift' || selectedAgent === 'Zim Post Office') && !deliveryAgentInfo.isEditable;
-    const isPostOfficeDisabled = (selectedAgent === 'Swift' || selectedAgent === 'Gain Cash & Carry') && !deliveryAgentInfo.isEditable;
+    const isGainDisabled = selectedAgent === 'Zim Post Office' && !deliveryAgentInfo.isEditable;
+    const isPostOfficeDisabled = selectedAgent === 'Gain Cash & Carry' && !deliveryAgentInfo.isEditable;
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -358,30 +345,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                     </div>
                                 </div>
 
-                                {/* Swift City Selection */}
-                                {selectedAgent === 'Swift' && !isSwiftDisabled && (
-                                    <div>
-                                        <label htmlFor="city" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Select City <span className="text-red-500">*</span>
-                                        </label>
-                                        <select
-                                            id="city"
-                                            value={selectedCity}
-                                            onChange={(e) => setSelectedCity(e.target.value)}
-                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                        >
-                                            <option value="">Select the location closest to you</option>
-                                            {SWIFT_CITIES.map((city) => (
-                                                <option key={city} value={city}>
-                                                    {city}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                            You will collect your product from the Swift Depot in the selected location.
-                                        </p>
-                                    </div>
-                                )}
+
 
                                 {/* Gain Cash & Carry Depot Selection */}
                                 {selectedAgent === 'Gain Cash & Carry' && !isGainDisabled && (
