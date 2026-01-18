@@ -506,6 +506,12 @@ class WhatsAppStateMachine
         // Save input to form data
         $formData[$config['field']] = $input;
         
+        // If transitioning to agent_id_upload, save the agent application now
+        // (all text data has been collected at this point)
+        if ($config['next'] === 'agent_id_upload') {
+            $this->saveAgentApplication($from, $state, $formData);
+        }
+        
         // Transition to next state
         $this->executeTransition($from, $state, $currentStep, $config['next'], $input, $formData);
     }
@@ -1377,5 +1383,42 @@ class WhatsAppStateMachine
             "🔗 Click here to continue:\n{$link}\n\n" .
             "Type 'hi' to start a new conversation."
         );
+    }
+    
+    /**
+     * Save agent application to database
+     * Called when agent flow reaches agent_id_upload step (after all text data collected)
+     */
+    private function saveAgentApplication(string $from, $state, array $formData): void
+    {
+        $phoneNumber = $this->whatsAppService->extractPhoneNumber($from);
+        
+        try {
+            $application = \App\Models\AgentApplication::create([
+                'whatsapp_number' => $phoneNumber,
+                'session_id' => $state->session_id ?? uniqid('agent_'),
+                'province' => $formData['province'] ?? '',
+                'first_name' => $formData['first_name'] ?? '',
+                'surname' => $formData['surname'] ?? '',
+                'gender' => $formData['gender'] ?? '',
+                'age_range' => $formData['age_range'] ?? '',
+                'voice_number' => $formData['voice_number'] ?? '',
+                'whatsapp_contact' => $formData['whatsapp_contact'] ?? $phoneNumber,
+                'ecocash_number' => $formData['ecocash_number'] ?? '',
+                'status' => 'pending',
+            ]);
+            
+            Log::info('AgentApplication saved from StateMachine', [
+                'application_id' => $application->id,
+                'application_number' => $application->application_number,
+                'phone' => $phoneNumber
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to save AgentApplication from StateMachine', [
+                'error' => $e->getMessage(),
+                'phone' => $phoneNumber
+            ]);
+        }
     }
 }

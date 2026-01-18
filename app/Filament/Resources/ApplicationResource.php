@@ -1121,7 +1121,12 @@ class ApplicationResource extends BaseResource
     
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery();
+        return parent::getEloquentQuery()
+            // Exclude agent application states from Loan Applications
+            ->where(function ($query) {
+                $query->where('current_step', 'not like', 'agent_%')
+                    ->whereRaw("JSON_EXTRACT(form_data, '$.outcome') IS NULL OR JSON_EXTRACT(form_data, '$.outcome') != 'agent_application_submitted'");
+            });
     }
     
     public static function getNavigationBadge(): ?string

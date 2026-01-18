@@ -261,6 +261,38 @@ class AgentApplicationResource extends BaseResource
                             ->warning()
                             ->send();
                     }),
+                
+                // Send SMS with Agent Code
+                Action::make('sendSms')
+                    ->label('Send SMS')
+                    ->icon('heroicon-o-device-phone-mobile')
+                    ->color('primary')
+                    ->requiresConfirmation()
+                    ->modalHeading('Send Agent Code via SMS')
+                    ->modalDescription(fn (AgentApplication $record) => "Send agent code to {$record->voice_number}?")
+                    ->visible(fn (AgentApplication $record) => $record->status === 'approved' && $record->agent_code)
+                    ->action(function (AgentApplication $record) {
+                        try {
+                            $smsService = app(\App\Services\SMSService::class);
+                            $msg = "Congratulations {$record->first_name}! Your Bancosystem Agent Code is: {$record->agent_code}. Login at: " . config('app.url') . "/agent/login";
+                            $smsService->sendSMS($record->voice_number, $msg);
+                            
+                            Log::info('Agent code SMS sent', ['agent_code' => $record->agent_code, 'phone' => $record->voice_number]);
+                            
+                            Notification::make()
+                                ->title('SMS Sent')
+                                ->body("Agent code sent to {$record->voice_number}")
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            Log::error('Failed to send agent SMS: ' . $e->getMessage());
+                            Notification::make()
+                                ->title('SMS Failed')
+                                ->body('Could not send SMS. Please try again.')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
                     
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
