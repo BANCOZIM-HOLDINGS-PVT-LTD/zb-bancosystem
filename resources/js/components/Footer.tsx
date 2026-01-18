@@ -40,21 +40,13 @@ const Footer: React.FC = () => {
                     <span className="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
 
                     <a
-                        href="mailto:sales@bancozim.com"
+                        href="mailto:sales@microbizimbabwe.com"
                         className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                     >
                         <Mail className="h-3.5 w-3.5" />
-                        <span>sales@bancozim.com</span>
+                        <span>sales@microbizimbabwe.com</span>
                     </a>
-                    <a
-                        href="mailto:info@bancozim.com"
-                        className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-                    >
-                        <Mail className="h-3.5 w-3.5" />
-                        <span>info@bancozim.com</span>
-                    </a>
-                    <span className="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
-
+                    
                     <a
                         href="https://maps.google.com/?q=Joina+City,+Harare"
                         target="_blank"
@@ -62,7 +54,7 @@ const Footer: React.FC = () => {
                         className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                     >
                         <MapPin className="h-3.5 w-3.5" />
-                        <span>Joina City, Harare</span>
+                        <span>12th Floor Joina City, Harare</span>
                     </a>
 
                 </div>

@@ -159,13 +159,13 @@ class WhatsAppStateMachine
     private array $hardcodedCategories = [
         // Option 1: Microbiz (from ProductCatalogSeeder - 22 total, showing first 10)
         'microBiz' => [
-            ['id' => 'mb_agric', 'name' => 'Agricultural mechanization', 'desc' => '🚜 Farming equipment'],
+            ['id' => 'mb_agric', 'name' => 'Agricultural machinery', 'desc' => '🚜 Farming equipment'],
             ['id' => 'mb_inputs', 'name' => 'Agricultural Inputs', 'desc' => '🌾 Seeds & Fertilizer'],
-            ['id' => 'mb_chicken', 'name' => 'Chicken Projects', 'desc' => '🐔 Poultry farming'],
+            ['id' => 'mb_chicken', 'name' => 'Chicken Projects', 'desc' => '🐔 Broilers & Incubators'],
             ['id' => 'mb_cleaning', 'name' => 'Cleaning Services', 'desc' => '🧹 Laundry & Car wash'],
-            ['id' => 'mb_beauty', 'name' => 'Beauty, Hair & Cosmetics', 'desc' => '💇 Salon & Barber'],
-            ['id' => 'mb_food', 'name' => 'Food Production', 'desc' => '🍞 Baking & Takeaway'],
-            ['id' => 'mb_butchery', 'name' => 'Butchery Equipment', 'desc' => '🥩 Meat processing'],
+            ['id' => 'mb_beauty', 'name' => 'Beauty, Hair & Cosmetics', 'desc' => '💇 Salon & Hair Products'],
+            ['id' => 'mb_food', 'name' => 'Food Production', 'desc' => '🍞 Baking & Catering'],
+            ['id' => 'mb_butchery', 'name' => 'Butchery Equipment', 'desc' => '🥩 small scale'],
             ['id' => 'mb_events', 'name' => 'Events Management', 'desc' => '🎉 PA & Tents'],
             ['id' => 'mb_snack', 'name' => 'Snack Production', 'desc' => '🍿 Maputi & Popcorn'],
         ],
@@ -202,15 +202,14 @@ class WhatsAppStateMachine
         // Microbiz Subcategories (from ProductCatalogSeeder)
         'mb_agric' => [
             ['id' => 'sub_maize', 'name' => 'Maize sheller'],
-            ['id' => 'sub_water', 'name' => 'Water storage & pumping'],
-            ['id' => 'sub_tractors', 'name' => 'Tractors'],
-            ['id' => 'sub_irrigation', 'name' => 'Irrigation systems'],
-            ['id' => 'sub_greenhouse', 'name' => 'Greenhouses'],
+            ['id' => 'sub_water', 'name' => 'Water storage tanks'],
+            ['id' => 'sub_tractors', 'name' => 'Mini Tractors'],
+            ['id' => 'sub_irrigation', 'name' => 'Drip Irrigation kits'],            
         ],
         'mb_inputs' => [
             ['id' => 'sub_fertilizer', 'name' => 'Fertilizer'],
             ['id' => 'sub_seed', 'name' => 'Seed + Chemicals'],
-            ['id' => 'sub_combo', 'name' => 'Combo Package'],
+            ['id' => 'sub_combo', 'name' => 'Fertilizer + Seed + Chemicals'],
         ],
         'mb_chicken' => [
             ['id' => 'sub_broiler', 'name' => 'Broiler Production'],
@@ -790,7 +789,7 @@ class WhatsAppStateMachine
                         ['id' => '1', 'title' => '🇺🇸 USD'],
                         ['id' => '2', 'title' => '🇿🇼 ZiG'],
                     ],
-                    "Currency Selection"
+                    " "
                 );
                 break;
                 
@@ -1160,7 +1159,7 @@ class WhatsAppStateMachine
         
         return $this->whatsAppService->sendInteractiveList(
             $to, 
-            "📂 *Product Categories*\n\nPlease select a category:", 
+            "📦 *Product Categories*\n\nPlease select a category:", 
             "View Categories", 
             $sections
         );
@@ -1199,7 +1198,7 @@ class WhatsAppStateMachine
 
         return $this->whatsAppService->sendInteractiveList(
             $to,
-            "📂 *{$catName}*\n\nSelect an option:",
+            "📦 *{$catName}*\n\nSelect an option:",
             "View Options",
             [['title' => 'Options', 'rows' => $rows]]
         );
