@@ -294,7 +294,8 @@ class WhatsAppWebhookController extends Controller
                 return;
             }
 
-            // Check for reference code commands
+            // Check for reference code commands (national ID format: 8-15 characters)
+            // Short inputs like names won't match, so we don't need to check active state
             if ($this->handleReferenceCodeCommands($from, $body)) {
                 return;
             }
@@ -308,6 +309,13 @@ class WhatsAppWebhookController extends Controller
                 'from' => $from,
                 'trace' => $e->getTraceAsString()
             ]);
+            
+            // Try to send an error message to the user
+            try {
+                $this->whatsAppService->sendMessage($from, "Sorry, something went wrong. Please try again or type 'start' to begin.");
+            } catch (\Exception $sendError) {
+                Log::error('Failed to send error message', ['error' => $sendError->getMessage()]);
+            }
         }
     }
 
@@ -552,20 +560,26 @@ class WhatsAppWebhookController extends Controller
     {
         $message = trim(strtolower($message));
         
-        // Check for resume command with reference code
-        if (preg_match('/^resume\s+([a-z0-9]{6})$/i', $message, $matches)) {
+        // Reference codes are now national ID numbers (format: 8-15 alphanumeric characters)
+        // Example: 222017505Z22, 63123456A78, etc.
+        
+        // Check for resume command with reference code (national ID)
+        if (preg_match('/^resume\s+([a-z0-9]{8,15})$/i', $message, $matches)) {
             $this->resumeApplication($from, strtoupper($matches[1]));
             return true;
         }
         
-        // Check for status command with reference code
-        if (preg_match('/^status\s+([a-z0-9]{6})$/i', $message, $matches)) {
+        // Check for status command with reference code (national ID)
+        if (preg_match('/^status\s+([a-z0-9]{8,15})$/i', $message, $matches)) {
             $this->checkApplicationStatus($from, strtoupper($matches[1]));
             return true;
         }
         
-        // Check for standalone 6-character reference code
-        if (preg_match('/^[a-z0-9]{6}$/i', $message)) {
+        // Check for standalone national ID format (8-15 alphanumeric, must contain at least one digit and one letter)
+        // This prevents common words or names from being interpreted as reference codes
+        if (preg_match('/^[a-z0-9]{8,15}$/i', $message) && 
+            preg_match('/[0-9]/', $message) && 
+            preg_match('/[a-z]/i', $message)) {
             $referenceCode = strtoupper($message);
             
             // First try to resume, if that fails, try status check
