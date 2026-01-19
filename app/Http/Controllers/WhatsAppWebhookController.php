@@ -361,7 +361,7 @@ class WhatsAppWebhookController extends Controller
         }
 
         // Format the from number for consistency
-        $from = TwilioWhatsAppService::formatWhatsAppNumber($from);
+        $from = WhatsAppCloudApiService::formatWhatsAppNumber($from);
         
         Log::info('WhatsApp processing message', [
             'from' => $from,
@@ -414,7 +414,7 @@ class WhatsAppWebhookController extends Controller
     private function handleMediaMessage(string $from, Request $request)
     {
         try {
-            $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
+            $phoneNumber = WhatsAppCloudApiService::extractPhoneNumber($from);
             
             // Get current state - Corrected to use phoneNumber instead of session ID string
             $state = $this->stateManager->retrieveState($phoneNumber, 'whatsapp');
@@ -428,8 +428,8 @@ class WhatsAppWebhookController extends Controller
                 return response()->json(['status' => 'ok'], 200);
             }
             
-            // Check if we're expecting ID upload
-            if (!in_array($state->current_step, ['agent_id_upload', 'agent_id_back_upload'])) {
+            // Check if we're expecting ID upload (only front ID required now)
+            if ($state->current_step !== 'agent_id_upload') {
                 Log::info('Media received but not in ID upload state', [
                     'from' => $from,
                     'current_step' => $state->current_step
@@ -438,47 +438,36 @@ class WhatsAppWebhookController extends Controller
                 return response()->json(['status' => 'ok'], 200);
             }
             
-            // Extract media URL - Twilio uses MediaUrl0, MediaUrl1, etc.
+            // For Cloud API, media comes through processCloudApiMediaMessage
+            // Check if this is cloud API media with base64 content
+            $mediaContent = null;
+            if ($request->input('cloud_api_media')) {
+                $mediaContent = base64_decode($request->input('media_content'));
+            }
+            
+            // Extract media URL for Twilio fallback or store cloud API media
             $mediaUrl = $request->input('MediaUrl0') 
                      ?? $request->input('url') 
                      ?? $request->input('media_url')
                      ?? $request->input('mediaUrl');
             
-            if (empty($mediaUrl)) {
+            // For Cloud API, we'll store a placeholder since we downloaded the content
+            if ($request->input('cloud_api_media') && !$mediaUrl) {
+                $mediaUrl = 'cloud_api_media_' . time();
+            }
+            
+            if (empty($mediaUrl) && empty($mediaContent)) {
                 Log::warning('Media message received without URL', ['request' => $request->all()]);
                 $this->whatsAppService->sendMessage($from, "Sorry, I couldn't receive your photo. Please try sending it again.");
                 return response()->json(['status' => 'error', 'message' => 'No media URL'], 400);
             }
             
-            // Determine which side of ID (front or back)
-            $side = ($state->current_step === 'agent_id_upload') ? 'front' : 'back';
-            
-            // Process the ID upload through conversation service
+            // Process the ID upload - only front ID required now
             $formData = $state->form_data ?? [];
+            $formData['id_front_url'] = $mediaUrl;
             
-            if ($side === 'front') {
-                $formData['id_front_url'] = $mediaUrl;
-                
-                $this->stateManager->saveState(
-                    $state->session_id,
-                    'whatsapp',
-                    $state->user_identifier,
-                    'agent_id_back_upload',
-                    $formData,
-                    $state->metadata ?? []
-                );
-                
-                $msg = "✅ Front of ID received!\n\n";
-                $msg .= "Now please send a clear photo of the *back* of your ID card.";
-                
-                $this->whatsAppService->sendMessage($from, $msg);
-            } else {
-                // Back of ID received - complete application
-                $formData['id_back_url'] = $mediaUrl;
-                
-               // Save agent application to database
-                $this->saveAgentApplication($from, $state, $formData);
-            }
+            // Save agent application to database with front ID
+            $this->saveAgentApplication($from, $state, $formData);
             
             return response()->json(['status' => 'ok'], 200);
             
@@ -495,7 +484,7 @@ class WhatsAppWebhookController extends Controller
      */
     private function saveAgentApplication(string $from, $state, array $formData): void
     {
-        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
+        $phoneNumber = WhatsAppCloudApiService::extractPhoneNumber($from);
         
         try {
             $application = \App\Models\AgentApplication::create([
@@ -509,8 +498,8 @@ class WhatsAppWebhookController extends Controller
                 'voice_number' => $formData['voice_number'] ?? '',
                 'whatsapp_contact' => $formData['whatsapp_contact'] ?? '',
                 'ecocash_number' => $formData['ecocash_number'] ?? '',
+                'id_number' => $formData['id_number'] ?? null,
                 'id_front_url' => $formData['id_front_url'] ?? null,
-                'id_back_url' => $formData['id_back_url'] ?? null,
                 'status' => 'pending',
             ]);
             
@@ -528,11 +517,13 @@ class WhatsAppWebhookController extends Controller
             
             $msg = "🎉 *Application Submitted Successfully!*\n\n";
             $msg .= "Thank you, *{$formData['first_name']} {$formData['surname']}*!\n\n";
-            $msg .= "Your agent application has been received. We will review your application and get back to you soon with your agent login details and referral link.\n\n";
-            $msg .= "📧 You will be contacted via:\n";
-            $msg .= "• SMS: {$formData['voice_number']}\n";
-            $msg .= "• WhatsApp: {$formData['whatsapp_contact']}\n\n";
-            $msg .= "Thank you for joining Microbiz Zimbabwe! 🚀";
+            $msg .= "✅ Your ID photo has been received and your agent application is now under review.\n\n";
+            $msg .= "📋 *Reference:* APP-" . str_pad($application->id, 6, '0', STR_PAD_LEFT) . "\n";
+            $msg .= "🆔 *ID Number:* " . ($formData['id_number'] ?? 'N/A') . "\n\n";
+            $msg .= "We will review your application and contact you soon with your agent login details and referral link.\n\n";
+            $msg .= "👋 *Thank you for your interest in our organisation, our marketing team will soon contact you via:* \n\n";
+            $msg .= "• SMS: {$formData['voice_number']}\n\n";
+            $msg .= "• WhatsApp: {$formData['whatsapp_contact']} \n\n";
             
            $this->whatsAppService->sendMessage($from, $msg);
             
@@ -603,7 +594,7 @@ class WhatsAppWebhookController extends Controller
      */
     public function resumeApplication(string $from, string $referenceCode): void
     {
-        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
+        $phoneNumber = WhatsAppCloudApiService::extractPhoneNumber($from);
         
         try {
             // Get application state by reference code
@@ -650,7 +641,7 @@ class WhatsAppWebhookController extends Controller
      */
     public function checkApplicationStatus(string $from, string $referenceCode): void
     {
-        $phoneNumber = TwilioWhatsAppService::extractPhoneNumber($from);
+        $phoneNumber = WhatsAppCloudApiService::extractPhoneNumber($from);
         
         try {
             // Get application status by reference code

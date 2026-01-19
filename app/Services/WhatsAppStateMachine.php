@@ -131,6 +131,7 @@ class WhatsAppStateMachine
         'agent_voice_number',
         'agent_whatsapp_number',
         'agent_ecocash_number',
+        'agent_id_number',
     ];
     
     /**
@@ -487,7 +488,8 @@ class WhatsAppStateMachine
             'agent_surname' => ['field' => 'surname', 'next' => 'agent_gender'],
             'agent_voice_number' => ['field' => 'voice_number', 'next' => 'agent_whatsapp_number'],
             'agent_whatsapp_number' => ['field' => 'whatsapp_contact', 'next' => 'agent_ecocash_number'],
-            'agent_ecocash_number' => ['field' => 'ecocash_number', 'next' => 'agent_id_upload'],
+            'agent_ecocash_number' => ['field' => 'ecocash_number', 'next' => 'agent_id_number'],
+            'agent_id_number' => ['field' => 'id_number', 'next' => 'agent_id_upload', 'validate' => 'id_number'],
         ];
         
         $config = $stateConfig[$currentStep] ?? null;
@@ -502,14 +504,28 @@ class WhatsAppStateMachine
             return;
         }
         
+        // Validate ID number format if applicable
+        if (isset($config['validate']) && $config['validate'] === 'id_number') {
+            // Zimbabwe ID format: XX-XXXXXXX-X-XX or XX-XXXXXX-X-XX
+            // Clean input and validate
+            $cleanedId = strtoupper(preg_replace('/[\s-]/', '', $input));
+            // Pattern: 2 digits, 6-7 digits, optional letter, 2 digits
+            if (!preg_match('/^[0-9]{2}[0-9]{6,7}[A-Z]?[0-9]{2}$/', $cleanedId)) {
+                $this->whatsAppService->sendMessage($from, 
+                    "❌ Invalid ID format.\n\n" .
+                    "Please enter your ID in the format:\n" .
+                    "*XX-1234567-Z-XX* or *XX-123456-X-XX*\n\n" .
+                    "Example: 63-123456-A-42" . "\n\n" .
+                    "Include the dashes."
+                );
+                return;
+            }
+            // Store the cleaned ID number
+            $input = $cleanedId;
+        }
+        
         // Save input to form data
         $formData[$config['field']] = $input;
-        
-        // If transitioning to agent_id_upload, save the agent application now
-        // (all text data has been collected at this point)
-        if ($config['next'] === 'agent_id_upload') {
-            $this->saveAgentApplication($from, $state, $formData);
-        }
         
         // Transition to next state
         $this->executeTransition($from, $state, $currentStep, $config['next'], $input, $formData);
@@ -909,8 +925,8 @@ class WhatsAppStateMachine
                        
             // Agent application flow (option 9 - preserved)
             case 'agent_age_check':
-                return "🌟 *Apply to Become Our Online Agent*\n\n" .
-                       "Great choice! Let's get you set up as an online agent.\n\n" .
+                return "🌍 Great choice! Welcome to Microbiz Online, the largest platform for online employment opportunities.\n\n" .
+                       "*Let's get you set up as an online agent.*\n\n" .
                        "What best describes your age?\n\n" .
                        "1. 18 and above\n" .
                        "2. 17 and under\n\n" .
@@ -958,11 +974,16 @@ class WhatsAppStateMachine
             case 'agent_ecocash_number':
                 return "Please enter your *EcoCash number* for commission payments (e.g. 0771234567):";
                        
+            case 'agent_id_number':
+                return "🆔 *National ID Number*\n\n" .
+                       "Please enter your National ID number in the format:\n" .
+                       "*XX-1234567-Z-XX* or *XX-123456-X-XX*\n\n" .
+                       "Example: 63-123456-A-42";
+                       
             case 'agent_id_upload':
                 return "📸 *ID Verification*\n\n" .
                        "Almost done! Please send a clear photo of the *front* of your ID card.\n\n" .
-                       "After sending your ID, your application will be processed and you'll receive an SMS with confirmation and login details.\n\n" .
-                       "🔗 Agent Login Portal:\n{$this->websiteUrl}/agent/login";
+                       "📱 Take a photo or send an image from your gallery.";
                        
             // Idle timeout flow
             case 'idle_continue':

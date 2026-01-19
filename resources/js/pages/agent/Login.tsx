@@ -54,7 +54,7 @@ export default function AgentLogin({ status, error }: AgentLoginProps) {
                                 autoComplete="off"
                                 value={data.agent_code}
                                 onChange={(e) => setData('agent_code', e.target.value.toUpperCase())}
-                                placeholder="AG123456"
+                                placeholder="e.g AG123456"
                                 className="pl-10 uppercase tracking-widest font-mono"
                             />
                         </div>
@@ -63,7 +63,7 @@ export default function AgentLogin({ status, error }: AgentLoginProps) {
 
                     <Button type="submit" className="mt-2 w-full bg-emerald-600 hover:bg-emerald-700" tabIndex={2} disabled={processing}>
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin mr-2" />}
-                        Access Portal
+                        Click to Proceed
                     </Button>
                 </div>
             </form>
@@ -74,7 +74,12 @@ export default function AgentLogin({ status, error }: AgentLoginProps) {
             {/* Help Text */}
             <p className="mt-6 text-center text-sm text-muted-foreground">
                 Don't have an agent code?{' '}
-                <a href="/" className="text-emerald-600 hover:text-emerald-700 font-medium">
+                <a
+                    href="https://wa.me/254773988988"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-600 hover:text-emerald-700 font-medium"
+                >
                     Apply to become an agent
                 </a>
             </p>
