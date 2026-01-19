@@ -4,7 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\AgentApplicationResource\Pages;
 use App\Models\AgentApplication;
-use App\Services\RapiWhaService;
+use App\Models\Agent;
+use App\Services\WhatsAppCloudApiService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -187,14 +188,44 @@ class AgentApplicationResource extends BaseResource
                     ->color('success')
                     ->requiresConfirmation()
                     ->modalHeading('Approve Agent Application')
-                    ->modalDescription('This will generate an agent code and send approval notification via WhatsApp.')
+                    ->modalDescription('This will generate an agent code, create an online agent record, and send approval notifications.')
                     ->visible(fn (AgentApplication $record) => $record->status === 'pending')
                     ->action(function (AgentApplication $record) {
                         $record->approve();
                         
+                        // Create Agent record with type "online"
+                        try {
+                            $agent = Agent::create([
+                                'agent_code' => $record->agent_code,
+                                'first_name' => $record->first_name,
+                                'last_name' => $record->surname,
+                                'phone' => $record->voice_number,
+                                'national_id' => $record->id_number,
+                                'status' => 'active',
+                                'type' => 'online', // Online agents from WhatsApp applications
+                                'region' => $record->province,
+                                'hire_date' => now(),
+                                'commission_rate' => 5.00, // Default commission rate
+                                'metadata' => [
+                                    'application_id' => $record->id,
+                                    'whatsapp_number' => $record->whatsapp_contact,
+                                    'ecocash_number' => $record->ecocash_number,
+                                    'source' => 'whatsapp_application',
+                                ],
+                            ]);
+                            
+                            Log::info('Online agent created from application', [
+                                'agent_id' => $agent->id,
+                                'agent_code' => $agent->agent_code,
+                                'application_id' => $record->id,
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::error('Failed to create agent record: ' . $e->getMessage());
+                        }
+                        
                         // Send WhatsApp notification
                         try {
-                            $rapiWhaService = app(RapiWhaService::class);
+                            $whatsAppService = app(WhatsAppCloudApiService::class);
                             $from = 'whatsapp:+' . $record->whatsapp_contact;
                             
                             $msg = "🎉 *Congratulations, {$record->first_name}!*\n\n";
@@ -206,16 +237,26 @@ class AgentApplicationResource extends BaseResource
                             $msg .= "Use your Agent Code to login and start earning commissions!\n\n";
                             $msg .= "Welcome to Microbiz Zimbabwe! 🚀";
                             
-                            $rapiWhaService->sendMessage($from, $msg);
+                            $whatsAppService->sendMessage($from, $msg);
                             
                             Log::info('Agent approval WhatsApp sent', ['agent_code' => $record->agent_code]);
                         } catch (\Exception $e) {
                             Log::error('Failed to send agent approval WhatsApp: ' . $e->getMessage());
                         }
                         
+                        // Send SMS with agent code
+                        try {
+                            $smsService = app(\App\Services\SMSService::class);
+                            $smsMsg = "Congratulations {$record->first_name}! Your Bancosystem Agent Code is: {$record->agent_code}. Login at: " . config('app.url') . "/agent/login";
+                            $smsService->sendSMS($record->voice_number, $smsMsg);
+                            Log::info('Agent approval SMS sent', ['agent_code' => $record->agent_code, 'phone' => $record->voice_number]);
+                        } catch (\Exception $e) {
+                            Log::error('Failed to send agent approval SMS: ' . $e->getMessage());
+                        }
+                        
                         Notification::make()
                             ->title('Agent Approved')
-                            ->body("Agent code {$record->agent_code} generated and sent to {$record->first_name}")
+                            ->body("Agent code {$record->agent_code} generated. Online agent created and notifications sent.")
                             ->success()
                             ->send();
                     }),
@@ -231,7 +272,7 @@ class AgentApplicationResource extends BaseResource
                         Forms\Components\Textarea::make('rejection_reason')
                             ->label('Reason for Rejection')
                             ->required()
-                            ->helperText('This reason will be sent to the applicant and they can reapply.')
+                            ->helperText('This reason will be sent to the applicant via WhatsApp and SMS.')
                             ->maxLength(500),
                     ])
                     ->visible(fn (AgentApplication $record) => $record->status === 'pending')
@@ -241,7 +282,7 @@ class AgentApplicationResource extends BaseResource
                         
                         // Send WhatsApp notification
                         try {
-                            $rapiWhaService = app(RapiWhaService::class);
+                            $whatsAppService = app(WhatsAppCloudApiService::class);
                             $from = 'whatsapp:+' . $record->whatsapp_contact;
                             
                             $msg = "Hi {$record->first_name},\n\n";
@@ -250,14 +291,24 @@ class AgentApplicationResource extends BaseResource
                             $msg .= "You may reapply after addressing the above concerns by sending 'Hi' to start a new application.\n\n";
                             $msg .= "Thank you for your interest in Microbiz Zimbabwe.";
                             
-                            $rapiWhaService->sendMessage($from, $msg);
+                            $whatsAppService->sendMessage($from, $msg);
                         } catch (\Exception $e) {
                             Log::error('Failed to send agent rejection WhatsApp: ' . $e->getMessage());
                         }
                         
+                        // Send SMS notification with rejection reason
+                        try {
+                            $smsService = app(\App\Services\SMSService::class);
+                            $smsMsg = "Hi {$record->first_name}, your Bancosystem agent application was not approved. Reason: {$data['rejection_reason']}. You may reapply after addressing this.";
+                            $smsService->sendSMS($record->voice_number, $smsMsg);
+                            Log::info('Agent rejection SMS sent', ['phone' => $record->voice_number]);
+                        } catch (\Exception $e) {
+                            Log::error('Failed to send agent rejection SMS: ' . $e->getMessage());
+                        }
+                        
                         Notification::make()
                             ->title('Application Rejected')
-                            ->body("Application from {$record->first_name} has been rejected. They can reapply.")
+                            ->body("Application from {$record->first_name} has been rejected. SMS and WhatsApp sent.")
                             ->warning()
                             ->send();
                     }),

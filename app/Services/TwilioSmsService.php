@@ -16,7 +16,8 @@ class TwilioSmsService
     {
         $this->accountSid = config('services.twilio.account_sid');
         $this->authToken = config('services.twilio.auth_token');
-        $this->fromNumber = config('services.twilio.from');
+        // Use alpha sender ID for branding (e.g., BANCOSYSTEM), fallback to phone number
+        $this->fromNumber = config('services.twilio.alpha_sender_id') ?: config('services.twilio.from');
     }
     
     /**

@@ -15,7 +15,8 @@ class OtpService
     {
         $accountSid = config('services.twilio.account_sid');
         $authToken = config('services.twilio.auth_token');
-        $this->fromNumber = config('services.twilio.from');
+        // Use alpha sender ID for branding (e.g., BANCOSYSTEM), fallback to phone number
+        $this->fromNumber = config('services.twilio.alpha_sender_id') ?: config('services.twilio.from');
 
         // Use Account SID and Auth Token for authentication
         $this->twilio = new Client($accountSid, $authToken);
