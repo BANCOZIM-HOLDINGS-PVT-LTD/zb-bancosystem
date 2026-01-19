@@ -61,6 +61,29 @@ Route::post('/application/pdf/batch', [ApplicationPDFController::class, 'batchDo
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
+        $user = Auth::user();
+        
+        if ($user) {
+            if ($user->role === \App\Models\User::ROLE_SUPER_ADMIN) {
+                return redirect()->intended('/admin');
+            }
+            if ($user->role === \App\Models\User::ROLE_ZB_ADMIN) {
+                return redirect()->intended('/zb-admin');
+            }
+            if ($user->role === \App\Models\User::ROLE_ACCOUNTING) {
+                return redirect()->intended('/accounting');
+            }
+            if ($user->role === \App\Models\User::ROLE_STORES) {
+                return redirect()->intended('/stores');
+            }
+            if ($user->role === \App\Models\User::ROLE_HR) {
+                return redirect()->intended('/hr');
+            }
+            if ($user->role === \App\Models\User::ROLE_PARTNER) {
+                return redirect()->intended('/partner');
+            }
+        }
+
         return Inertia::render('dashboard');
     })->name('dashboard');
     

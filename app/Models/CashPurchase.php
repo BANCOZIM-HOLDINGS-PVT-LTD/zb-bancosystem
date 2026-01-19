@@ -51,6 +51,9 @@ class CashPurchase extends Model
         'dispatched_at',
         'delivered_at',
         'exempt_from_auto_deletion',
+        // Agent referral
+        'agent_id',
+        'agent_referral_code',
     ];
 
     protected $casts = [
@@ -118,6 +121,22 @@ class CashPurchase extends Model
     public function items()
     {
         return $this->hasMany(CashPurchaseItem::class);
+    }
+
+    /**
+     * Get the agent who referred this purchase
+     */
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
+    }
+
+    /**
+     * Get commissions for this purchase
+     */
+    public function commissions()
+    {
+        return $this->hasMany(Commission::class, 'cash_purchase_id');
     }
 
     /**

@@ -20,7 +20,8 @@ class ClientCommissionsWidget extends BaseWidget
         $agent = Auth::guard('agent')->user();
 
         return $table
-            ->heading('Client Applications & Commissions')
+            ->heading('Credit/Loan Application Referrals')
+            ->description('Clients who applied for credit or hire purchase through your referral link')
             ->query(
                 ApplicationState::query()
                     ->where('agent_id', $agent?->id)

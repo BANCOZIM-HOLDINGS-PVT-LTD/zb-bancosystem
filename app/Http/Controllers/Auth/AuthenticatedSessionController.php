@@ -52,7 +52,37 @@ class AuthenticatedSessionController extends Controller
             }
         }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Redirect based on role or intended url
+        $user = Auth::user();
+        
+        if ($user) {
+            // Super Admin
+            if ($user->role === \App\Models\User::ROLE_SUPER_ADMIN) {
+                return redirect()->intended('/admin');
+            }
+            // ZB Admin
+            if ($user->role === \App\Models\User::ROLE_ZB_ADMIN) {
+                return redirect()->intended('/zb-admin');
+            }
+            // Accounting
+            if ($user->role === \App\Models\User::ROLE_ACCOUNTING) {
+                return redirect()->intended('/accounting');
+            }
+            // Stores
+            if ($user->role === \App\Models\User::ROLE_STORES) {
+                return redirect()->intended('/stores');
+            }
+            // HR
+            if ($user->role === \App\Models\User::ROLE_HR) {
+                return redirect()->intended('/hr');
+            }
+            // Partner
+            if ($user->role === \App\Models\User::ROLE_PARTNER) {
+                return redirect()->intended('/partner');
+            }
+        }
+
+        return redirect()->intended('/');
     }
 
     /**

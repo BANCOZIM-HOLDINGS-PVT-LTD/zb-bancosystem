@@ -32,11 +32,17 @@ class ZbApplicationResource extends Resource
     {
         return parent::getEloquentQuery()
             ->where(function ($query) {
-                // Filter for NON-SSB.
-                // This covers ZB Account Holders, Account Opening, etc.
-                $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.employer')) != 'SSB'")
-                      ->orWhereRaw("JSON_EXTRACT(form_data, '$.employer') IS NULL");
-            });
+                // Only ZB applications (has account or wants account)
+                // MySQL/MariaDB compatible JSON query
+                $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.hasAccount')) = 'true'")
+                      ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.wantsAccount')) = 'true'");
+            })
+            ->where(function ($query) {
+                // Exclude SSB applications
+                $query->whereRaw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.employer')), '') != 'government-ssb'");
+            })
+            // Exclude agent applications
+            ->where('current_step', 'not like', 'agent_%');
     }
 
     public static function form(Form $form): Form

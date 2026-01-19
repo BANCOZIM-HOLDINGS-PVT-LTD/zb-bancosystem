@@ -46,11 +46,11 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
                 {/* ZDC - Zero Deposit Credit */}
                 <Card
                     className={`
-                        cursor-pointer p-6 transition-all border-2 relative
+                        cursor-pointer p-4 transition-all border-2 relative
                         ${selectedType === 'ZDC'
                             ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 shadow-lg scale-105'
                             : 'border-gray-200 dark:border-gray-700 hover:border-emerald-400 hover:shadow-md'
@@ -71,8 +71,8 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                     </div>
 
                     <div className="flex flex-col items-center text-center space-y-4 pt-2">
-                        <div className={`p-4 rounded-full ${selectedType === 'ZDC' ? 'bg-emerald-100 dark:bg-emerald-900' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                            <CreditCard className={`h-12 w-12 ${selectedType === 'ZDC' ? 'text-emerald-600' : 'text-gray-500'}`} />
+                        <div className={`p-3 rounded-full ${selectedType === 'ZDC' ? 'bg-emerald-100 dark:bg-emerald-900' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                            <CreditCard className={`h-10 w-10 ${selectedType === 'ZDC' ? 'text-emerald-600' : 'text-gray-500'}`} />
                         </div>
 
                         <div>
@@ -112,7 +112,7 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                 {/* DPC - Deposit Paid Credit */}
                 <Card
                     className={`
-                        cursor-pointer p-6 transition-all border-2 relative
+                        cursor-pointer p-4 transition-all border-2 relative
                         ${selectedType === 'PDC'
                             ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/20 shadow-lg scale-105'
                             : 'border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:shadow-md'
@@ -133,8 +133,8 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                     </div>
 
                     <div className="flex flex-col items-center text-center space-y-4 pt-2">
-                        <div className={`p-4 rounded-full ${selectedType === 'PDC' ? 'bg-blue-100 dark:bg-blue-900' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                            <Wallet className={`h-12 w-12 ${selectedType === 'PDC' ? 'text-blue-600' : 'text-gray-500'}`} />
+                        <div className={`p-3 rounded-full ${selectedType === 'PDC' ? 'bg-blue-100 dark:bg-blue-900' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                            <Wallet className={`h-10 w-10 ${selectedType === 'PDC' ? 'text-blue-600' : 'text-gray-500'}`} />
                         </div>
 
                         <div>
@@ -181,9 +181,16 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                 </Card>
             </div>
 
-    
+            {/* PDC Note */}
+            <div className="max-w-3xl mx-auto mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <span className="font-semibold">NB (PDC):</span> Please note that the deposit will only be required once the application has been successfully approved. This will be reported on the application status page.
+                </p>
+            </div>
+
+
             {/* Navigation */}
-            <div className="flex justify-between pt-4 max-w-4xl mx-auto">
+            <div className="flex justify-between pt-4 max-w-3xl mx-auto">
                 <Button
                     variant="outline"
                     onClick={onBack}

@@ -28,6 +28,15 @@ class EmployeeResource extends Resource
                 Forms\Components\TextInput::make('phone'),
                 Forms\Components\TextInput::make('position')->required(),
                 Forms\Components\TextInput::make('department')->required(),
+                Forms\Components\Select::make('employment_type')
+                    ->options([
+                        'full_time' => 'Full Time',
+                        'part_time' => 'Part Time',
+                        'intern' => 'Intern',
+                        'contract' => 'Contract',
+                    ])
+                    ->required()
+                    ->default('full_time'),
                 Forms\Components\TextInput::make('salary')->numeric()->prefix('$')->required(),
                 Forms\Components\DatePicker::make('joined_date')->required(),
                 Forms\Components\TextInput::make('vacation_days')->numeric()->default(0),
@@ -50,6 +59,14 @@ class EmployeeResource extends Resource
                 Tables\Columns\TextColumn::make('full_name')->label('Name')->searchable(['first_name', 'last_name']),
                 Tables\Columns\TextColumn::make('position')->searchable(),
                 Tables\Columns\TextColumn::make('department')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('employment_type')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'full_time' => 'success',
+                        'part_time' => 'info',
+                        'intern' => 'warning',
+                        'contract' => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('salary')->money('USD'),
                 Tables\Columns\TextColumn::make('joined_date')->date(),
                 Tables\Columns\TextColumn::make('performance_rating')->label('Rating'),

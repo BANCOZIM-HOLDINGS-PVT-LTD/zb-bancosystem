@@ -42,7 +42,7 @@ return [
         'api_key_secret' => env('TWILIO_API_KEY_SECRET'),
         'from' => env('TWILIO_FROM'),
         // Alphanumeric Sender ID for SMS branding (one-way messaging)
-        'alpha_sender_id' => env('TWILIO_ALPHA_SENDER', 'BANCOSYSTEM'),
+        'alpha_sender_id' => env('TWILIO_ALPHA_SENDER', 'Microbiz'),
         // WhatsApp configuration (DEPRECATED - use whatsapp_cloud instead)
         'whatsapp_from' => env('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886'), // Sandbox default
         'whatsapp_business_id' => env('TWILIO_WHATSAPP_BUSINESS_ID'),

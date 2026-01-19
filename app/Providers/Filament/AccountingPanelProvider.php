@@ -26,18 +26,22 @@ class AccountingPanelProvider extends PanelProvider
             ->id('accounting')
             ->path('accounting')
             ->brandName('Accounting Portal')
+            ->brandLogo(secure_asset('adala.jpg'))
+            ->brandLogoHeight('3rem')
+            ->favicon(secure_asset('adala.jpg'))
             ->colors([
                 'primary' => Color::Blue,
             ])
             ->discoverResources(in: app_path('Filament/Accounting/Resources'), for: 'App\\Filament\\Accounting\\Resources')
             ->discoverPages(in: app_path('Filament/Accounting/Pages'), for: 'App\\Filament\\Accounting\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                \App\Filament\Accounting\Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Accounting/Widgets'), for: 'App\\Filament\\Accounting\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
+                // Custom accounting widgets are auto-discovered
             ])
+            ->sidebarCollapsibleOnDesktop()
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

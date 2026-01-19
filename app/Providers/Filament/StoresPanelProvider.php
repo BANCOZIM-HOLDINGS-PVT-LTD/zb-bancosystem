@@ -26,18 +26,22 @@ class StoresPanelProvider extends PanelProvider
             ->id('stores')
             ->path('stores')
             ->brandName('Stores Portal')
+            ->brandLogo(secure_asset('adala.jpg'))
+            ->brandLogoHeight('3rem')
+            ->favicon(secure_asset('adala.jpg'))
             ->colors([
                 'primary' => Color::Orange,
             ])
             ->discoverResources(in: app_path('Filament/Stores/Resources'), for: 'App\\Filament\\Stores\\Resources')
             ->discoverPages(in: app_path('Filament/Stores/Pages'), for: 'App\\Filament\\Stores\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                \App\Filament\Stores\Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Stores/Widgets'), for: 'App\\Filament\\Stores\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
+                // Custom stores widgets are auto-discovered
             ])
+            ->sidebarCollapsibleOnDesktop()
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

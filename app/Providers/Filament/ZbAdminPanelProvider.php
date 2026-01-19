@@ -25,19 +25,23 @@ class ZbAdminPanelProvider extends PanelProvider
         return $panel
             ->id('zb_admin')
             ->path('zb-admin')
-            ->brandName('ZB Admin')
+            ->brandName('ZB Admin Portal')
+            ->brandLogo(secure_asset('adala.jpg'))
+            ->brandLogoHeight('3rem')
+            ->favicon(secure_asset('adala.jpg'))
             ->colors([
                 'primary' => Color::Green,
             ])
             ->discoverResources(in: app_path('Filament/ZbAdmin/Resources'), for: 'App\\Filament\\ZbAdmin\\Resources')
             ->discoverPages(in: app_path('Filament/ZbAdmin/Pages'), for: 'App\\Filament\\ZbAdmin\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                \App\Filament\ZbAdmin\Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/ZbAdmin/Widgets'), for: 'App\\Filament\\ZbAdmin\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
+                // Custom ZB Admin widgets are auto-discovered
             ])
+            ->sidebarCollapsibleOnDesktop()
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

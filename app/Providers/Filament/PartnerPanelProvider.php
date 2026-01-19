@@ -26,19 +26,25 @@ class PartnerPanelProvider extends PanelProvider
             ->id('partner')
             ->path('partner')
             ->brandName('Partner Portal')
+            ->brandLogo(secure_asset('adala.jpg'))
+            ->brandLogoHeight('3rem')
+            ->favicon(secure_asset('adala.jpg'))
             ->colors([
                 'primary' => Color::Gray,
             ])
+            // Use main admin resources but with read-only access
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
-            // ->discoverResources(in: app_path('Filament/Partner/Resources'), for: 'App\\Filament\\Partner\\Resources')
             ->discoverPages(in: app_path('Filament/Partner/Pages'), for: 'App\\Filament\\Partner\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                \App\Filament\Partner\Pages\Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Partner/Widgets'), for: 'App\\Filament\\Partner\\Widgets')
+            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
+                // Use main admin widgets (read-only)
             ])
+            ->sidebarCollapsibleOnDesktop()
+            ->readOnlyRelationManagersOnResourceViewPagesByDefault() // Make relation managers read-only
+            // Note: Full read-only access is enforced via visibility checks on actions (->visible(fn () => Filament::getCurrentPanel()->getId() !== 'partner'))
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

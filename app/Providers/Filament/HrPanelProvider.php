@@ -26,18 +26,22 @@ class HrPanelProvider extends PanelProvider
             ->id('hr')
             ->path('hr')
             ->brandName('HR & Payroll')
+            ->brandLogo(secure_asset('adala.jpg'))
+            ->brandLogoHeight('3rem')
+            ->favicon(secure_asset('adala.jpg'))
             ->colors([
                 'primary' => Color::Purple,
             ])
             ->discoverResources(in: app_path('Filament/Hr/Resources'), for: 'App\\Filament\\Hr\\Resources')
             ->discoverPages(in: app_path('Filament/Hr/Pages'), for: 'App\\Filament\\Hr\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                \App\Filament\Hr\Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Hr/Widgets'), for: 'App\\Filament\\Hr\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
+                // Custom HR widgets are auto-discovered
             ])
+            ->sidebarCollapsibleOnDesktop()
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

@@ -16,6 +16,7 @@ class Employee extends Model
         'phone',
         'position',
         'department',
+        'employment_type',
         'salary',
         'joined_date',
         'vacation_days',

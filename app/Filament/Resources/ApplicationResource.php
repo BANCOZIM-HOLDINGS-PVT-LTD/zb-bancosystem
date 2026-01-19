@@ -641,12 +641,131 @@ class ApplicationResource extends BaseResource
                             ->send();
                     }),
 
+                // Super Admin SMS Notification Actions
+                Action::make('send_status_sms')
+                    ->label('Send Status SMS')
+                    ->icon('heroicon-o-chat-bubble-left-ellipsis')
+                    ->color('primary')
+                    ->visible(fn () => \Filament\Facades\Filament::getCurrentPanel()->getId() === 'admin')
+                    ->requiresConfirmation()
+                    ->modalHeading('Send Application Status SMS')
+                    ->modalDescription('Send an SMS notification to the client about their application status.')
+                    ->action(function (Model $record) {
+                        try {
+                            $formData = $record->form_data;
+                            $formResponses = $formData['formResponses'] ?? $formData;
+                            $phone = $formResponses['mobile'] ?? $formResponses['phoneNumber'] ?? $formResponses['cellphone'] ?? null;
+                            
+                            if (!$phone) {
+                                throw new \Exception('No phone number found for this application.');
+                            }
+                            
+                            $smsService = app(\App\Services\SMSService::class);
+                            $message = "Your application status has been updated. Please login to check status.";
+                            $smsService->sendSMS($phone, $message);
+                            
+                            Notification::make()
+                                ->title('SMS Sent Successfully')
+                                ->body("Status update SMS sent to {$phone}")
+                                ->success()
+                                ->send();
+                                
+                            Log::info('Status SMS sent by Super Admin', [
+                                'session_id' => $record->session_id,
+                                'phone' => $phone,
+                                'sent_by' => auth()->id(),
+                            ]);
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('SMS Failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
+                Action::make('send_delivery_sms')
+                    ->label('Send Delivery SMS')
+                    ->icon('heroicon-o-truck')
+                    ->color('success')
+                    ->visible(fn (Model $record) => 
+                        \Filament\Facades\Filament::getCurrentPanel()->getId() === 'admin' && 
+                        in_array($record->current_step, ['approved', 'completed'])
+                    )
+                    ->modalHeading('Send Delivery Notification SMS')
+                    ->form([
+                        Forms\Components\Select::make('message_type')
+                            ->label('Message Type')
+                            ->options([
+                                'zdc' => 'ZDC - Expect Delivery (Zero Deposit Credit)',
+                                'pdc' => 'PDC - Make Deposit to Initiate Delivery (Paid Deposit Credit)',
+                                'custom' => 'Custom Message',
+                            ])
+                            ->required()
+                            ->live()
+                            ->default('zdc'),
+                        Forms\Components\Textarea::make('custom_message')
+                            ->label('Custom Message')
+                            ->visible(fn (Forms\Get $get) => $get('message_type') === 'custom')
+                            ->required(fn (Forms\Get $get) => $get('message_type') === 'custom')
+                            ->placeholder('Enter your custom message...'),
+                    ])
+                    ->action(function (array $data, Model $record) {
+                        try {
+                            $formData = $record->form_data;
+                            $formResponses = $formData['formResponses'] ?? $formData;
+                            $phone = $formResponses['mobile'] ?? $formResponses['phoneNumber'] ?? $formResponses['cellphone'] ?? null;
+                            
+                            if (!$phone) {
+                                throw new \Exception('No phone number found for this application.');
+                            }
+                            
+                            $firstName = $formResponses['firstName'] ?? $formResponses['forenames'] ?? 'Customer';
+                            
+                            switch ($data['message_type']) {
+                                case 'zdc':
+                                    $message = "Dear {$firstName}, your loan application has been approved. You can now expect your delivery. Thank you for choosing BancoSystem.";
+                                    break;
+                                case 'pdc':
+                                    $message = "Dear {$firstName}, your loan application has been approved. Please make your deposit payment to initiate delivery. Login to view payment details. Thank you for choosing BancoSystem.";
+                                    break;
+                                case 'custom':
+                                    $message = $data['custom_message'];
+                                    break;
+                                default:
+                                    throw new \Exception('Invalid message type');
+                            }
+                            
+                            $smsService = app(\App\Services\SMSService::class);
+                            $smsService->sendSMS($phone, $message);
+                            
+                            Notification::make()
+                                ->title('Delivery SMS Sent')
+                                ->body("Message sent to {$phone}")
+                                ->success()
+                                ->send();
+                                
+                            Log::info('Delivery SMS sent by Super Admin', [
+                                'session_id' => $record->session_id,
+                                'phone' => $phone,
+                                'message_type' => $data['message_type'],
+                                'sent_by' => auth()->id(),
+                            ]);
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('SMS Failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
                 // SSB Loan Workflow Actions
                 Action::make('ssb_workflow')
                     ->label('SSB Loan Status')
                     ->icon('heroicon-o-banknotes')
                     ->color('info')
-                    ->visible(fn (Model $record) => (($record->form_data['employer'] ?? '') === 'SSB' || ($record->metadata['workflow_type'] ?? '') === 'ssb') && \Filament\Facades\Filament::getCurrentPanel()->getId() !== 'partner')
+                    ->visible(fn (Model $record) => (($record->form_data['employer'] ?? '') === 'SSB' || $record->form_data['employer'] === 'government-ssb' || ($record->metadata['workflow_type'] ?? '') === 'ssb') && \Filament\Facades\Filament::getCurrentPanel()->getId() === 'zb_admin')
                     ->modalHeading('Update SSB Loan Status')
                     ->modalWidth('2xl')
                     ->form([
@@ -739,7 +858,7 @@ class ApplicationResource extends BaseResource
                     ->label('ZB Loan Status')
                     ->icon('heroicon-o-building-library')
                     ->color('success')
-                    ->visible(fn (Model $record) => (($record->form_data['employer'] ?? '') === 'ZB' || ($record->metadata['workflow_type'] ?? '') === 'zb') && \Filament\Facades\Filament::getCurrentPanel()->getId() !== 'partner')
+                    ->visible(fn (Model $record) => (($record->form_data['hasAccount'] ?? false) || ($record->form_data['wantsAccount'] ?? false) || ($record->metadata['workflow_type'] ?? '') === 'zb') && \Filament\Facades\Filament::getCurrentPanel()->getId() === 'zb_admin')
                     ->modalHeading('Update ZB Loan Status')
                     ->modalWidth('2xl')
                     ->form([

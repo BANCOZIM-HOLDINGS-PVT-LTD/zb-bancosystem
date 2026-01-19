@@ -268,6 +268,105 @@ class CashPurchaseResource extends BaseResource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                
+                // Send Status SMS for Cash Purchases
+                Tables\Actions\Action::make('send_status_sms')
+                    ->label('Send Status SMS')
+                    ->icon('heroicon-o-chat-bubble-left-ellipsis')
+                    ->color('primary')
+                    ->visible(fn () => \Filament\Facades\Filament::getCurrentPanel()->getId() === 'admin')
+                    ->requiresConfirmation()
+                    ->modalHeading('Send Cash Purchase Status SMS')
+                    ->action(function (CashPurchase $record) {
+                        try {
+                            $phone = $record->phone;
+                            
+                            if (!$phone) {
+                                throw new \Exception('No phone number found for this purchase.');
+                            }
+                            
+                            $smsService = app(\App\Services\SMSService::class);
+                            $message = "Your cash purchase order #{$record->purchase_number} status has been updated to: {$record->status}. Thank you for choosing BancoSystem.";
+                            $smsService->sendSMS($phone, $message);
+                            
+                            \Filament\Notifications\Notification::make()
+                                ->title('SMS Sent Successfully')
+                                ->body("Status SMS sent to {$phone}")
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('SMS Failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
+                // Send Delivery SMS for Cash Purchases
+                Tables\Actions\Action::make('send_delivery_sms')
+                    ->label('Send Delivery SMS')
+                    ->icon('heroicon-o-truck')
+                    ->color('success')
+                    ->visible(fn (CashPurchase $record) => 
+                        \Filament\Facades\Filament::getCurrentPanel()->getId() === 'admin' && 
+                        $record->payment_status === 'paid'
+                    )
+                    ->modalHeading('Send Delivery Notification SMS')
+                    ->form([
+                        Forms\Components\Select::make('message_type')
+                            ->label('Message Type')
+                            ->options([
+                                'ready' => 'Ready for Collection',
+                                'dispatched' => 'Order Dispatched',
+                                'custom' => 'Custom Message',
+                            ])
+                            ->required()
+                            ->live()
+                            ->default('ready'),
+                        Forms\Components\Textarea::make('custom_message')
+                            ->label('Custom Message')
+                            ->visible(fn (Forms\Get $get) => $get('message_type') === 'custom')
+                            ->required(fn (Forms\Get $get) => $get('message_type') === 'custom'),
+                    ])
+                    ->action(function (array $data, CashPurchase $record) {
+                        try {
+                            $phone = $record->phone;
+                            
+                            if (!$phone) {
+                                throw new \Exception('No phone number found for this purchase.');
+                            }
+                            
+                            switch ($data['message_type']) {
+                                case 'ready':
+                                    $message = "Dear {$record->full_name}, your order #{$record->purchase_number} is ready for collection at {$record->depot_name}. Thank you for choosing BancoSystem.";
+                                    break;
+                                case 'dispatched':
+                                    $message = "Dear {$record->full_name}, your order #{$record->purchase_number} has been dispatched to {$record->depot_name}. Thank you for choosing BancoSystem.";
+                                    break;
+                                case 'custom':
+                                    $message = $data['custom_message'];
+                                    break;
+                                default:
+                                    throw new \Exception('Invalid message type');
+                            }
+                            
+                            $smsService = app(\App\Services\SMSService::class);
+                            $smsService->sendSMS($phone, $message);
+                            
+                            \Filament\Notifications\Notification::make()
+                                ->title('Delivery SMS Sent')
+                                ->body("Message sent to {$phone}")
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('SMS Failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
