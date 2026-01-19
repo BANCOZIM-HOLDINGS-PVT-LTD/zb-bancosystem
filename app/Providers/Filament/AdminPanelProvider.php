@@ -26,9 +26,9 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->brandName('BancoSystem')
-            ->brandLogo(secure_asset('adala2-removebg-preview.png'))
+            ->brandLogo(secure_asset('adala.jpg'))
             ->brandLogoHeight('3rem')
-            ->favicon(secure_asset('adala2-removebg-preview.png'))
+            ->favicon(secure_asset('adala.jpg'))
             ->colors([
                 'primary' => Color::Amber,
             ])

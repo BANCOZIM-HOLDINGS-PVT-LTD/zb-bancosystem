@@ -53,7 +53,7 @@
     <div class="max-w-7xl w-full relative z-10">
         <div class="text-center mb-16 flex flex-col items-center">
             <div class="mb-6 p-4 glass rounded-3xl inline-block shadow-lg">
-                <img src="/adala2-removebg-preview.png" alt="Adala Logo" class="h-24 w-auto object-contain">
+                <img src="/adala.jpg" alt="Adala Logo" class="h-24 w-auto object-contain">
             </div>
             <h1 class="text-5xl font-bold text-gray-900 mb-4 tracking-tight drop-shadow-sm">Admin Ecosystem</h1>
         </div>

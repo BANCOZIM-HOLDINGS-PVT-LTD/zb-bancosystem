@@ -33,8 +33,8 @@
 
         <title inertia>{{ config('app.name', 'BancoSystem') }}</title>
 
-        <link rel="icon" href="{{ asset('adala2-removebg-preview.png') }}" type="image/png">
-        <link rel="apple-touch-icon" href="{{ asset('adala2-removebg-preview.png') }}">
+        <link rel="icon" href="{{ asset('adala.jpg') }}" type="image/jpeg">
+        <link rel="apple-touch-icon" href="{{ asset('adala.jpg') }}">
 
         {{-- Font Loading with fallback --}}
         <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>

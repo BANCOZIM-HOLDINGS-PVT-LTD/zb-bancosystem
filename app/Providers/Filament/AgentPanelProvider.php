@@ -24,9 +24,9 @@ class AgentPanelProvider extends PanelProvider
             ->id('agent')
             ->path('agent')
             ->brandName('BancoSystem Agent Portal')
-            ->brandLogo(asset('adala2-removebg-preview.png'))
+            ->brandLogo(asset('adala.jpg'))
             ->brandLogoHeight('3rem')
-            ->favicon(asset('adala2-removebg-preview.png'))
+            ->favicon(asset('adala.jpg'))
             ->colors([
                 'primary' => Color::Amber,
             ])
