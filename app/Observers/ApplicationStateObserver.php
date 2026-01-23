@@ -1,0 +1,146 @@
+<?php
+
+namespace App\Observers;
+
+use App\Models\ApplicationState;
+use App\Models\PersonalService;
+use Illuminate\Support\Facades\Log;
+
+class ApplicationStateObserver
+{
+    /**
+     * Handle the ApplicationState "updated" event.
+     * Auto-create PersonalService records when personal service loans are approved.
+     */
+    public function updated(ApplicationState $applicationState): void
+    {
+        // Only process when status changes to approved/completed
+        if (!in_array($applicationState->current_step, ['approved', 'completed'])) {
+            return;
+        }
+
+        // Check if this is a personal service application
+        if (!$this->isPersonalService($applicationState)) {
+            return;
+        }
+
+        // Check if PersonalService already exists for this application
+        if (PersonalService::where('application_state_id', $applicationState->id)->exists()) {
+            return;
+        }
+
+        // Create PersonalService record
+        try {
+            $this->createPersonalService($applicationState);
+        } catch (\Exception $e) {
+            Log::error('Failed to auto-create PersonalService', [
+                'application_id' => $applicationState->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Determine if the application is for a personal service
+     */
+    protected function isPersonalService(ApplicationState $applicationState): bool
+    {
+        $formData = $applicationState->form_data;
+        
+        // Check category or business type
+        $category = $formData['category'] ?? '';
+        $business = $formData['business'] ?? '';
+        $productName = $formData['productName'] ?? '';
+        
+        // Personal service indicators
+        $personalServiceKeywords = [
+            'vacation',
+            'holiday',
+            'zimparks',
+            'school fees',
+            'education',
+            'license',
+            'driving',
+            'funeral',
+            'personal service',
+        ];
+
+        $searchText = strtolower($category . ' ' . $business . ' ' . $productName);
+        
+        foreach ($personalServiceKeywords as $keyword) {
+            if (str_contains($searchText, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Create PersonalService record from ApplicationState
+     */
+    protected function createPersonalService(ApplicationState $applicationState): void
+    {
+        $formData = $applicationState->form_data;
+        $formResponses = $formData['formResponses'] ?? [];
+
+        // Determine service type
+        $serviceType = $this->determineServiceType($formData);
+
+        // Extract relevant data
+        $personalService = PersonalService::create([
+            'application_state_id' => $applicationState->id,
+            'service_type' => $serviceType,
+            'reference_code' => $applicationState->reference_code,
+            'client_name' => trim(
+                ($formResponses['firstName'] ?? '') . ' ' . 
+                ($formResponses['lastName'] ?? '')
+            ),
+            'national_id' => $formResponses['nationalIdNumber'] ?? $formResponses['idNumber'] ?? null,
+            'phone' => $formResponses['phoneNumber'] ?? $formResponses['mobile'] ?? null,
+            'destination' => $formData['destination'] ?? $formData['location'] ?? null,
+            'start_date' => $formData['startDate'] ?? $formData['start_date'] ?? null,
+            'end_date' => $formData['endDate'] ?? $formData['end_date'] ?? null,
+            'total_cost' => $formData['finalPrice'] ?? $formData['amount'] ?? 0,
+            'deposit_amount' => $formData['depositAmount'] ?? 0,
+            'status' => PersonalService::STATUS_APPROVED,
+            'notes' => $formData['notes'] ?? null,
+        ]);
+
+        Log::info('Auto-created PersonalService from approved application', [
+            'application_id' => $applicationState->id,
+            'personal_service_id' => $personalService->id,
+            'service_type' => $serviceType,
+        ]);
+    }
+
+    /**
+     * Determine the service type from form data
+     */
+    protected function determineServiceType(array $formData): string
+    {
+        $category = strtolower($formData['category'] ?? '');
+        $business = strtolower($formData['business'] ?? '');
+        $productName = strtolower($formData['productName'] ?? '');
+        
+        $searchText = $category . ' ' . $business . ' ' . $productName;
+
+        if (str_contains($searchText, 'vacation') || str_contains($searchText, 'holiday') || str_contains($searchText, 'zimparks')) {
+            return PersonalService::TYPE_VACATION;
+        }
+
+        if (str_contains($searchText, 'school') || str_contains($searchText, 'education') || str_contains($searchText, 'fees')) {
+            return PersonalService::TYPE_SCHOOL_FEES;
+        }
+
+        if (str_contains($searchText, 'license') || str_contains($searchText, 'driving')) {
+            return PersonalService::TYPE_DRIVING_LICENSE;
+        }
+
+        if (str_contains($searchText, 'funeral') || str_contains($searchText, 'cover')) {
+            return PersonalService::TYPE_FUNERAL_COVER;
+        }
+
+        return PersonalService::TYPE_OTHER;
+    }
+}

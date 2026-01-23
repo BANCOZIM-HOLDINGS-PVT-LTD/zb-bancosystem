@@ -136,6 +136,33 @@ class ZbApplicationResource extends Resource
                             Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
                         }
                     }),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('export_ssb_loans')
+                        ->label('Export SSB Loans (CSV)')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->color('info')
+                        ->action(function () {
+                            return \Maatwebsite\Excel\Facades\Excel::download(
+                                new \App\Exports\SSBLoanExport(),
+                                'ssb_loans_export_' . date('Y-m-d') . '.csv'
+                            );
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
+                    Tables\Actions\BulkAction::make('export_zb_loans')
+                        ->label('Export ZB Loans (CSV)')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->color('success')
+                        ->action(function () {
+                            return \Maatwebsite\Excel\Facades\Excel::download(
+                                new \App\Exports\ZBLoanExport(),
+                                'zb_loans_export_' . date('Y-m-d') . '.csv'
+                            );
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                ]),
             ]);
     }
 

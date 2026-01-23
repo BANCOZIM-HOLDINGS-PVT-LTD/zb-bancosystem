@@ -765,7 +765,7 @@ class ApplicationResource extends BaseResource
                     ->label('SSB Loan Status')
                     ->icon('heroicon-o-banknotes')
                     ->color('info')
-                    ->visible(fn (Model $record) => (($record->form_data['employer'] ?? '') === 'SSB' || $record->form_data['employer'] === 'government-ssb' || ($record->metadata['workflow_type'] ?? '') === 'ssb') && \Filament\Facades\Filament::getCurrentPanel()->getId() === 'zb_admin')
+                    ->visible(fn (Model $record) => ((($record->form_data['employer'] ?? '') === 'SSB' || ($record->form_data['employer'] ?? '') === 'government-ssb' || ($record->metadata['workflow_type'] ?? '') === 'ssb') && \Filament\Facades\Filament::getCurrentPanel()->getId() === 'zb_admin'))
                     ->modalHeading('Update SSB Loan Status')
                     ->modalWidth('2xl')
                     ->form([
@@ -1216,6 +1216,30 @@ class ApplicationResource extends BaseResource
                         })
                         ->deselectRecordsAfterCompletion(),
 
+                    Tables\Actions\BulkAction::make('export_ssb_loans')
+                        ->label('Export SSB Loans (CSV)')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->color('info')
+                        ->action(function () {
+                            return \Maatwebsite\Excel\Facades\Excel::download(
+                                new \App\Exports\SSBLoanExport(),
+                                'ssb_loans_export_' . date('Y-m-d') . '.csv'
+                            );
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
+                    Tables\Actions\BulkAction::make('export_zb_loans')
+                        ->label('Export ZB Loans (CSV)')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->color('success')
+                        ->action(function () {
+                            return \Maatwebsite\Excel\Facades\Excel::download(
+                                new \App\Exports\ZBLoanExport(),
+                                'zb_loans_export_' . date('Y-m-d') . '.csv'
+                            );
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
                     Tables\Actions\ForceDeleteBulkAction::make('forceDelete')
                         ->label('Delete'),
                 ]),
@@ -1244,11 +1268,11 @@ class ApplicationResource extends BaseResource
             // Exclude agent application states from Loan Applications
             ->where(function ($query) {
                 $query->where('current_step', 'not like', 'agent_%')
-                    // Use PostgreSQL JSON operators instead of MySQL JSON_EXTRACT
+                    // Use MySQL JSON_EXTRACT instead of PostgreSQL operators
                     ->where(function ($q) {
                         $q->whereNull('form_data')
-                          ->orWhereRaw("(form_data->>'outcome') IS NULL")
-                          ->orWhereRaw("(form_data->>'outcome') != 'agent_application_submitted'");
+                          ->orWhereRaw("JSON_EXTRACT(form_data, '$.outcome') IS NULL")
+                          ->orWhereRaw("JSON_EXTRACT(form_data, '$.outcome') != 'agent_application_submitted'");
                     });
             });
     }

@@ -27,6 +27,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register observers
+        \App\Models\ApplicationState::observe(\App\Observers\ApplicationStateObserver::class);
+
         // Force HTTPS in production
         if (app()->environment('production') || env('FORCE_HTTPS', false)) {
             URL::forceScheme('https');

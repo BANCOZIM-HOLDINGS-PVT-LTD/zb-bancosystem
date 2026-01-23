@@ -1,0 +1,11 @@
+<?php
+
+namespace App\Filament\ZbAdmin\Resources\PersonalServiceResource\Pages;
+
+use App\Filament\ZbAdmin\Resources\PersonalServiceResource;
+use Filament\Resources\Pages\ViewRecord;
+
+class ViewPersonalService extends ViewRecord
+{
+    protected static string $resource = PersonalServiceResource::class;
+}
