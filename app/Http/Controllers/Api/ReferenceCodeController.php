@@ -107,6 +107,7 @@ class ReferenceCodeController extends Controller
         $validator = Validator::make($request->all(), [
             'sessionId' => 'required|string',
             'referenceCode' => 'nullable|string|size:6',
+            'nationalId' => 'nullable|string|max:100', // Allow nationalId to be passed directly
         ]);
 
         if ($validator->fails()) {
@@ -119,6 +120,7 @@ class ReferenceCodeController extends Controller
 
         try {
             $sessionId = $request->input('sessionId');
+            $nationalId = $request->input('nationalId'); // Get nationalId from request
             
             // If a reference code is provided, use it; otherwise generate a new one
             if ($request->has('referenceCode')) {
@@ -135,8 +137,8 @@ class ReferenceCodeController extends Controller
                 // Store the provided reference code
                 $this->referenceCodeService->storeReferenceCode($sessionId, $referenceCode);
             } else {
-                // Generate and store a new reference code
-                $referenceCode = $this->referenceCodeService->generateReferenceCode($sessionId);
+                // Generate and store a new reference code, passing nationalId if provided
+                $referenceCode = $this->referenceCodeService->generateReferenceCode($sessionId, $nationalId);
             }
 
             return response()->json([

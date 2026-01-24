@@ -145,6 +145,33 @@ class StateController extends Controller
                 $referenceCode = $state->reference_code;
             }
 
+            // Check if this is an Account Opening application
+            $formData = $validated['data'];
+            $isAccountOpening = ($formData['wantsAccount'] ?? false) === true ||
+                               ($formData['intent'] ?? '') === 'account' ||
+                               ($formData['applicationType'] ?? '') === 'account_opening';
+
+            if ($isAccountOpening) {
+                try {
+                    $accountOpeningService = app(\App\Services\AccountOpeningService::class);
+                    $accountOpening = $accountOpeningService->createFromWizard($formData, $referenceCode);
+                    
+                    // Link the account opening to the application state
+                    $accountOpening->update(['application_state_id' => $state->id]);
+                    
+                    \Log::info('Account Opening created successfully', [
+                        'reference_code' => $referenceCode,
+                        'account_opening_id' => $accountOpening->id
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to create Account Opening record', [
+                        'error' => $e->getMessage(),
+                        'reference_code' => $referenceCode
+                    ]);
+                    // Don't fail the whole submission - the ApplicationState was already created
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Application submitted successfully',

@@ -754,6 +754,11 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         if (currentStep === 'form' && !updatedData.referenceCode) {
             // Generate reference code when the form step is completed
             try {
+                // Get the national ID from form responses to pass to the API
+                const nationalId = updatedData.formResponses?.nationalIdNumber ||
+                    wizardData.formResponses?.nationalIdNumber ||
+                    '';
+
                 const response = await fetch('/api/reference-code/generate', {
                     method: 'POST',
                     headers: {
@@ -761,7 +766,8 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                     },
                     body: JSON.stringify({
-                        sessionId
+                        sessionId,
+                        nationalId
                     })
                 });
 

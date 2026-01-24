@@ -42,16 +42,9 @@ class SaveApplicationStateRequest extends FormRequest
             'current_step' => [
                 'required',
                 'string',
-                'max:50',
-                Rule::in([
-                    'language', 'intent', 'employer', 'product', 'account',
-                    'summary', 'form', 'documents', 'completed', 'in_review',
-                    'approved', 'rejected', 'pending_documents', 'processing',
-                    // Add missing steps
-                    'housePlanApproval', 'constructionDetails', 'companyRegistration',
-                    'licenseCourses', 'zimparksHoliday', 'creditTerm', 'creditType',
-                    'delivery', 'registration'
-                ]),
+                'max:100', // Increased to allow for any step name
+                // Note: Removed strict Rule::in to allow any step name - validation is relaxed
+                // to prevent issues with new or dynamically named steps
             ],
             'form_data' => [
                 'required',
@@ -65,7 +58,13 @@ class SaveApplicationStateRequest extends FormRequest
             'form_data.intent' => [
                 'nullable',
                 'string',
-                Rule::in(['hirePurchase', 'microBiz', 'checkStatus', 'trackDelivery', 'loan', 'account']),
+                // All valid intent values from the wizard
+                Rule::in([
+                    'hirePurchase', 'microBiz', 'checkStatus', 'trackDelivery', 
+                    'loan', 'account', 'personalServices', 'cashPurchase',
+                    'ssbLoan', 'zbLoan', 'accountOpening', 'rdcLoan',
+                    'houseConstruction', 'agentApplication', 'agentLogin'
+                ]),
             ],
             'form_data.employer' => [
                 'nullable',
@@ -102,7 +101,7 @@ class SaveApplicationStateRequest extends FormRequest
             'form_data.formResponses.mobile' => [
                 'nullable',
                 'string',
-                'regex:/^(\+263|0)?[0-9\s\-\(\)]{7,15}$/', // Zimbabwe phone number format with flexibility
+                'regex:/^(\\+263|0)?[0-9\\s\\-\\(\\)]{7,15}$/', // Zimbabwe phone number format
             ],
             'form_data.formResponses.nationalIdNumber' => [
                 'nullable',
@@ -116,12 +115,12 @@ class SaveApplicationStateRequest extends FormRequest
             ],
             'metadata.ip_address' => [
                 'nullable',
-                'ip',
+                // Removed 'ip' validation - might be null
             ],
             'metadata.user_agent' => [
                 'nullable',
                 'string',
-                'max:2048', // Increased from 500
+                'max:4096', // Increased for long user agents
             ],
         ];
     }
@@ -185,5 +184,20 @@ class SaveApplicationStateRequest extends FormRequest
         
         // Trim whitespace
         return trim($sanitized);
+    }
+
+    /**
+     * Handle a failed validation attempt - logs errors for debugging.
+     */
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator): void
+    {
+        \Log::warning('SaveApplicationStateRequest validation failed', [
+            'errors' => $validator->errors()->toArray(),
+            'input_keys' => array_keys($this->all()),
+            'session_id' => $this->session_id ?? 'not_provided',
+            'current_step' => $this->current_step ?? 'not_provided',
+        ]);
+
+        throw new \Illuminate\Validation\ValidationException($validator);
     }
 }

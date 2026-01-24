@@ -9,16 +9,16 @@ use Illuminate\Support\Str;
 
 class EcocashPaymentService
 {
-    private string $merchantCode;
-    private string $merchantKey;
-    private string $apiUrl;
+    private ?string $merchantCode;
+    private ?string $merchantKey;
+    private ?string $apiUrl;
     private bool $isProduction;
 
     public function __construct()
     {
-        $this->merchantCode = config('services.ecocash.merchant_code', '');
-        $this->merchantKey = config('services.ecocash.merchant_key', '');
-        $this->apiUrl = config('services.ecocash.api_url', '');
+        $this->merchantCode = config('services.ecocash.merchant_code') ?? '';
+        $this->merchantKey = config('services.ecocash.merchant_key') ?? '';
+        $this->apiUrl = config('services.ecocash.api_url') ?? '';
         $this->isProduction = config('app.env') === 'production';
     }
 

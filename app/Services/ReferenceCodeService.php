@@ -42,17 +42,42 @@ class ReferenceCodeService
         // If national ID not provided, try to extract from form data
         if (!$nationalId) {
             $formData = $state->form_data ?? [];
+            
+            // Try multiple possible locations for the national ID
+            // 1. Direct formResponses level
             $formResponses = $formData['formResponses'] ?? [];
+            
+            // 2. Check for nested data structure (some forms nest data differently)
+            if (empty($formResponses) && isset($formData['data']['formResponses'])) {
+                $formResponses = $formData['data']['formResponses'];
+            }
+            
+            // 3. Check if form data itself contains the responses directly
+            if (empty($formResponses) && isset($formData['nationalIdNumber'])) {
+                $nationalId = $formData['nationalIdNumber'];
+            }
 
-            // Try multiple possible keys for national ID
-            $nationalId = $formResponses['idNumber']
-                       ?? $formResponses['nationalIdNumber']
-                       ?? $formResponses['nationalId']
-                       ?? null;
+            // Try multiple possible keys for national ID from formResponses
+            if (!$nationalId) {
+                $nationalId = $formResponses['idNumber']
+                           ?? $formResponses['nationalIdNumber']
+                           ?? $formResponses['nationalId']
+                           ?? $formResponses['national_id_number']
+                           ?? null;
+            }
+            
+            // Log the form data structure for debugging
+            Log::info("Extracting national ID for session {$sessionId}", [
+                'form_data_keys' => array_keys($formData),
+                'form_responses_keys' => is_array($formResponses) ? array_keys($formResponses) : 'not_array',
+                'found_id' => $nationalId ? 'yes' : 'no'
+            ]);
         }
 
         if (!$nationalId) {
-            Log::error("National ID not found in application data for session {$sessionId}");
+            Log::error("National ID not found in application data for session {$sessionId}", [
+                'form_data' => json_encode($state->form_data ?? [])
+            ]);
             throw new \Exception("National ID is required to generate a reference code. Please ensure your ID number is provided in the application.");
         }
 
