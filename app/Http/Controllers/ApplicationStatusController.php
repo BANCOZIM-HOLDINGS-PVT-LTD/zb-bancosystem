@@ -201,7 +201,7 @@ class ApplicationStatusController extends Controller
     {
         return match ($status) {
             AccountOpening::STATUS_PENDING => 'under_review',
-            AccountOpening::STATUS_ACCOUNT_OPENED => 'approved',
+            AccountOpening::STATUS_ACCOUNT_OPENED => 'account_opened',
             AccountOpening::STATUS_LOAN_ELIGIBLE => 'completed',
             AccountOpening::STATUS_REJECTED => 'rejected',
             default => 'under_review',

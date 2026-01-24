@@ -47,6 +47,7 @@ export default function ApplicationStatus() {
     const [successMessage, setSuccessMessage] = useState('');
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('ecocash');
     const [processingPayment, setProcessingPayment] = useState(false);
+    const [processingLoan, setProcessingLoan] = useState(false);
 
     // Check for success redirect from application submission
     useEffect(() => {
@@ -182,6 +183,38 @@ export default function ApplicationStatus() {
         return { Icon, ...config };
     };
 
+    const handleApplyForLoan = async () => {
+        if (!applicationDetails) return;
+
+        setProcessingLoan(true);
+        setError('');
+
+        try {
+            const response = await fetch('/application/convert-account', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                body: JSON.stringify({
+                    reference_code: applicationDetails.sessionId
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.redirect_url) {
+                window.location.href = data.redirect_url;
+            } else {
+                setError(data.message || 'Failed to start loan application. Please try again.');
+                setProcessingLoan(false);
+            }
+        } catch (err) {
+            setError('Failed to start loan application. Please try again.');
+            setProcessingLoan(false);
+        }
+    };
+
     const handleDepositPayment = async () => {
         if (!applicationDetails) return;
 
@@ -303,6 +336,12 @@ export default function ApplicationStatus() {
                                         <span className="text-gray-600 dark:text-gray-400">Reference Number</span>
                                         <span className="font-semibold text-gray-900 dark:text-gray-100">{applicationDetails.sessionId}</span>
                                     </div>
+                                    {applicationDetails.zbAccountNumber && (
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-600 dark:text-gray-400">ZB Account Number</span>
+                                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">{applicationDetails.zbAccountNumber}</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between">
                                         <span className="text-gray-600 dark:text-gray-400">Applicant Name</span>
                                         <span className="font-semibold text-gray-900 dark:text-gray-100">{applicationDetails.applicantName}</span>
@@ -317,6 +356,37 @@ export default function ApplicationStatus() {
                                     </div>
                                 </div>
                             </Card>
+
+
+
+                            {/* Apply for Loan Section - For account opened or loan eligible */}
+                            {(applicationDetails.applicationType === 'account_opening' &&
+                                ['account_opened', 'approved', 'completed'].includes(applicationDetails.status)) && (
+                                    <Card className="p-8 bg-gradient-to-br from-emerald-50 to-blue-50 dark:from-emerald-900/20 dark:to-blue-900/20 border-2 border-emerald-200 dark:border-emerald-800">
+                                        <div className="text-center mb-6">
+                                            <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 dark:bg-emerald-900 rounded-full mb-4">
+                                                <CreditCard className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                                            </div>
+                                            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                                                Apply for a Loan
+                                            </h2>
+                                            <p className="text-gray-600 dark:text-gray-400">
+                                                {applicationDetails.loanEligible
+                                                    ? "You are eligible for a loan! Proceed to apply now."
+                                                    : "Your account is open. You can now apply for a loan."}
+                                            </p>
+                                        </div>
+
+                                        <Button
+                                            onClick={handleApplyForLoan}
+                                            disabled={processingLoan}
+                                            size="lg"
+                                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-lg py-6"
+                                        >
+                                            {processingLoan ? 'Processing...' : 'Apply for Loan Now'}
+                                        </Button>
+                                    </Card>
+                                )}
 
                             {/* Deposit Payment Section - Only for approved PDC applications with unpaid deposit */}
                             {applicationDetails.status === 'approved' &&
@@ -426,7 +496,7 @@ export default function ApplicationStatus() {
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
         </>
     );
 }

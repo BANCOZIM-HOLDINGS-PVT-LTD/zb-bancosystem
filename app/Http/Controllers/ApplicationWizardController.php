@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
+use Illuminate\Support\Str;
+use App\Models\AccountOpening;
+use App\Models\ApplicationState;
+
 class ApplicationWizardController extends Controller
 {
     private StateManager $stateManager;
@@ -24,6 +28,105 @@ class ApplicationWizardController extends Controller
         $this->stateManager = $stateManager;
         $this->referenceCodeService = $referenceCodeService;
         $this->syncService = $syncService;
+    }
+
+    /**
+     * Convert an account opening record to a new loan application
+     */
+    public function convertAccountToApplication(Request $request): JsonResponse
+    {
+        $request->validate([
+            'reference_code' => 'required|string',
+        ]);
+
+        $referenceCode = $request->reference_code;
+        
+        // Find the account opening record
+        $accountOpening = AccountOpening::where('reference_code', $referenceCode)
+            ->orWhere('user_identifier', $referenceCode)
+            ->first();
+
+        if (!$accountOpening) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Account record not found',
+            ], 404);
+        }
+
+        // Create new session ID
+        $newSessionId = (string) Str::uuid();
+
+        // Prepare form data from account opening record
+        $formData = $accountOpening->form_data;
+        $formResponses = $formData['formResponses'] ?? [];
+
+        // Add additional info for initialized loan application
+        $newFormData = [
+            'hasAccount' => true,
+            'accountDetails' => [
+                 'accountNumber' => $accountOpening->zb_account_number,
+                 'verified' => true,
+                 'accountHolderName' => $formResponses['firstName'] . ' ' . $formResponses['lastName'],
+            ],
+            'formResponses' => [
+                'firstName' => $formResponses['firstName'] ?? '',
+                'lastName' => $formResponses['lastName'] ?? '',
+                'nationalIdNumber' => $formResponses['nationalIdNumber'] ?? '',
+                'phoneNumber' => $formResponses['phoneNumber'] ?? '',
+                'email' => $formResponses['email'] ?? '',
+                'dateOfBirth' => $formResponses['dateOfBirth'] ?? '',
+                'gender' => $formResponses['gender'] ?? '',
+                'title' => $formResponses['title'] ?? '',
+                'address' => $formResponses['address'] ?? '',
+                'city' => $formResponses['city'] ?? '',
+                'accountNumber' => $accountOpening->zb_account_number,
+                'existingAccountHolder' => true,
+            ],
+            'productName' => $accountOpening->selected_product['product_name'] ?? null,
+            'productCode' => $accountOpening->selected_product['product_code'] ?? null,
+            'category' => $accountOpening->selected_product['category'] ?? null,
+        ];
+
+        // Soft delete any existing application states with this reference code
+        // so we can reuse the reference code for the new session
+        ApplicationState::where('reference_code', $accountOpening->reference_code)->delete();
+
+        // Create new ApplicationState
+        $applicationState = ApplicationState::create([
+            'session_id' => $newSessionId,
+            'current_step' => 'product', // Start at product selection to confirm or change
+            'form_data' => $newFormData,
+            'metadata' => [
+                'converted_from_account_opening_id' => $accountOpening->id,
+                'account_opened_at' => $accountOpening->approved_at,
+                'loan_eligible' => $accountOpening->loan_eligible,
+                'status' => 'pending',
+                'channel' => 'web',
+            ],
+            'expires_at' => now()->addDays(30),
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'last_activity' => now(),
+            'channel' => 'web',
+            // We set reference_code to null initially, let generateReferenceCode handle it
+            'reference_code' => null, 
+        ]);
+
+        // Assign the reference code to the new session
+        // This will handle force deleting the soft-deleted old state
+        try {
+            $this->referenceCodeService->generateReferenceCode($newSessionId, $accountOpening->reference_code);
+        } catch (\Exception $e) {
+            \Log::error('Failed to assign reference code during conversion: ' . $e->getMessage());
+            // Continue anyway, it shouldn't block the user entirely, though it might be confusing
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Loan application started',
+            'redirect_url' => route('application.resume', $newSessionId),
+            'session_id' => $newSessionId,
+        ]);
     }
     
     /**

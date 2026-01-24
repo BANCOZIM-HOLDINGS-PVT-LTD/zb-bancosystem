@@ -35,6 +35,7 @@ Route::get('/apply', [ApplicationWizardController::class, 'showWithReferral'])->
 Route::get('/application/resume/{identifier}', [ApplicationWizardController::class, 'resume'])->name('application.resume');
 Route::get('/application/status', [ApplicationWizardController::class, 'status'])->name('application.status');
 Route::get('/application/success', [ApplicationWizardController::class, 'success'])->name('application.success');
+Route::post('/application/convert-account', [ApplicationWizardController::class, 'convertAccountToApplication'])->name('application.convert_account');
 Route::get('/delivery/tracking', [ApplicationWizardController::class, 'tracking'])->name('delivery.tracking');
 Route::get('/reference-code', [ApplicationWizardController::class, 'referenceCodeLookup'])->name('reference.code.lookup');
 
