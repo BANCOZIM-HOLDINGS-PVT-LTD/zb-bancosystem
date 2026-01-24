@@ -14,7 +14,35 @@ class ApplicationStateObserver
      */
     public function updated(ApplicationState $applicationState): void
     {
-        // Only process when status changes to approved/completed
+        // Track if status changed
+        $statusChanged = $applicationState->isDirty('current_step');
+        $oldStatus = $applicationState->getOriginal('current_step');
+        $newStatus = $applicationState->current_step;
+
+        // Send status update notification if status changed
+        if ($statusChanged && $oldStatus && $newStatus) {
+            try {
+                $notificationService = app(\App\Services\NotificationService::class);
+                $notificationService->sendStatusUpdateNotification(
+                    $applicationState,
+                    $oldStatus,
+                    $newStatus
+                );
+                
+                Log::info('Status update notification sent', [
+                    'application_id' => $applicationState->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send status update notification', [
+                    'application_id' => $applicationState->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Only process PersonalService creation when status changes to approved/completed
         if (!in_array($applicationState->current_step, ['approved', 'completed'])) {
             return;
         }

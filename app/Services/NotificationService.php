@@ -470,5 +470,26 @@ class NotificationService
 
         return $results;
     }
+
+    /**
+     * Send SMS message
+     *
+     * @param string $phone Phone number
+     * @param string $message SMS message
+     * @return bool Success status
+     */
+    public function sendSMS(string $phone, string $message): bool
+    {
+        try {
+            $smsService = app(SMSService::class);
+            return $smsService->sendSMS($phone, $message);
+        } catch (\Exception $e) {
+            Log::error('SMS sending failed', [
+                'phone' => $phone,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
 }
 

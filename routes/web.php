@@ -59,6 +59,9 @@ Route::get('/application/download/{sessionId}', [ApplicationPDFController::class
 Route::get('/application/view/{sessionId}', [ApplicationPDFController::class, 'view'])->name('application.pdf.view');
 Route::post('/application/pdf/batch', [ApplicationPDFController::class, 'batchDownload'])->name('application.pdf.batch');
 
+// Account Opening PDF Routes
+Route::get('/account-opening/pdf/{id}', [ApplicationPDFController::class, 'downloadAccountOpening'])->name('account-opening.pdf.download');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         $user = Auth::user();

@@ -14,7 +14,7 @@ interface AccountVerificationProps {
 }
 
 const AccountVerification: React.FC<AccountVerificationProps> = ({ data, onNext, onBack, loading }) => {
-    const [currentStep, setCurrentStep] = useState<'account-check' | 'want-account' | 'council-check'>('account-check');
+    const [currentStep, setCurrentStep] = useState<'account-check' | 'want-account' | 'council-check' | 'account-opening-note'>('account-check');
     const [showAccountRequiredModal, setShowAccountRequiredModal] = useState(false);
     const [showServicesUnavailableModal, setShowServicesUnavailableModal] = useState(false);
     const [selectedCouncil, setSelectedCouncil] = useState('');
@@ -72,15 +72,20 @@ const AccountVerification: React.FC<AccountVerificationProps> = ({ data, onNext,
 
     const handleWantAccountResponse = (wantsAccount: boolean) => {
         if (wantsAccount) {
-            onNext({
-                hasAccount: false,
-                wantsAccount: true,
-                accountType: isEntrepreneur ? 'SME Transaction Account' : 'ZB Bank Account'
-            });
+            // Show the ZB Account Opening note step before proceeding
+            setCurrentStep('account-opening-note');
         } else {
             // Show services unavailable modal for non-SSB, non-ZB account holders
             setShowServicesUnavailableModal(true);
         }
+    };
+
+    const handleProceedToForm = () => {
+        onNext({
+            hasAccount: false,
+            wantsAccount: true,
+            accountType: isEntrepreneur ? 'SME Transaction Account' : 'ZB Bank Account'
+        });
     };
 
     const accountType = isEntrepreneur ? 'SME Transaction Account' : 'ZB Bank account';
@@ -218,6 +223,44 @@ const AccountVerification: React.FC<AccountVerificationProps> = ({ data, onNext,
                 </>
             )}
 
+            {currentStep === 'account-opening-note' && (
+                <div className="space-y-6">
+                    <div className="text-center">
+                        <AlertCircle className="mx-auto h-12 w-12 text-blue-600 mb-4" />
+                        <h2 className="text-2xl font-bold mb-4 text-blue-700 dark:text-blue-400">
+                            ZB ACCOUNT OPENINGS FORMS PENDING APPROVAL
+                        </h2>
+                    </div>
+
+                    <Card className="p-6 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-300 flex items-center gap-2">
+                                <AlertCircle className="h-5 w-5" />
+                                NOTE TO USERS
+                            </h3>
+                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                                You are now about to complete account opening formalities to have a <strong>ZB Individual Account</strong>.
+                                Once approved, you will be instructed on your account number and advised to visit your nearest ZB Bank
+                                to finalize/complete the account opening.
+                            </p>
+                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                                Thereafter, you will present the new account number to your HR and if a salary credit is made into
+                                this ZB Account, then you will now be eligible for the product subject to credit review.
+                            </p>
+                        </div>
+                    </Card>
+
+                    <div className="flex justify-center">
+                        <Button
+                            onClick={handleProceedToForm}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 text-lg"
+                        >
+                            I Understand, Proceed to Application
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {currentStep === 'council-check' && (
                 <div className="space-y-6">
                     <div className="text-center">
@@ -258,7 +301,17 @@ const AccountVerification: React.FC<AccountVerificationProps> = ({ data, onNext,
             <div className="flex justify-between pt-4">
                 <Button
                     variant="outline"
-                    onClick={currentStep === 'want-account' ? () => setCurrentStep('account-check') : onBack}
+                    onClick={() => {
+                        if (currentStep === 'want-account') {
+                            setCurrentStep('account-check');
+                        } else if (currentStep === 'account-opening-note') {
+                            setCurrentStep('want-account');
+                        } else if (currentStep === 'council-check') {
+                            setCurrentStep('account-check');
+                        } else {
+                            onBack();
+                        }
+                    }}
                     disabled={loading}
                     className="flex items-center gap-2"
                 >

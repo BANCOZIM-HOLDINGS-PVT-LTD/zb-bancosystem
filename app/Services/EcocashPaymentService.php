@@ -16,9 +16,9 @@ class EcocashPaymentService
 
     public function __construct()
     {
-        $this->merchantCode = config('services.ecocash.merchant_code');
-        $this->merchantKey = config('services.ecocash.merchant_key');
-        $this->apiUrl = config('services.ecocash.api_url');
+        $this->merchantCode = config('services.ecocash.merchant_code', '');
+        $this->merchantKey = config('services.ecocash.merchant_key', '');
+        $this->apiUrl = config('services.ecocash.api_url', '');
         $this->isProduction = config('app.env') === 'production';
     }
 

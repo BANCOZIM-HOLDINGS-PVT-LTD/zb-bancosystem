@@ -234,12 +234,6 @@ class PendingZBApprovalsWidget extends BaseWidget
                         }
                     }),
 
-                Action::make('view')
-                    ->label('View')
-                    ->icon('heroicon-o-eye')
-                    ->url(fn (ApplicationState $record): string => 
-                        route('filament.zb_admin.resources.zb-applications.view', $record))
-                    ->openUrlInNewTab(),
             ])
             ->emptyStateHeading('No Pending Applications')
             ->emptyStateDescription('All ZB loan applications have been processed.')

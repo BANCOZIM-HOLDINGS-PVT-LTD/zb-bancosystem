@@ -1863,4 +1863,49 @@ class PDFGeneratorService implements PDFGeneratorInterface
             'pensioners_loan_account.json' => 'Pensioners Loan Account',
         ];
     }
+
+    /**
+     * Generate PDF for account opening
+     *
+     * @param \App\Models\AccountOpening $accountOpening
+     * @return string Path to generated PDF
+     */
+    public function generateAccountOpeningPDF(\App\Models\AccountOpening $accountOpening): string
+    {
+        try {
+            $pdfData = [
+                'reference_code' => $accountOpening->reference_code,
+                'form_data' => $accountOpening->form_data,
+                'formResponses' => $accountOpening->form_data['formResponses'] ?? [],
+                'status' => $accountOpening->status,
+                'created_at' => $accountOpening->created_at,
+                'zb_account_number' => $accountOpening->zb_account_number,
+            ];
+            
+            $pdf = PDF::loadView('forms.zb_account_opening_pdf', $pdfData);
+            $pdf->setPaper('A4', 'portrait');
+            
+            $filename = "account_opening_{$accountOpening->reference_code}_" . time() . ".pdf";
+            $path = "account_openings/{$filename}";
+            
+            if (!Storage::disk('public')->exists('account_openings')) {
+                Storage::disk('public')->makeDirectory('account_openings');
+            }
+            
+            Storage::disk('public')->put($path, $pdf->output());
+            
+            Log::info('Account opening PDF generated', [
+                'id' => $accountOpening->id,
+                'path' => $path,
+            ]);
+            
+            return $path;
+        } catch (\Exception $e) {
+            Log::error('Account opening PDF generation failed', [
+                'id' => $accountOpening->id,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
 }
