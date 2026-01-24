@@ -5,6 +5,14 @@ import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+    server: {
+        host: '0.0.0.0',
+        port: 5173,
+        strictPort: false,
+        hmr: {
+            host: '192.168.1.104',
+        },
+    },
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/css/filament-admin.css', 'resources/js/app.tsx', 'resources/js/filament-sidebar.js'],

@@ -2,6 +2,10 @@ import axios from 'axios';
 
 export class StateManager {
     private apiUrl = '/api/states';
+    private saveTimeout: ReturnType<typeof setTimeout> | null = null;
+    private isSaving = false;
+    private lastSaveKey = '';
+
 
     generateSessionId(): string {
         return `web_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -45,6 +49,42 @@ export class StateManager {
 
             throw error;
         }
+    }
+
+    /**
+     * Debounced version of saveState to prevent duplicate API calls
+     */
+    debouncedSaveState(sessionId: string, currentStep: string, formData: any, delay = 2000): void {
+        // Clear any pending save
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+
+        // Create a key to identify this save request
+        const saveKey = `${sessionId}_${currentStep}`;
+
+        // Skip if identical to last save and already saving
+        if (this.isSaving && saveKey === this.lastSaveKey) {
+            return;
+        }
+
+        this.saveTimeout = setTimeout(async () => {
+            // Skip if already saving
+            if (this.isSaving) {
+                return;
+            }
+
+            this.isSaving = true;
+            this.lastSaveKey = saveKey;
+
+            try {
+                await this.saveState(sessionId, currentStep, formData);
+            } catch (error) {
+                console.error('Debounced save failed:', error);
+            } finally {
+                this.isSaving = false;
+            }
+        }, delay);
     }
 
     private sanitizeSessionId(sessionId: string): string {

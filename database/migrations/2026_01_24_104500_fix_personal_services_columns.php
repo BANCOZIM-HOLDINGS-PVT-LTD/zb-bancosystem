@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,44 +12,44 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Rename the table if it hasn't been renamed yet
-        if (Schema::hasTable('holiday_bookings') && !Schema::hasTable('personal_services')) {
-            Schema::rename('holiday_bookings', 'personal_services');
-        }
-        
-        // Add new columns if they don't exist
+        // Check if personal_services table exists
         if (Schema::hasTable('personal_services')) {
             Schema::table('personal_services', function (Blueprint $table) {
                 if (!Schema::hasColumn('personal_services', 'service_type')) {
                     $table->string('service_type')->nullable()->after('id');
                 }
+                
                 if (!Schema::hasColumn('personal_services', 'application_state_id')) {
                     $table->foreignId('application_state_id')->nullable()->after('service_type')->constrained()->nullOnDelete();
                 }
+                
                 if (!Schema::hasColumn('personal_services', 'reference_code')) {
                     $table->string('reference_code')->nullable()->after('application_state_id');
                     $table->index('reference_code');
                 }
+                
                 if (!Schema::hasColumn('personal_services', 'redeemed_at')) {
                     $table->timestamp('redeemed_at')->nullable()->after('status');
                 }
+                
                 if (!Schema::hasColumn('personal_services', 'redeemed_by')) {
                     $table->string('redeemed_by')->nullable()->after('redeemed_at');
                 }
+                
                 if (!Schema::hasColumn('personal_services', 'redemption_notes')) {
                     $table->text('redemption_notes')->nullable()->after('redeemed_by');
                 }
-                
-                // Indexes (check if exist or just try add)
-                // To be safe we could wrap in try catch or just leave as is if we assume they are added with columns.
-                // But since we are patching, let's try to add index specifically for service_type if column was just added? 
-                // Actually Schema builder doesn't error on duplicate index usually? No it does.
-                // Simplified approach: rely on column existence.
-                 
-                 if (!Schema::hasColumn('personal_services', 'service_type')) {
-                     $table->index('service_type');
-                 }
             });
+            
+            // Add index for service_type if not exists
+            try {
+                Schema::table('personal_services', function (Blueprint $table) {
+                     // Check index existence raw query usually needed, or try/catch
+                     $table->index('service_type');
+                });
+            } catch (\Exception $e) {
+                // Index likely exists
+            }
         }
     }
 
@@ -57,18 +58,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('personal_services', function (Blueprint $table) {
-            $table->dropForeign(['application_state_id']);
-            $table->dropColumn([
-                'service_type',
-                'application_state_id',
-                'reference_code',
-                'redeemed_at',
-                'redeemed_by',
-                'redemption_notes'
-            ]);
-        });
-        
-        Schema::rename('personal_services', 'holiday_bookings');
+        // No down needed as this is a fix migration
     }
 };

@@ -15,7 +15,7 @@ class OtpService
     {
         $accountSid = config('services.twilio.account_sid');
         $authToken = config('services.twilio.auth_token');
-        // Use alpha sender ID for branding (e.g., BANCOSYSTEM), fallback to phone number
+        // Use alpha sender ID for branding (e.g., Microbiz), fallback to phone number
         $this->fromNumber = config('services.twilio.alpha_sender_id') ?: config('services.twilio.from');
 
         // Use Account SID and Auth Token for authentication
@@ -33,24 +33,19 @@ class OtpService
         try {
             $otp = $user->generateOtp();
 
-            $message = "Hello, welcome to bancosystem. Please copy this code {$otp} and enter it to complete your account verification.";
+            $message = "Hello, welcome to Microbiz. Please copy this code {$otp} and enter it to complete your account verification. If you encounter any problem you may restart your application on bancosystem.fly.dev";
 
-            $this->twilio->messages->create(
-                $user->phone, // to
-                [
-                    'from' => $this->fromNumber,
-                    'body' => $message
-                ]
-            );
+            // Dispatch job to send SMS asynchronously
+            \App\Jobs\SendOtpJob::dispatch($user->phone, $message);
 
-            Log::info('OTP sent successfully', [
+            Log::info('OTP queued for sending', [
                 'user_id' => $user->id,
                 'phone' => $user->phone,
             ]);
 
             return true;
         } catch (\Exception $e) {
-            Log::error('Failed to send OTP', [
+            Log::error('Failed to queue OTP', [
                 'user_id' => $user->id,
                 'phone' => $user->phone,
                 'error' => $e->getMessage(),

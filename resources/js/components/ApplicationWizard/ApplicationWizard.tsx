@@ -839,17 +839,15 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         if (nextStep) {
             setLoading(true);
             try {
-                // Save both locally and remotely
-                await Promise.all([
-                    stateManager.saveState(sessionId, nextStep, updatedData),
-                    localStateManager.saveLocalState(sessionId, nextStep, updatedData)
-                ]);
+                // Save locally immediately (fast)
+                localStateManager.saveLocalState(sessionId, nextStep, updatedData);
+
+                // Save remotely with debounce to prevent duplicate API calls
+                stateManager.debouncedSaveState(sessionId, nextStep, updatedData);
 
                 setCurrentStep(nextStep);
             } catch (error) {
                 console.error('Failed to save state:', error);
-                // Even if remote save fails, continue with local state
-                localStateManager.saveLocalState(sessionId, nextStep, updatedData);
                 setCurrentStep(nextStep);
             } finally {
                 setLoading(false);

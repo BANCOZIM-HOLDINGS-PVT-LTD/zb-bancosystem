@@ -50,7 +50,7 @@ class ZBStatusService
     ): bool {
         $metadata = $application->metadata ?? [];
         $currentStatus = isset($metadata['zb_status'])
-            ? ZBLoanStatus::from($metadata['zb_status'])
+            ? ZBLoanStatus::tryFrom($metadata['zb_status'])
             : null;
 
         // Validate transition

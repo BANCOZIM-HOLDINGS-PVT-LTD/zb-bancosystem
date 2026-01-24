@@ -63,7 +63,9 @@ class SaveApplicationStateRequest extends FormRequest
                     'hirePurchase', 'microBiz', 'checkStatus', 'trackDelivery', 
                     'loan', 'account', 'personalServices', 'cashPurchase',
                     'ssbLoan', 'zbLoan', 'accountOpening', 'rdcLoan',
-                    'houseConstruction', 'agentApplication', 'agentLogin'
+                    'houseConstruction', 'agentApplication', 'agentLogin',
+                    // New intent values from welcome page
+                    'homeConstruction', 'personalGadgets'
                 ]),
             ],
             'form_data.employer' => [

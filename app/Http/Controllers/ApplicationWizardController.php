@@ -66,7 +66,7 @@ class ApplicationWizardController extends Controller
             'accountDetails' => [
                  'accountNumber' => $accountOpening->zb_account_number,
                  'verified' => true,
-                 'accountHolderName' => $formResponses['firstName'] . ' ' . $formResponses['lastName'],
+                 'accountHolderName' => ($formResponses['firstName'] ?? '') . ' ' . ($formResponses['lastName'] ?? ''),
             ],
             'formResponses' => [
                 'firstName' => $formResponses['firstName'] ?? '',
@@ -82,9 +82,9 @@ class ApplicationWizardController extends Controller
                 'accountNumber' => $accountOpening->zb_account_number,
                 'existingAccountHolder' => true,
             ],
-            'productName' => $accountOpening->selected_product['product_name'] ?? null,
-            'productCode' => $accountOpening->selected_product['product_code'] ?? null,
-            'category' => $accountOpening->selected_product['category'] ?? null,
+            'productName' => ($accountOpening->selected_product ?? [])['product_name'] ?? null,
+            'productCode' => ($accountOpening->selected_product ?? [])['product_code'] ?? null,
+            'category' => ($accountOpening->selected_product ?? [])['category'] ?? null,
         ];
 
         // Soft delete any existing application states with this reference code
