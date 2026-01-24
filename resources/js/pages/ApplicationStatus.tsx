@@ -20,7 +20,8 @@ import Footer from '@/components/Footer';
 
 interface ApplicationDetails {
     sessionId: string;
-    status: 'pending' | 'under_review' | 'approved' | 'rejected' | 'completed';
+    status: 'pending' | 'under_review' | 'approved' | 'rejected' | 'completed' | 'account_opened';
+    applicationType?: 'account_opening' | 'loan';
     applicantName: string;
     business: string;
     loanAmount: string;
@@ -31,6 +32,11 @@ interface ApplicationDetails {
     depositPaidAt?: string;
     depositTransactionId?: string;
     depositPaymentMethod?: string;
+    zbAccountNumber?: string;
+    loanEligible?: boolean;
+    loanEligibleAt?: string;
+    nextAction?: string;
+    rejectionReason?: string;
 }
 
 export default function ApplicationStatus() {
@@ -160,6 +166,13 @@ export default function ApplicationStatus() {
                 bg: 'bg-emerald-50 dark:bg-emerald-900/20',
                 label: 'Completed',
                 description: 'Your application has been completed successfully.'
+            },
+            'account_opened': {
+                icon: CheckCircle,
+                color: 'text-green-600 dark:text-green-400',
+                bg: 'bg-green-50 dark:bg-green-900/20',
+                label: 'Account Opened',
+                description: 'Your ZB Bank account has been successfully opened.'
             },
         };
 

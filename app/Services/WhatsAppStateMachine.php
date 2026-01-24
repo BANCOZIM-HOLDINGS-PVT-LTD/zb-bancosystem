@@ -890,14 +890,14 @@ class WhatsAppStateMachine
                        
             case 'redirect_delivery_tracking':
                 return "📦 *Track Your Delivery*\n\n" .
-                       "Please login to track your delivery:\n\n" .
-                       "🔗 {$this->websiteUrl}/client/login\n\n" .
+                       "Click here to track your delivery:\n\n" .
+                       "🔗 {$this->websiteUrl}/delivery/tracking\n\n" .
                        "Say 'hi' anytime to start a new conversation.";
                        
             case 'redirect_application_status':
                 return "📋 *Track Your Application*\n\n" .
-                       "Please login to check your application status:\n\n" .
-                       "🔗 {$this->websiteUrl}/client/login\n\n" .
+                       "Click here to check your application status:\n\n" .
+                       "🔗 {$this->websiteUrl}/application/status\n\n" .
                        "Say 'hi' anytime to start a new conversation.";
 
             case 'redirect_zb_account':
@@ -908,7 +908,7 @@ class WhatsAppStateMachine
                        
             case 'redirect_agent_login':
                 return "👤 *Online Agent Login*\n\n" .
-                       "Please login to your agent dashboard:\n\n" .
+                       "Click here to login to your agent dashboard:\n\n" .
                        "🔗 {$this->websiteUrl}/agent/login\n\n" .
                        "Say 'hi' anytime to start a new conversation.";
                        

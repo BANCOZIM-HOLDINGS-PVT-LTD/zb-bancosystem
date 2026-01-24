@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AccountOpening;
 use App\Models\ApplicationState;
 use App\Services\NotificationService;
 use App\Services\ReferenceCodeService;
@@ -34,10 +35,25 @@ class ApplicationStatusController extends Controller
     {
         // Look up application by session ID or reference code (national ID)
         $application = null;
+        $accountOpening = null;
 
         // Sanitize the reference by removing spaces and special characters
         $reference = strtoupper(str_replace([' ', '-'], '', trim($reference)));
 
+        // First check AccountOpening table (for account opening applications)
+        $accountOpening = AccountOpening::where('reference_code', $reference)->first();
+        
+        // If not found by reference_code, try user_identifier
+        if (!$accountOpening) {
+            $accountOpening = AccountOpening::where('user_identifier', $reference)->first();
+        }
+
+        // If we found an AccountOpening, return its status
+        if ($accountOpening) {
+            return $this->getAccountOpeningStatus($accountOpening);
+        }
+
+        // Fall back to ApplicationState lookup for ZB/SSB loan applications
         // First try to find by reference code (national ID)
         // National IDs are alphanumeric and can be of varying lengths
         if (ctype_alnum($reference)) {
@@ -124,6 +140,102 @@ class ApplicationStatusController extends Controller
 
         return response()->json($response);
     }
+
+    /**
+     * Get status for Account Opening applications
+     */
+    private function getAccountOpeningStatus(AccountOpening $accountOpening): JsonResponse
+    {
+        $formData = $accountOpening->form_data ?? [];
+        $formResponses = $formData['formResponses'] ?? [];
+
+        // Map AccountOpening status to user-facing status
+        $status = $this->mapAccountOpeningStatus($accountOpening->status);
+
+        // Get applicant name
+        $applicantName = $accountOpening->applicant_name;
+
+        // Get product info
+        $selectedProduct = $accountOpening->selected_product ?? [];
+        $business = $selectedProduct['product_name'] ?? ($formData['business'] ?? 'Account Opening');
+
+        // Build response
+        $response = [
+            'sessionId' => $accountOpening->reference_code,
+            'status' => $status,
+            'applicationType' => 'account_opening',
+            'applicantName' => $applicantName,
+            'business' => $business,
+            'loanAmount' => '0', // Account opening doesn't have loan amount
+            'submittedAt' => $accountOpening->created_at->format('F j, Y g:i A'),
+            'lastUpdated' => $accountOpening->updated_at->format('F j, Y g:i A'),
+            'progressPercentage' => $this->calculateAccountOpeningProgress($accountOpening->status),
+            'nextAction' => $this->getAccountOpeningNextAction($accountOpening->status),
+        ];
+
+        // Add ZB account number if account has been opened
+        if ($accountOpening->zb_account_number) {
+            $response['zbAccountNumber'] = $accountOpening->zb_account_number;
+        }
+
+        // Add rejection reason if rejected
+        if ($accountOpening->status === AccountOpening::STATUS_REJECTED && $accountOpening->rejection_reason) {
+            $response['rejectionReason'] = $accountOpening->rejection_reason;
+        }
+
+        // Add loan eligibility info
+        if ($accountOpening->loan_eligible) {
+            $response['loanEligible'] = true;
+            $response['loanEligibleAt'] = $accountOpening->loan_eligible_at 
+                ? $accountOpening->loan_eligible_at->format('F j, Y g:i A') 
+                : null;
+        }
+
+        return response()->json($response);
+    }
+
+    /**
+     * Map AccountOpening status to user-facing status
+     */
+    private function mapAccountOpeningStatus(string $status): string
+    {
+        return match ($status) {
+            AccountOpening::STATUS_PENDING => 'under_review',
+            AccountOpening::STATUS_ACCOUNT_OPENED => 'approved',
+            AccountOpening::STATUS_LOAN_ELIGIBLE => 'completed',
+            AccountOpening::STATUS_REJECTED => 'rejected',
+            default => 'under_review',
+        };
+    }
+
+    /**
+     * Calculate progress for account opening applications
+     */
+    private function calculateAccountOpeningProgress(string $status): int
+    {
+        return match ($status) {
+            AccountOpening::STATUS_PENDING => 40,
+            AccountOpening::STATUS_ACCOUNT_OPENED => 80,
+            AccountOpening::STATUS_LOAN_ELIGIBLE => 100,
+            AccountOpening::STATUS_REJECTED => 0,
+            default => 25,
+        };
+    }
+
+    /**
+     * Get next action for account opening applications
+     */
+    private function getAccountOpeningNextAction(string $status): ?string
+    {
+        return match ($status) {
+            AccountOpening::STATUS_PENDING => 'Your account opening application is being reviewed',
+            AccountOpening::STATUS_ACCOUNT_OPENED => 'Visit your nearest ZB Bank branch to complete the process',
+            AccountOpening::STATUS_LOAN_ELIGIBLE => 'You can now apply for loans through our platform',
+            AccountOpening::STATUS_REJECTED => 'You may submit a new application',
+            default => 'Awaiting update',
+        };
+    }
+
 
     /**
      * Update application status (for admin use)
