@@ -205,7 +205,7 @@
     @if(!empty($documents))
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <h3 class="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">Documents</h3>
-            
+
             <div class="space-y-3">
                 @if(!empty($documents['uploadedDocuments']))
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -214,16 +214,44 @@
                                 @php
                                     // Handle both string paths and array structures
                                     $documentPath = is_array($document) ? ($document['path'] ?? $document['url'] ?? '') : $document;
+
+                                    // Generate URL - handle different path formats
+                                    $documentUrl = '';
+                                    if (!empty($documentPath)) {
+                                        // Check if it's already a full URL
+                                        if (str_starts_with($documentPath, 'http://') || str_starts_with($documentPath, 'https://')) {
+                                            $documentUrl = $documentPath;
+                                        } else {
+                                            $documentUrl = Storage::disk('public')->url($documentPath);
+                                        }
+                                    }
+
+                                    // Check if document exists
+                                    $documentExists = !empty($documentPath) && Storage::disk('public')->exists($documentPath);
+
+                                    // Determine if it's an image for preview
+                                    $isImage = !empty($documentPath) && preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $documentPath);
                                 @endphp
                                 @if(!empty($documentPath))
                                     <div class="bg-gray-50 dark:bg-gray-700 rounded p-3">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                {{ ucwords(str_replace('_', ' ', $docType)) }} {{ count($docList) > 1 ? ($index + 1) : '' }}
-                                            </span>
-                                            <a href="{{ Storage::disk('public')->url($documentPath) }}" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                                                View
-                                            </a>
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                    {{ ucwords(str_replace('_', ' ', $docType)) }} {{ count($docList) > 1 ? ($index + 1) : '' }}
+                                                </span>
+                                                @if($documentExists)
+                                                    <a href="{{ $documentUrl }}" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+                                                        View
+                                                    </a>
+                                                @else
+                                                    <span class="text-xs text-red-500">File not found</span>
+                                                @endif
+                                            </div>
+                                            @if($isImage && $documentExists)
+                                                <a href="{{ $documentUrl }}" target="_blank">
+                                                    <img src="{{ $documentUrl }}" alt="{{ ucwords(str_replace('_', ' ', $docType)) }}" class="w-full h-24 object-cover rounded border border-gray-200 dark:border-gray-600 hover:opacity-80 transition-opacity">
+                                                </a>
+                                            @endif
                                         </div>
                                     </div>
                                 @endif
@@ -231,27 +259,61 @@
                         @endforeach
                     </div>
                 @endif
-                
+
                 @if(!empty($documents['selfie']) || !empty($documents['signature']))
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                         @if(!empty($documents['selfie']))
+                            @php
+                                $selfiePath = $documents['selfie'];
+                                $selfieUrl = str_starts_with($selfiePath, 'http') ? $selfiePath : Storage::disk('public')->url($selfiePath);
+                                $selfieExists = Storage::disk('public')->exists($selfiePath);
+                                $selfieIsBase64 = str_starts_with($selfiePath, 'data:image');
+                            @endphp
                             <div class="bg-gray-50 dark:bg-gray-700 rounded p-3">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Applicant Photo</span>
-                                    <a href="{{ Storage::disk('public')->url($documents['selfie']) }}" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                                        View
-                                    </a>
+                                <div class="flex flex-col gap-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Applicant Photo</span>
+                                        @if($selfieExists || $selfieIsBase64)
+                                            <a href="{{ $selfieIsBase64 ? $selfiePath : $selfieUrl }}" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+                                                View
+                                            </a>
+                                        @else
+                                            <span class="text-xs text-red-500">File not found</span>
+                                        @endif
+                                    </div>
+                                    @if($selfieExists || $selfieIsBase64)
+                                        <a href="{{ $selfieIsBase64 ? $selfiePath : $selfieUrl }}" target="_blank">
+                                            <img src="{{ $selfieIsBase64 ? $selfiePath : $selfieUrl }}" alt="Applicant Photo" class="w-full h-32 object-cover rounded border border-gray-200 dark:border-gray-600 hover:opacity-80 transition-opacity">
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
                         @endif
-                        
+
                         @if(!empty($documents['signature']))
+                            @php
+                                $signaturePath = $documents['signature'];
+                                $signatureUrl = str_starts_with($signaturePath, 'http') ? $signaturePath : Storage::disk('public')->url($signaturePath);
+                                $signatureExists = Storage::disk('public')->exists($signaturePath);
+                                $signatureIsBase64 = str_starts_with($signaturePath, 'data:image');
+                            @endphp
                             <div class="bg-gray-50 dark:bg-gray-700 rounded p-3">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Applicant Signature</span>
-                                    <a href="{{ Storage::disk('public')->url($documents['signature']) }}" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                                        View
-                                    </a>
+                                <div class="flex flex-col gap-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Applicant Signature</span>
+                                        @if($signatureExists || $signatureIsBase64)
+                                            <a href="{{ $signatureIsBase64 ? $signaturePath : $signatureUrl }}" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+                                                View
+                                            </a>
+                                        @else
+                                            <span class="text-xs text-red-500">File not found</span>
+                                        @endif
+                                    </div>
+                                    @if($signatureExists || $signatureIsBase64)
+                                        <a href="{{ $signatureIsBase64 ? $signaturePath : $signatureUrl }}" target="_blank">
+                                            <img src="{{ $signatureIsBase64 ? $signaturePath : $signatureUrl }}" alt="Applicant Signature" class="w-full h-20 object-contain rounded border border-gray-200 dark:border-gray-600 bg-white hover:opacity-80 transition-opacity">
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
                         @endif

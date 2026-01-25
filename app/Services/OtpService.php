@@ -24,6 +24,8 @@ class OtpService
 
     /**
      * Send OTP to a phone number
+     * OTPs are time-sensitive - uses dispatchAfterResponse for immediate processing
+     * without blocking the user's request
      *
      * @param User $user
      * @return bool
@@ -35,17 +37,19 @@ class OtpService
 
             $message = "Hello, welcome to Microbiz. Please copy this code {$otp} and enter it to complete your account verification. If you encounter any problem you may restart your application on bancosystem.fly.dev";
 
-            // Dispatch job to send SMS asynchronously
-            \App\Jobs\SendOtpJob::dispatch($user->phone, $message);
+            // Use dispatchAfterResponse for immediate processing after HTTP response
+            // This sends response to user immediately, then processes the SMS
+            // Without requiring a queue worker to be running
+            \App\Jobs\SendOtpJob::dispatchAfterResponse($user->phone, $message);
 
-            Log::info('OTP queued for sending', [
+            Log::info('OTP dispatch scheduled (after response)', [
                 'user_id' => $user->id,
                 'phone' => $user->phone,
             ]);
 
             return true;
         } catch (\Exception $e) {
-            Log::error('Failed to queue OTP', [
+            Log::error('Failed to schedule OTP', [
                 'user_id' => $user->id,
                 'phone' => $user->phone,
                 'error' => $e->getMessage(),

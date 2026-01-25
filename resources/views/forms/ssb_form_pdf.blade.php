@@ -1330,8 +1330,11 @@
         </div>
     </div>
 
-    <div class="page-number">Page 6 of 6</div>
+    <div class="page-number">End of Application Form</div>
 </div>
+
+{{-- Include Document Attachments (ID, Payslip, etc.) --}}
+@include('forms.partials.pdf_attachments')
 
 </body>
 </html>

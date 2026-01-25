@@ -1129,9 +1129,12 @@
     </div>
 
     <div style="margin-top: 10px; font-size: 7pt; text-align: center; color: #666;">
-        <em>End of Application - Page 6 of 6</em>
+        <em>End of Application Form</em>
     </div>
 </div>
+
+{{-- Include Document Attachments (ID, Payslip, etc.) --}}
+@include('forms.partials.pdf_attachments')
 
 </body>
 </html>

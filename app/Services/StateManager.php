@@ -35,7 +35,7 @@ class StateManager
     }
     
     /**
-     * Save or update application state
+     * Save or update application state with duplicate prevention
      */
     public function saveState(string $sessionId, string $channel, string $userIdentifier, string $step, array $data, array $metadata = []): ApplicationState
     {
@@ -43,27 +43,69 @@ class StateManager
         $userIdentifier = $this->sanitizeUserIdentifier($userIdentifier);
         $step = $this->validateStep($step);
         $data = $this->sanitizeFormData($data);
-        
+
         $maxRetries = 3;
         $retryCount = 0;
-        
+
         while ($retryCount < $maxRetries) {
             try {
                 // Reconnect to database if connection was lost
                 \DB::reconnect();
-                
-                $state = ApplicationState::updateOrCreate(
-                    ['session_id' => $sessionId],
-                    [
-                        'channel' => $channel,
-                        'user_identifier' => $userIdentifier,
-                        'current_step' => $step,
-                        'form_data' => $data,
-                        'metadata' => $metadata,
-                        'expires_at' => $this->getExpirationTime($channel),
-                    ]
-                );
-                
+
+                // Use database transaction with locking to prevent race conditions
+                $state = \DB::transaction(function () use ($sessionId, $channel, $userIdentifier, $step, $data, $metadata) {
+                    // Try to find existing state with lock for update
+                    $existingState = ApplicationState::where('session_id', $sessionId)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($existingState) {
+                        // Debounce: Skip if last save was less than 500ms ago with same step
+                        $lastActivity = $existingState->last_activity ?? $existingState->updated_at;
+                        $timeSinceLastSave = now()->diffInMilliseconds($lastActivity);
+
+                        if ($timeSinceLastSave < 500 && $existingState->current_step === $step) {
+                            // Generate hash of form data to detect actual changes
+                            $existingHash = md5(json_encode($existingState->form_data ?? []));
+                            $newHash = md5(json_encode($data));
+
+                            if ($existingHash === $newHash) {
+                                \Log::debug('Skipping duplicate save (debounced)', [
+                                    'session_id' => $sessionId,
+                                    'step' => $step,
+                                    'time_since_last' => $timeSinceLastSave . 'ms'
+                                ]);
+                                return $existingState;
+                            }
+                        }
+
+                        // Update existing state
+                        $existingState->update([
+                            'channel' => $channel,
+                            'user_identifier' => $userIdentifier,
+                            'current_step' => $step,
+                            'form_data' => $data,
+                            'metadata' => $metadata,
+                            'expires_at' => $this->getExpirationTime($channel),
+                            'last_activity' => now(),
+                        ]);
+
+                        return $existingState;
+                    } else {
+                        // Create new state
+                        return ApplicationState::create([
+                            'session_id' => $sessionId,
+                            'channel' => $channel,
+                            'user_identifier' => $userIdentifier,
+                            'current_step' => $step,
+                            'form_data' => $data,
+                            'metadata' => $metadata,
+                            'expires_at' => $this->getExpirationTime($channel),
+                            'last_activity' => now(),
+                        ]);
+                    }
+                });
+
                 // Log state transition
                 try {
                     $this->logTransition($state->id, $state->getOriginal('current_step'), $step, $channel, $data);
@@ -79,19 +121,19 @@ class StateManager
                         $state = $state->fresh();
                     }
                 }
-                
+
                 return $state;
-                
+
             } catch (\Exception $e) {
                 $retryCount++;
-                
+
                 // Check if it's a connection issue
                 if ($this->isConnectionError($e) && $retryCount < $maxRetries) {
                     \Log::warning("Database connection lost, retrying... (attempt {$retryCount}/{$maxRetries})");
                     sleep(1); // Wait 1 second before retry
                     continue;
                 }
-                
+
                 // Log the error with context
                 \Log::error('Failed to save application state', [
                     'session_id' => $sessionId,
@@ -101,11 +143,11 @@ class StateManager
                     'error' => $e->getMessage(),
                     'retry_count' => $retryCount
                 ]);
-                
+
                 throw new \Exception("Failed to save application state: " . $e->getMessage());
             }
         }
-        
+
         throw new \Exception("Failed to save application state after {$maxRetries} retries");
     }
     
@@ -225,18 +267,23 @@ class StateManager
     }
     
     /**
-     * Retrieve state for user
+     * Retrieve state for user (excludes archived applications)
      */
     public function retrieveState(string $userIdentifier, ?string $channel = null): ?ApplicationState
     {
         $query = ApplicationState::where('user_identifier', $userIdentifier)
             ->where('expires_at', '>', now())
+            ->where(function ($q) {
+                // Exclude archived applications - allows users to start new applications
+                $q->where('is_archived', false)
+                  ->orWhereNull('is_archived');
+            })
             ->orderBy('updated_at', 'desc');
-            
+
         if ($channel) {
             $query->where('channel', $channel);
         }
-        
+
         return $query->first();
     }
     

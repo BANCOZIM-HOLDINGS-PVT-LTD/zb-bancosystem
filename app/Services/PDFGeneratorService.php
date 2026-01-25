@@ -1268,25 +1268,46 @@ class PDFGeneratorService implements PDFGeneratorInterface
         if (isset($formData['documents'])) {
             $data['hasDocuments'] = true;
             $data['documents'] = $formData['documents'];
-            
+
             // Process selfie and signature for embedding
             $data['selfieImage'] = $formData['documents']['selfie'] ?? '';
             $data['signatureImage'] = $formData['documents']['signature'] ?? '';
             $data['documentsUploadedAt'] = $formData['documents']['uploadedAt'] ?? '';
-            
+
             // Process uploaded documents by type
+            // Check both uploadedDocuments and documentReferences for document paths
             $data['documentsByType'] = [];
-            if (isset($formData['documents']['uploadedDocuments'])) {
+
+            // First try documentReferences (preferred - contains actual file paths)
+            if (isset($formData['documents']['documentReferences']) && !empty($formData['documents']['documentReferences'])) {
+                foreach ($formData['documents']['documentReferences'] as $type => $docs) {
+                    if (is_array($docs) && count($docs) > 0) {
+                        $data['documentsByType'][$type] = array_map(function($doc) {
+                            return [
+                                'name' => $doc['name'] ?? '',
+                                'path' => $doc['path'] ?? '',
+                                'type' => $doc['type'] ?? '',
+                                'size' => $this->formatFileSize($doc['size'] ?? 0),
+                                'uploadedAt' => $doc['uploadedAt'] ?? '',
+                            ];
+                        }, $docs);
+                    }
+                }
+            }
+            // Fallback to uploadedDocuments if documentReferences is empty
+            elseif (isset($formData['documents']['uploadedDocuments'])) {
                 foreach ($formData['documents']['uploadedDocuments'] as $type => $docs) {
-                    $data['documentsByType'][$type] = array_map(function($doc) {
-                        return [
-                            'name' => $doc['name'] ?? '',
-                            'path' => $doc['path'] ?? '',
-                            'type' => $doc['type'] ?? '',
-                            'size' => $this->formatFileSize($doc['size'] ?? 0),
-                            'uploadedAt' => $doc['uploadedAt'] ?? '',
-                        ];
-                    }, $docs);
+                    if (is_array($docs) && count($docs) > 0) {
+                        $data['documentsByType'][$type] = array_map(function($doc) {
+                            return [
+                                'name' => $doc['name'] ?? '',
+                                'path' => $doc['path'] ?? '',
+                                'type' => $doc['type'] ?? '',
+                                'size' => $this->formatFileSize($doc['size'] ?? 0),
+                                'uploadedAt' => $doc['uploadedAt'] ?? '',
+                            ];
+                        }, $docs);
+                    }
                 }
             }
         } else {
