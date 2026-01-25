@@ -9,9 +9,11 @@ export default defineConfig({
         host: '0.0.0.0',
         port: 5173,
         strictPort: false,
+        // HMR host auto-detection: use VITE_HMR_HOST env var, or default to localhost
         hmr: {
-            host: '192.168.1.104',
+            host: process.env.VITE_HMR_HOST || 'localhost',
         },
+        cors: true,
     },
     plugins: [
         laravel({

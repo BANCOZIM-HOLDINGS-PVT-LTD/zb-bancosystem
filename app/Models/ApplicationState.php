@@ -27,6 +27,8 @@ class ApplicationState extends Model
         'deposit_paid_at',
         'deposit_transaction_id',
         'deposit_payment_method',
+        'last_activity',
+        'is_archived',
     ];
 
     protected $casts = [
@@ -37,6 +39,8 @@ class ApplicationState extends Model
         'exempt_from_auto_deletion' => 'boolean',
         'deposit_paid' => 'boolean',
         'deposit_paid_at' => 'datetime',
+        'last_activity' => 'datetime',
+        'is_archived' => 'boolean',
     ];
 
     public function transitions(): HasMany

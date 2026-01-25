@@ -36,13 +36,13 @@ class CommissionCalculationService
     
     /**
      * Get commission rate based on agent type
-     * Note 15: 0.3% for online agents, 3% for field agents
+     * Note: 0.01% for online agents, 3% for field agents
      */
     protected function getAgentCommissionRate(Agent $agent): float
     {
         switch ($agent->type) {
             case 'online':
-                return 0.3;
+                return 0.01;
             case 'field':
                 return 3.0;
             case 'direct':

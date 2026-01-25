@@ -1281,8 +1281,11 @@
         </div>
     </div>
 
-    <div class="page-footer">Page 5 of 5</div>
+    <div class="page-footer">End of Application Form</div>
 </div>
+
+{{-- Include Document Attachments (ID, Payslip, etc.) --}}
+@include('forms.partials.pdf_attachments')
 
 </body>
 </html>

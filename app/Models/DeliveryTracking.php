@@ -103,15 +103,16 @@ class DeliveryTracking extends Model
         parent::boot();
 
         static::updated(function ($tracking) {
+            // Handle dispatch notification
             if ($tracking->wasChanged('status') && $tracking->status === 'dispatched') {
                 try {
                     $smsService = app(\App\Services\SMSService::class);
                     $mobile = $tracking->recipient_phone;
-                    
+
                     if ($mobile) {
                         $reference = $tracking->applicationState ? $tracking->applicationState->reference_code : 'N/A';
                         $message = "Your BancoZim order ({$reference}) has been dispatched via {$tracking->courier_type}.";
-                        
+
                         if ($tracking->courier_type === 'Zim Post Office') {
                              $message .= " You will be notified when it is ready for collection at your nearest post office.";
                         } elseif ($tracking->courier_type === 'Gain Cash & Carry') {
@@ -125,6 +126,47 @@ class DeliveryTracking extends Model
                     }
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error("Failed to send dispatch SMS for tracking ID {$tracking->id}: " . $e->getMessage());
+                }
+            }
+
+            // Handle delivery completion - Archive application to allow new applications
+            if ($tracking->wasChanged('status') && $tracking->status === 'delivered') {
+                try {
+                    $applicationState = $tracking->applicationState;
+
+                    if ($applicationState) {
+                        // Archive the application
+                        $applicationState->update([
+                            'is_archived' => true,
+                        ]);
+
+                        // Set delivered_at timestamp if not already set
+                        if (!$tracking->delivered_at) {
+                            $tracking->updateQuietly(['delivered_at' => now()]);
+                        }
+
+                        \Illuminate\Support\Facades\Log::info("Application archived after successful delivery", [
+                            'tracking_id' => $tracking->id,
+                            'application_id' => $applicationState->id,
+                            'reference_code' => $applicationState->reference_code,
+                            'national_id' => $tracking->client_national_id ?? 'N/A',
+                        ]);
+
+                        // Send delivery confirmation SMS
+                        $smsService = app(\App\Services\SMSService::class);
+                        $mobile = $tracking->recipient_phone;
+
+                        if ($mobile) {
+                            $reference = $applicationState->reference_code ?? 'N/A';
+                            $message = "Your BancoZim order ({$reference}) has been delivered successfully. Thank you for choosing us! You may now apply for a new product at bancosystem.fly.dev";
+                            $smsService->sendSMS($mobile, $message);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to archive application after delivery", [
+                        'tracking_id' => $tracking->id,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
             }
         });
