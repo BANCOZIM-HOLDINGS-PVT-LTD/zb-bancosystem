@@ -45,6 +45,48 @@ const GAIN_DEPOTS = [
     'WX Gokwe - gokwe', 'ZX Zvishavane - zvishavane'
 ].sort();
 
+// Farm & City Depots (Major Cities)
+const FARM_AND_CITY_DEPOTS = [
+    'Harare',
+    'Bulawayo',
+    'Chitungwiza',
+    'Mutare',
+    'Epworth',
+    'Gweru',
+    'Kwekwe',
+    'Kadoma',
+    'Masvingo',
+    'Chinhoyi',
+    'Norton',
+    'Marondera',
+    'Ruwa',
+    'Chegutu',
+    'Zvishavane',
+    'Bindura',
+    'Beitbridge',
+    'Redcliff',
+    'Victoria Falls',
+    'Hwange',
+    'Rusape',
+    'Chiredzi',
+    'Kariba',
+    'Karoi',
+    'Chipinge',
+    'Gokwe',
+    'Shurugwi'
+].sort();
+
+// PG Building Materials Depots
+const PG_DEPOTS = [
+    'PGC HARARE - 21 Chinhoyi Street, CBD, Harare',
+    'PG TIMBERS - 5 Nottingham Road, Workington, Harare',
+    'PGC BULAWAYO - Cnr 23rd Avenue Birmingham Road/Belmont, Bulawayo',
+    'CHINHOYI - 662 Gadzema Road, Chinhoyi',
+    'KWEKWE - 1 Industrial Road, Kwekwe',
+    'MASVINGO - 700 Timber Road, Masvingo',
+    'MUTARE - 7 Bvumba Road, Paulington, Mutare'
+];
+
 // Grouped Zimpost Offices - Updated 2026 (5 Provinces)
 const ZIMPOST_LOCATIONS: Record<string, string[]> = {
     'Harare City & Chitungwiza': [
@@ -87,8 +129,8 @@ const ZIMPOST_LOCATIONS: Record<string, string[]> = {
         'Turkmine', 'Victoria Falls', 'West Nich'
     ],
     'Bulawayo City ': [
-        'Ascot','Belmont','Bulawayo Main', 'Entumbane','Esigodini', 'Famona',
-        'Filabusi',  'Llewellin Barracks',  'Luveve','Mzilikazi','Mpopoma', 'Morningside',  'Nkayi', 'Nkulumane',
+        'Ascot', 'Belmont', 'Bulawayo Main', 'Entumbane', 'Esigodini', 'Famona',
+        'Filabusi', 'Llewellin Barracks', 'Luveve', 'Mzilikazi', 'Mpopoma', 'Morningside', 'Nkayi', 'Nkulumane',
         'Plumtree', 'Pumula', 'Raylton', 'Shangani', 'Solusi', 'Tsholotsho',
     ]
 };
@@ -98,7 +140,7 @@ const ALL_ZIMPOST_BRANCHES = Object.values(ZIMPOST_LOCATIONS).flat().sort();
 
 // Determine delivery agent based on product category/subcategory
 const determineDeliveryAgent = (category?: string, subcategory?: string, business?: string): {
-    agent: 'Gain Cash & Carry' | 'Zim Post Office';
+    agent: 'Gain Cash & Carry' | 'Zim Post Office' | 'Farm & City' | 'PG Building Materials';
     isEditable: boolean;
     reason: string;
 } => {
@@ -107,18 +149,55 @@ const determineDeliveryAgent = (category?: string, subcategory?: string, busines
     const businessLower = (business || '').toLowerCase();
     const combinedText = `${categoryLower} ${subcategoryLower} ${businessLower}`;
 
-    // Check for tuckshops, groceries, airtime, candy, books, stationary, back to school and live broilers ONLY - Gain Cash & Carry
+    // 1. Check for Farm & City products (Agri inputs, mechanization, machinery, chickens)
+    if (
+        combinedText.includes('agriculture') ||
+        combinedText.includes('agri') ||
+        combinedText.includes('mechanization') ||
+        combinedText.includes('machinery') ||
+        combinedText.includes('chicken') ||
+        combinedText.includes('poultry') ||
+        combinedText.includes('livestock') ||
+        combinedText.includes('broiler') ||
+        combinedText.includes('layer') ||
+        combinedText.includes('fertilizer') ||
+        combinedText.includes('seed') ||
+        combinedText.includes('tractor')
+    ) {
+        return {
+            agent: 'Farm & City',
+            isEditable: false,
+            reason: 'All agricultural inputs, mechanization, machinery, and chickens will be collected at your nearest Farm and City depot.'
+        };
+    }
+
+    // 2. Check for Building Materials -> PG
+    if (
+        combinedText.includes('building') ||
+        combinedText.includes('construction') ||
+        combinedText.includes('cement') ||
+        combinedText.includes('timber') ||
+        combinedText.includes('roofing') ||
+        combinedText.includes('brick') ||
+        combinedText.includes('door') ||
+        combinedText.includes('window') ||
+        combinedText.includes('plumbing') ||
+        combinedText.includes('core house')
+    ) {
+        return {
+            agent: 'PG Building Materials',
+            isEditable: false,
+            reason: 'All Building Materials will be collected at your nearest PG depot.'
+        };
+    }
+
+    // 3. Check for Tuckshop -> Gain Cash & Carry
     if (
         combinedText.includes('tuckshop') ||
         combinedText.includes('groceries') ||
         combinedText.includes('grocery') ||
         combinedText.includes('airtime') ||
         combinedText.includes('candy') ||
-        combinedText.includes('poultry') ||
-        combinedText.includes('chicken') ||
-        combinedText.includes('livestock') ||
-        combinedText.includes('broiler') ||
-        combinedText.includes('layer') ||
         combinedText.includes('back to school') ||
         combinedText.includes('book') ||
         combinedText.includes('stationery') ||
@@ -128,22 +207,22 @@ const determineDeliveryAgent = (category?: string, subcategory?: string, busines
         return {
             agent: 'Gain Cash & Carry',
             isEditable: false,
-            reason: 'Tuckshops, groceries, airtime, candy, books, stationary, back to school and live broilers are delivered through Gain Cash & Carry depots'
+            reason: 'Tuckshops, groceries, airtime, candy, books, and stationery are delivered through Gain Cash & Carry depots.'
         };
     }
 
-    // Default to Zim Post Office for EVERYTHING else (replaces Swift)
+    // 4. Default to Zim Post Office
     return {
         agent: 'Zim Post Office',
         isEditable: false,
-        reason: 'Products are delivered through the Zim Post Office'
+        reason: 'Products are delivered through the Zim Post Office.'
     };
 };
 
 const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onBack, loading }) => {
     const deliveryAgentInfo = determineDeliveryAgent(data.category, data.subcategory, data.business);
 
-    const [selectedAgent, setSelectedAgent] = useState<'Gain Cash & Carry' | 'Zim Post Office'>(
+    const [selectedAgent, setSelectedAgent] = useState<'Gain Cash & Carry' | 'Zim Post Office' | 'Farm & City' | 'PG Building Materials'>(
         (data.deliverySelection?.agent as any) || deliveryAgentInfo.agent
     );
 
@@ -208,8 +287,8 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
         }
 
         // Standard Delivery Validation
-        if (selectedAgent === 'Gain Cash & Carry' && !selectedDepot) {
-            setError('Please select a Gain Cash & Carry depot for collection');
+        if ((selectedAgent === 'Gain Cash & Carry' || selectedAgent === 'Farm & City' || selectedAgent === 'PG Building Materials') && !selectedDepot) {
+            setError(`Please select a ${selectedAgent} depot for collection`);
             return;
         }
 
@@ -230,14 +309,16 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
             deliverySelection: {
                 agent: selectedAgent,
                 city: selectedAgent === 'Zim Post Office' ? selectedCity : undefined,
-                depot: selectedDepot, // Both Gain & Zimpost use this now for the final specific location
+                depot: selectedDepot, // All agents use this now for the final specific location
                 isAgentEditable: deliveryAgentInfo.isEditable
             }
         });
     };
 
-    const isGainDisabled = selectedAgent === 'Zim Post Office' && !deliveryAgentInfo.isEditable;
-    const isPostOfficeDisabled = selectedAgent === 'Gain Cash & Carry' && !deliveryAgentInfo.isEditable;
+    const isGainDisabled = selectedAgent !== 'Gain Cash & Carry' && !deliveryAgentInfo.isEditable;
+    const isPostOfficeDisabled = selectedAgent !== 'Zim Post Office' && !deliveryAgentInfo.isEditable;
+    const isFarmCityDisabled = selectedAgent !== 'Farm & City' && !deliveryAgentInfo.isEditable;
+    const isPGDisabled = selectedAgent !== 'PG Building Materials' && !deliveryAgentInfo.isEditable;
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -252,13 +333,19 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                 <Truck className="h-8 w-8 text-emerald-600" />
                             )}
                             <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                                {isZimparks ? 'Booking Dates' : 'Delivery Method'}
+                                {isZimparks ? 'Booking Dates' : 'Delivery Depot'}
                             </h2>
                         </div>
                         <p className="text-gray-600 dark:text-gray-400">
                             {isZimparks
                                 ? 'Please select your preferred dates for your holiday package.'
-                                : 'Please be advised that all deliveries are done via our courier, Zimpost Courier Connect to all urban and rural destinations in Zimbabwe. You will collect your product from the Post Office nearest to you.'}
+                                : selectedAgent === 'Gain Cash & Carry'
+                                    ? 'Please be advised that all Tuckshop and Grocery deliveries are done via our courier, Gain Cash & Carry. You will collect your product from the Gain Cash & Carry depot nearest to you.'
+                                    : selectedAgent === 'Farm & City'
+                                        ? 'Please be advised that all Agricultural, Machinery, and Livestock deliveries are done via our courier, Farm & City. You will collect your product from the Farm & City depot nearest to you.'
+                                        : selectedAgent === 'PG Building Materials'
+                                            ? 'Please be advised that all Building Material deliveries are done via our courier, PG Building Materials. You will collect your product from the PG depot nearest to you.'
+                                            : 'Please be advised that all deliveries are done via our courier, Zimpost Courier Connect to all urban and rural destinations in Zimbabwe. You will collect your product from the Post Office nearest to you.'}
                         </p>
                     </div>
 
@@ -326,6 +413,40 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                             </div>
                                         )}
 
+                                        {/* Farm & City Option */}
+                                        {!isFarmCityDisabled && (
+                                            <div
+                                                className={`p-4 border-2 rounded-lg ${selectedAgent === 'Farm & City'
+                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                                    : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-50'
+                                                    }`}
+                                            >
+                                                <Building2 className={`h-6 w-6 mb-2 ${selectedAgent === 'Farm & City' ? 'text-emerald-600' : 'text-gray-400'
+                                                    }`} />
+                                                <p className="font-medium text-gray-900 dark:text-white">Farm & City</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    Depot collection
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* PG Building Materials Option */}
+                                        {!isPGDisabled && (
+                                            <div
+                                                className={`p-4 border-2 rounded-lg ${selectedAgent === 'PG Building Materials'
+                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                                    : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-50'
+                                                    }`}
+                                            >
+                                                <Building2 className={`h-6 w-6 mb-2 ${selectedAgent === 'PG Building Materials' ? 'text-emerald-600' : 'text-gray-400'
+                                                    }`} />
+                                                <p className="font-medium text-gray-900 dark:text-white">PG Building Materials</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    Depot collection
+                                                </p>
+                                            </div>
+                                        )}
+
                                         {/* Post Office Option */}
                                         {!isPostOfficeDisabled && (
                                             <div
@@ -368,6 +489,56 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                         </select>
                                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                                             You will collect your product from the selected Gain Cash & Carry depot.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Farm & City Depot Selection */}
+                                {selectedAgent === 'Farm & City' && !isFarmCityDisabled && (
+                                    <div>
+                                        <label htmlFor="fc_depot" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Select Farm & City Depot <span className="text-red-500">*</span>
+                                        </label>
+                                        <select
+                                            id="fc_depot"
+                                            value={selectedDepot}
+                                            onChange={(e) => setSelectedDepot(e.target.value)}
+                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                        >
+                                            <option value="">Select a depot closest to you</option>
+                                            {FARM_AND_CITY_DEPOTS.map((depot) => (
+                                                <option key={depot} value={depot}>
+                                                    {depot}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                            You will collect your product from the selected Farm & City Centre.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* PG Building Materials Depot Selection */}
+                                {selectedAgent === 'PG Building Materials' && !isPGDisabled && (
+                                    <div>
+                                        <label htmlFor="pg_depot" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Select PG Materials Depot <span className="text-red-500">*</span>
+                                        </label>
+                                        <select
+                                            id="pg_depot"
+                                            value={selectedDepot}
+                                            onChange={(e) => setSelectedDepot(e.target.value)}
+                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                        >
+                                            <option value="">Select a depot closest to you</option>
+                                            {PG_DEPOTS.map((depot) => (
+                                                <option key={depot} value={depot}>
+                                                    {depot}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                            You will collect your materials from the selected PG depot.
                                         </p>
                                     </div>
                                 )}
