@@ -286,7 +286,7 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
             {/* Header */}
             <div>
                 <h2 className="text-xl sm:text-2xl font-bold mb-2 text-[#1b1b18] dark:text-[#EDEDEC]">
-                    Delivery Depot
+                    Collection Depot
                 </h2>
                 <p className="text-sm sm:text-base text-[#706f6c] dark:text-[#A1A09A]">
                     {selectedAgent === 'Gain Cash & Carry'

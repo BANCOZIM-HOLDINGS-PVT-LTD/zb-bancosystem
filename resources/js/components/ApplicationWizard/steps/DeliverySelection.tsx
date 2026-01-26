@@ -333,19 +333,19 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                 <Truck className="h-8 w-8 text-emerald-600" />
                             )}
                             <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                                {isZimparks ? 'Booking Dates' : 'Delivery Depot'}
+                                {isZimparks ? 'Booking Dates' : 'Collection Depot'}
                             </h2>
                         </div>
                         <p className="text-gray-600 dark:text-gray-400">
                             {isZimparks
                                 ? 'Please select your preferred dates for your holiday package.'
                                 : selectedAgent === 'Gain Cash & Carry'
-                                    ? 'Please be advised that all Tuckshop and Grocery deliveries are done via our courier, Gain Cash & Carry. You will collect your product from the Gain Cash & Carry depot nearest to you.'
+                                    ? 'Please be advised that Grocery collections will be done  through the below selected Gain Cash & Carry/Metro.'
                                     : selectedAgent === 'Farm & City'
-                                        ? 'Please be advised that all Agricultural, Machinery, and Livestock deliveries are done via our courier, Farm & City. You will collect your product from the Farm & City depot nearest to you.'
+                                        ? 'Please be advised that for all Agricultural Inputs and Chicken Projects, that all collections will be done through the below selected Farm & City branch.'
                                         : selectedAgent === 'PG Building Materials'
-                                            ? 'Please be advised that all Building Material deliveries are done via our courier, PG Building Materials. You will collect your product from the PG depot nearest to you.'
-                                            : 'Please be advised that all deliveries are done via our courier, Zimpost Courier Connect to all urban and rural destinations in Zimbabwe. You will collect your product from the Post Office nearest to you.'}
+                                            ? 'Please be advised that for all Building Material deliveries are done via our courier, PG Building Materials. You will collect your product from the PG depot nearest to you.'
+                                            : 'Please be advised that for all deliveries are done via our courier, Zimpost Courier Connect to all urban and rural destinations in Zimbabwe. You will collect your product from the Post Office nearest to you.'}
                         </p>
                     </div>
 

@@ -808,7 +808,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 </p>
                 {currentView === 'categories' && (
                     <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
-                        Showing {productCategories.length} categories from our catalog
+                        Showing {productCategories.length} categories from our catalogue
                     </p>
                 )}
             </div>
