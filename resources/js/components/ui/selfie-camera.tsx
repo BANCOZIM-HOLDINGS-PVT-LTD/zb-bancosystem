@@ -35,9 +35,10 @@ const SelfieCamera: React.FC<SelfieCameraProps> = ({
   const [capturedImage, setCapturedImage] = useState<string>('');
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [faceQualityIssues, setFaceQualityIssues] = useState<string[]>([]);
+  const [localError, setLocalError] = useState<string | null>(null);
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const hasError = !!error;
+  const hasError = !!error || !!localError;
 
   // Load face-api.js models on mount
   useEffect(() => {
@@ -58,6 +59,19 @@ const SelfieCamera: React.FC<SelfieCameraProps> = ({
 
   // Initialize camera
   const startCamera = async () => {
+    setLocalError(null);
+
+    // Check for secure context (HTTPS)
+    if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      setLocalError("Camera requires HTTPS. On your PC, go to 'chrome://flags', search 'Insecure origins treated as secure', enable it for this IP, and relaunch.");
+      return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setLocalError("Your browser does not support camera access.");
+      return;
+    }
+
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -66,14 +80,21 @@ const SelfieCamera: React.FC<SelfieCameraProps> = ({
           height: { ideal: 480 }
         }
       });
-      
+
       setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         setIsStreaming(true);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error accessing camera:', err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setLocalError("Camera permission denied. Please allow access in browser settings.");
+      } else if (err.name === 'NotFoundError') {
+        setLocalError("No camera device found.");
+      } else {
+        setLocalError("Could not start camera: " + (err.message || 'Unknown error'));
+      }
     }
   };
 
@@ -228,11 +249,11 @@ const SelfieCamera: React.FC<SelfieCameraProps> = ({
       if (context) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        
+
         // Flip the image horizontally for selfie effect
         context.scale(-1, 1);
         context.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-        
+
         const imageData = canvas.toDataURL('image/jpeg', 0.8);
         setCapturedImage(imageData);
         onChange(imageData);
@@ -328,7 +349,7 @@ const SelfieCamera: React.FC<SelfieCameraProps> = ({
               muted
               className="w-full max-w-md mx-auto rounded-lg border-2 border-gray-300 dark:border-gray-600"
             />
-            
+
             {/* Face outline guide */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className={cn(
@@ -422,9 +443,9 @@ const SelfieCamera: React.FC<SelfieCameraProps> = ({
 
       {/* Error message */}
       {hasError && (
-        <div className="flex items-center text-red-600 dark:text-red-400">
-          <AlertTriangle className="w-4 h-4 mr-2" />
-          <span className="text-sm">{error}</span>
+        <div className="flex items-center text-red-600 dark:text-red-400 p-2 bg-red-50 dark:bg-red-900/10 rounded">
+          <AlertTriangle className="w-5 h-5 mr-2 flex-shrink-0" />
+          <span className="text-sm font-medium">{error || localError}</span>
         </div>
       )}
 

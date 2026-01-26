@@ -32,25 +32,38 @@ class StateController extends Controller
      */
     public function saveState(SaveApplicationStateRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-        
-        $state = $this->stateManager->saveState(
-            $validated['session_id'],
-            $validated['channel'],
-            $validated['user_identifier'],
-            $validated['current_step'],
-            $validated['form_data'],
-            $validated['metadata'] ?? []
-        );
+        try {
+            \Log::info('Entering StateController::saveState', ['session_id' => $request->input('session_id')]);
+            $validated = $request->validated();
+            
+            $state = $this->stateManager->saveState(
+                $validated['session_id'],
+                $validated['channel'],
+                $validated['user_identifier'],
+                $validated['current_step'],
+                $validated['form_data'],
+                $validated['metadata'] ?? []
+            );
 
-        // Cache the updated state
-        $this->cacheManager->cacheApplicationState($state);
+            // Cache the updated state
+            $this->cacheManager->cacheApplicationState($state);
 
-        return response()->json([
-            'success' => true,
-            'state_id' => $state->id,
-            'expires_at' => $state->expires_at->toISOString(),
-        ]);
+            return response()->json([
+                'success' => true,
+                'state_id' => $state->id,
+                'expires_at' => $state->expires_at->toISOString(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in StateController::saveState', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save state: ' . $e->getMessage(),
+            ], 500);
+        }
     }
     
     /**

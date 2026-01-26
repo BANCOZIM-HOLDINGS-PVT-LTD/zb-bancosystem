@@ -148,6 +148,11 @@ class SaveApplicationStateRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        \Log::info('Entering SaveApplicationStateRequest::prepareForValidation', [
+            'has_form_data' => $this->has('form_data'),
+            'content_length' => $_SERVER['CONTENT_LENGTH'] ?? 'unknown'
+        ]);
+
         // Sanitize string inputs
         $this->merge([
             'session_id' => $this->sanitizeString($this->session_id),

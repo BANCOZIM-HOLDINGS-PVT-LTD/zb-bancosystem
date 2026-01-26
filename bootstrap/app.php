@@ -36,7 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
         }
 
         $middleware->api(append: [
-            RequestSizeLimitMiddleware::class . ':10', // 10MB limit for API requests
+            RequestSizeLimitMiddleware::class . ':100', // 100MB limit for API requests
         ]);
 
         // Register named middleware

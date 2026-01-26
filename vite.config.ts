@@ -11,7 +11,7 @@ export default defineConfig({
         strictPort: false,
         // HMR host auto-detection: use VITE_HMR_HOST env var, or default to localhost
         hmr: {
-            host: process.env.VITE_HMR_HOST || 'localhost',
+            host: '192.168.1.104',
         },
         cors: true,
     },
