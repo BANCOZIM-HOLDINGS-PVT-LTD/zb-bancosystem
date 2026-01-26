@@ -355,11 +355,24 @@ class ApplicationWizardController extends Controller
             }
         }
 
-        $applicationType = 'ZB Bank'; // Default
-
+        $productName = 'ZB Product';
+        $category = 'General';
+        
         if ($state && $state->form_data) {
             $formData = is_string($state->form_data) ? json_decode($state->form_data, true) : $state->form_data;
             
+            // Extract product name
+            $productName = data_get($formData, 'selectedProduct.name') 
+                ?? data_get($formData, 'product.name') 
+                ?? data_get($formData, 'productName')
+                ?? 'ZB Product';
+
+            // Extract category
+            $category = data_get($formData, 'selectedProduct.category') 
+                ?? data_get($formData, 'product.category') 
+                ?? data_get($formData, 'category')
+                ?? 'General';
+
             // Check for SSB/Government
             $employer = data_get($formData, 'employer') ?? data_get($formData, 'formResponses.employer');
             $employerType = data_get($formData, 'formResponses.employerType');
@@ -375,10 +388,16 @@ class ApplicationWizardController extends Controller
             }
         }
 
+        // Generate tracking URL
+        $trackingUrl = route('application.status');
+
         return Inertia::render('ApplicationSuccess', [
             'referenceCode' => $referenceCode,
             'phoneNumber' => $phoneNumber,
             'applicationType' => $applicationType,
+            'productName' => $productName,
+            'category' => $category,
+            'trackingUrl' => $trackingUrl,
         ]);
     }
 

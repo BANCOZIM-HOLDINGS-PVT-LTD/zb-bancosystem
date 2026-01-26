@@ -6,9 +6,19 @@ interface ApplicationSuccessProps {
     referenceCode: string;
     phoneNumber?: string;
     applicationType?: string;
+    productName?: string;
+    category?: string;
+    trackingUrl?: string;
 }
 
-const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({ referenceCode, phoneNumber, applicationType = 'ZB Bank' }) => {
+const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({
+    referenceCode,
+    phoneNumber,
+    applicationType = 'ZB Bank',
+    productName = 'ZB Product',
+    category = 'General',
+    trackingUrl = ''
+}) => {
     const [loading, setLoading] = useState(false);
     const [showSuccessNotification, setShowSuccessNotification] = useState(false);
 
@@ -33,6 +43,20 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({ referenceCode, 
                 return;
             }
 
+            // Construct SMS message based on category
+            let message = '';
+
+            // Check if it's an account opening (Personal or Business Account)
+            const isAccountOpening = category.toLowerCase().includes('account') ||
+                courseCleanName(productName).toLowerCase().includes('account');
+
+            if (isAccountOpening) {
+                message = `Thank you for opening the zb account, please wait while the information you provided is being processed, we will notify you of the next steps, you can track your application using your ref code ${referenceCode} ${trackingUrl}`;
+            } else {
+                // Loan application or other product
+                message = `Thank you for your application! Your reference code is ${referenceCode} for ${productName}. You can track your application status after 48 hours using your National ID number. BancoZim`;
+            }
+
             // Send thank you SMS
             const response = await fetch('/api/send-application-sms', {
                 method: 'POST',
@@ -43,7 +67,7 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({ referenceCode, 
                 body: JSON.stringify({
                     phoneNumber: phoneNumber,
                     referenceCode: referenceCode,
-                    message: `Thank you for your application! Your reference code is ${referenceCode}. You can track your application status after 48 hours using your National ID number. BancoZim`
+                    message: message
                 }),
             });
 
@@ -211,3 +235,8 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({ referenceCode, 
 };
 
 export default ApplicationSuccess;
+
+// Helper to clean product name for cleaner SMS
+function courseCleanName(name: string): string {
+    return name.replace(/™/g, '').replace(/®/g, '').trim();
+}
