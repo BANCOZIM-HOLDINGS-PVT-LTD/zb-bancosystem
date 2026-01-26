@@ -21,7 +21,7 @@ class PersonalServiceResource extends Resource
 
     protected static ?string $navigationLabel = 'Personal Services';
 
-    protected static ?string $navigationGroup = 'Service Management';
+    protected static ?string $navigationGroup = 'Delivery and Service Management';
 
     public static function form(Form $form): Form
     {

@@ -140,6 +140,20 @@ export default function ApplicationStatus() {
                 label: 'Pending Review',
                 description: 'Your application is in queue and will be reviewed soon.'
             },
+            'pending_verification': {
+                icon: Clock,
+                color: 'text-amber-600 dark:text-amber-400',
+                bg: 'bg-amber-50 dark:bg-amber-900/20',
+                label: 'Document Verification',
+                description: 'We are currently verifying your submitted documents.'
+            },
+            'sent_for_checks': {
+                icon: AlertCircle,
+                color: 'text-indigo-600 dark:text-indigo-400',
+                bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+                label: 'Processing Checks',
+                description: 'Your application has been verified and is undergoing automated checks.'
+            },
             'under_review': {
                 icon: AlertCircle,
                 color: 'text-blue-600 dark:text-blue-400',

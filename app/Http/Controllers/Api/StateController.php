@@ -120,15 +120,15 @@ class StateController extends Controller
                 }
             }
 
-            // Update the application state to completed
+            // Update the application state to pending_verification (Manual Review Step)
             $state = $this->stateManager->saveState(
                 $validated['sessionId'],
                 'web', // Default to web channel
                 $userIdentifier,
-                'completed',
+                'pending_verification', // WAS: 'completed'
                 $validated['data'],
                 [
-                    'completed_at' => now()->toISOString(),
+                    'submitted_at' => now()->toISOString(),
                     'submission_ip' => $request->ip(),
                     'user_agent' => $request->userAgent(),
                 ]
@@ -144,6 +144,20 @@ class StateController extends Controller
             } else {
                 $referenceCode = $state->reference_code;
             }
+
+            // Automated Checks are now triggered MANUALLY after Document Verification
+            /*
+            try {
+                $checkService = app(\App\Services\AutomatedCheckService::class);
+                $checkService->executeAutomatedChecks($state);
+            } catch (\Exception $e) {
+                // Log but don't fail the submission
+                \Log::error('Automated checks failed', [
+                    'session_id' => $state->session_id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+            */
 
             // Check if this is an Account Opening application
             $formData = $validated['data'];

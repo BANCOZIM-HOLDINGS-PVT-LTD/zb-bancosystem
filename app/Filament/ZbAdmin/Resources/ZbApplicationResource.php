@@ -76,9 +76,30 @@ class ZbApplicationResource extends Resource
                     ->label('Status')
                     ->colors([
                         'success' => fn ($state) => in_array($state, ['completed', 'approved']),
-                        'warning' => fn ($state) => in_array($state, ['in_review', 'processing']),
+                        'warning' => fn ($state) => in_array($state, ['in_review', 'processing', 'pending_verification', 'sent_for_checks']),
                         'danger' => 'rejected',
                     ]),
+                Tables\Columns\BadgeColumn::make('check_status')
+                    ->label('SSB Check')
+                    ->colors([
+                        'success' => fn ($state): bool => in_array($state, ['S', 'A']), // Success / Approved
+                        'danger' => fn ($state): bool => in_array($state, ['F', 'B']), // Failure / Blacklisted
+                        'warning' => 'P', // Pending
+                    ])
+                    ->formatStateUsing(function ($state, Model $record) {
+                        $type = $record->check_type ?? 'Check';
+                        
+                        $labels = [
+                            'S' => 'Success',
+                            'F' => 'Failure',
+                            'A' => 'Approved',
+                            'B' => 'Blacklisted',
+                            'P' => 'Pending',
+                        ];
+                        
+                        return ($type ? "$type: " : "") . ($labels[$state] ?? $state ?? 'N/A');
+                    })
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable(),
             ])
             ->actions([

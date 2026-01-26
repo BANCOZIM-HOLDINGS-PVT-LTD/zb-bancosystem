@@ -211,6 +211,28 @@ class ApplicationResource extends BaseResource
                         return $query->orderByRaw("CAST(JSON_EXTRACT(form_data, '$.finalPrice') AS DECIMAL(10,2)) {$direction}");
                     }),
                     
+                Tables\Columns\BadgeColumn::make('check_status')
+                    ->label('SSB/FCB Check')
+                    ->colors([
+                        'success' => fn ($state): bool => in_array($state, ['S', 'A']), // Success / Approved
+                        'danger' => fn ($state): bool => in_array($state, ['F', 'B']), // Failure / Blacklisted
+                        'warning' => 'P', // Pending
+                    ])
+                    ->formatStateUsing(function ($state, Model $record) {
+                        $type = $record->check_type ?? 'Check';
+                        
+                        $labels = [
+                            'S' => 'Success',
+                            'F' => 'Failure',
+                            'A' => 'Approved',
+                            'B' => 'Blacklisted',
+                            'P' => 'Pending',
+                        ];
+                        
+                        return ($type ? "$type: " : "") . ($labels[$state] ?? $state ?? 'N/A');
+                    })
+                    ->sortable(),
+
                 Tables\Columns\BadgeColumn::make('channel')
                     ->colors([
                         'primary' => 'web',
@@ -224,7 +246,7 @@ class ApplicationResource extends BaseResource
                     ->label('Status')
                     ->colors([
                         'success' => fn ($state): bool => in_array($state, ['completed', 'approved']),
-                        'warning' => fn ($state): bool => in_array($state, ['in_review', 'processing', 'pending_documents']),
+                        'warning' => fn ($state): bool => in_array($state, ['in_review', 'processing', 'pending_documents', 'pending_verification', 'sent_for_checks']),
                         'danger' => fn ($state): bool => $state === 'rejected',
                         'gray' => fn ($state): bool => in_array($state, ['language', 'intent', 'employer', 'form', 'product', 'business']),
                     ])

@@ -19,7 +19,7 @@ class CashPurchaseResource extends BaseResource
 
     protected static ?string $navigationLabel = 'Cash Orders';
 
-    protected static ?string $navigationGroup = null;
+    protected static ?string $navigationGroup = 'Delivery and Service Management';
 
     protected static ?int $navigationSort = 2;
 

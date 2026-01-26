@@ -21,7 +21,7 @@ class DeliveryTrackingResource extends BaseResource
 
     protected static ?string $navigationLabel = 'Delivery Management';
 
-    protected static ?string $navigationGroup = null; // Show in main menu without group
+    protected static ?string $navigationGroup = 'Delivery and Service Management'; // Show in main menu without group
 
     protected static ?int $navigationSort = 3;
 
