@@ -422,6 +422,21 @@
         @endif
     </table>
     
+    <div class="section-header">2(a). GUARANTOR DETAILS</div>
+    
+    <table class="main-table">
+        <tr>
+            <th style="width: 35%;">Full Name</th>
+            <th style="width: 35%;">Phone Number</th>
+            <th style="width: 30%;">I.D Number</th>
+        </tr>
+        <tr>
+            <td style="height: 25px;">{{ $guarantor['name'] ?? '' }}</td>
+            <td>{{ $guarantor['phoneNumber'] ?? '' }}</td>
+            <td>{{ $guarantor['idNumber'] ?? '' }}</td>
+        </tr>
+    </table>
+    
     <div class="section-header">3.BANKING/MOBILE ACCOUNT DETAILS</div>
     
     <table class="main-table">

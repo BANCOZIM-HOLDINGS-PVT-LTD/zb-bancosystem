@@ -169,9 +169,15 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             { institution: '', repayment: '', currentBalance: '', maturityDate: '' }
         ],
 
-        // Purpose/Asset (auto-populated from product selection)
         purposeAsset: data.business ? `${data.business} - ${data.scale || 'Standard Scale'}` : '',
-        purposeOfLoan: data.business ? `${data.business} - ${data.scale || 'Standard Scale'}` : ''
+        purposeOfLoan: data.business ? `${data.business} - ${data.scale || 'Standard Scale'}` : '',
+
+        // Guarantor Details
+        guarantor: {
+            name: '',
+            phoneNumber: '',
+            idNumber: ''
+        }
     });
 
     const handleInputChange = (field: string, value: string) => {
@@ -230,6 +236,18 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             otherLoans: prev.otherLoans.map((loan, i) =>
                 i === index ? { ...loan, [field]: value } : loan
             )
+        }));
+    };
+
+    const handleGuarantorChange = (field: string, value: string) => {
+        const processedValue = field === 'idNumber' ? formatZimbabweId(value) : value;
+
+        setFormData(prev => ({
+            ...prev,
+            guarantor: {
+                ...prev.guarantor,
+                [field]: processedValue
+            }
         }));
     };
 
@@ -322,6 +340,9 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 creditFacilityType: formData.creditFacilityType,
                 purposeAsset: formData.purposeAsset,
                 purposeOfLoan: formData.purposeAsset,
+
+                // Guarantor details
+                guarantor: formData.guarantor,
 
                 // Spouse/Next of Kin details - ensure addresses are properly formatted
                 spouseDetails: formData.spouseDetails.map(spouse => ({
@@ -1220,6 +1241,50 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                             required
                             placeholder="Describe the purpose and asset details..."
                         />
+                    </div>
+                </Card>
+
+                {/* Guarantor Details */}
+                <Card className="p-6">
+                    <div className="flex items-center mb-4">
+                        <User className="h-6 w-6 text-emerald-600 mr-3" />
+                        <h3 className="text-lg font-semibold">Guarantor Details</h3>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <div>
+                            <FormField
+                                id="guarantorName"
+                                label="Guarantor Name *"
+                                type="text"
+                                value={formData.guarantor.name}
+                                onChange={(value) => handleGuarantorChange('name', value)}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <FormField
+                                id="guarantorPhone"
+                                label="Guarantor Phone Number *"
+                                type="phone"
+                                value={formData.guarantor.phoneNumber}
+                                onChange={(value) => handleGuarantorChange('phoneNumber', value)}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <FormField
+                                id="guarantorId"
+                                label="Guarantor ID Number *"
+                                type="text"
+                                value={formData.guarantor.idNumber}
+                                onChange={(value) => handleGuarantorChange('idNumber', value)}
+                                required
+                                capitalizeCheckLetter={true}
+                                placeholder="e.g. 12-345678 A 12"
+                                title="Zimbabwe ID format: 12-345678 A 12"
+                            />
+                        </div>
                     </div>
                 </Card>
 
