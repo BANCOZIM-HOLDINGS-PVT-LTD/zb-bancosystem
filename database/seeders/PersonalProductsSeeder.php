@@ -15,7 +15,7 @@ class PersonalProductsSeeder extends Seeder
     {
         // 1. School Fees Support
         $schoolFeesCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'School Fees Support',
+            'name' => 'School Fees Assistance',
             'emoji' => '👫📚',
             'type' => 'hire_purchase',
             'created_at' => now(),

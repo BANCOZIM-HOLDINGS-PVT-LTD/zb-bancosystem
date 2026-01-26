@@ -178,7 +178,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                         />
                                         <h1 className="text-3xl font-bold mb-4">Hello there! I am Adala</h1>
                                         <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                            consider me your smart uncle and digital assistant. My mission is to ensure you get the best user experience for your intended acquisition because we are family.
+                                            Consider me your smart uncle and digital assistant. My mission is to ensure you get the best user experience for your intended acquisition, because we are family.
                     </p>
                                     </div>
 

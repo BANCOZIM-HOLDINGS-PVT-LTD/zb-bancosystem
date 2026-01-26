@@ -12,7 +12,7 @@ class ProductCatalogSeeder extends Seeder
     {
         // 22 MicroBiz Main Categories
         $categories = [
-            ['id' => 'agric-mechanization', 'name' => 'Agricultural mechanization', 'emoji' => '🚜'],
+            ['id' => 'agric-mechanization', 'name' => 'Agricultural Machinery', 'emoji' => '🚜'],
             ['id' => 'agricultural-inputs', 'name' => 'Agricultural Inputs', 'emoji' => '🌾'],
             ['id' => 'chicken-projects', 'name' => 'Chicken Projects', 'emoji' => '🐔'],
             ['id' => 'cleaning-services', 'name' => 'Cleaning Services', 'emoji' => '🧹'],
@@ -37,10 +37,8 @@ class ProductCatalogSeeder extends Seeder
             ['id' => 'delivery-services', 'name' => 'Delivery Services', 'emoji' => '🏍️'],
             ['id' => 'motor-vehicle', 'name' => 'Motor Vehicle Sundries', 'emoji' => '🚗'],
             ['id' => 'photocopying-bulk-printing', 'name' => 'Photocopying & Bulk Printing', 'emoji' => '📄'],
-            ['id' => 'water-purification', 'name' => 'Water Purification', 'emoji' => '💧'],
-            ['id' => 'small-business-support', 'name' => 'Small Business Support', 'emoji' => '💼'],
+    ['id' => 'water-purification', 'name' => 'Water Bottling and  Purification', 'emoji' => '💧'],
         ];
-
         foreach ($categories as $categoryData) {
             $categoryId = DB::table('product_categories')->insertGetId([
                 'name' => $categoryData['name'],
@@ -274,13 +272,8 @@ class ProductCatalogSeeder extends Seeder
             ],
             // 23. Water Purification (Added)
             'water-purification' => [
-                ['name' => 'Water Refill Station', 'businesses' => [['name' => 'Water Refill Station']]],
+                ['name' => 'Water Bottling Station', 'businesses' => [['name' => 'Water Bottling Station']]],
                 ['name' => 'Purification Systems', 'businesses' => [['name' => 'Purification Systems']]],
-            ],
-            // 24. Small Business Support
-            'small-business-support' => [
-                ['name' => 'Fees and Licensing', 'businesses' => [['name' => 'Company Registration']]],
-                ['name' => 'Driving School', 'businesses' => [['name' => 'License Courses']]],
             ],
         ];
 

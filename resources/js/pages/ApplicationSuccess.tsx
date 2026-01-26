@@ -5,9 +5,10 @@ import Footer from '@/components/Footer';
 interface ApplicationSuccessProps {
     referenceCode: string;
     phoneNumber?: string;
+    applicationType?: string;
 }
 
-const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({ referenceCode, phoneNumber }) => {
+const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({ referenceCode, phoneNumber, applicationType = 'ZB Bank' }) => {
     const [loading, setLoading] = useState(false);
     const [showSuccessNotification, setShowSuccessNotification] = useState(false);
 
@@ -132,12 +133,12 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({ referenceCode, 
                         <div className="px-4 sm:px-8 pb-6 sm:pb-10">
                             {/* Reference Code Display */}
                             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 sm:p-8 mb-6 sm:mb-8 text-center border border-gray-200 dark:border-gray-700">
-                                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 font-medium">
-                                    Please Note - Your application reference number is
-                                </p>
                                 <div className="text-lg sm:text-2xl md:text-4xl font-bold text-gray-900 dark:text-white font-mono tracking-wide sm:tracking-widest break-all overflow-wrap-anywhere">
                                     {referenceCode}
                                 </div>
+                                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 font-medium">
+                                    Please Note - Your application reference number is your National ID Number
+                                </p>
                             </div>
 
                             {/* Tracking Info */}
@@ -156,19 +157,19 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({ referenceCode, 
                                     <li className="flex gap-3 sm:gap-4">
                                         <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs sm:text-sm font-bold mt-0.5">1</div>
                                         <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300">
-                                            Your application has been sent to SSB/ZB for review
+                                            Your application has been sent to {applicationType === 'SSB' ? 'SSB' : 'ZB Bank'} for review
                                         </p>
                                     </li>
                                     <li className="flex gap-3 sm:gap-4">
                                         <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs sm:text-sm font-bold mt-0.5">2</div>
                                         <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300">
-                                            You will be notified of the ZB/SSB response when you revisit this app within a 48 hours period
+                                            You will be notified of the {applicationType === 'SSB' ? 'SSB' : 'ZB Bank'} response when you revisit this app within a 48 hours period
                                         </p>
                                     </li>
                                     <li className="flex gap-3 sm:gap-4">
                                         <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs sm:text-sm font-bold mt-0.5">3</div>
                                         <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300">
-                                            Once ZB/SSB has approved your application then your product will be delivered to the depot you have selected within a 7 day period.
+                                            Once {applicationType === 'SSB' ? 'SSB' : 'ZB Bank'} has approved your application then your product will be delivered to the depot you have selected within a 7 day period.
                                         </p>
                                     </li>
                                 </ol>

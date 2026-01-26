@@ -1267,7 +1267,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                 onClick={handleProceedToTerms}
                                                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
                                             >
-                                                Continue
+                                                Agree & Continue
                                                 <ChevronRight className="ml-2 h-4 w-4" />
                                             </Button>
                                         </div>

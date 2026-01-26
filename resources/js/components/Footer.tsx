@@ -27,16 +27,6 @@ const Footer: React.FC = () => {
                         <Phone className="h-3.5 w-3.5" />
                         <span>Customer Support: 086 44 988988</span>
                     </a>
-                    <a
-                        href="tel:(0242) 744 840"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-                    >
-                        <Phone className="h-3.5 w-3.5" />
-                        <span>Landline:  (0242) 744 840</span>
-                    </a>
-
                     <span className="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
 
                     <a
@@ -46,7 +36,7 @@ const Footer: React.FC = () => {
                         <Mail className="h-3.5 w-3.5" />
                         <span>sales@microbizimbabwe.com</span>
                     </a>
-                    
+                    <span className="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
                     <a
                         href="https://maps.google.com/?q=Joina+City,+Harare"
                         target="_blank"
@@ -54,7 +44,7 @@ const Footer: React.FC = () => {
                         className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                     >
                         <MapPin className="h-3.5 w-3.5" />
-                        <span>12th Floor Joina City, Harare</span>
+                        <span>12th Floor, Joina City Building Corner J. Moyo & J. Nyerere Rd</span>
                     </a>
 
                 </div>

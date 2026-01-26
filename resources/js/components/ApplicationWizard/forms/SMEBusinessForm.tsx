@@ -1882,7 +1882,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                         disabled={loading}
                         className="bg-emerald-600 hover:bg-emerald-700 px-8"
                     >
-                        {loading ? 'Submitting...' : 'Submit Application'}
+                        {loading ? 'Submitting...' : 'Agree & Submit Application'}
                     </Button>
                 </div>
             </form>

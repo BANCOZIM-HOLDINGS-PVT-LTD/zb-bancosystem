@@ -1431,8 +1431,8 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
 
                         <div>
                             <Label htmlFor="declarationSignature">Applicant's Signature</Label>
-                            <div className="h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500">
-                                Signature Area
+                            <div className="h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 bg-gray-100 dark:bg-gray-800 cursor-not-allowed">
+                                Signature captured in next step
                             </div>
                         </div>
 
@@ -1446,6 +1446,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 onChange={(value) => handleInputChange('declaration.date', value)}
                                 maxDate={currentDate}
                                 defaultAge={0}
+                                hideDay={true}
                             />
                         </div>
                     </div>
@@ -1457,7 +1458,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                             label="I acknowledge and agree to the terms and conditions stated in the declaration above. *"
                             type="checkbox"
                             checkboxVariant="prominent"
-                            checked={formData.declaration.acknowledged || false}
+                            checked={formData.declaration.acknowledged === true || (formData.declaration.acknowledged as any) === 'true'}
                             onChange={(checked) => handleInputChange('declaration.acknowledged', checked)}
                             required
                         />
@@ -1481,7 +1482,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         disabled={loading}
                         className="bg-emerald-600 hover:bg-emerald-700 px-8"
                     >
-                        {loading ? 'Submitting...' : 'Submit Application'}
+                        {loading ? 'Submitting...' : 'Agree & Submit Application'}
                     </Button>
                 </div>
             </form>

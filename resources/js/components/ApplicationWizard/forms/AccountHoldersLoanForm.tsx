@@ -103,6 +103,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
     const [loanType, setLoanType] = useState<string>(''); // 'qupa' | 'other' | 'both'
     const [isCustomBranch, setIsCustomBranch] = useState<boolean>(false);
     const [accountNumberError, setAccountNumberError] = useState<string>('');
+    const [employmentError, setEmploymentError] = useState<string>('');
 
     const [formData, setFormData] = useState({
         // Credit Facility Details (pre-populated)
@@ -256,6 +257,15 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 setAccountNumberError('ZB Bank account number must start with 4');
                 return;
             }
+        }
+
+        // Validate Employment Number
+        const employmentNumberRegex = /^\d{7}[A-Z]$/;
+        if (formData.employmentNumber && !employmentNumberRegex.test(formData.employmentNumber)) {
+            setEmploymentError('Employment Number must be 7 digits followed by a letter (e.g. 1234567A)');
+            const el = document.getElementById('employmentNumber');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
         }
 
         // Map Account Holders form fields to match PDF template expectations
@@ -696,16 +706,42 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 maxDate={currentDate}
                                 defaultAge={0}
                                 required
+                                hideDay={true}
                             />
                         </div>
 
                         <div>
                             <Label htmlFor="employmentNumber">Employment Number</Label>
-                            <Input
-                                id="employmentNumber"
-                                value={formData.employmentNumber}
-                                onChange={(e) => handleInputChange('employmentNumber', e.target.value)}
-                            />
+                            <div className="flex gap-2">
+                                <Input
+                                    id="employmentNumber"
+                                    className="flex-1"
+                                    placeholder="1234567"
+                                    maxLength={7}
+                                    value={formData.employmentNumber && formData.employmentNumber.match(/^\d+/) ? (formData.employmentNumber.match(/^\d+/) || [''])[0] : ''}
+                                    onChange={(e) => {
+                                        const num = e.target.value.replace(/\D/g, '').slice(0, 7);
+                                        const currentLetter = formData.employmentNumber ? formData.employmentNumber.replace(/^\d+/, '') : '';
+                                        handleInputChange('employmentNumber', num + currentLetter);
+                                    }}
+                                />
+                                <Input
+                                    id="employmentCheckLetter"
+                                    className="w-16 text-center"
+                                    placeholder="A"
+                                    maxLength={1}
+                                    value={formData.employmentNumber ? formData.employmentNumber.replace(/^\d+/, '') : ''}
+                                    onChange={(e) => {
+                                        const letter = e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 1).toUpperCase();
+                                        const currentNumMatch = formData.employmentNumber ? formData.employmentNumber.match(/^\d+/) : null;
+                                        const numStr = currentNumMatch ? currentNumMatch[0] : '';
+                                        handleInputChange('employmentNumber', numStr + letter);
+                                    }}
+                                />
+                            </div>
+                            {employmentError && (
+                                <p className="text-sm text-red-500 mt-1">{employmentError}</p>
+                            )}
                         </div>
 
                         <div>
@@ -793,7 +829,11 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
 
                                 <div>
                                     <Label htmlFor={`spouse-${index}-relationship`}>Relationship{index === 0 && spouse.fullName ? ' *' : ''}</Label>
-                                    <Select value={spouse.relationship} onValueChange={(value) => handleSpouseChange(index, 'relationship', value)}>
+                                    <Select
+                                        value={spouse.relationship}
+                                        onValueChange={(value) => handleSpouseChange(index, 'relationship', value)}
+                                        disabled={index === 0 && formData.maritalStatus === 'Married'}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select relationship" />
                                         </SelectTrigger>
@@ -1200,7 +1240,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                         disabled={loading}
                         className="bg-emerald-600 hover:bg-emerald-700 px-8"
                     >
-                        {loading ? 'Submitting...' : 'Submit Application'}
+                        {loading ? 'Submitting...' : 'Agree & Submit Application'}
                     </Button>
                 </div>
             </form>

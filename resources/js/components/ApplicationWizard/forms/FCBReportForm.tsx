@@ -597,7 +597,7 @@ const FCBReportForm: React.FC<FCBReportFormProps> = ({ data, onNext, onBack, loa
                         disabled={loading}
                         className="bg-teal-600 hover:bg-teal-700 px-8"
                     >
-                        {loading ? 'Processing...' : 'Continue'}
+                        {loading ? 'Processing...' : 'Agree & Submit Application'}
                     </Button>
                 </div>
             </form>

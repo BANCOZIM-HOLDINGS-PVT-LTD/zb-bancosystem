@@ -17,6 +17,7 @@ interface DialDatePickerProps {
   className?: string;
   disabled?: boolean;
   showAgeValidation?: boolean; // Whether to show age validation warnings
+  hideDay?: boolean;
 }
 
 const DialDatePicker: React.FC<DialDatePickerProps> = ({
@@ -31,14 +32,15 @@ const DialDatePicker: React.FC<DialDatePickerProps> = ({
   defaultAge = 20, // Default to 20 years ago as per note 33
   className = '',
   disabled = false,
-  showAgeValidation = false // Only show age validation when explicitly enabled
+  showAgeValidation = false, // Only show age validation when explicitly enabled
+  hideDay = false
 }) => {
   const [day, setDay] = useState('');
   const [month, setMonth] = useState('');
   const [year, setYear] = useState('');
-  
+
   const hasError = !!error;
-  
+
   // Parse value into day, month, year
   useEffect(() => {
     if (value) {
@@ -58,7 +60,7 @@ const DialDatePicker: React.FC<DialDatePickerProps> = ({
       onChange(defaultValue);
     }
   }, [value, defaultAge]);
-  
+
   // Generate options
   const generateDays = () => {
     const days = [];
@@ -68,7 +70,7 @@ const DialDatePicker: React.FC<DialDatePickerProps> = ({
     }
     return days;
   };
-  
+
   const generateMonths = () => {
     const months = [
       { value: '01', label: 'January' },
@@ -86,14 +88,14 @@ const DialDatePicker: React.FC<DialDatePickerProps> = ({
     ];
     return months;
   };
-  
+
   const generateYears = () => {
     const currentYear = new Date().getFullYear();
     // For age verification: minimum age 18 means maximum birth year is current year - 18
     const maxBirthYear = maxDate ? new Date(maxDate).getFullYear() : (currentYear - 18); // 18+ years old
     // For very old applicants: go back to 1930s (assuming max age ~90-95)
-    const minBirthYear = minDate ? new Date(minDate).getFullYear() : 1930; 
-    
+    const minBirthYear = minDate ? new Date(minDate).getFullYear() : 1930;
+
     const years = [];
     // Start from most recent allowed year and go backwards to oldest
     for (let i = maxBirthYear; i >= minBirthYear; i--) {
@@ -101,44 +103,44 @@ const DialDatePicker: React.FC<DialDatePickerProps> = ({
     }
     return years;
   };
-  
+
   // Update date when components change
   const updateDate = (newDay: string, newMonth: string, newYear: string) => {
     if (newDay && newMonth && newYear) {
       // Validate the date
       const date = new Date(parseInt(newYear), parseInt(newMonth) - 1, parseInt(newDay));
-      
+
       // Check if the date is valid
-      if (date.getDate() == parseInt(newDay) && 
-          date.getMonth() == parseInt(newMonth) - 1 && 
-          date.getFullYear() == parseInt(newYear)) {
-        
+      if (date.getDate() == parseInt(newDay) &&
+        date.getMonth() == parseInt(newMonth) - 1 &&
+        date.getFullYear() == parseInt(newYear)) {
+
         const dateString = `${newYear}-${newMonth}-${newDay}`;
-        
+
         // Check min/max constraints
         if (minDate && dateString < minDate) return;
         if (maxDate && dateString > maxDate) return;
-        
+
         onChange(dateString);
       }
     }
   };
-  
+
   const handleDayChange = (newDay: string) => {
     setDay(newDay);
     updateDate(newDay, month, year);
   };
-  
+
   const handleMonthChange = (newMonth: string) => {
     setMonth(newMonth);
     updateDate(day, newMonth, year);
   };
-  
+
   const handleYearChange = (newYear: string) => {
     setYear(newYear);
     updateDate(day, month, newYear);
   };
-  
+
   // Calculate age for display
   const getAge = () => {
     if (value) {
@@ -146,18 +148,18 @@ const DialDatePicker: React.FC<DialDatePickerProps> = ({
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
-      
+
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
       }
-      
+
       return age;
     }
     return null;
   };
-  
+
   const age = getAge();
-  
+
   return (
     <div className={cn('space-y-2', className)}>
       {label && (
@@ -167,34 +169,36 @@ const DialDatePicker: React.FC<DialDatePickerProps> = ({
           {required && <span className="text-red-500 ml-1">*</span>}
         </Label>
       )}
-      
-      <div className="grid grid-cols-3 gap-2">
+
+      <div className={`grid ${hideDay ? 'grid-cols-2' : 'grid-cols-3'} gap-2`}>
         {/* Day */}
-        <div>
-          <Label className="text-xs text-gray-500">Day</Label>
-          <Select 
-            value={day} 
-            onValueChange={handleDayChange}
-            disabled={disabled}
-          >
-            <SelectTrigger className={cn(hasError ? 'border-red-500' : '')}>
-              <SelectValue placeholder="DD" />
-            </SelectTrigger>
-            <SelectContent>
-              {generateDays().map((d) => (
-                <SelectItem key={d.value} value={d.value}>
-                  {d.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
+        {!hideDay && (
+          <div>
+            <Label className="text-xs text-gray-500">Day</Label>
+            <Select
+              value={day}
+              onValueChange={handleDayChange}
+              disabled={disabled}
+            >
+              <SelectTrigger className={cn(hasError ? 'border-red-500' : '')}>
+                <SelectValue placeholder="DD" />
+              </SelectTrigger>
+              <SelectContent>
+                {generateDays().map((d) => (
+                  <SelectItem key={d.value} value={d.value}>
+                    {d.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {/* Month */}
         <div>
           <Label className="text-xs text-gray-500">Month</Label>
-          <Select 
-            value={month} 
+          <Select
+            value={month}
             onValueChange={handleMonthChange}
             disabled={disabled}
           >
@@ -210,12 +214,12 @@ const DialDatePicker: React.FC<DialDatePickerProps> = ({
             </SelectContent>
           </Select>
         </div>
-        
+
         {/* Year */}
         <div>
           <Label className="text-xs text-gray-500">Year</Label>
-          <Select 
-            value={year} 
+          <Select
+            value={year}
             onValueChange={handleYearChange}
             disabled={disabled}
           >
@@ -232,7 +236,7 @@ const DialDatePicker: React.FC<DialDatePickerProps> = ({
           </Select>
         </div>
       </div>
-      
+
       {/* Age display - only show when showAgeValidation is enabled */}
       {showAgeValidation && age !== null && (
         <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -241,24 +245,24 @@ const DialDatePicker: React.FC<DialDatePickerProps> = ({
           {age >= 65 && <span className="text-blue-600 ml-2">📋 Senior Citizen</span>}
         </p>
       )}
-      
+
       {/* Validation messages */}
       {hasError && (
         <p className="text-red-500 text-xs mt-1">{error}</p>
       )}
-      
+
       {minDate && value && value < minDate && (
         <p className="text-red-500 text-xs mt-1">
           Date must be after {new Date(minDate).toLocaleDateString()}
         </p>
       )}
-      
+
       {maxDate && value && value > maxDate && (
         <p className="text-red-500 text-xs mt-1">
           Date must be before {new Date(maxDate).toLocaleDateString()}
         </p>
       )}
-      
+
       <p className="text-xs text-gray-500">
         Select day, month, and year separately
         {minDate && ` • Minimum: ${new Date(minDate).toLocaleDateString()}`}

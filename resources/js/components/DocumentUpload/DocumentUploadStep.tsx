@@ -76,8 +76,14 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
     const streamRef = useRef<MediaStream | null>(null);
     const idStreamRef = useRef<MediaStream | null>(null);
 
+    // Scroll to top on mount
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
     // Document requirements based on employer type
     const getDocumentRequirements = (): DocumentRequirement[] => {
+
         const baseRequirements: DocumentRequirement[] = [
             {
                 id: 'national_id',
@@ -1647,7 +1653,8 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                         canvasProps={{
                             width: 500,
                             height: 200,
-                            className: 'signature-canvas w-full'
+                            className: 'signature-canvas w-full',
+                            style: { backgroundColor: 'white', borderRadius: '0.5rem' }
                         }}
                         {...({ onEnd: saveSignature } as Record<string, unknown>)}
                     />

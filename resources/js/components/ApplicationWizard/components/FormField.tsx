@@ -35,6 +35,7 @@ interface FormFieldProps {
   showAgeValidation?: boolean;
   checkboxVariant?: 'default' | 'prominent' | 'warning';
   checkboxDescription?: string;
+  hideDay?: boolean;
 }
 
 const FormField: React.FC<FormFieldProps> = ({
@@ -63,7 +64,8 @@ const FormField: React.FC<FormFieldProps> = ({
   defaultAge = 20,
   showAgeValidation = false,
   checkboxVariant = 'default',
-  checkboxDescription
+  checkboxDescription,
+  hideDay
 }) => {
   const inputValue = value ?? '';
   const hasError = !!error;
@@ -158,6 +160,7 @@ const FormField: React.FC<FormFieldProps> = ({
             defaultAge={defaultAge}
             showAgeValidation={showAgeValidation}
             className={className}
+            hideDay={hideDay}
           />
         );
 

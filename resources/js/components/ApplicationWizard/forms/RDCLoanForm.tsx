@@ -143,9 +143,9 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
             ? formatZimbabweId(value)
             : value;
 
-        // Limit employment number to 6 digits followed by a letter (7 chars total)
         if (field === 'employmentNumber') {
-            processedValue = value.replace(/[^A-Za-z0-9]/g, '').slice(0, 7).toUpperCase();
+            // No specific processing here as we handle combination in onChange events
+            processedValue = value;
         }
 
         setFormData(prev => {
@@ -213,9 +213,9 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
         e.preventDefault();
 
         // Validate Employment Number
-        const employmentNumberRegex = /^\d{6}[A-Z]$/;
+        const employmentNumberRegex = /^\d{7}[A-Z]$/;
         if (!employmentNumberRegex.test(formData.employmentNumber)) {
-            setEmploymentError('Employment Number must be 6 digits followed by a letter (e.g. 123456A)');
+            setEmploymentError('Employment Number must be 7 digits followed by a letter (e.g. 1234567A)');
             document.getElementById('employmentNumber')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         } else {
@@ -618,17 +618,40 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                             maxDate={currentDate}
                             defaultAge={0}
                             required
+                            hideDay={true}
                         />
 
                         <div>
-                            <FormField
-                                id="employmentNumber"
-                                label="Employment Number"
-                                type="text"
-                                value={formData.employmentNumber}
-                                onChange={(value) => handleInputChange('employmentNumber', value)}
-                                required
-                            />
+                            <Label htmlFor="employmentNumber">Employment Number *</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    id="employmentNumber"
+                                    className="flex-1"
+                                    placeholder="1234567"
+                                    maxLength={7}
+                                    value={formData.employmentNumber && formData.employmentNumber.match(/^\d+/) ? (formData.employmentNumber.match(/^\d+/) || [''])[0] : ''}
+                                    onChange={(e) => {
+                                        const num = e.target.value.replace(/\D/g, '').slice(0, 7);
+                                        const currentLetter = formData.employmentNumber ? formData.employmentNumber.replace(/^\d+/, '') : '';
+                                        handleInputChange('employmentNumber', num + currentLetter);
+                                    }}
+                                    required
+                                />
+                                <Input
+                                    id="employmentCheckLetter"
+                                    className="w-16 text-center"
+                                    placeholder="A"
+                                    maxLength={1}
+                                    value={formData.employmentNumber ? formData.employmentNumber.replace(/^\d+/, '') : ''}
+                                    onChange={(e) => {
+                                        const letter = e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 1).toUpperCase();
+                                        const currentNumMatch = formData.employmentNumber ? formData.employmentNumber.match(/^\d+/) : null;
+                                        const numStr = currentNumMatch ? currentNumMatch[0] : '';
+                                        handleInputChange('employmentNumber', numStr + letter);
+                                    }}
+                                    required
+                                />
+                            </div>
                             {employmentError && (
                                 <p className="text-sm text-red-500 mt-1">{employmentError}</p>
                             )}
@@ -1004,7 +1027,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                         disabled={loading}
                         className="bg-emerald-600 hover:bg-emerald-700 px-8"
                     >
-                        {loading ? 'Submitting...' : 'Submit Application'}
+                        {loading ? 'Submitting...' : 'Agree & Submit Application'}
                     </Button>
                 </div>
             </form>

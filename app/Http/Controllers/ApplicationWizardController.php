@@ -355,9 +355,30 @@ class ApplicationWizardController extends Controller
             }
         }
 
+        $applicationType = 'ZB Bank'; // Default
+
+        if ($state && $state->form_data) {
+            $formData = is_string($state->form_data) ? json_decode($state->form_data, true) : $state->form_data;
+            
+            // Check for SSB/Government
+            $employer = data_get($formData, 'employer') ?? data_get($formData, 'formResponses.employer');
+            $employerType = data_get($formData, 'formResponses.employerType');
+            
+            // Logic to determine if it's SSB
+            if (($employer && stripos($employer, 'Civil Service') !== false) || 
+                ($employer && stripos($employer, 'SSB') !== false) ||
+                ($employer && stripos($employer, 'Government') !== false) ||
+                (is_array($employerType) && !empty($employerType['government'])) ||
+                ($employerType === 'government')
+            ) {
+                $applicationType = 'SSB';
+            }
+        }
+
         return Inertia::render('ApplicationSuccess', [
             'referenceCode' => $referenceCode,
             'phoneNumber' => $phoneNumber,
+            'applicationType' => $applicationType,
         ]);
     }
 
