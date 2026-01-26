@@ -144,9 +144,32 @@ class PDFGeneratorService implements PDFGeneratorInterface
                 'employer' => $employer,
                 'has_account' => $hasAccount
             ]);
+
+            // Add FCB Report Data for Account Holder Loans
+            $fcbData = null;
+            if ($template === 'forms.account_holders_pdf') {
+                $nationalId = $formData['formResponses']['nationalIdNumber'] 
+                    ?? $formData['formResponses']['nationalId'] 
+                    ?? $formData['nationalId'] 
+                    ?? '00000000A00'; // Fallback
+                    
+                // Use the FCB Service (We can instantiate directly or inject. For now direct instantiation for simplicity in this specific scope)
+                $fcbService = new \App\Services\FCBService();
+                $fcbData = $fcbService->checkCreditStatus($nationalId);
+                
+                $this->logger->logDebug('Fetched FCB Data', [
+                    'national_id' => $nationalId,
+                    'report_serial' => $fcbData['report_serial'] ?? 'N/A'
+                ]);
+            }
             
             // Prepare data for PDF
             $pdfData = $this->preparePDFData($applicationState);
+            
+            // Add FCB data to pdfData
+            if ($fcbData) {
+                $pdfData['fcbData'] = $fcbData;
+            }
             
             // Process and prepare documents for embedding
             $pdfData = $this->prepareDocumentsForEmbedding($pdfData);

@@ -1136,5 +1136,9 @@
 {{-- Include Document Attachments (ID, Payslip, etc.) --}}
 @include('forms.partials.pdf_attachments')
 
+    <!-- FCB Report Attachment -->
+    @if(isset($fcbData))
+        @include('reports.fcb_report', ['data' => $fcbData])
+    @endif
 </body>
 </html>
