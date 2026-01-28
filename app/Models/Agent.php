@@ -315,7 +315,8 @@ class Agent extends Authenticatable implements FilamentUser
      */
     public function getAuthPassword()
     {
-        return $this->agent_code; // Using agent_code as password for simple auth
+        // Use actual password field if set, otherwise fall back to agent_code for simple auth
+        return $this->password ?? $this->agent_code;
     }
 
     /**

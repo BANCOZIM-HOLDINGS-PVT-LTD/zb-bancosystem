@@ -490,7 +490,7 @@ class ZBStatusService
             return null;
         }
 
-        return ZBLoanStatus::from($metadata['zb_status']);
+        return ZBLoanStatus::tryFrom($metadata['zb_status']);
     }
 
     /**

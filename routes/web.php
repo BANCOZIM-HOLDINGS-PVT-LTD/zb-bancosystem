@@ -173,5 +173,9 @@ Route::prefix('agent')->name('agent.')->group(function () {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
-require __DIR__.'/test.php';
+
+// SECURITY: Only load test routes in local/development environment
+if (app()->environment('local', 'development', 'testing')) {
+    require __DIR__.'/test.php';
+}
 

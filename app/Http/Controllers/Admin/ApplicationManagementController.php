@@ -346,7 +346,7 @@ class ApplicationManagementController extends Controller
             'note' => $note,
             'type' => $type,
             'created_by' => auth()->id(),
-            'created_by_name' => auth()->user()->name ?? 'System',
+            'created_by_name' => auth()->user()?->name ?? 'System',
             'created_at' => now()->toISOString(),
         ];
 

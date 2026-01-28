@@ -37,7 +37,17 @@ class User extends Authenticatable implements FilamentUser
         'phone_verified_at',
         'otp_code',
         'otp_expires_at',
-        'otp_expires_at',
+        // SECURITY: is_admin and role are NOT mass-assignable to prevent privilege escalation
+        // Use setRole() and setAdmin() methods instead for controlled role assignment
+    ];
+
+    /**
+     * Attributes that should NEVER be mass-assigned
+     * This is a safety net - even if accidentally added to fillable
+     *
+     * @var array<string>
+     */
+    protected $guarded = [
         'is_admin',
         'role',
     ];
@@ -109,10 +119,13 @@ class User extends Authenticatable implements FilamentUser
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        // Allow access if user is marked as admin
         // Allow access based on role and panel
         if ($panel->getId() === 'admin') {
-            return $this->is_admin || $this->role === self::ROLE_SUPER_ADMIN || ($this->email && str_ends_with($this->email, '@bancosystem.fly.dev'));
+            // SECURITY: Removed email domain backdoor - access only via explicit is_admin or role
+            // If you need to grant admin access via email domain, use environment variable:
+            // $allowedDomain = env('ADMIN_EMAIL_DOMAIN');
+            // return $this->is_admin || $this->role === self::ROLE_SUPER_ADMIN || ($allowedDomain && $this->email && str_ends_with($this->email, $allowedDomain));
+            return $this->is_admin || $this->role === self::ROLE_SUPER_ADMIN;
         }
 
         if ($panel->getId() === 'zb_admin') {
@@ -136,7 +149,42 @@ class User extends Authenticatable implements FilamentUser
         }
 
         return false;
+    }
 
-        return false;
+    /**
+     * Set the user's admin status (use this instead of mass assignment)
+     *
+     * @param bool $isAdmin
+     * @return bool
+     */
+    public function setAdmin(bool $isAdmin): bool
+    {
+        $this->is_admin = $isAdmin;
+        return $this->save();
+    }
+
+    /**
+     * Set the user's role (use this instead of mass assignment)
+     *
+     * @param string $role One of the ROLE_* constants
+     * @return bool
+     */
+    public function setRole(string $role): bool
+    {
+        $validRoles = [
+            self::ROLE_SUPER_ADMIN,
+            self::ROLE_ZB_ADMIN,
+            self::ROLE_ACCOUNTING,
+            self::ROLE_HR,
+            self::ROLE_STORES,
+            self::ROLE_PARTNER,
+        ];
+
+        if (!in_array($role, $validRoles)) {
+            throw new \InvalidArgumentException("Invalid role: {$role}");
+        }
+
+        $this->role = $role;
+        return $this->save();
     }
 }

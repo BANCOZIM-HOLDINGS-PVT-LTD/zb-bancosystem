@@ -1,4 +1,14 @@
 @php
+    // DEFENSIVE: Ensure all required variables are defined to prevent "Undefined variable" errors
+    // These variables may be used throughout the template
+    $signatureImage = $signatureImage ?? '';
+    $selfieImage = $selfieImage ?? '';
+    $documents = $documents ?? [];
+    $formResponses = $formResponses ?? [];
+    $firstName = $firstName ?? '';
+    $surname = $surname ?? '';
+    $fcbData = $fcbData ?? null;
+
     // Helper to format address from JSON or string
     $formatAddress = function($value) {
         if (empty($value)) {

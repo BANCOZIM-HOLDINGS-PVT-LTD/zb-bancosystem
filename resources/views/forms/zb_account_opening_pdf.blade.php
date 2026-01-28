@@ -1,4 +1,11 @@
 @php
+    // DEFENSIVE: Ensure all required variables are defined to prevent "Undefined variable" errors
+    // These variables are used in closure `use` clauses which require the variables to exist
+    $formResponses = $formResponses ?? [];
+    $documents = $documents ?? [];
+    $selfieImage = $selfieImage ?? '';
+    $signatureImage = $signatureImage ?? '';
+
     // Helper to format address objects into readable strings
     $formatAddress = function($address) {
         // Try to decode JSON string first

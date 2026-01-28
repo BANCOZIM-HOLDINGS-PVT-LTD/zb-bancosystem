@@ -1,4 +1,12 @@
 @php
+    // DEFENSIVE: Ensure all required variables are defined to prevent "Undefined variable" errors
+    // These variables may be used throughout the template and in closures
+    $signatureImageData = $signatureImageData ?? ['data' => '', 'type' => '', 'width' => 0, 'height' => 0, 'aspectRatio' => 1];
+    $selfieImageData = $selfieImageData ?? ['data' => '', 'type' => '', 'width' => 0, 'height' => 0, 'aspectRatio' => 1];
+    $signatureImage = $signatureImage ?? '';
+    $selfieImage = $selfieImage ?? '';
+    $documents = $documents ?? [];
+
     // Handle both direct data and wrapped formData scenarios
     // If formData exists, use it; otherwise, build it from direct variables
     if (!isset($formData)) {

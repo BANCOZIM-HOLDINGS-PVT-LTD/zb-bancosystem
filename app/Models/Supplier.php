@@ -61,11 +61,14 @@ class Supplier extends Model
     
     /**
      * Get supplier's products
+     *
+     * NOTE: Commented out - Product model does not have a supplier_id column.
+     * Products are organized by category/subcategory/series, not by supplier.
      */
-    public function products(): HasMany
-    {
-        return $this->hasMany(Product::class);
-    }
+    // public function products(): HasMany
+    // {
+    //     return $this->hasMany(Product::class);
+    // }
     
     /**
      * Get total orders count

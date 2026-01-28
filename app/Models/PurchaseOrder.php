@@ -230,7 +230,7 @@ class PurchaseOrder extends Model
         $productQuantities = [];
         
         foreach ($applications as $application) {
-            $products = $application->formData['products'] ?? [];
+            $products = $application->form_data['products'] ?? [];
             foreach ($products as $product) {
                 $productId = $product['id'] ?? null;
                 if ($productId) {

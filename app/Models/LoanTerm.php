@@ -96,11 +96,14 @@ class LoanTerm extends Model
 
     /**
      * Get payment schedules for this loan term
+     *
+     * NOTE: Commented out - LoanPaymentSchedule model does not exist.
+     * Payment schedules are generated dynamically via generatePaymentSchedule() method.
      */
-    public function paymentSchedules(): HasMany
-    {
-        return $this->hasMany(LoanPaymentSchedule::class);
-    }
+    // public function paymentSchedules(): HasMany
+    // {
+    //     return $this->hasMany(LoanPaymentSchedule::class);
+    // }
 
     /**
      * Calculate monthly payment amount

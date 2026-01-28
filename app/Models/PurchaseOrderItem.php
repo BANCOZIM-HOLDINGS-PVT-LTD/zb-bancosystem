@@ -120,11 +120,11 @@ class PurchaseOrderItem extends Model
             // Update product inventory
             $inventory = ProductInventory::firstOrCreate(
                 ['product_id' => $this->product_id],
-                ['quantity_on_hand' => 0, 'quantity_available' => 0]
+                ['stock_quantity' => 0, 'reserved_quantity' => 0]
             );
-            
-            $inventory->increment('quantity_on_hand', $quantity);
-            $inventory->increment('quantity_available', $quantity);
+
+            // Use the addStock method which handles inventory movement logging
+            $inventory->addStock($quantity, 'purchase_order_received');
         }
     }
     

@@ -589,16 +589,31 @@ class PDFGeneratorService implements PDFGeneratorInterface
      */
     private function prepareDocumentsForEmbedding(array $pdfData): array
     {
-        // Skip if no documents are available
+        // IMPORTANT: Always initialize image data structures to prevent "Undefined variable" errors in templates
+        // Templates like ssb_form_pdf.blade.php access $signatureImageData['data'] which requires the array structure
+        $emptyImageData = [
+            'data' => '',
+            'type' => '',
+            'width' => 0,
+            'height' => 0,
+            'aspectRatio' => 1,
+        ];
+        $pdfData['selfieImageData'] = $emptyImageData;
+        $pdfData['signatureImageData'] = $emptyImageData;
+        $pdfData['idImageData'] = $emptyImageData;
+        $pdfData['payslipImageData'] = $emptyImageData;
+        $pdfData['proofOfResidenceImageData'] = $emptyImageData;
+
+        // Skip further processing if no documents are available
         if (!isset($pdfData['documents']) || empty($pdfData['documents'])) {
             return $pdfData;
         }
-        
+
         // Process selfie image if available
         if (!empty($pdfData['selfieImage'])) {
             $pdfData['selfieImageData'] = $this->processBase64Image($pdfData['selfieImage']);
         }
-        
+
         // Process signature image if available
         if (!empty($pdfData['signatureImage'])) {
             $pdfData['signatureImageData'] = $this->processBase64Image($pdfData['signatureImage']);
@@ -672,19 +687,33 @@ class PDFGeneratorService implements PDFGeneratorInterface
             // Generate a temporary file path
             $tempFilePath = sys_get_temp_dir() . '/' . uniqid() . '.' . $imageType;
             file_put_contents($tempFilePath, $imageData);
-            
-            // Get image dimensions
-            list($width, $height) = getimagesize($tempFilePath);
-            
+
+            // Get image dimensions with error handling
+            $imageInfo = @getimagesize($tempFilePath);
+
             // Clean up temporary file
-            unlink($tempFilePath);
-            
+            @unlink($tempFilePath);
+
+            // Handle getimagesize failure
+            if ($imageInfo === false) {
+                return [
+                    'data' => $base64Image,
+                    'type' => $imageType,
+                    'width' => 100,  // Default dimensions
+                    'height' => 100,
+                    'aspectRatio' => 1,
+                ];
+            }
+
+            $width = $imageInfo[0];
+            $height = $imageInfo[1];
+
             return [
                 'data' => $base64Image,
                 'type' => $imageType,
                 'width' => $width,
                 'height' => $height,
-                'aspectRatio' => $width / $height,
+                'aspectRatio' => $height > 0 ? $width / $height : 1,
             ];
         }
         
@@ -736,19 +765,22 @@ class PDFGeneratorService implements PDFGeneratorInterface
                 // Create a temporary file to get image dimensions
                 $tempFilePath = sys_get_temp_dir() . '/' . uniqid() . '.' . pathinfo($path, PATHINFO_EXTENSION);
                 file_put_contents($tempFilePath, $fileContents);
-                
-                // Get image dimensions
-                list($width, $height) = getimagesize($tempFilePath);
-                $result['width'] = $width;
-                $result['height'] = $height;
-                $result['aspectRatio'] = $width / $height;
-                
+
+                // Get image dimensions with error handling
+                $imageInfo = @getimagesize($tempFilePath);
+
+                // Clean up temporary file
+                @unlink($tempFilePath);
+
+                if ($imageInfo !== false) {
+                    $result['width'] = $imageInfo[0];
+                    $result['height'] = $imageInfo[1];
+                    $result['aspectRatio'] = $imageInfo[1] > 0 ? $imageInfo[0] / $imageInfo[1] : 1;
+                }
+
                 // Convert to base64 for embedding
                 $base64Data = base64_encode($fileContents);
                 $result['data'] = 'data:' . $type . ';base64,' . $base64Data;
-                
-                // Clean up temporary file
-                unlink($tempFilePath);
             } elseif ($type === 'application/pdf') {
                 // Handle PDF files
                 $result['isPdf'] = true;
@@ -1304,6 +1336,15 @@ class PDFGeneratorService implements PDFGeneratorInterface
         }
         
         // Enhanced document handling
+        // IMPORTANT: Always define these variables to prevent "Undefined variable" errors in templates
+        // Templates use these in closure `use` clauses which require the variables to exist
+        $data['documents'] = [];
+        $data['selfieImage'] = '';
+        $data['signatureImage'] = '';
+        $data['documentsUploadedAt'] = '';
+        $data['hasDocuments'] = false;
+        $data['documentsByType'] = [];
+
         if (isset($formData['documents'])) {
             $data['hasDocuments'] = true;
             $data['documents'] = $formData['documents'];
