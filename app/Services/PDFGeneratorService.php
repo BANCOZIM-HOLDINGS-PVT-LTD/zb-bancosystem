@@ -136,6 +136,15 @@ class PDFGeneratorService implements PDFGeneratorInterface
             $responses = $formData['formResponses'] ?? [];
             
             // Determine which PDF template to use
+            $hasAccount = $formData['hasAccount'] ?? false;
+            
+            // Explicitly force hasAccount to false if wantsAccount is true
+            // This ensures that even if hasAccount is set to true (e.g. by default or error),
+            // if the user explicitly wants to open an account, we treat it as an account opening application.
+            if (($formData['wantsAccount'] ?? false) === true) {
+                $hasAccount = false;
+            }
+            
             $template = $this->determineTemplate($employer, $hasAccount);
             
             $this->logger->logDebug('Using PDF template', [
@@ -1198,7 +1207,14 @@ class PDFGeneratorService implements PDFGeneratorInterface
         
         // Add formResponses as a separate variable for template compatibility
         // Determine template type to provide appropriate defaults
-        $hasAccount = isset($formData['hasAccount']) ? $formData['hasAccount'] : true;
+        // Determine template type to provide appropriate defaults
+        $hasAccount = $formData['hasAccount'] ?? false;
+        
+        // Consistent logic with generateApplicationPDF
+        if (($formData['wantsAccount'] ?? false) === true) {
+            $hasAccount = false;
+        }
+        
         $template = $this->determineTemplate($formData['employer'] ?? 'private', $hasAccount);
         $defaultFields = $this->getDefaultFieldsForTemplate($template);
         
@@ -1307,29 +1323,36 @@ class PDFGeneratorService implements PDFGeneratorInterface
                     if (is_array($docs) && count($docs) > 0) {
                         $data['documentsByType'][$type] = array_map(function($doc) {
                             return [
-                                'name' => $doc['name'] ?? '',
+                                'name' => $doc['name'] ?? 'Document',
                                 'path' => $doc['path'] ?? '',
-                                'type' => $doc['type'] ?? '',
+                                'type' => $doc['type'] ?? 'application/octet-stream',
                                 'size' => $this->formatFileSize($doc['size'] ?? 0),
-                                'uploadedAt' => $doc['uploadedAt'] ?? '',
+                                'uploadedAt' => $doc['uploadedAt'] ?? $doc['uploaded_at'] ?? now()->toIsoString(),
+                                'embeddedData' => null // Will be populated later
                             ];
                         }, $docs);
                     }
                 }
             }
-            // Fallback to uploadedDocuments if documentReferences is empty
+            // Fallback to uploadedDocuments if documentReferences is empty, but be careful of raw File objects
             elseif (isset($formData['documents']['uploadedDocuments'])) {
                 foreach ($formData['documents']['uploadedDocuments'] as $type => $docs) {
                     if (is_array($docs) && count($docs) > 0) {
                         $data['documentsByType'][$type] = array_map(function($doc) {
+                            // Skip if it's a raw File object (shouldn't happen on backend but good to be safe)
+                            if (is_object($doc) && get_class($doc) === 'Illuminate\Http\UploadedFile') {
+                                return null;
+                            }
                             return [
-                                'name' => $doc['name'] ?? '',
+                                'name' => $doc['name'] ?? 'Document',
                                 'path' => $doc['path'] ?? '',
-                                'type' => $doc['type'] ?? '',
+                                'type' => $doc['type'] ?? 'application/octet-stream',
                                 'size' => $this->formatFileSize($doc['size'] ?? 0),
-                                'uploadedAt' => $doc['uploadedAt'] ?? '',
+                                'uploadedAt' => $doc['uploadedAt'] ?? now()->toIsoString(),
                             ];
                         }, $docs);
+                        // Filter out nulls
+                        $data['documentsByType'][$type] = array_filter($data['documentsByType'][$type]);
                     }
                 }
             }

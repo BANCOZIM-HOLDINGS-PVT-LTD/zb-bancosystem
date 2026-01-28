@@ -424,7 +424,7 @@ export interface WizardData {
 
     // Document data with improved typing
     documents?: {
-        uploadedDocuments: Record<string, Array<{
+        uploadedDocuments?: Record<string, Array<{
             id: string;
             name: string;
             type: string;
@@ -434,6 +434,16 @@ export interface WizardData {
             status?: 'uploading' | 'uploaded' | 'failed';
             progress?: number;
             validationErrors?: string[];
+        }>>;
+        documentReferences?: Record<string, Array<{
+            id: string;
+            name: string;
+            type: string;
+            size: number;
+            path: string;
+            uploadedAt: string;
+            securityHash?: string;
+            metadata?: any;
         }>>;
         selfie: string;
         signature: string;

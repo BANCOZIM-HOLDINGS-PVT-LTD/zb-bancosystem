@@ -34,6 +34,12 @@ class StateController extends Controller
     {
         try {
             \Log::info('Entering StateController::saveState', ['session_id' => $request->input('session_id')]);
+            
+            \Log::info('Entering StateController::saveState', ['session_id' => $request->input('session_id')]);
+            
+            // Increase execution time for this request to handle slow local DB operations
+            set_time_limit(300);
+
             $validated = $request->validated();
             
             $state = $this->stateManager->saveState(
@@ -117,6 +123,9 @@ class StateController extends Controller
         try {
             // Generate a proper user identifier for submission
             $userIdentifier = $this->getUserIdentifierForSubmission($request, $validated['data']);
+            
+            // Increase execution time for final submission
+            set_time_limit(300);
 
             // Update user's National ID if authenticated and missing
             if (\Illuminate\Support\Facades\Auth::check()) {
@@ -133,12 +142,13 @@ class StateController extends Controller
                 }
             }
 
-            // Update the application state to pending_verification (Manual Review Step)
+            // Update the application state to pending_verification
+            $start = microtime(true);
             $state = $this->stateManager->saveState(
                 $validated['sessionId'],
                 'web', // Default to web channel
                 $userIdentifier,
-                'pending_verification', // WAS: 'completed'
+                'pending_verification', 
                 $validated['data'],
                 [
                     'submitted_at' => now()->toISOString(),
@@ -146,8 +156,11 @@ class StateController extends Controller
                     'user_agent' => $request->userAgent(),
                 ]
             );
+            $saveStateDuration = microtime(true) - $start;
+            \Log::info("saveState duration: " . round($saveStateDuration, 4) . "s");
 
-            // Generate reference code (National ID) if not already present
+            // Generate reference code
+            $start = microtime(true);
             if (!$state->reference_code) {
                 $referenceCodeService = app(\App\Services\ReferenceCodeService::class);
                 $referenceCode = $referenceCodeService->generateReferenceCode($validated['sessionId']);
@@ -157,20 +170,8 @@ class StateController extends Controller
             } else {
                 $referenceCode = $state->reference_code;
             }
-
-            // Automated Checks are now triggered MANUALLY after Document Verification
-            /*
-            try {
-                $checkService = app(\App\Services\AutomatedCheckService::class);
-                $checkService->executeAutomatedChecks($state);
-            } catch (\Exception $e) {
-                // Log but don't fail the submission
-                \Log::error('Automated checks failed', [
-                    'session_id' => $state->session_id,
-                    'error' => $e->getMessage()
-                ]);
-            }
-            */
+            $refCodeDuration = microtime(true) - $start;
+            \Log::info("Reference Code duration: " . round($refCodeDuration, 4) . "s");
 
             // Check if this is an Account Opening application
             $formData = $validated['data'];
@@ -180,12 +181,16 @@ class StateController extends Controller
 
             if ($isAccountOpening) {
                 try {
+                    $start = microtime(true);
                     $accountOpeningService = app(\App\Services\AccountOpeningService::class);
                     $accountOpening = $accountOpeningService->createFromWizard($formData, $referenceCode);
                     
                     // Link the account opening to the application state
                     $accountOpening->update(['application_state_id' => $state->id]);
                     
+                    $accOpenDuration = microtime(true) - $start;
+                    \Log::info("Account Opening duration: " . round($accOpenDuration, 4) . "s");
+
                     \Log::info('Account Opening created successfully', [
                         'reference_code' => $referenceCode,
                         'account_opening_id' => $accountOpening->id

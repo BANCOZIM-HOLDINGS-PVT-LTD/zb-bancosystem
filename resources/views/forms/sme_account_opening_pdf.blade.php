@@ -805,32 +805,8 @@
         </table>
     </div>
     
-    @if(isset($hasDocuments) && $hasDocuments)
-    <div style="margin-top: 30px; page-break-before: always;">
-        <h3 style="text-align: center; margin-bottom: 20px;">Uploaded Documents</h3>
-        
-        @if(isset($documents['uploadedDocuments']) && count($documents['uploadedDocuments']) > 0)
-            @foreach($documents['uploadedDocuments'] as $docType => $files)
-                @if(count($files) > 0)
-                    <div style="margin-bottom: 20px;">
-                        <h4>{{ ucwords(str_replace('_', ' ', $docType)) }}</h4>
-                        <ul>
-                            @foreach($files as $file)
-                                <li>{{ $file['name'] ?? 'Document' }} ({{ number_format(($file['size'] ?? 0) / 1024 / 1024, 2) }} MB)</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-            @endforeach
-        @endif
-        
-        @if(isset($documents['uploadedAt']))
-            <p style="margin-top: 20px; font-size: 8pt; color: #666;">
-                Documents uploaded on: {{ date('d/m/Y H:i', strtotime($documents['uploadedAt'])) }}
-            </p>
-        @endif
-    </div>
-    @endif
+    {{-- Include Document Attachments --}}
+    @include('forms.partials.pdf_attachments')
 </div>
 
 </body>

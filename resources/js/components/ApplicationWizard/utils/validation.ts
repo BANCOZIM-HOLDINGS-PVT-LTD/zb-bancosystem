@@ -1003,6 +1003,7 @@ export const validateDocumentsStep = (data: Partial<WizardData>): ValidationResu
 
   // Check for required documents based on application type
   const uploadedDocs = data.documents.uploadedDocuments || {};
+  const documentRefs = data.documents.documentReferences || {};
 
   // Always required documents
   const requiredDocTypes = ['national_id'];
@@ -1016,9 +1017,14 @@ export const validateDocumentsStep = (data: Partial<WizardData>): ValidationResu
 
   // Validate each required document type
   requiredDocTypes.forEach(docType => {
-    const docs = uploadedDocs[docType] || [];
+    // Check in documentReferences first (new structure), then uploadedDocuments (legacy)
+    const refDocs = documentRefs[docType] || [];
+    const legacyDocs = uploadedDocs[docType] || [];
 
-    if (docs.length === 0) {
+    // Use whichever has files
+    const hasFiles = refDocs.length > 0 || legacyDocs.length > 0;
+
+    if (!hasFiles) {
       const docName = formatDocumentName(docType);
       errors.push({
         field: docType,
@@ -1026,15 +1032,17 @@ export const validateDocumentsStep = (data: Partial<WizardData>): ValidationResu
       });
       fieldErrors[docType] = `${docName} is required`;
     } else {
-      // Check if any document has validation errors
-      const hasErrors = docs.some(doc => doc.validationErrors && doc.validationErrors.length > 0);
-      if (hasErrors) {
-        const docName = formatDocumentName(docType);
-        errors.push({
-          field: docType,
-          message: `${docName} has validation errors`
-        });
-        fieldErrors[docType] = `${docName} has validation errors`;
+      // Check if any legacy document has validation errors
+      if (legacyDocs.length > 0) {
+        const hasErrors = legacyDocs.some(doc => doc.validationErrors && doc.validationErrors.length > 0);
+        if (hasErrors) {
+          const docName = formatDocumentName(docType);
+          errors.push({
+            field: docType,
+            message: `${docName} has validation errors`
+          });
+          fieldErrors[docType] = `${docName} has validation errors`;
+        }
       }
     }
   });

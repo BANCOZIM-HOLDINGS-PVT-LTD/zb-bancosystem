@@ -1058,8 +1058,50 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = () => {
+
+    // Helper to upload Base64 data as a file
+    const uploadBase64AsFile = async (base64Data: string, filename: string, type: string): Promise<string | null> => {
+        try {
+            // Convert Base64 to Blob
+            const response = await fetch(base64Data);
+            const blob = await response.blob();
+            const file = new File([blob], filename, { type: blob.type });
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('document_type', type);
+            if (data.sessionId) {
+                formData.append('session_id', data.sessionId);
+            }
+
+            // Upload
+            const uploadResponse = await fetch('/api/documents/upload', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            if (uploadResponse.ok) {
+                const result = await uploadResponse.json();
+                console.log(`Uploaded ${type} successfully:`, result);
+                return result.path || `uploads/${type}/${filename}`;
+            } else {
+                console.error(`Failed to upload ${type}:`, uploadResponse.statusText);
+                return null;
+            }
+        } catch (error) {
+            console.error(`Error uploading ${type}:`, error);
+            return null;
+        }
+    };
+
+    const handleSubmit = async () => {
         if (!validateDocuments()) {
+            // ... validation handling (keep existing code)
             // Scroll to top to show errors
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -1079,9 +1121,12 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                     general: `Please complete all required items:\n${errorMessages.join('\n')}`
                 }));
             }
-
             return;
         }
+
+        // Show loading state
+        // You might need to add a loading state here if not already handled by parent
+        // but since we are async, we should probably set some local loading or use the parent's
 
         // Clear general error if validation passes
         setErrors(prev => {
@@ -1089,11 +1134,42 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
             return rest;
         });
 
+        // Upload Selfie and Signature if they are Base64
+        let selfiePath = selfieDataUrl;
+        let signaturePath = signatureDataUrl;
+
+        // Helper to check if string is Base64
+        const isBase64 = (str: string) => str?.startsWith('data:');
+
+        if (isBase64(selfieDataUrl)) {
+            console.log('Uploading selfie...');
+            const uploadedSelfie = await uploadBase64AsFile(selfieDataUrl, `selfie_${Date.now()}.jpg`, 'selfie');
+            if (uploadedSelfie) {
+                selfiePath = uploadedSelfie;
+            } else {
+                setErrors(prev => ({ ...prev, general: 'Failed to upload selfie. Please try again.' }));
+                return;
+            }
+        }
+
+        if (isBase64(signatureDataUrl)) {
+            console.log('Uploading signature...');
+            const uploadedSignature = await uploadBase64AsFile(signatureDataUrl, `signature_${Date.now()}.png`, 'signature');
+            if (uploadedSignature) {
+                signaturePath = uploadedSignature;
+            } else {
+                setErrors(prev => ({ ...prev, general: 'Failed to upload signature. Please try again.' }));
+                return;
+            }
+        }
+
         // Prepare document data for submission with enhanced metadata
         const documentsData = {
-            uploadedDocuments: uploadedFiles,
-            selfie: selfieDataUrl,
-            signature: signatureDataUrl,
+            // Explicitly remove uploadedDocuments to avoid sending raw Files
+            uploadedDocuments: undefined,
+
+            selfie: selfiePath,
+            signature: signaturePath,
             uploadedAt: new Date().toISOString(),
             // Add document references in a structured format for easier access
             documentReferences: Object.entries(uploadedFiles).reduce((acc, [docType, files]) => {

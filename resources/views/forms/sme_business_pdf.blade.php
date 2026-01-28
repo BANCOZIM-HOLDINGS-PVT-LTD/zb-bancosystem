@@ -431,5 +431,7 @@
     </div>
 </div>
 
+    {{-- Include Document Attachments --}}
+    @include('forms.partials.pdf_attachments')
 </body>
 </html>

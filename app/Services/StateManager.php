@@ -52,33 +52,44 @@ class StateManager
                 // Reconnect to database if connection was lost
                 \DB::reconnect();
 
-                // Use database transaction with locking to prevent race conditions
-                $state = \DB::transaction(function () use ($sessionId, $channel, $userIdentifier, $step, $data, $metadata) {
-                    // Try to find existing state with lock for update
-                    $existingState = ApplicationState::where('session_id', $sessionId)
-                        ->lockForUpdate()
-                        ->first();
+                // Reconnect to database if connection was lost
+                \DB::reconnect();
 
-                    if ($existingState) {
-                        // Debounce: Skip if last save was less than 500ms ago with same step
-                        $lastActivity = $existingState->last_activity ?? $existingState->updated_at;
-                        $timeSinceLastSave = now()->diffInMilliseconds($lastActivity);
+                \Log::info('StateManager: finding existing state');
+                // Try to find existing state
+                $existingState = ApplicationState::where('session_id', $sessionId)->first();
 
-                        if ($timeSinceLastSave < 500 && $existingState->current_step === $step) {
-                            // Generate hash of form data to detect actual changes
-                            $existingHash = md5(json_encode($existingState->form_data ?? []));
-                            $newHash = md5(json_encode($data));
+                if ($existingState) {
+                    \Log::info('StateManager: updating existing state');
+                    // Debounce: Skip if last save was less than 500ms ago with same step
+                    $lastActivity = $existingState->last_activity ?? $existingState->updated_at;
+                    $timeSinceLastSave = now()->diffInMilliseconds($lastActivity);
 
-                            if ($existingHash === $newHash) {
-                                \Log::debug('Skipping duplicate save (debounced)', [
-                                    'session_id' => $sessionId,
-                                    'step' => $step,
-                                    'time_since_last' => $timeSinceLastSave . 'ms'
-                                ]);
-                                return $existingState;
-                            }
+                    if ($timeSinceLastSave < 500 && $existingState->current_step === $step) {
+                        // Generate hash of form data to detect actual changes
+                        $existingHash = md5(json_encode($existingState->form_data ?? []));
+                        $newHash = md5(json_encode($data));
+
+                        if ($existingHash === $newHash) {
+                            \Log::debug('Skipping duplicate save (debounced)', [
+                                'session_id' => $sessionId,
+                                'step' => $step,
+                                'time_since_last' => $timeSinceLastSave . 'ms'
+                            ]);
+                            $state = $existingState;
+                        } else {
+                             $existingState->update([
+                                'channel' => $channel,
+                                'user_identifier' => $userIdentifier,
+                                'current_step' => $step,
+                                'form_data' => $data,
+                                'metadata' => $metadata,
+                                'expires_at' => $this->getExpirationTime($channel),
+                                'last_activity' => now(),
+                            ]);
+                            $state = $existingState;
                         }
-
+                    } else {
                         // Update existing state
                         $existingState->update([
                             'channel' => $channel,
@@ -89,22 +100,23 @@ class StateManager
                             'expires_at' => $this->getExpirationTime($channel),
                             'last_activity' => now(),
                         ]);
-
-                        return $existingState;
-                    } else {
-                        // Create new state
-                        return ApplicationState::create([
-                            'session_id' => $sessionId,
-                            'channel' => $channel,
-                            'user_identifier' => $userIdentifier,
-                            'current_step' => $step,
-                            'form_data' => $data,
-                            'metadata' => $metadata,
-                            'expires_at' => $this->getExpirationTime($channel),
-                            'last_activity' => now(),
-                        ]);
+                        $state = $existingState;
                     }
-                });
+                } else {
+                    \Log::info('StateManager: creating new state');
+                    // Create new state
+                    $state = ApplicationState::create([
+                        'session_id' => $sessionId,
+                        'channel' => $channel,
+                        'user_identifier' => $userIdentifier,
+                        'current_step' => $step,
+                        'form_data' => $data,
+                        'metadata' => $metadata,
+                        'expires_at' => $this->getExpirationTime($channel),
+                        'last_activity' => now(),
+                    ]);
+                }
+                \Log::info('StateManager: state saved');
 
                 // Log state transition
                 try {

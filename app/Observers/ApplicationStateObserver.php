@@ -9,15 +9,28 @@ use Illuminate\Support\Facades\Log;
 class ApplicationStateObserver
 {
     /**
+     * Prevent infinite loops
+     */
+    private static bool $isProcessing = false;
+
+    /**
      * Handle the ApplicationState "updated" event.
      * Auto-create PersonalService records when personal service loans are approved.
      */
     public function updated(ApplicationState $applicationState): void
     {
-        // Track if status changed
-        $statusChanged = $applicationState->isDirty('current_step');
-        $oldStatus = $applicationState->getOriginal('current_step');
-        $newStatus = $applicationState->current_step;
+        // Prevent infinite recursion if we trigger another update
+        if (self::$isProcessing) {
+            return;
+        }
+
+        self::$isProcessing = true;
+
+        try {
+            // Track if status changed
+            $statusChanged = $applicationState->isDirty('current_step');
+            $oldStatus = $applicationState->getOriginal('current_step');
+            $newStatus = $applicationState->current_step;
 
         // Send status update notification if status changed
         if ($statusChanged && $oldStatus && $newStatus) {
@@ -35,6 +48,7 @@ class ApplicationStateObserver
                     'new_status' => $newStatus,
                 ]);
             } catch (\Exception $e) {
+                // Log and continue - ensure this doesn't block the request
                 Log::error('Failed to send status update notification', [
                     'application_id' => $applicationState->id,
                     'error' => $e->getMessage(),
@@ -48,8 +62,13 @@ class ApplicationStateObserver
         }
 
         // Check if this is a personal service application
-        if (!$this->isPersonalService($applicationState)) {
-            return;
+        try {
+            if (!$this->isPersonalService($applicationState)) {
+                return;
+            }
+        } catch (\Exception $e) {
+             Log::error('Error checking isPersonalService', ['error' => $e->getMessage()]);
+             return;
         }
 
         // Check if PersonalService already exists for this application
@@ -61,10 +80,17 @@ class ApplicationStateObserver
         try {
             $this->createPersonalService($applicationState);
         } catch (\Exception $e) {
+            // Log and continue - do not fail the main request
             Log::error('Failed to auto-create PersonalService', [
                 'application_id' => $applicationState->id,
                 'error' => $e->getMessage(),
             ]);
+        }
+        } catch (\Exception $e) {
+            // Log global observer error
+            Log::error('Observer Error', ['error' => $e->getMessage()]);
+        } finally {
+            self::$isProcessing = false;
         }
     }
 
