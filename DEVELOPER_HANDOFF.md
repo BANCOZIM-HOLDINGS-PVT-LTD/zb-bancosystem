@@ -1,5 +1,27 @@
 # Developer Handoff - ZB Bank Application System
 
+## 🌟 System Overview
+This system is a multi-channel (Web, WhatsApp, USSD) application wizard for ZB Bank. It allows both existing customers (to apply for loans) and new customers (to open accounts). 
+
+The architecture relies on a **Stateful Wizard**: every step is saved to the `application_states` table, allowing users to resume from any device.
+
+## 🔄 Application Submission Lifecycle
+When a user clicks "Submit" on the frontend, the following sequence occurs on the backend:
+
+1.  **`StateController@saveState`**: The final form data is saved with a status of `completed`.
+2.  **`ApplicationStateObserver`**: Fired by the database save.
+    *   It checks for status changes.
+    *   It calls `NotificationService` to log/send any initial customer alerts.
+3.  **`StateController@createApplication`**: The "Submission Finalizer".
+    *   Generates a unique `reference_code`.
+    *   If it's an **Account Opening**, it creates a record in the `account_openings` table.
+    *   It attempts to generate a **PDF** synchronously via `PDFGeneratorService`.
+4.  **Admin Panel Visibility**: 
+    *   Loan applications appear in the main "Applications" resource.
+    *   Account openings appear in the specialized "ZB Account Opening" resource.
+
+---
+
 ## Current Status (as of Jan 28, 2026)
 We have successfully resolved the major "Maximum execution time exceeded" (500 Error) that was blocking all submissions. However, the system is currently hitting a secondary failure during the final PDF generation for **Account Opening** applications.
 
