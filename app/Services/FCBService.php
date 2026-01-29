@@ -20,9 +20,21 @@ class FCBService
      */
     public function checkCreditStatus(string $nationalId): array
     {
-        Log::info('[FCB Service] Checking credit status', ['national_id' => $nationalId]);
+        // IMPORTANT: This is MOCK data for development/testing only
+        // TODO: Implement real FCB API integration before production use
+        // Real FCB API endpoint should be configured via environment variables:
+        //   FCB_API_URL, FCB_API_KEY, FCB_API_SECRET
+
+        if (app()->environment('production')) {
+            Log::warning('[FCB Service] MOCK DATA IN USE - Real FCB integration required!', [
+                'national_id' => substr($nationalId, 0, 4) . '****',
+            ]);
+        }
+
+        Log::info('[FCB Service] Returning mock credit status', ['national_id' => $nationalId]);
 
         // Mock response structure matching the PDF report
+        // WARNING: This always returns "GOOD" status - NOT suitable for production
         return [
             'report_serial' => '2026' . rand(10000, 99999),
             'report_date' => now()->format('d-M-Y H:i'),

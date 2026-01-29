@@ -65,21 +65,70 @@ Route::prefix('documents')->group(function () {
             if (!$request->hasFile('file')) {
                 return response()->json(['success' => false, 'message' => 'No file provided'], 400);
             }
-            
+
             $file = $request->file('file');
             $documentType = $request->input('documentType', 'unknown');
-            $sessionId = $request->input('sessionId', 'unknown');
-            
+            $sessionId = $request->input('sessionId');
+
+            // SECURITY: Require a valid session ID
+            if (!$sessionId || $sessionId === 'unknown') {
+                return response()->json(['success' => false, 'message' => 'Valid session ID required'], 400);
+            }
+
+            // SECURITY: Sanitize sessionId to prevent directory traversal
+            $sessionId = preg_replace('/[^a-zA-Z0-9\-_]/', '', $sessionId);
+
             // Validate file
             if (!$file->isValid()) {
                 return response()->json(['success' => false, 'message' => 'Invalid file'], 400);
             }
-            
+
             // Get file info
             $originalName = $file->getClientOriginalName();
             $fileSize = $file->getSize();
             $mimeType = $file->getMimeType();
-            $extension = $file->getClientOriginalExtension();
+            $extension = strtolower($file->getClientOriginalExtension());
+
+            // SECURITY: Validate file type - only allow safe document types
+            $allowedMimeTypes = [
+                'image/jpeg',
+                'image/jpg',
+                'image/png',
+                'image/gif',
+                'image/webp',
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ];
+
+            $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx'];
+
+            if (!in_array($mimeType, $allowedMimeTypes)) {
+                \Log::warning('Upload rejected - invalid mime type', [
+                    'mime_type' => $mimeType,
+                    'session_id' => $sessionId,
+                    'ip' => $request->ip()
+                ]);
+                return response()->json(['success' => false, 'message' => 'File type not allowed'], 400);
+            }
+
+            if (!in_array($extension, $allowedExtensions)) {
+                \Log::warning('Upload rejected - invalid extension', [
+                    'extension' => $extension,
+                    'session_id' => $sessionId,
+                    'ip' => $request->ip()
+                ]);
+                return response()->json(['success' => false, 'message' => 'File extension not allowed'], 400);
+            }
+
+            // SECURITY: Validate file size (max 10MB)
+            $maxSize = 10 * 1024 * 1024; // 10MB
+            if ($fileSize > $maxSize) {
+                return response()->json(['success' => false, 'message' => 'File too large (max 10MB)'], 400);
+            }
+
+            // SECURITY: Sanitize document type
+            $documentType = preg_replace('/[^a-zA-Z0-9\-_]/', '', $documentType);
             
             // Generate unique filename
             $filename = $documentType . '_' . time() . '_' . uniqid() . '.' . $extension;
@@ -120,22 +169,67 @@ Route::prefix('documents')->group(function () {
     Route::post('/delete', function (Request $request) {
         try {
             $path = $request->input('path');
+            $sessionId = $request->input('sessionId');
+
             if (!$path) {
                 return response()->json(['success' => false, 'message' => 'No path provided'], 400);
             }
-            
-            $fullPath = public_path($path);
-            if (file_exists($fullPath)) {
-                unlink($fullPath);
+
+            if (!$sessionId) {
+                return response()->json(['success' => false, 'message' => 'Session ID required'], 400);
+            }
+
+            // SECURITY: Sanitize path to prevent directory traversal attacks
+            // Only allow alphanumeric, dashes, underscores, dots, and forward slashes
+            $sanitizedPath = preg_replace('/[^a-zA-Z0-9\-_\.\/]/', '', $path);
+
+            // SECURITY: Prevent path traversal - reject any path containing ".."
+            if (strpos($sanitizedPath, '..') !== false) {
+                \Log::warning('Path traversal attempt blocked', [
+                    'original_path' => $path,
+                    'session_id' => $sessionId,
+                    'ip' => $request->ip()
+                ]);
+                return response()->json(['success' => false, 'message' => 'Invalid path'], 400);
+            }
+
+            // SECURITY: Only allow deletion within the documents directory for this session
+            $allowedPrefix = 'storage/documents/' . $sessionId . '/';
+            $altAllowedPrefix = 'documents/' . $sessionId . '/';
+
+            // Normalize path by removing leading slashes and "storage/" prefix if present
+            $normalizedPath = ltrim($sanitizedPath, '/');
+            if (strpos($normalizedPath, 'storage/') === 0) {
+                $normalizedPath = substr($normalizedPath, 8); // Remove 'storage/'
+            }
+
+            // Check if path is within allowed directory
+            if (strpos($normalizedPath, 'documents/' . $sessionId . '/') !== 0) {
+                \Log::warning('Unauthorized file deletion attempt', [
+                    'path' => $path,
+                    'normalized' => $normalizedPath,
+                    'session_id' => $sessionId,
+                    'ip' => $request->ip()
+                ]);
+                return response()->json(['success' => false, 'message' => 'Access denied'], 403);
+            }
+
+            // Use Laravel Storage to delete the file safely
+            if (\Storage::disk('public')->exists($normalizedPath)) {
+                \Storage::disk('public')->delete($normalizedPath);
+                \Log::info('File deleted successfully', [
+                    'path' => $normalizedPath,
+                    'session_id' => $sessionId
+                ]);
                 return response()->json(['success' => true, 'message' => 'File deleted successfully']);
             } else {
                 return response()->json(['success' => false, 'message' => 'File not found'], 404);
             }
-            
+
         } catch (\Exception $e) {
             \Log::error('File deletion error: ' . $e->getMessage());
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Deletion failed: ' . $e->getMessage()
             ], 500);
         }
@@ -217,10 +311,12 @@ Route::prefix('ecocash')->group(function () {
     // Client-facing endpoints
     Route::post('/initiate', [\App\Http\Controllers\EcocashWebhookController::class, 'initiatePayment']);
     Route::post('/check-status', [\App\Http\Controllers\EcocashWebhookController::class, 'checkStatus']);
-
-    // TEST MODE ONLY - Simulate payment completion
-    Route::post('/simulate', [\App\Http\Controllers\EcocashWebhookController::class, 'simulatePayment']);
 });
+
+// SECURITY: Ecocash simulate endpoint - only available in non-production environments
+if (!app()->environment('production')) {
+    Route::post('/ecocash/simulate', [\App\Http\Controllers\EcocashWebhookController::class, 'simulatePayment']);
+}
 
 // Delivery Tracking API routes
 Route::prefix('delivery')->group(function () {

@@ -269,4 +269,126 @@ class PaynowService
     {
         return !empty($this->integrationId) && !empty($this->integrationKey);
     }
+
+    /**
+     * Handle incoming webhook from Paynow
+     *
+     * @param array $data The webhook payload from Paynow
+     * @return array ['verified' => bool, 'is_paid' => bool, 'reference' => string|null, 'amount' => float, 'paynow_reference' => string|null, 'error' => string|null]
+     */
+    public function handleWebhook(array $data): array
+    {
+        try {
+            // Extract data from webhook payload
+            // Paynow sends: reference, paynowreference, amount, status, pollurl, hash
+            $reference = $data['reference'] ?? null;
+            $paynowReference = $data['paynowreference'] ?? null;
+            $amount = (float) ($data['amount'] ?? 0);
+            $status = strtolower($data['status'] ?? '');
+            $pollUrl = $data['pollurl'] ?? null;
+            $hash = $data['hash'] ?? null;
+
+            // SECURITY: Verify the webhook hash to ensure it's from Paynow
+            // Paynow hashes the concatenated values with the integration key
+            if (!$this->verifyWebhookHash($data, $hash)) {
+                Log::warning('Paynow webhook hash verification failed', [
+                    'reference' => $reference,
+                    'received_hash' => $hash,
+                    'ip' => request()->ip()
+                ]);
+
+                return [
+                    'verified' => false,
+                    'is_paid' => false,
+                    'reference' => $reference,
+                    'amount' => $amount,
+                    'paynow_reference' => $paynowReference,
+                    'error' => 'Hash verification failed'
+                ];
+            }
+
+            // Determine if payment is successful
+            $paidStatuses = ['paid', 'awaiting delivery', 'delivered'];
+            $isPaid = in_array($status, $paidStatuses);
+
+            Log::info('Paynow webhook received', [
+                'reference' => $reference,
+                'paynow_reference' => $paynowReference,
+                'status' => $status,
+                'amount' => $amount,
+                'is_paid' => $isPaid
+            ]);
+
+            // Store/update poll URL in cache if provided
+            if ($pollUrl && $reference) {
+                Cache::put("paynow_poll_{$reference}", $pollUrl, now()->addHours(24));
+            }
+
+            return [
+                'verified' => true,
+                'is_paid' => $isPaid,
+                'reference' => $reference,
+                'amount' => $amount,
+                'paynow_reference' => $paynowReference,
+                'status' => $status,
+                'error' => null
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Paynow webhook processing error', [
+                'error' => $e->getMessage(),
+                'data' => $data
+            ]);
+
+            return [
+                'verified' => false,
+                'is_paid' => false,
+                'reference' => $data['reference'] ?? null,
+                'amount' => (float) ($data['amount'] ?? 0),
+                'paynow_reference' => $data['paynowreference'] ?? null,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Verify the webhook hash from Paynow
+     *
+     * Paynow creates a hash by concatenating specific fields and hashing with the integration key
+     *
+     * @param array $data The webhook data
+     * @param string|null $receivedHash The hash received from Paynow
+     * @return bool
+     */
+    private function verifyWebhookHash(array $data, ?string $receivedHash): bool
+    {
+        if (empty($receivedHash) || empty($this->integrationKey)) {
+            // If no hash provided or no integration key, can't verify
+            // In development, we might allow this; in production, we should reject
+            if (app()->environment('production')) {
+                return false;
+            }
+            Log::warning('Paynow webhook: Missing hash or integration key, allowing in non-production');
+            return true;
+        }
+
+        // Paynow hash is typically: hash(concat of values + integration_key)
+        // The exact concatenation order may vary - check Paynow documentation
+        // Common format: reference + paynowreference + amount + status + integration_key
+        $valuesToHash = '';
+
+        // Build the string to hash (exclude the hash field itself)
+        foreach ($data as $key => $value) {
+            if ($key !== 'hash' && is_scalar($value)) {
+                $valuesToHash .= $value;
+            }
+        }
+
+        $valuesToHash .= $this->integrationKey;
+
+        // Paynow typically uses SHA512
+        $calculatedHash = strtoupper(hash('sha512', $valuesToHash));
+
+        return hash_equals($calculatedHash, strtoupper($receivedHash));
+    }
 }

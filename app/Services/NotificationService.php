@@ -280,7 +280,12 @@ class NotificationService
             // For now, we'll use Laravel's broadcasting system (if configured)
             if (config('broadcasting.default') !== 'null') {
                 // Broadcast to specific channel for this application
-                broadcast(new \App\Events\ApplicationStatusUpdated($applicationState, $notification));
+                try {
+                    broadcast(new \App\Events\ApplicationStatusUpdated($applicationState, $notification));
+                } catch (\Error $e) {
+                    // Event class may not exist, log and continue
+                    Log::warning("Could not broadcast ApplicationStatusUpdated: " . $e->getMessage());
+                }
             }
 
             return true;

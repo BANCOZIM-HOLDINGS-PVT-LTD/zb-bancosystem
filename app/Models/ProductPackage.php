@@ -88,11 +88,13 @@ class ProductPackage extends Model
 
     /**
      * Get package variants (different configurations)
+     *
+     * NOTE: Commented out - PackageVariant model does not exist.
      */
-    public function variants(): HasMany
-    {
-        return $this->hasMany(PackageVariant::class);
-    }
+    // public function variants(): HasMany
+    // {
+    //     return $this->hasMany(PackageVariant::class);
+    // }
 
     /**
      * Calculate effective price based on quantity and rules

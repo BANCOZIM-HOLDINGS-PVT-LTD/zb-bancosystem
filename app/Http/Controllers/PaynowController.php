@@ -28,7 +28,7 @@ class PaynowController extends Controller
             'reference' => 'nullable|string',
         ]);
 
-        $reference = $request->reference ?? 'PAY-' . time();
+        $reference = $request->reference ?? 'PAY-' . bin2hex(random_bytes(8));
 
         // 1. Create Payment Transaction
         $initResult = $this->paynowService->createPayment(

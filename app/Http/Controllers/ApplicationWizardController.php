@@ -357,28 +357,29 @@ class ApplicationWizardController extends Controller
 
         $productName = 'ZB Product';
         $category = 'General';
-        
+        $applicationType = 'General'; // Default application type
+
         if ($state && $state->form_data) {
             $formData = is_string($state->form_data) ? json_decode($state->form_data, true) : $state->form_data;
-            
+
             // Extract product name
-            $productName = data_get($formData, 'selectedProduct.name') 
-                ?? data_get($formData, 'product.name') 
+            $productName = data_get($formData, 'selectedProduct.name')
+                ?? data_get($formData, 'product.name')
                 ?? data_get($formData, 'productName')
                 ?? 'ZB Product';
 
             // Extract category
-            $category = data_get($formData, 'selectedProduct.category') 
-                ?? data_get($formData, 'product.category') 
+            $category = data_get($formData, 'selectedProduct.category')
+                ?? data_get($formData, 'product.category')
                 ?? data_get($formData, 'category')
                 ?? 'General';
 
             // Check for SSB/Government
             $employer = data_get($formData, 'employer') ?? data_get($formData, 'formResponses.employer');
             $employerType = data_get($formData, 'formResponses.employerType');
-            
+
             // Logic to determine if it's SSB
-            if (($employer && stripos($employer, 'Civil Service') !== false) || 
+            if (($employer && stripos($employer, 'Civil Service') !== false) ||
                 ($employer && stripos($employer, 'SSB') !== false) ||
                 ($employer && stripos($employer, 'Government') !== false) ||
                 (is_array($employerType) && !empty($employerType['government'])) ||

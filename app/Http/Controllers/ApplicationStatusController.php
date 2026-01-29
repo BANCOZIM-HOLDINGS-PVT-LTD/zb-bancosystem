@@ -618,7 +618,7 @@ class ApplicationStatusController extends Controller
     /**
      * Get real-time status updates (Server-Sent Events endpoint)
      */
-    public function getStatusUpdates(string $reference): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function getStatusUpdates(string $reference): \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\JsonResponse
     {
         // Look up application by session ID or reference code (national ID)
         $application = null;

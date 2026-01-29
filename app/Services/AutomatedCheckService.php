@@ -77,9 +77,9 @@ class AutomatedCheckService
         // Let's assume if it's NOT SSB, and it involves ZB account holder loan (hasAccount = true), it's FCB.
         
         $hasAccount = data_get($formData, 'hasAccount') ?? false;
-        
-        if ($hasAccount && $checkType !== 'SSB') { 
-             // Note: variable $checkType is not defined here, rely on return 'SSB' above.
+
+        // If we reach here, we already know it's NOT SSB (SSB was returned above)
+        if ($hasAccount) {
              return 'FCB';
         }
 
