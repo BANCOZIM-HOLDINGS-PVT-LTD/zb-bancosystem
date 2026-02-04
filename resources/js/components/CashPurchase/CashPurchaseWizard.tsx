@@ -31,7 +31,7 @@ export interface CashPurchaseData {
     // Deprecated single product field, keeping for type safety in legacy checks
     product?: any;
     delivery?: {
-        type: 'zimpost' | 'gain_outlet';
+        type: 'zimpost' | 'gain_outlet' | 'Gain Cash & Carry' | 'Metro Peech & Browne' | 'Zim Post Office' | 'Farm & City' | 'PG Building Materials';
         depot: string;
         depotName?: string;
         address?: string;

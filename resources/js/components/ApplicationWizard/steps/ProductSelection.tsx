@@ -78,7 +78,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
         switch (data.intent) {
             case 'microBiz':
-                intentKeywords = ['Agriculture', 'Agricultural', 'Fertilizer', 'Seed', 'Chemicals', 'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries', 'Business', 'Maize', 'Irrigation', 'Water', 'Pumping', 'Planter', 'Sheller', 'Banking', 'Agency', 'POS', 'Purification', 'Refill', 'Cleaning', 'Beauty', 'Hair', 'Cosmetics', 'Food', 'Butchery', 'Events', 'Snack', 'Entertainment', 'Printing', 'Digital', 'Multimedia', 'Tailoring', 'Construction', 'Mining', 'Retailing', 'Delivery', 'Vehicle', 'Photocopying', 'Small', 'Support', 'Fee', 'Licens', 'Company', 'Reg'];
+                intentKeywords = ['Agriculture', 'Agricultural', 'Fertilizer', 'Seed', 'Chemicals', 'Broiler', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries', 'Business', 'Maize', 'Irrigation', 'Water', 'Pumping', 'Planter', 'Sheller', 'Banking', 'Agency', 'POS', 'Purification', 'Refill', 'Cleaning', 'Beauty', 'Hair', 'Cosmetics', 'Food', 'Butchery', 'Events', 'Snack', 'Entertainment', 'Printing', 'Digital', 'Multimedia', 'Tailoring', 'Construction', 'Mining', 'Retailing', 'Retail', 'Retail Shops', 'Delivery', 'Vehicle', 'Photocopying', 'Small', 'Support', 'Fee', 'Licens', 'Company', 'Reg'];
                 break;
             case 'homeConstruction':
                 intentKeywords = ['Building', 'Cement', 'Roofing', 'Plumbing', 'Hardware', 'Paint', 'Timber', 'Electrical', 'Tank', 'Brick', 'Door', 'Window', 'Construction', 'Solar', 'Tile', 'Glass', 'Steel'];
@@ -1227,20 +1227,28 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                     const isSelected = selectedScale?.name === scale.name;
                                     // Format scale name: add "Package" suffix for Lite, Standard, Full house and handle rebranding
                                     const formatScaleName = (name: string) => {
-                                        if (name === 'Lite') return 'Bronze Package';
-                                        if (name === 'Standard') return 'Silver Package';
-                                        if (name === 'Full house' || name === 'Full House') return 'Gold Package';
+                                        // Normalize input
+                                        const n = name.toLowerCase();
+                                        if (n.includes('bronze') || n === 'lite' || n === 'lite package') return 'Lite Package';
+                                        if (n.includes('silver') || n === 'standard' || n === 'standard package') return 'Standard Package';
+                                        if (n.includes('full house') || n === 'gold package' && !n.includes('1,500')) return 'Full House Package'; // Old Gold was Full House
+                                        if (n.includes('gold') || n.includes('1500') || n.includes('1,500')) return 'Gold Package';
 
-                                        const packageScales = ['Bronze Package', 'Silver Package', 'Gold Package'];
-                                        if (packageScales.includes(name)) {
-                                            return name; // Already correct
-                                        }
                                         return name;
                                     };
+                                    const isGoldPackage = scale.name.includes('Gold');
                                     return (
                                         <Card
                                             key={index}
-                                            className={`cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg text-center ${isSelected ? 'border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
+                                            className={`cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg text-center 
+                                                ${isSelected
+                                                    ? (isGoldPackage
+                                                        ? 'border-4 border-[#FFD700] bg-yellow-50/50 dark:bg-yellow-900/10 ring-2 ring-yellow-200'
+                                                        : 'border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20')
+                                                    : (isGoldPackage
+                                                        ? 'border-2 border-[#FFD700]/60 hover:border-[#FFD700] bg-yellow-50/30'
+                                                        : '')
+                                                }`}
                                             onClick={() => handleScaleSelect(scale)}
                                         >
                                             <h3 className="text-lg font-medium mb-2">{formatScaleName(scale.name)}</h3>

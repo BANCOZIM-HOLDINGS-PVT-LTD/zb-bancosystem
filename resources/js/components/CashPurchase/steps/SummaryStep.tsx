@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronRight, ChevronLeft, ShoppingBasket, MapPin, DollarSign, Tag, Truck, Monitor, GraduationCap } from 'lucide-react';
+import { ChevronRight, ChevronLeft, ShoppingBasket, MapPin, DollarSign, Tag, Truck, Monitor, GraduationCap, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import type { CashPurchaseData } from '../CashPurchaseWizard';
@@ -26,7 +26,7 @@ export default function SummaryStep({ data, onNext, onBack }: SummaryStepProps) 
     const loanTotal = cart.reduce((sum, item) => sum + (item.loanPrice * item.quantity), 0);
 
     // Calculates fees based on total logic
-    const deliveryFee = delivery.type === 'swift' ? 10 : 0; // $10 for Swift delivery
+    const deliveryFee = 0; // Delivery is free for depot collection
     const meSystemFee = includesMESystem ? (cartTotal * ME_SYSTEM_PERCENTAGE) : 0;
     const trainingFee = includesTraining ? (cartTotal * TRAINING_PERCENTAGE) : 0;
     const totalAmount = cartTotal + deliveryFee + meSystemFee + trainingFee;
@@ -151,11 +151,7 @@ export default function SummaryStep({ data, onNext, onBack }: SummaryStepProps) 
                 {/* Delivery Summary */}
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 sm:p-6">
                     <div className="flex items-start gap-3 sm:gap-4 mb-4">
-                        {delivery.type === 'swift' ? (
-                            <Truck className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 flex-shrink-0 mt-1" />
-                        ) : (
-                            <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600 flex-shrink-0 mt-1" />
-                        )}
+                        <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600 flex-shrink-0 mt-1" />
                         <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-base sm:text-lg mb-1 text-[#1b1b18] dark:text-[#EDEDEC]">
                                 Delivery Details
@@ -167,24 +163,26 @@ export default function SummaryStep({ data, onNext, onBack }: SummaryStepProps) 
                         <div className="flex justify-between gap-2">
                             <span className="text-[#706f6c] dark:text-[#A1A09A] text-sm">Method:</span>
                             <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC] text-sm text-right">
-                                {delivery.type === 'swift' ? 'Swift Depot' : 'Gain Outlet'}
+                                {delivery.type}
                             </span>
                         </div>
 
-                        {delivery.type === 'gain_outlet' ? (
-                            <>
-                                <div className="flex justify-between gap-2">
-                                    <span className="text-[#706f6c] dark:text-[#A1A09A] text-sm">Depot:</span>
-                                    <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC] text-sm text-right">{delivery.depot}</span>
-                                </div>
-                            </>
-                        ) : (
+                        {delivery.type === 'Zim Post Office' ? (
                             <>
                                 <div className="flex justify-between gap-2">
                                     <span className="text-[#706f6c] dark:text-[#A1A09A] text-sm">City:</span>
                                     <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC] text-sm text-right">{delivery.city}</span>
                                 </div>
+                                <div className="flex justify-between gap-2">
+                                    <span className="text-[#706f6c] dark:text-[#A1A09A] text-sm">Branch:</span>
+                                    <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC] text-sm text-right">{delivery.depot}</span>
+                                </div>
                             </>
+                        ) : (
+                            <div className="flex justify-between gap-2">
+                                <span className="text-[#706f6c] dark:text-[#A1A09A] text-sm">Depot:</span>
+                                <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC] text-sm text-right">{delivery.depot}</span>
+                            </div>
                         )}
                     </div>
                 </div>

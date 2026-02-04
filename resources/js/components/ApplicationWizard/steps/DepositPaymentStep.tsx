@@ -19,9 +19,12 @@ const DepositPaymentStep: React.FC<DepositPaymentStepProps> = ({ data, onNext, o
     const [paymentError, setPaymentError] = useState<string | null>(null);
     // Removed paymentMethod state as it's now just Paynow
 
-    // Calculate 25% deposit
+    // Calculate deposit based on selected credit type (30% or 50%)
     const loanAmount = data.amount || data.loanAmount || 0;
-    const depositAmount = (loanAmount * 0.25).toFixed(2);
+    const depositPercent = data.creditType === 'PDC50' ? 0.50 : 0.30;
+    const depositPercentLabel = data.creditType === 'PDC50' ? '50%' : '30%';
+    const remainingPercent = data.creditType === 'PDC50' ? 0.50 : 0.70;
+    const depositAmount = (loanAmount * depositPercent).toFixed(2);
 
     const handleInitiatePayment = async () => {
         setProcessing(true);
@@ -56,7 +59,7 @@ const DepositPaymentStep: React.FC<DepositPaymentStepProps> = ({ data, onNext, o
     return (
         <div className="space-y-6">
             <div className="text-center">
-                <h2 className="text-2xl font-semibold mb-2">25% Deposit Payment</h2>
+                <h2 className="text-2xl font-semibold mb-2">{depositPercentLabel} Deposit Payment</h2>
                 <p className="text-gray-600 dark:text-gray-400">
                     Pay your deposit to proceed with your application
                 </p>
@@ -68,7 +71,7 @@ const DepositPaymentStep: React.FC<DepositPaymentStepProps> = ({ data, onNext, o
                     <div className="flex items-center gap-3">
                         <DollarSign className="h-8 w-8 text-emerald-600" />
                         <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Deposit Amount (25%)</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Deposit Amount ({depositPercentLabel})</p>
                             <p className="text-3xl font-bold text-emerald-600">
                                 ${parseFloat(depositAmount).toLocaleString()}
                             </p>
@@ -77,7 +80,7 @@ const DepositPaymentStep: React.FC<DepositPaymentStepProps> = ({ data, onNext, o
                     <div className="text-right">
                         <p className="text-sm text-gray-600 dark:text-gray-400">Remaining Balance</p>
                         <p className="text-xl font-semibold text-gray-700 dark:text-gray-300">
-                            ${((loanAmount * 0.75).toFixed(2))}
+                            ${((loanAmount * remainingPercent).toFixed(2))}
                         </p>
                         <p className="text-xs text-gray-500">Financed over {data.creditTerm} months</p>
                     </div>
@@ -194,7 +197,7 @@ const DepositPaymentStep: React.FC<DepositPaymentStepProps> = ({ data, onNext, o
                         <li>• Upload required documents for verification</li>
                         <li>• Your application will be reviewed within 24-48 hours</li>
                         <li>• Upon approval, your product will be dispatched to the selected depot</li>
-                        <li>• The remaining balance (${((loanAmount * 0.75).toFixed(2))}) will be paid in {data.creditTerm} monthly installments</li>
+                        <li>• The remaining balance (${((loanAmount * remainingPercent).toFixed(2))}) will be paid in {data.creditTerm} monthly installments</li>
                     </ul>
                 </div>
             </div>

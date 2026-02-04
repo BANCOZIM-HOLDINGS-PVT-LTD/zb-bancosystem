@@ -1,16 +1,16 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, CreditCard, Wallet, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CreditCard, Wallet, Check, Banknote } from 'lucide-react';
 
 interface CreditTypeSelectionProps {
     data: any;
-    onNext: (creditType: 'ZDC' | 'PDC') => void;
+    onNext: (creditType: 'ZDC' | 'PDC30' | 'PDC50') => void;
     onBack: () => void;
     loading?: boolean;
 }
 
-type CreditType = 'ZDC' | 'PDC';
+type CreditType = 'ZDC' | 'PDC30' | 'PDC50';
 
 const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext, onBack, loading }) => {
     const [selectedType, setSelectedType] = React.useState<CreditType | null>(data.creditType || null);
@@ -24,9 +24,10 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
         return `${currencySymbol}${amount.toLocaleString()}`;
     };
 
-    // Calculate 25% deposit for PDC
+    // Calculate deposit amounts
     const loanAmount = data.amount || data.loanAmount || 0;
-    const depositAmount = loanAmount * 0.25;
+    const deposit30Amount = loanAmount * 0.30;
+    const deposit50Amount = loanAmount * 0.50;
 
     const handleContinue = () => {
         if (selectedType) {
@@ -37,7 +38,7 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
     return (
         <div className="space-y-6">
             <div className="text-center">
-                <h2 className="text-2xl font-semibold mb-2">Select Credit Type</h2>
+                <h2 className="text-2xl font-semibold mb-2">Choose the deposit plan best for you</h2>
                 <p className="text-gray-600 dark:text-gray-400">
                     Select your preferred credit payment option
                 </p>
@@ -46,7 +47,7 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
                 {/* ZDC - Zero Deposit Credit */}
                 <Card
                     className={`
@@ -80,7 +81,7 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                                 Zero Deposit Credit (ZDC)
                             </h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                Start your purchase with no upfront payment
+                                Start with no upfront payment
                             </p>
                         </div>
 
@@ -109,51 +110,51 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                     </div>
                 </Card>
 
-                {/* DPC - Deposit Paid Credit */}
+                {/* PDC 30% - 30% Deposit Paid Credit */}
                 <Card
                     className={`
                         cursor-pointer p-4 transition-all border-2 relative
-                        ${selectedType === 'PDC'
+                        ${selectedType === 'PDC30'
                             ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/20 shadow-lg scale-105'
                             : 'border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:shadow-md'
                         }
                     `}
-                    onClick={() => setSelectedType('PDC')}
+                    onClick={() => setSelectedType('PDC30')}
                 >
                     <div className="absolute top-4 right-4">
                         <div className={`
                             h-6 w-6 rounded border-2 flex items-center justify-center transition-colors
-                            ${selectedType === 'PDC'
+                            ${selectedType === 'PDC30'
                                 ? 'bg-blue-600 border-blue-600'
                                 : 'border-gray-300 bg-white'
                             }
                         `}>
-                            {selectedType === 'PDC' && <Check className="h-4 w-4 text-white" />}
+                            {selectedType === 'PDC30' && <Check className="h-4 w-4 text-white" />}
                         </div>
                     </div>
 
                     <div className="flex flex-col items-center text-center space-y-4 pt-2">
-                        <div className={`p-3 rounded-full ${selectedType === 'PDC' ? 'bg-blue-100 dark:bg-blue-900' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                            <Wallet className={`h-10 w-10 ${selectedType === 'PDC' ? 'text-blue-600' : 'text-gray-500'}`} />
+                        <div className={`p-3 rounded-full ${selectedType === 'PDC30' ? 'bg-blue-100 dark:bg-blue-900' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                            <Wallet className={`h-10 w-10 ${selectedType === 'PDC30' ? 'text-blue-600' : 'text-gray-500'}`} />
                         </div>
 
                         <div>
                             <h3 className="text-xl font-bold mb-2 text-[#1b1b18] dark:text-[#EDEDEC]">
-                                Deposit Paid Credit (DPC)
+                                30% Deposit Credit
                             </h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                Pay 25% upfront and reduce your monthly payments
+                                Pay 30% upfront, reduce monthly payments
                             </p>
                         </div>
 
                         <div className="w-full space-y-3 text-left">
                             <div className="flex items-center gap-2 text-sm">
                                 <Check className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                                <span>25% deposit payment required</span>
+                                <span>30% deposit payment</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                                 <Check className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                                <span>Balance amount financed</span>
+                                <span>70% financed</span>
                             </div>
                         </div>
 
@@ -161,16 +162,81 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
                             <div className="text-center">
                                 <p className="text-xs text-gray-500 mb-1">Deposit Payment</p>
                                 <p className="text-2xl font-bold text-blue-600">
-                                    {formatCurrency(depositAmount)}
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    25% of loan amount
+                                    {formatCurrency(deposit30Amount)}
                                 </p>
                             </div>
                             <div className="text-center pt-2">
                                 <p className="text-xs text-gray-500 mb-1">Monthly Payment</p>
                                 <p className="text-lg font-bold text-blue-600">
-                                    {formatCurrency((loanAmount * 0.75) / (data.creditTerm || 12))}
+                                    {formatCurrency((loanAmount * 0.70) / (data.creditTerm || 12))}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    for {data.creditTerm || 'N/A'} months
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* PDC 50% - 50% Deposit Paid Credit */}
+                <Card
+                    className={`
+                        cursor-pointer p-4 transition-all border-2 relative
+                        ${selectedType === 'PDC50'
+                            ? 'border-purple-600 bg-purple-50 dark:bg-purple-950/20 shadow-lg scale-105'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-purple-400 hover:shadow-md'
+                        }
+                    `}
+                    onClick={() => setSelectedType('PDC50')}
+                >
+                    <div className="absolute top-4 right-4">
+                        <div className={`
+                            h-6 w-6 rounded border-2 flex items-center justify-center transition-colors
+                            ${selectedType === 'PDC50'
+                                ? 'bg-purple-600 border-purple-600'
+                                : 'border-gray-300 bg-white'
+                            }
+                        `}>
+                            {selectedType === 'PDC50' && <Check className="h-4 w-4 text-white" />}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col items-center text-center space-y-4 pt-2">
+                        <div className={`p-3 rounded-full ${selectedType === 'PDC50' ? 'bg-purple-100 dark:bg-purple-900' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                            <Banknote className={`h-10 w-10 ${selectedType === 'PDC50' ? 'text-purple-600' : 'text-gray-500'}`} />
+                        </div>
+
+                        <div>
+                            <h3 className="text-xl font-bold mb-2 text-[#1b1b18] dark:text-[#EDEDEC]">
+                                50% Deposit Credit
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                Pay 50% upfront, lowest monthly payments
+                            </p>
+                        </div>
+
+                        <div className="w-full space-y-3 text-left">
+                            <div className="flex items-center gap-2 text-sm">
+                                <Check className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                                <span>50% deposit payment</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                                <Check className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                                <span>50% financed</span>
+                            </div>
+                        </div>
+
+                        <div className="w-full space-y-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <div className="text-center">
+                                <p className="text-xs text-gray-500 mb-1">Deposit Payment</p>
+                                <p className="text-2xl font-bold text-purple-600">
+                                    {formatCurrency(deposit50Amount)}
+                                </p>
+                            </div>
+                            <div className="text-center pt-2">
+                                <p className="text-xs text-gray-500 mb-1">Monthly Payment</p>
+                                <p className="text-lg font-bold text-purple-600">
+                                    {formatCurrency((loanAmount * 0.50) / (data.creditTerm || 12))}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">
                                     for {data.creditTerm || 'N/A'} months
@@ -182,15 +248,16 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
             </div>
 
             {/* PDC Note */}
-            <div className="max-w-3xl mx-auto mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                    <span className="font-semibold">NB (PDC):</span> Please note that the deposit will only be required once the application has been successfully approved. This will be reported on the application status page.
-                </p>
-            </div>
-
+            {(selectedType === 'PDC30' || selectedType === 'PDC50') && (
+                <div className="max-w-5xl mx-auto mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                        <span className="font-semibold">Note:</span> The deposit will only be required once the application has been successfully approved. This will be reported on the application status page.
+                    </p>
+                </div>
+            )}
 
             {/* Navigation */}
-            <div className="flex justify-between pt-4 max-w-3xl mx-auto">
+            <div className="flex justify-between pt-4 max-w-5xl mx-auto">
                 <Button
                     variant="outline"
                     onClick={onBack}

@@ -202,9 +202,10 @@ class PersonalProductsSeeder extends Seeder
         ]);
 
         DB::table('product_package_sizes')->insert([
-            ['product_id' => $vacationId, 'name' => 'Bronze Package', 'multiplier' => 1.00, 'custom_price' => 280.00, 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => $vacationId, 'name' => 'Silver Package', 'multiplier' => 1.75, 'custom_price' => 490.00, 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => $vacationId, 'name' => 'Gold Package', 'multiplier' => 3.32, 'custom_price' => 930.00, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $vacationId, 'name' => 'Lite Package', 'multiplier' => 1.00, 'custom_price' => 280.00, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $vacationId, 'name' => 'Standard Package', 'multiplier' => 1.75, 'custom_price' => 490.00, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $vacationId, 'name' => 'Full House Package', 'multiplier' => 3.32, 'custom_price' => 930.00, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $vacationId, 'name' => 'Gold Package', 'multiplier' => 5.36, 'custom_price' => 1500.00, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
         // 5. Small Business Support

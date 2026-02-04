@@ -160,15 +160,16 @@ class WhatsAppStateMachine
     private array $hardcodedCategories = [
         // Option 1: Microbiz (from ProductCatalogSeeder - 22 total, showing first 10)
         'microBiz' => [
-            ['id' => 'mb_agric', 'name' => 'Agricultural machinery', 'desc' => '🚜 Farming equipment'],
+            ['id' => 'mb_agric', 'name' => 'Agricultural Machinery', 'desc' => '🚜 Farming equipment'],
             ['id' => 'mb_inputs', 'name' => 'Agricultural Inputs', 'desc' => '🌾 Seeds & Fertilizer'],
             ['id' => 'mb_chicken', 'name' => 'Chicken Projects', 'desc' => '🐔 Broilers & Incubators'],
             ['id' => 'mb_cleaning', 'name' => 'Cleaning Services', 'desc' => '🧹 Laundry & Car wash'],
-            ['id' => 'mb_beauty', 'name' => 'Beauty, Hair & Cosmetics', 'desc' => '💇 Salon & Hair Products'],
-            ['id' => 'mb_food', 'name' => 'Food Production', 'desc' => '🍞 Baking & Catering'],
-            ['id' => 'mb_butchery', 'name' => 'Butchery Equipment', 'desc' => '🥩 small scale'],
+            ['id' => 'mb_beauty', 'name' => 'Beauty, Hair and Cosmetics', 'desc' => '💇 Salon & Hair Products'],
+
+            ['id' => 'mb_butchery', 'name' => 'Meat Processing Equipment', 'desc' => '🥩 small scale'],
             ['id' => 'mb_events', 'name' => 'Events Management', 'desc' => '🎉 PA & Tents'],
             ['id' => 'mb_snack', 'name' => 'Snack Production', 'desc' => '🍿 Maputi & Popcorn'],
+            ['id' => 'mb_printing', 'name' => 'Branding and Material Printing', 'desc' => '🖨️ Branding'], // Added Printing to the list if not present, but checking first
         ],
         // Option 2: Personal & Homeware (from HirePurchaseSeeder - 15 categories, showing first 9)
         'personal' => [

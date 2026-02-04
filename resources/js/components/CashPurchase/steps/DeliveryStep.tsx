@@ -9,35 +9,59 @@ interface DeliveryStepProps {
     onBack: () => void;
 }
 
-// Gain Outlet depots
+// Gain Outlet depots (Cleaned of Metro)
 const GAIN_DEPOTS = [
-    'BK Boka - Harare Boka', 'CV Chivhu - Chivhu', 'CZ Gain Metro Chitungwiza - Chitungwiza',
+    'BK Boka - Harare Boka', 'CV Chivhu - Chivhu',
     'DA DOMBOSAVA - Domboshava', 'GS Graniteside - Harare', 'HA HATCLIFFE - Harare Hetcliff',
-    'KN Makoni - Chitungwiza', 'MU METRO MASASA - Msasa Harare', 'RC RUWA CBD - Ruwa Harare',
+    'KN Makoni - Chitungwiza', 'RC RUWA CBD - Ruwa Harare',
     'RW RUWA - Ruwa Harare', 'SX Seke - Chitungwiza', 'UH UBM Warehouse - Harare',
     'AP Aspindale - Aspindale Harare', 'CG Chegutu - Chegutu harare', 'CS Chinhoyi Street - Chinhoyi Street',
     'DZ Murombedzi - Murombedzi', 'GR Graniteside Stockfeeds - Harare', 'HM HARARE MEGA - harare',
-    'LX Lytton - Lytton harare', 'ME MBARE - Mbare harare', 'METRO CHEGUTU - Chegutu',
+    'LX Lytton - Lytton harare', 'ME MBARE - Mbare harare',
     'MT MUTOKO - Mutoko', 'NT Norton - Norton', 'Wl Willovale - Whilovale Harare',
     'BCC BIRCHENOUGH CBD - BCC BIRCHENOUGH CBD', 'BIRCHENOUGH - BIRCHENOUGH',
     'CC CHIBUWE - Chibuwa Chiredzi', 'CHECHECHE - Checheche', 'CHIPINGE - Chipinge',
     'HV Hauna - Hauna', 'MARONDERA CBD - MARONDERA CBD', 'MARONDERA MAIN - MARONDERA MAIN',
     'MB Murambinda - Murambinda', 'MBC Murambinda CBD - Murambinda', 'NY Nyanga - Nyanga',
-    'RX Rusape - Rusape', 'SK Sakubva - Mutare', 'SKM METRO CASH & CARRY Sakubva - Sakubva',
+    'RX Rusape - Rusape', 'SK Sakubva - Mutare',
     'UX Mutare - Mutare', 'YE Yeovil - Mutare', 'CHIREDZI MEGA - Chiredzi', 'CVI Chivi - Chivi',
     'GT Gutu - Gutu', 'JERERA - Jerera', 'MA Masvingo Cbd - Masvingo', 'MK Masvingo Bradburn - Masvingo',
     'MM Masvingo Mega - Masvingo', 'MS Mashava - Mashava', 'NS Neshuro - Neshuro',
     'TRIANGLE - Triangle', 'VX Masvingo - Masvingo', 'BX Bindura - Bindura',
-    'CF Gain Metro Chinhoyi - Chinhoyi', 'CN Chinhoyi Mega - Chinhoyi', 'GV Guruve - Guruve',
+    'CN Chinhoyi Mega - Chinhoyi', 'GV Guruve - Guruve',
     'KR Karoi - Karoi', 'MV Mvurwi - Mvurwi', 'MZ Muzarabani - Muzarabani', 'NX Chinhoyi - Chinhoyi',
     'SV Shamva - Shamva', 'BB Beitbridge - beitbridge', 'BN Binga - binga', 'CB Byo Cbd - Buluwayo',
     'EX Express - Buluwayo', 'FX Victoria Falls - Victoria Fall', 'GW Gwanda - Gwanda',
-    'Gwanda Metro - Gwanda', 'HX Hwange - Hwange', 'Hwange CBD - Hwange', 'KH Khami Metro - Khami',
+    'HX Hwange - Hwange', 'Hwange CBD - Hwange',
     'LP Lupane - Lupane', 'PX Plumtree - plumtree', 'GX Gweru - gweru',
     'KB Gokwe Nembudziya - KB Gokwe Nembudziya', 'KD Kadoma - kadoma', 'KM Kadoma Cbd - kadoma',
-    'KV Gain Metro Kadoma - kadoma', 'KW Gain Metro Kwekwe - kwekwe', 'KX Kwekwe - kwekwe',
-    'MS Mashava - mashava', 'MTA Mataga - MTA Mataga', 'SH Shurugwi - shurugwi',
-    'WX Gokwe - gokwe', 'ZX Zvishavane - zvishavane'
+    'KX Kwekwe - kwekwe',
+    'MTA Mataga - MTA Mataga', 'SH Shurugwi - shurugwi',
+    'WX Gokwe - gokwe'
+].sort();
+
+// Metro Peech & Browne Depots
+const METRO_DEPOTS = [
+    'Bindura',
+    'Bulawayo',
+    'Chegutu',
+    'Chinhoyi',
+    'Chipinge',
+    'Chiredzi',
+    'Chitungwiza',
+    'Gokwe',
+    'Gwanda',
+    'Gweru',
+    'Kadoma',
+    'Khami',
+    'Kwekwe',
+    'Masvingo',
+    'Msasa',
+    'Mutare',
+    'Rusape',
+    'Sakubva',
+    'Seke Road',
+    'Zvishavane'
 ].sort();
 
 // Farm & City Depots (Major Cities)
@@ -133,7 +157,7 @@ const ALL_ZIMPOST_BRANCHES = Object.values(ZIMPOST_LOCATIONS).flat().sort();
 
 // Determine delivery agent based on cart items
 const determineDeliveryAgent = (cart: { category: string; name: string }[]): {
-    agent: 'Gain Cash & Carry' | 'Zim Post Office' | 'Farm & City' | 'PG Building Materials';
+    agent: 'Gain Cash & Carry' | 'Metro Peech & Browne' | 'Zim Post Office' | 'Farm & City' | 'PG Building Materials';
     isEditable: boolean;
     reason: string;
 } => {
@@ -195,7 +219,7 @@ const determineDeliveryAgent = (cart: { category: string; name: string }[]): {
         };
     }
 
-    // 3. Check for Gain Cash & Carry
+    // 3. Check for Tuckshop -> Gain Cash & Carry OR Metro
     const hasGainItem = cart.some(item => {
         const categoryLower = (item.category || '').toLowerCase();
         const productNameLower = (item.name || '').toLowerCase();
@@ -218,8 +242,8 @@ const determineDeliveryAgent = (cart: { category: string; name: string }[]): {
     if (hasGainItem) {
         return {
             agent: 'Gain Cash & Carry',
-            isEditable: false,
-            reason: 'Tuckshops, groceries, airtime, candy, books, and stationery are delivered through Gain Cash & Carry depots.'
+            isEditable: true, // Allow user to swap between Gain and Metro
+            reason: 'Tuckshops, groceries, airtime, candy, books, and stationery are delivered through Gain Cash & Carry or Metro Peech & Browne depots.'
         };
     }
 
@@ -235,7 +259,7 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
     const cart = data.cart || [];
     const deliveryAgentInfo = determineDeliveryAgent(cart);
 
-    const [selectedAgent, setSelectedAgent] = useState<'Gain Cash & Carry' | 'Zim Post Office' | 'Farm & City' | 'PG Building Materials'>(
+    const [selectedAgent, setSelectedAgent] = useState<'Gain Cash & Carry' | 'Metro Peech & Browne' | 'Zim Post Office' | 'Farm & City' | 'PG Building Materials'>(
         (data.delivery?.type as any) || deliveryAgentInfo.agent
     );
     const [selectedCity, setSelectedCity] = useState<string>(data.delivery?.city || '');
@@ -252,7 +276,7 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
         const newErrors: Record<string, string> = {};
 
         // Validation
-        if ((selectedAgent === 'Gain Cash & Carry' || selectedAgent === 'Farm & City' || selectedAgent === 'PG Building Materials') && !selectedDepot) {
+        if ((selectedAgent === 'Gain Cash & Carry' || selectedAgent === 'Metro Peech & Browne' || selectedAgent === 'Farm & City' || selectedAgent === 'PG Building Materials') && !selectedDepot) {
             newErrors.depot = `Please select a ${selectedAgent} depot for collection`;
         }
 
@@ -277,6 +301,7 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
     };
 
     const isGainDisabled = selectedAgent !== 'Gain Cash & Carry' && !deliveryAgentInfo.isEditable;
+    const isMetroDisabled = selectedAgent !== 'Metro Peech & Browne' && !deliveryAgentInfo.isEditable;
     const isPostOfficeDisabled = selectedAgent !== 'Zim Post Office' && !deliveryAgentInfo.isEditable;
     const isFarmCityDisabled = selectedAgent !== 'Farm & City' && !deliveryAgentInfo.isEditable;
     const isPGDisabled = selectedAgent !== 'PG Building Materials' && !deliveryAgentInfo.isEditable;
@@ -291,29 +316,49 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
                 <p className="text-sm sm:text-base text-[#706f6c] dark:text-[#A1A09A]">
                     {selectedAgent === 'Gain Cash & Carry'
                         ? 'Please be advised that all Tuckshop and Grocery deliveries are done via our courier, Gain Cash & Carry. You will collect your product from the Gain Cash & Carry depot nearest to you.'
-                        : selectedAgent === 'Farm & City'
-                            ? 'Please be advised that all Agricultural, Machinery, and Livestock deliveries are done via our courier, Farm & City. You will collect your product from the Farm & City depot nearest to you.'
-                            : selectedAgent === 'PG Building Materials'
-                                ? 'Please be advised that all Building Material deliveries are done via our courier, PG Building Materials. You will collect your product from the PG depot nearest to you.'
-                                : 'Please be advised that all deliveries are done via our courier, Zimpost Courier Connect to all urban and rural destinations in Zimbabwe. You will collect your product from the Post Office nearest to you.'}
+                        : selectedAgent === 'Metro Peech & Browne'
+                            ? 'Please be advised that all Tuckshop and Grocery deliveries are done via our courier, Metro Peech & Browne. You will collect your product from the Metro Peech & Browne depot nearest to you.'
+                            : selectedAgent === 'Farm & City'
+                                ? 'Please be advised that all Agricultural, Machinery, and Livestock deliveries are done via our courier, Farm & City. You will collect your product from the Farm & City depot nearest to you.'
+                                : selectedAgent === 'PG Building Materials'
+                                    ? 'Please be advised that all Building Material deliveries are done via our courier, PG Building Materials. You will collect your product from the PG depot nearest to you.'
+                                    : 'Please be advised that all deliveries are done via our courier, Zimpost Courier Connect to all urban and rural destinations in Zimbabwe. You will collect your product from the Post Office nearest to you.'}
                 </p>
             </div>
 
             {/* Delivery Agent Display */}
             <div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Swift Option */}
                     {/* Gain Cash & Carry Option */}
                     {!isGainDisabled && (
                         <div
-                            className={`p-4 border-2 rounded-lg ${selectedAgent === 'Gain Cash & Carry'
+                            onClick={() => deliveryAgentInfo.isEditable && setSelectedAgent('Gain Cash & Carry')}
+                            className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedAgent === 'Gain Cash & Carry'
                                 ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-50'
-                                }`}
+                                : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 hover:border-emerald-300'
+                                } ${!deliveryAgentInfo.isEditable && selectedAgent !== 'Gain Cash & Carry' ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <Building2 className={`h-6 w-6 mb-2 ${selectedAgent === 'Gain Cash & Carry' ? 'text-emerald-600' : 'text-gray-400'
                                 }`} />
                             <p className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Gain Cash & Carry</p>
+                            <p className="text-xs text-[#706f6c] dark:text-[#A1A09A] mt-1">
+                                Depot collection
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Metro Peech & Browne Option */}
+                    {!isMetroDisabled && (
+                        <div
+                            onClick={() => deliveryAgentInfo.isEditable && setSelectedAgent('Metro Peech & Browne')}
+                            className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedAgent === 'Metro Peech & Browne'
+                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 hover:border-emerald-300'
+                                } ${!deliveryAgentInfo.isEditable && selectedAgent !== 'Metro Peech & Browne' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            <Building2 className={`h-6 w-6 mb-2 ${selectedAgent === 'Metro Peech & Browne' ? 'text-emerald-600' : 'text-gray-400'
+                                }`} />
+                            <p className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">Metro Peech & Browne</p>
                             <p className="text-xs text-[#706f6c] dark:text-[#A1A09A] mt-1">
                                 Depot collection
                             </p>
@@ -370,8 +415,6 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
                     )}
                 </div>
             </div>
-
-
 
             {/* New Two-Step Post Office Selection */}
             {selectedAgent === 'Zim Post Office' && (
@@ -536,6 +579,40 @@ export default function DeliveryStep({ data, onNext, onBack }: DeliveryStepProps
                     )}
                     <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
                         You will collect your product from the selected Gain Cash & Carry depot.
+                    </p>
+                </div>
+            )}
+
+            {/* Metro Peech & Browne Depot Selection */}
+            {selectedAgent === 'Metro Peech & Browne' && (
+                <div>
+                    <label className="block text-sm font-medium mb-2 text-[#1b1b18] dark:text-[#EDEDEC]">
+                        Select Metro Peech & Browne Depot <span className="text-red-600">*</span>
+                    </label>
+                    <select
+                        value={selectedDepot}
+                        onChange={(e) => {
+                            setSelectedDepot(e.target.value);
+                            setErrors({});
+                        }}
+                        className={`
+                            w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500
+                            dark:bg-gray-800 dark:text-white
+                            ${errors.depot ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}
+                        `}
+                    >
+                        <option value="">Select a depot closest to you</option>
+                        {METRO_DEPOTS.map((depot) => (
+                            <option key={depot} value={depot}>
+                                {depot}
+                            </option>
+                        ))}
+                    </select>
+                    {errors.depot && (
+                        <p className="mt-1 text-sm text-red-600">{errors.depot}</p>
+                    )}
+                    <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                        You will collect your product from the selected Metro Peech & Browne depot.
                     </p>
                 </div>
             )}

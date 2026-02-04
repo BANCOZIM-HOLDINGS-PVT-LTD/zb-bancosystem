@@ -206,6 +206,25 @@ export const productCategories: Category[] = [
     ]
   },
   {
+    id: 'business-licensing',
+    name: 'Business Licensing',
+    emoji: '📜',
+    subcategories: [
+      {
+        name: 'Licenses',
+        businesses: [
+          {
+            name: 'Liquor Store License',
+            basePrice: 300,
+            scales: [
+              { name: 'Standard License', multiplier: 1 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     id: 'catering',
     name: 'Catering',
     emoji: '🍽️',
@@ -273,7 +292,7 @@ export const productCategories: Category[] = [
   },
   {
     id: 'construction',
-    name: 'Construction',
+    name: 'Building & Construction Equipment',
     emoji: '🔨',
     subcategories: [
       {
@@ -608,19 +627,7 @@ export const productCategories: Category[] = [
               { name: 'Standard Tractor', multiplier: 1.5 },
               { name: 'Full Package', multiplier: 2 }
             ]
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'food-processing',
-    name: 'Food Processing',
-    emoji: '🥜',
-    subcategories: [
-      {
-        name: 'Food Production',
-        businesses: [
+          },
           {
             name: 'Cooking Oil Production',
             basePrice: 900,
@@ -680,8 +687,35 @@ export const productCategories: Category[] = [
     ]
   },
   {
+    id: 'financial-services-agency',
+    name: 'Financial Services Agency',
+    emoji: '🏦',
+    subcategories: [
+      {
+        name: 'Agency Services',
+        businesses: [
+          {
+            name: 'Ecocash Agent',
+            basePrice: 500,
+            scales: [
+              { name: 'Standard Agent', multiplier: 1 }
+            ]
+          },
+          {
+            name: 'ZB Bank Agent',
+            basePrice: 500,
+            scales: [
+              { name: 'Standard Agent', multiplier: 1 }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+
+  {
     id: 'meat-processing',
-    name: 'Meat Processing',
+    name: 'Meat Processing Equipment',
     emoji: '🥩',
     subcategories: [
       {
@@ -722,6 +756,15 @@ export const productCategories: Category[] = [
               { name: 'Medium Shop', multiplier: 1.8 },
               { name: 'Large Shop', multiplier: 3 }
             ]
+          },
+          {
+            name: 'Chicken Plucker',
+            basePrice: 500,
+            scales: [
+              { name: 'Small', multiplier: 1 },
+              { name: 'Medium', multiplier: 1.5 },
+              { name: 'Large', multiplier: 2 }
+            ]
           }
         ]
       }
@@ -729,7 +772,7 @@ export const productCategories: Category[] = [
   },
   {
     id: 'mining',
-    name: 'Mining',
+    name: 'Small Scale Mining',
     emoji: '⛏️',
     subcategories: [
       {
@@ -768,7 +811,7 @@ export const productCategories: Category[] = [
   },
   {
     id: 'printing',
-    name: 'Printing',
+    name: 'Branding and Material Printing',
     emoji: '🖨️',
     subcategories: [
       {
@@ -967,7 +1010,7 @@ export const productCategories: Category[] = [
             ]
           },
           {
-            name: 'Motor cycle delivery',
+            name: 'Bike Delivery Service',
             basePrice: 1500,
             scales: [
               { name: 'Basic', multiplier: 1 },
@@ -1079,8 +1122,8 @@ export const productCategories: Category[] = [
     ]
   },
   {
-    id: 'retail-shop',
-    name: 'Retail Shop',
+    id: 'retail-shops',
+    name: 'Retail Shops',
     emoji: '🛍️',
     subcategories: [
       {
@@ -1105,7 +1148,7 @@ export const productCategories: Category[] = [
             ]
           },
           {
-            name: 'Candy',
+            name: 'Candy and Confectionery Shop',
             basePrice: 1000,
             scales: [
               { name: 'Small Shop', multiplier: 1 },
@@ -1123,7 +1166,7 @@ export const productCategories: Category[] = [
             ]
           },
           {
-            name: 'Cell phone Accessories',
+            name: 'Cellphone Accessories',
             basePrice: 1000,
             scales: [
               { name: 'Small Shop', multiplier: 1 },
@@ -1220,6 +1263,42 @@ export const productCategories: Category[] = [
               { name: 'Medium Shop', multiplier: 2 },
               { name: 'Large Shop', multiplier: 3.5 }
             ]
+          },
+          {
+            name: 'Hardware',
+            basePrice: 1000,
+            scales: [
+              { name: 'Small Shop', multiplier: 1 },
+              { name: 'Medium Shop', multiplier: 2 },
+              { name: 'Large Shop', multiplier: 3.5 }
+            ]
+          },
+          {
+            name: 'Automotive Motor Spares',
+            basePrice: 1000,
+            scales: [
+              { name: 'Small Shop', multiplier: 1 },
+              { name: 'Medium Shop', multiplier: 2 },
+              { name: 'Large Shop', multiplier: 3.5 }
+            ]
+          },
+          {
+            name: 'General Dealer (plastic ware, cango pots, comforters, mini hardware, protective clothing, blankets)',
+            basePrice: 1000,
+            scales: [
+              { name: 'Small Shop', multiplier: 1 },
+              { name: 'Medium Shop', multiplier: 2 },
+              { name: 'Large Shop', multiplier: 3.5 }
+            ]
+          },
+          {
+            name: 'Stationery Shop',
+            basePrice: 1000,
+            scales: [
+              { name: 'Small Shop', multiplier: 1 },
+              { name: 'Medium Shop', multiplier: 2 },
+              { name: 'Large Shop', multiplier: 3.5 }
+            ]
           }
         ]
       }
@@ -1232,9 +1311,20 @@ export const productCategories: Category[] = [
     subcategories: [
       {
         name: 'Tailoring Services',
+        businesses: []
+      }
+    ]
+  },
+  {
+    id: 'tailoring-machinery',
+    name: 'Tailoring Machinery',
+    emoji: '🧵',
+    subcategories: [
+      {
+        name: 'Machinery',
         businesses: [
           {
-            name: 'Embroidery',
+            name: 'Embroidery Machine',
             basePrice: 800,
             scales: [
               { name: 'Basic Setup', multiplier: 1 },
@@ -1243,7 +1333,7 @@ export const productCategories: Category[] = [
             ]
           },
           {
-            name: 'Knitting – jersey manufacturing',
+            name: 'Knitting Machine',
             basePrice: 800,
             scales: [
               { name: 'Basic Setup', multiplier: 1 },
@@ -1252,7 +1342,7 @@ export const productCategories: Category[] = [
             ]
           },
           {
-            name: 'Industrial overlocking',
+            name: 'Industrial Overlocker',
             basePrice: 800,
             scales: [
               { name: 'Basic Setup', multiplier: 1 },
@@ -1261,7 +1351,7 @@ export const productCategories: Category[] = [
             ]
           },
           {
-            name: 'Domestic sewing machine',
+            name: 'Domestic Sewing Machine',
             basePrice: 800,
             scales: [
               { name: 'Basic Setup', multiplier: 1 },
@@ -1291,7 +1381,7 @@ export const productCategories: Category[] = [
             ]
           },
           {
-            name: 'Tuck shop -groceries',
+            name: 'Grocery and Tuckshop',
             basePrice: 600,
             scales: [
               { name: 'Small Scale', multiplier: 1 },
@@ -1323,7 +1413,7 @@ export const productCategories: Category[] = [
   },
   {
     id: 'vehicle',
-    name: 'Vehicle',
+    name: 'Motor Vehicle Specialised Services',
     emoji: '🚗',
     subcategories: [
       {

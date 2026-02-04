@@ -1,0 +1,79 @@
+﻿node.exe : Metro Commodities
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Metro Commodities:String) [], Rem 
+   oteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+METRO HYPER,,,,,,
+,,,,,,
+BRANCH,BRANCH DETAILS,BRANCH MANAGER,ASSISTANT MANAGER,BRANCH BUYER,BUYING CLERK,
+,,,,,,
+BINDURA,"19&20 First Street/Appleby, Bindura",DUNMORE CHIMBOZA,LIONEL SHIRI,JOHN CHIRIPANYANGA,,
+,(066) 210 7465/7479/7487/7492,0774 684 686,0773 366 413,0772 529 651,,
+,receptionbindura@metrocommodities.com,managerbindura@metrocommodities.com,,buyersbindura@metrocommodities.com,,
+,,,,,,
+BULAWAYO,Stand 13748 6th Avenue/Basch road,SAM MOYO,NKOSINATHI SIBANDA,SHEEBA DONDO,,
+,(0292) 261693-8,0772 542 344,0776 414 138,0772 888 736,,
+,receptionbulawayo@metrocommodities.com,managerbulawayo@metrocommodities.com,,buyersbulawayo@metrocommodities.com,,
+,,,,,,
+CHIPINGE,"327 Ferreira Road, Chipinge",PATRICIA MUZAVAZI,,JOSEPH SHAPETA,,
+,(0227) 204 3319/2319,0772 520 888,,0778 261 482,,
+,receptionchipinge@metrocommodities.com,managermutare@metrocommodities.com,,buyerschipinge@metrocommodities.com,,
+,,,,,,
+CHIREDZI,"592 Baobab Road, Chiredzi",CLAUDIUS SIBANDA,PLAXEDICE KUGARAKURIPI,,SIMBARASHE MAREKE,
+,(0231) 231 2732/2654/2726,0772 355 226,0718 962 922,,,
+,receptionchiredzi@metrocommodities.com,managerchiredzi@metrocommodities.com,,,,
+,,,,,,
+GOKWE,"16-17 Mateta Road, Gokwe",CHENGE PEZANI,,ENWORD MASHEVEDZANWA,,
+,(059) 2450/2272,0772 282 200,,0773 490 882,,
+,receptiongokwe@metrocommodities.com,managergokwe@metrocommodities.com,,buyersgokwe@metrocommodities.com,,
+,,,,,,
+GWERU,"1 Harare Road, Gweru",MARLVINE VERA,,LAWRENCE NYANGAI,,
+,(054) 2 224301-3,0775 267 344,,0712 918 208,,
+,receptiongweru@metrocommodities.com,managergweru@metrocommodities.com,,buyersgweru@metrocommodities.com,,
+,,,,,,
+MASVINGO,"7448 Welby Road, Masvingo",NOMORE CHIGWENHESE,SHEPHERD SITUNYA,PASCAR DARIKENI,,
+,(039) 266714-6,0772  647 263,,0773 256 548,,
+,receptionmasvingo@metrocommodities.com,managermasvingo@metrocommodities.com,,buyersmasvingo@metrocommodities.com,,
+,,,,,,
+MUTARE 2,"10 Second Street, Mutare",ASHLEIGH De KLERK,JOSHUA FUTUTU,CHRISTINE KHUMBULA,,
+,(020)-60583/60584,0773 782 900,0772 884 069,0775 655 918,,
+,reception2mutare@metrocommodities.com,manager2mutare@metrocommodities.com,,buyer2mutare@metrocommodities.com,,
+,,,,,,
+SEKE ROAD,"40600 Sunningdale, Cnr Seke Rd/Boshoff Dr, Harare",AGNES PAZIRA,SOPHIA WANKIES,EMMANUEL SIMANGO,NGONI KATSOMBA,
+,(242) 589462-3/5/70/76,0774 701 259,0772 941 451,0774 098 603,0719 706 611,
+,receptionsekeroad@metrocommodities.com,managersekeroad@metrocommodities.com,,buyerssekeroad@metrocommodities.com,,
+,,VIMBAI BHASWI,,,,
+ ,,0718 487 013,,,,
+,,managersekeroad@metrocommodities.com,,,,
+,,,,,,
+ZVISHAVANE,"701 Light Industrial Area, Zvishavane",DOUGLAS TSIKIRAYI,MANGA MUSHANGIWE,,WELLINGTON MUSHANGIWE,
+,(039235) 3290/2809,0776 476 378,,,,
+,receptionzvish@metrocommodities.com,managerzvish@metrocommodities.com,,,,
+,,,,,,
+,,,,,,
+GAIN,,,,,,
+,,,,,,
+BRANCH,BRANCH DETAILS,BRANCH MANAGER,BRANCH BUYER,BUYING CLERK,STOCK CONTROLLER,CASHIER
+CHINHOYI,"38B Magamba Way, Chinhoyi",KELLY ZANYUNYU,,FADZAI ZURO,,TABITHA SUMANYA
+,(067) 21 21035-40,0715 227 978,,0774 349 771,,0736 433 638
+,receptionchinhoyi@metrocommodities.com,managerchinhoyi@metrocommodities.com,,buyerschinhoyi@metrocommodities.com,,accountschinhoyi@metrocommodities.com
+,,,,,,
+CHITUNGWIZA,"Stand 20468 Maeresera Road, Makoni",PRINCE GUMBANJERA,,,WALTER MUSHINYE,JANNET DIMWI
+,(024) 21 21659/22088-9,0774 864 917,,,0772 395 887,
+,receptionchit@metrocommodities.com,managerchit@metrocommodities.com,,,accountschit@metrocommodities.com,
+,,,,,,
+KADOMA,"34A Godwin Road, Kadoma",RICHARD KAZINGIZI,DAVID MUKWENDE,,FARAI GOKORE,MICHECK EVANS
+,(068) 21 28447/8,0774 352 141,0772 627 671,,0772 977 959,
+,receptionkadoma@metrocommodities.com,managerkadoma@metrocommodities.com,buyerskadoma@metrocommodities.com,,,
+,,,,,,
+KWEKWE,"8 Cobar Street, Kwekwe",MARTIN CHIPUNZA,,,BRIDGET DULANI,ELISHA CHITSENGA
+,(055) 25 25248-52,0782 243 909,,,,0774 414 341
+,receptionkwekwe@metrocommodities.com,managerkwekwe@metrocommodities.com,,,,accountskwekwe@metrocommodities.com
+,,,,,,
+MSASA,"142 Mutare Road, Msasa",NORMAN MATWAYA,,,ARTWELL MUJURU,MARGARET HAMADZIRIPI
+,(0242)-486981-2/447422,0772 666 291,,,,0783 428 873
+,receptionmsasa@metrocommodities.com,managermsasa@metrocommodities.com,,,,
+,,,,,,

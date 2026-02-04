@@ -314,7 +314,7 @@ class ProductService {
       },
       {
         id: 'building-materials',
-        name: 'Building Materials',
+        name: 'Building & Construction Equipment',
         emoji: '🧱',
         subcategories: [
           {
@@ -448,7 +448,7 @@ class ProductService {
       },
       {
         id: 'tuckshop',
-        name: 'Tuck shop',
+        name: 'Grocery and Tuckshop',
         emoji: '🛒',
         subcategories: [
           {

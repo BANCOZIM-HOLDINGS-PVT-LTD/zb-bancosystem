@@ -62,8 +62,8 @@ export interface WizardData {
         scale?: string;
     }[];
 
-    // Credit type selection (ZDC or PDC)
-    creditType?: 'ZDC' | 'PDC';
+    // Credit type selection (ZDC, PDC30, or PDC50)
+    creditType?: 'ZDC' | 'PDC' | 'PDC30' | 'PDC50';
     depositAmount?: number;
     depositPaid?: boolean;
     depositPaymentMethod?: 'ecocash' | 'onemoney' | 'card';

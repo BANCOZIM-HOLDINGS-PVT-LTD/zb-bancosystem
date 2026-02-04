@@ -17,7 +17,7 @@ When a user clicks "Submit" on the frontend, the following sequence occurs on th
     *   If it's an **Account Opening**, it creates a record in the `account_openings` table.
     *   It attempts to generate a **PDF** synchronously via `PDFGeneratorService`.
 4.  **Admin Panel Visibility**: 
-    *   Loan applications appear in the main "Applications" resource.
+    *   Loan applications appear in the main "Applications"  resource.
     *   Account openings appear in the specialized "ZB Account Opening" resource.
 
 ---

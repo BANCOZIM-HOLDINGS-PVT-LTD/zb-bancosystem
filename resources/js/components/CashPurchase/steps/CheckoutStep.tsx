@@ -42,7 +42,7 @@ export default function CheckoutStep({ data, onComplete, onBack, loading, error 
 
     const meSystemFee = includesMESystem ? (cartTotal * ME_SYSTEM_PERCENTAGE) : 0;
     const trainingFee = includesTraining ? (cartTotal * TRAINING_PERCENTAGE) : 0;
-    const deliveryFee = delivery.type === 'swift' ? 10 : 0;
+    const deliveryFee = 0;
     const totalAmount = cartTotal + meSystemFee + trainingFee + deliveryFee;
 
     const handleNationalIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
