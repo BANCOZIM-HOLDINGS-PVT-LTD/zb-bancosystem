@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Twilio\Rest\Client;
+use App\Services\TwilioSmsService;
 use Illuminate\Support\Facades\Log;
 
 class SendOtpJob implements ShouldQueue
@@ -32,22 +32,16 @@ class SendOtpJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            $accountSid = config('services.twilio.account_sid');
-            $authToken = config('services.twilio.auth_token');
-            $fromNumber = config('services.twilio.alpha_sender_id') ?: config('services.twilio.from');
-
-            $twilio = new Client($accountSid, $authToken);
-
-            $twilio->messages->create(
-                $this->phoneNumber,
-                [
-                    'from' => $fromNumber,
-                    'body' => $this->message
-                ]
-            );
+            $smsService = new TwilioSmsService();
+            
+            // Format number to E.164 (e.g. +263...) to ensure delivery
+            $formattedPhone = $smsService->formatPhoneNumber($this->phoneNumber);
+            
+            $smsService->sendSms($formattedPhone, $this->message);
 
             Log::info('OTP SMS sent via queue', [
-                'phone' => $this->phoneNumber,
+                'original_phone' => $this->phoneNumber,
+                'formatted_phone' => $formattedPhone,
             ]);
 
         } catch (\Exception $e) {
