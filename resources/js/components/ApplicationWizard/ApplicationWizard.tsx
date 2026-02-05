@@ -1082,7 +1082,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             case 'form':
                 return <FormStep {...commonProps} />;
             case 'documents':
-                return <DocumentUploadStep {...commonProps} />;
+                return <DocumentUploadStep {...commonProps} data={{ ...wizardData, sessionId }} />;
             default:
                 return null;
         }

@@ -344,11 +344,11 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                     try {
                         const formData = new FormData();
                         formData.append('file', fileObj.file);
-                        formData.append('document_type', documentType);
+                        formData.append('documentType', documentType);
 
                         // Add session ID if available in data
                         if (data.sessionId) {
-                            formData.append('session_id', data.sessionId);
+                            formData.append('sessionId', data.sessionId);
                         }
 
                         // Add national ID number for national_id documents
@@ -1070,9 +1070,9 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
             // Create FormData
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('document_type', type);
+            formData.append('documentType', type);
             if (data.sessionId) {
-                formData.append('session_id', data.sessionId);
+                formData.append('sessionId', data.sessionId);
             }
 
             // Upload
