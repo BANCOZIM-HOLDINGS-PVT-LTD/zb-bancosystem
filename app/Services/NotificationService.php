@@ -265,6 +265,46 @@ class NotificationService
     }
 
     /**
+     * Send application submitted notification
+     *
+     * @param ApplicationState $applicationState
+     * @return bool
+     */
+    public function sendApplicationSubmittedNotification(ApplicationState $applicationState): bool
+    {
+        try {
+            $formData = $applicationState->form_data ?? [];
+            $formResponses = $formData['formResponses'] ?? [];
+
+            // Get applicant name
+            $applicantName = trim(
+                ($formResponses['firstName'] ?? '') . ' ' .
+                ($formResponses['lastName'] ?? ($formResponses['surname'] ?? ''))
+            ) ?: 'Applicant';
+
+            // Get applicant phone
+            $phone = $formResponses['phone'] ?? $formResponses['phoneNumber'] ?? $formResponses['mobile'] ?? null;
+
+            if (!$phone) {
+                Log::warning("No phone number found for application submission notification: {$applicationState->session_id}");
+                return false;
+            }
+
+            $referenceCode = $applicationState->reference_code ?? $applicationState->session_id;
+
+            $message = "Thank you {$applicantName}! Your application ({$referenceCode}) has been received and is under review. We will notify you of any updates.";
+            
+            Log::info("Sending submission confirmation SMS to {$phone}: {$message}");
+
+            // Send SMS
+            return $this->sendSMS($phone, $message);
+        } catch (\Exception $e) {
+            Log::error("Failed to send submission notification: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Send real-time notification (enhanced with broadcasting support)
      */
     public function sendRealTimeNotification(ApplicationState $applicationState, array $notification): bool

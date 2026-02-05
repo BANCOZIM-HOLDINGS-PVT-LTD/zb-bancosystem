@@ -204,6 +204,17 @@ class StateController extends Controller
                 }
             }
 
+            
+            // Send confirmation SMS
+            try {
+                // We use the app() helper to resolve the service since it might not be injected in the method
+                $notificationService = app(\App\Services\NotificationService::class);
+                $notificationService->sendApplicationSubmittedNotification($state);
+            } catch (\Exception $e) {
+                \Log::error('Failed to send confirmation SMS: ' . $e->getMessage());
+                // Don't fail the request if SMS fails
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Application submitted successfully',
