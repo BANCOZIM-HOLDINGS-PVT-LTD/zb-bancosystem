@@ -83,14 +83,14 @@ class PDFManagementController extends Controller
             $result = $this->pdfGenerator->generatePDF($application, ['formType' => $formType, 'admin' => true]);
             $pdfPath = $result['path'] ?? null;
             
-            if (!$pdfPath || !Storage::disk('local')->exists($pdfPath)) {
+            if (!$pdfPath || !Storage::disk('public')->exists($pdfPath)) {
                 return response()->json(['error' => 'PDF not found or could not be generated'], 404);
             }
             
             $filename = $this->generatePDFFilename($application, $formType);
             
             return ResponseFacade::download(
-                Storage::disk('local')->path($pdfPath),
+                Storage::disk('public')->path($pdfPath),
                 $filename,
                 ['Content-Type' => 'application/pdf']
             );
@@ -142,9 +142,9 @@ class PDFManagementController extends Controller
                 $result = $this->pdfGenerator->generatePDF($application, ['formType' => $formType, 'admin' => true]);
                 $pdfPath = $result['path'] ?? null;
                 
-                if ($pdfPath && Storage::disk('local')->exists($pdfPath)) {
+                if ($pdfPath && Storage::disk('public')->exists($pdfPath)) {
                     $filename = $this->generatePDFFilename($application, $formType);
-                    $zip->addFile(Storage::disk('local')->path($pdfPath), $filename);
+                    $zip->addFile(Storage::disk('public')->path($pdfPath), $filename);
                     $successCount++;
                 } else {
                     $errors[] = "PDF not generated for session {$application->session_id}";
@@ -424,9 +424,9 @@ class PDFManagementController extends Controller
                 $result = $this->pdfGenerator->generatePDF($application, ['formType' => $formType, 'admin' => true]);
                 $pdfPath = $result['path'] ?? null;
 
-                if ($pdfPath && \Storage::disk('local')->exists($pdfPath)) {
+                if ($pdfPath && \Storage::disk('public')->exists($pdfPath)) {
                     $filename = $this->generatePDFFilename($application, $formType);
-                    $zip->addFile(\Storage::disk('local')->path($pdfPath), $filename);
+                    $zip->addFile(\Storage::disk('public')->path($pdfPath), $filename);
                 }
             } catch (\Exception $e) {
                 \Log::error("Error adding PDF to bank export: " . $e->getMessage());

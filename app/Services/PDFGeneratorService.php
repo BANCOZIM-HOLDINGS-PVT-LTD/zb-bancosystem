@@ -679,6 +679,7 @@ class PDFGeneratorService implements PDFGeneratorInterface
         $imageData = null;
         $imageType = null;
         
+        // CASE 1: Handle actual Base64 string
         if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $matches)) {
             $imageType = $matches[1];
             $base64Data = substr($base64Image, strpos($base64Image, ',') + 1);
@@ -687,30 +688,79 @@ class PDFGeneratorService implements PDFGeneratorInterface
             // Generate a temporary file path
             $tempFilePath = sys_get_temp_dir() . '/' . uniqid() . '.' . $imageType;
             file_put_contents($tempFilePath, $imageData);
-
+    
             // Get image dimensions with error handling
             $imageInfo = @getimagesize($tempFilePath);
-
+    
             // Clean up temporary file
             @unlink($tempFilePath);
-
+    
             // Handle getimagesize failure
             if ($imageInfo === false) {
                 return [
                     'data' => $base64Image,
                     'type' => $imageType,
-                    'width' => 100,  // Default dimensions
-                    'height' => 100,
+                    'width' => 100,
+                    'height' => 100, 
                     'aspectRatio' => 1,
                 ];
             }
-
+    
             $width = $imageInfo[0];
             $height = $imageInfo[1];
-
+    
             return [
                 'data' => $base64Image,
                 'type' => $imageType,
+                'width' => $width,
+                'height' => $height,
+                'aspectRatio' => $height > 0 ? $width / $height : 1,
+            ];
+        }
+        
+        // CASE 2: Handle URL or File Path (Signature passed as URL)
+        // Convert URL to path if needed (reuse logic similar to processDocumentForEmbedding)
+        $path = $base64Image;
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            $parsed = parse_url($path);
+            if (isset($parsed['path'])) {
+                $cleanPath = ltrim($parsed['path'], '/');
+                if (str_starts_with($cleanPath, 'storage/')) {
+                    $path = substr($cleanPath, 8);
+                } else {
+                    $path = $cleanPath;
+                }
+            }
+        }
+        
+        // Check if it's a valid local file path
+        if (Storage::disk('public')->exists($path)) {
+            $content = Storage::disk('public')->get($path);
+            $mimeType = Storage::disk('public')->mimeType($path);
+            $base64 = base64_encode($content);
+            $dataUri = 'data:' . $mimeType . ';base64,' . $base64;
+            
+            // Get dimensions
+            $width = 0;
+            $height = 0;
+            try {
+                 // Create temp file for dimensions
+                $tempFilePath = sys_get_temp_dir() . '/' . uniqid();
+                file_put_contents($tempFilePath, $content);
+                $imageInfo = @getimagesize($tempFilePath);
+                @unlink($tempFilePath);
+                
+                if ($imageInfo) {
+                    $width = $imageInfo[0];
+                    $height = $imageInfo[1];
+                }
+            } catch (\Exception $e) {
+                // Ignore dimension errors
+            }
+            
+            return [
+                'data' => $dataUri,
+                'type' => str_replace('image/', '', $mimeType),
                 'width' => $width,
                 'height' => $height,
                 'aspectRatio' => $height > 0 ? $width / $height : 1,
@@ -749,8 +799,25 @@ class PDFGeneratorService implements PDFGeneratorInterface
         ];
         
         try {
-            // Check if file exists in storage
-            if (!Storage::disk('public')->exists($path)) {
+        // Handle URLs by trying to convert to relative path (Backwards Compatibility)
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            $parsed = parse_url($path);
+            if (isset($parsed['path'])) {
+                // Remove leading slash
+                $cleanPath = ltrim($parsed['path'], '/');
+                
+                // If path starts with 'storage/', remove it to get disk-relative path
+                // e.g. /storage/documents/123.jpg -> documents/123.jpg
+                if (str_starts_with($cleanPath, 'storage/')) {
+                    $path = substr($cleanPath, 8);
+                } else {
+                    $path = $cleanPath;
+                }
+            }
+        }
+
+        // Check if file exists in storage
+        if (!Storage::disk('public')->exists($path)) {
                 return $result;
             }
             
@@ -1302,6 +1369,52 @@ class PDFGeneratorService implements PDFGeneratorInterface
         
         // Format all ID numbers consistently
         $data = $this->formatIdFields($data);
+        
+        // Process documents from formData
+        if (isset($formData['documents'])) {
+            \Log::info('Preparing PDF Data - Documents found', [
+                'session_id' => $applicationState->session_id,
+                'keys' => array_keys($formData['documents']),
+                'has_refs' => isset($formData['documents']['documentReferences']),
+                'refs_preview' => isset($formData['documents']['documentReferences']) ? substr(json_encode($formData['documents']['documentReferences']), 0, 500) : 'N/A'
+            ]);
+
+            $data['documents'] = $formData['documents'];
+            $data['selfieImage'] = $formData['documents']['selfie'] ?? null;
+            $data['signatureImage'] = $formData['documents']['signature'] ?? null;
+            
+            // Map documentReferences to documentsByType if not already present
+            if (!isset($data['documentsByType']) && isset($formData['documents']['documentReferences'])) {
+                $data['documentsByType'] = $formData['documents']['documentReferences'];
+            }
+            
+            // If documentsByType is still not set, check uploadedDocuments
+            if (!isset($data['documentsByType']) && isset($formData['documents']['uploadedDocuments'])) {
+                $data['documentsByType'] = $formData['documents']['uploadedDocuments'];
+            }
+
+            // Normalize documentsByType to ensure it's an array of arrays
+            if (isset($data['documentsByType']) && is_array($data['documentsByType'])) {
+                foreach ($data['documentsByType'] as $type => &$docs) {
+                    // Handle case where specific type is just a string (single path)
+                    if (is_string($docs)) {
+                        $docs = [['path' => $docs, 'name' => basename($docs), 'type' => 'application/octet-stream', 'size' => 0]];
+                    }
+                    // Handle case where specific type is a single object (not array of objects)
+                    elseif (is_array($docs) && isset($docs['path'])) {
+                        $docs = [$docs];
+                    }
+                    // Handle case where it's an array of strings
+                    elseif (is_array($docs)) {
+                        foreach ($docs as $k => &$doc) {
+                            if (is_string($doc)) {
+                                $doc = ['path' => $doc, 'name' => basename($doc), 'type' => 'application/octet-stream', 'size' => 0];
+                            }
+                        }
+                    }
+                }
+            }
+        }
         
         // Enhanced credit facility details
         $data['creditFacility'] = [

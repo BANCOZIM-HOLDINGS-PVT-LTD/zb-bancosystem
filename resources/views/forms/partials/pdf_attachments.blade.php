@@ -82,28 +82,30 @@
 
     @if(isset($documentsByType) && count($documentsByType) > 0)
         @foreach($documentsByType as $type => $docs)
-            @if($type != 'national_id' && $type != 'payslip' && count($docs) > 0)
+            @if($type != 'national_id' && $type != 'payslip' && is_array($docs) && count($docs) > 0)
             <div style="margin: 12px 0; page-break-inside: avoid;">
                 <div style="background-color: #8BC34A; color: white; padding: 2px 5px; font-weight: bold; font-size: 8pt; margin: 2px 0;">
                     {{ strtoupper(str_replace('_', ' ', $type)) }}
                 </div>
                 @foreach($docs as $doc)
-                    @if(isset($doc['embeddedData']) && $doc['embeddedData']['isImage'])
-                    <div style="border: 1px solid #000; padding: 8px; margin-top: 4px; text-align: center;">
-                        <img src="{{ $doc['embeddedData']['data'] }}" alt="{{ $type }}" style="max-width: 90%; max-height: 500px;">
-                        <div style="font-size: 7pt; margin-top: 4px; color: #666;">
-                            {{ $doc['name'] }} ({{ $doc['size'] }})
+                    @if(is_array($doc)) <!-- Defensive check -->
+                        @if(isset($doc['embeddedData']) && is_array($doc['embeddedData']) && ($doc['embeddedData']['isImage'] ?? false))
+                        <div style="border: 1px solid #000; padding: 8px; margin-top: 4px; text-align: center;">
+                            <img src="{{ $doc['embeddedData']['data'] }}" alt="{{ $type }}" style="max-width: 90%; max-height: 500px;">
+                            <div style="font-size: 7pt; margin-top: 4px; color: #666;">
+                                {{ $doc['name'] ?? 'Document' }} ({{ $doc['size'] ?? '0 KB' }})
+                            </div>
                         </div>
-                    </div>
-                    @elseif(isset($doc['embeddedData']) && $doc['embeddedData']['isPdf'])
-                    <div style="border: 1px solid #000; padding: 8px; margin-top: 4px;">
-                        <div style="font-size: 8pt;">
-                            <strong>Document:</strong> {{ $doc['name'] }}<br>
-                            <strong>Type:</strong> PDF Document<br>
-                            <strong>Size:</strong> {{ $doc['size'] }}<br>
-                            <strong>Pages:</strong> {{ $doc['embeddedData']['pages'] }}
+                        @elseif(isset($doc['embeddedData']) && is_array($doc['embeddedData']) && ($doc['embeddedData']['isPdf'] ?? false))
+                        <div style="border: 1px solid #000; padding: 8px; margin-top: 4px;">
+                            <div style="font-size: 8pt;">
+                                <strong>Document:</strong> {{ $doc['name'] ?? 'Document' }}<br>
+                                <strong>Type:</strong> PDF Document<br>
+                                <strong>Size:</strong> {{ $doc['size'] ?? '0 KB' }}<br>
+                                <strong>Pages:</strong> {{ $doc['embeddedData']['pages'] ?? 1 }}
+                            </div>
                         </div>
-                    </div>
+                        @endif
                     @endif
                 @endforeach
             </div>

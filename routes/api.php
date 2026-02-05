@@ -143,11 +143,12 @@ Route::prefix('documents')->group(function () {
             }
             
             // Generate public URL
-            $publicPath = \Storage::disk('public')->url($path);
+            $publicUrl = \Storage::disk('public')->url($path);
             
             return response()->json([
                 'success' => true,
-                'path' => $publicPath,
+                'path' => $path, // Return relative path for backend storage usage
+                'url' => $publicUrl, // Return public URL for frontend display
                 'filename' => $filename,
                 'originalName' => $originalName,
                 'size' => $fileSize,
