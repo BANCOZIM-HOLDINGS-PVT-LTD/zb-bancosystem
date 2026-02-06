@@ -65,101 +65,12 @@ class DocumentVerificationResource extends Resource
                 Tables\Columns\BadgeColumn::make('channel'),
             ])
             ->actions([
-                // View Documents Action
-                Action::make('view_documents')
-                    ->label('View Documents')
-                    ->icon('heroicon-o-eye')
-                    ->modalHeading('Submitted Documents')
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Close')
-                    ->modalContent(function (Model $record) {
-                        return view('filament.forms.components.application-documents-list', [
-                            'documents' => $record->form_data['documents'] ?? $record->form_data['documentsByType'] ?? []
-                        ]);
-                    }),
-
-                // Approve Action
-                Action::make('approve')
-                    ->label('Approve & Check')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->modalHeading('Approve Documents')
-                    ->modalDescription('Are you sure the documents are valid? This will trigger automated checks.')
-                    ->action(function (Model $record) {
-                        try {
-                            // 1. Update status to processing
-                            $record->current_step = 'processing';
-                            $record->save();
-                            
-                            // 2. Trigger Automated Checks
-                            $checkService = app(\App\Services\AutomatedCheckService::class);
-                            $checkService->executeAutomatedChecks($record);
-                            
-                            // 3. Update status to sent_for_checks
-                            $record->current_step = 'sent_for_checks';
-                            $record->save();
-                            
-                            Notification::make()
-                                ->title('Documents Approved')
-                                ->body('Application sent for automated checks.')
-                                ->success()
-                                ->send();
-
-                        } catch (\Exception $e) {
-                             Log::error('Verification Approval Failed', ['id' => $record->id, 'error' => $e->getMessage()]);
-                             Notification::make()
-                                ->title('Error')
-                                ->body('Failed to process approval: ' . $e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
-                    }),
-
-                // Decline Action
-                Action::make('decline')
-                    ->label('Decline')
-                    ->icon('heroicon-o-x-circle')
-                    ->color('danger')
-                    ->form([
-                        Forms\Components\Textarea::make('reason')
-                            ->label('Reason for Rejection')
-                            ->default('Application declined due to incorrect documents sent, please try again and upload the correct documents.')
-                            ->required()
-                    ])
-                    ->action(function (array $data, Model $record) {
-                        try {
-                            // Update status
-                            $record->current_step = 'rejected';
-                            $record->status_updated_at = now();
-                            $record->save();
-                            
-                            // Send SMS
-                            $formData = $record->form_data;
-                            $phone = $formData['formResponses']['mobile'] ??
-                                     $formData['formResponses']['phoneNumber'] ??
-                                     $formData['formResponses']['contactPhone'] ?? null;
-                                     
-                            if ($phone) {
-                                $smsService = app(\App\Services\SMSService::class);
-                                $smsService->sendSMS($phone, $data['reason']);
-                            }
-                            
-                            Notification::make()
-                                ->title('Application Declined')
-                                ->body('Applicant notified via SMS.')
-                                ->success()
-                                ->send();
-                                
-                        } catch (\Exception $e) {
-                             Log::error('Verification Decline Failed', ['id' => $record->id, 'error' => $e->getMessage()]);
-                             Notification::make()
-                                ->title('Error')
-                                ->body('Failed to decline: ' . $e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
-                    }),
+                // Process Application Action (Go to inner page)
+                Action::make('process')
+                    ->label('Verify Application')
+                    ->icon('heroicon-o-clipboard-document-check')
+                    ->color('primary')
+                    ->url(fn (Model $record): string => static::getUrl('process', ['record' => $record])),
             ]);
     }
 
@@ -167,6 +78,7 @@ class DocumentVerificationResource extends Resource
     {
         return [
             'index' => Pages\ListDocumentVerifications::route('/'),
+            'process' => Pages\ProcessApplication::route('/{record}/process'),
         ];
     }
 }
