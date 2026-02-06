@@ -617,6 +617,12 @@ class PDFGeneratorService implements PDFGeneratorInterface
         // Process signature image if available
         if (!empty($pdfData['signatureImage'])) {
             $pdfData['signatureImageData'] = $this->processBase64Image($pdfData['signatureImage']);
+            
+            // Update the simple signatureImage variable with the processed data URI
+            // This ensures views using {{ $signatureImage }} work correctly with the processing result
+            if (!empty($pdfData['signatureImageData']['data'])) {
+                $pdfData['signatureImage'] = $pdfData['signatureImageData']['data'];
+            }
         }
         
         // Process uploaded documents if available
@@ -1303,6 +1309,11 @@ class PDFGeneratorService implements PDFGeneratorInterface
         $data['employerName'] = $data['employerInfo']['name'];
         $data['employerType'] = $data['employerInfo']['type'];
         $data['employerCategory'] = $data['employerInfo']['category'];
+        
+        // Add guarantor info if present in root formData (Account Holders Form structure)
+        if (isset($formData['guarantor'])) {
+            $data['guarantor'] = $formData['guarantor'];
+        }
         
         // Add formResponses as a separate variable for template compatibility
         // Determine template type to provide appropriate defaults

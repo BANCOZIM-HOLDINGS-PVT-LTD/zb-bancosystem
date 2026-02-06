@@ -226,7 +226,7 @@ class ApplicationResource extends BaseResource
                     ->getStateUsing(fn (Model $record) => '$' . number_format(data_get($record->form_data, 'finalPrice', 0)))
                     ->sortable(query: function (Builder $query, string $direction): Builder {
                         if (\Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql') {
-                            return $query->orderByRaw("(form_data->>'finalPrice')::numeric $direction");
+                            return $query->orderByRaw("COALESCE(NULLIF(form_data->>'finalPrice', ''), '0')::numeric $direction");
                         }
                         return $query->orderByRaw("CAST(JSON_EXTRACT(form_data, '$.finalPrice') AS DECIMAL(10,2)) {$direction}");
                     }),
