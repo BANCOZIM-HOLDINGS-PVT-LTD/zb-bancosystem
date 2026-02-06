@@ -25,11 +25,18 @@ class SsbLoanResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+        
         // Only show SSB loan applications
         return parent::getEloquentQuery()
-            ->where(function ($query) {
-                $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.employer')) = 'government-ssb'")
-                      ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.workflow_type')) = 'ssb'");
+            ->where(function ($query) use ($isPgsql) {
+                if ($isPgsql) {
+                    $query->whereRaw("form_data->>'employer' = 'government-ssb'")
+                          ->orWhereRaw("metadata->>'workflow_type' = 'ssb'");
+                } else {
+                    $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.employer')) = 'government-ssb'")
+                          ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.workflow_type')) = 'ssb'");
+                }
             })
             ->orderBy('created_at', 'desc');
     }

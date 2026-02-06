@@ -1231,7 +1231,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                         const n = name.toLowerCase();
                                         if (n.includes('bronze') || n === 'lite' || n === 'lite package') return 'Lite Package';
                                         if (n.includes('silver') || n === 'standard' || n === 'standard package') return 'Standard Package';
-                                        if (n.includes('full house') || n === 'gold package' && !n.includes('1,500')) return 'Full House Package'; // Old Gold was Full House
+                                        if (n.includes('full house')) return 'Full House Package';
                                         if (n.includes('gold') || n.includes('1500') || n.includes('1,500')) return 'Gold Package';
 
                                         return name;

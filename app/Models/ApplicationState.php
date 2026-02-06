@@ -29,6 +29,9 @@ class ApplicationState extends Model
         'deposit_payment_method',
         'last_activity',
         'is_archived',
+        'check_type',
+        'check_status',
+        'check_result',
     ];
 
     protected $casts = [

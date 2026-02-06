@@ -72,9 +72,16 @@ class PDFManagementResource extends BaseResource
                         return ($formData['firstName'] ?? '') . ' ' . ($formData['surname'] ?? '');
                     })
                     ->searchable(query: function (Builder $query, string $search): Builder {
-                        return $query->where(function ($q) use ($search) {
-                            $q->whereRaw("JSON_EXTRACT(form_data, '$.firstName') LIKE ?", ["%{$search}%"])
-                              ->orWhereRaw("JSON_EXTRACT(form_data, '$.surname') LIKE ?", ["%{$search}%"]);
+                        $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+                        
+                        return $query->where(function ($q) use ($search, $isPgsql) {
+                            if ($isPgsql) {
+                                $q->whereRaw("form_data->>'firstName' ILIKE ?", ["%{$search}%"])
+                                  ->orWhereRaw("form_data->>'surname' ILIKE ?", ["%{$search}%"]);
+                            } else {
+                                $q->whereRaw("JSON_EXTRACT(form_data, '$.firstName') LIKE ?", ["%{$search}%"])
+                                  ->orWhereRaw("JSON_EXTRACT(form_data, '$.surname') LIKE ?", ["%{$search}%"]);
+                            }
                         });
                     }),
                 

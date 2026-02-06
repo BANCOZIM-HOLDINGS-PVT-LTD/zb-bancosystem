@@ -15,7 +15,13 @@ return new class extends Migration
         if (Schema::hasTable('delivery_trackings')) {
              // Change courier_type to string to allow any value
              // Use raw statement for Enum change as Doctrine DBAL can struggle with Enums sometimes
-             DB::statement("ALTER TABLE `delivery_trackings` MODIFY COLUMN `courier_type` VARCHAR(100) NULL");
+             $driver = DB::getDriverName();
+             
+             if ($driver === 'pgsql') {
+                 DB::statement("ALTER TABLE delivery_trackings ALTER COLUMN courier_type TYPE VARCHAR(100)");
+             } else {
+                 DB::statement("ALTER TABLE `delivery_trackings` MODIFY COLUMN `courier_type` VARCHAR(100) NULL");
+             }
         }
     }
 

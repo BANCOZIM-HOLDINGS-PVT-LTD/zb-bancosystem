@@ -25,18 +25,31 @@ class PendingZBApprovalsWidget extends BaseWidget
 
     public function table(Table $table): Table
     {
+        $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+        
+        $query = ApplicationState::query()
+            ->where('current_step', 'in_review')
+            // Only ZB applications (not SSB)
+            ->where(function ($query) use ($isPgsql) {
+                if ($isPgsql) {
+                    $query->whereRaw("form_data->>'wantsAccount' = 'true'")
+                          ->orWhereRaw("form_data->>'hasAccount' = 'true'");
+                } else {
+                    $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.wantsAccount')) = 'true'")
+                          ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.hasAccount')) = 'true'");
+                }
+            });
+            
+        if ($isPgsql) {
+            $query->whereRaw("COALESCE(form_data->>'employer', '') != 'government-ssb'");
+        } else {
+            $query->whereRaw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.employer')), '') != 'government-ssb'");
+        }
+        
+        $query->orderBy('created_at', 'asc'); // Oldest first
+        
         return $table
-            ->query(
-                ApplicationState::query()
-                    ->where('current_step', 'in_review')
-                    // Only ZB applications (not SSB)
-                    ->where(function ($query) {
-                        $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.wantsAccount')) = 'true'")
-                              ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.hasAccount')) = 'true'");
-                    })
-                    ->whereRaw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.employer')), '') != 'government-ssb'")
-                    ->orderBy('created_at', 'asc') // Oldest first
-            )
+            ->query($query)
             ->columns([
                 TextColumn::make('reference_code')
                     ->label('Reference')
@@ -53,11 +66,20 @@ class PendingZBApprovalsWidget extends BaseWidget
                         return trim("{$firstName} {$surname}") ?: 'N/A';
                     })
                     ->searchable(query: function (Builder $query, string $search): Builder {
-                        return $query->where(function ($q) use ($search) {
-                            $q->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.firstName'))) LIKE LOWER(?)", ["%{$search}%"])
-                              ->orWhereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.surname'))) LIKE LOWER(?)", ["%{$search}%"])
-                              ->orWhereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.formResponses.firstName'))) LIKE LOWER(?)", ["%{$search}%"])
-                              ->orWhereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.formResponses.surname'))) LIKE LOWER(?)", ["%{$search}%"]);
+                        $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+                        
+                        return $query->where(function ($q) use ($search, $isPgsql) {
+                            if ($isPgsql) {
+                                $q->whereRaw("LOWER(form_data->>'firstName') LIKE LOWER(?)", ["%{$search}%"])
+                                  ->orWhereRaw("LOWER(form_data->>'surname') LIKE LOWER(?)", ["%{$search}%"])
+                                  ->orWhereRaw("LOWER(form_data->'formResponses'->>'firstName') LIKE LOWER(?)", ["%{$search}%"])
+                                  ->orWhereRaw("LOWER(form_data->'formResponses'->>'surname') LIKE LOWER(?)", ["%{$search}%"]);
+                            } else {
+                                $q->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.firstName'))) LIKE LOWER(?)", ["%{$search}%"])
+                                  ->orWhereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.surname'))) LIKE LOWER(?)", ["%{$search}%"])
+                                  ->orWhereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.formResponses.firstName'))) LIKE LOWER(?)", ["%{$search}%"])
+                                  ->orWhereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.formResponses.surname'))) LIKE LOWER(?)", ["%{$search}%"]);
+                            }
                         });
                     }),
 
@@ -90,6 +112,11 @@ class PendingZBApprovalsWidget extends BaseWidget
                         return '$' . number_format($amount, 2);
                     })
                     ->sortable(query: function (Builder $query, string $direction): Builder {
+                        $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+                        
+                        if ($isPgsql) {
+                            return $query->orderByRaw("COALESCE((form_data->>'finalPrice')::numeric, 0) {$direction}");
+                        }
                         return $query->orderByRaw("CAST(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.finalPrice')), 0) AS DECIMAL(10,2)) {$direction}");
                     }),
 

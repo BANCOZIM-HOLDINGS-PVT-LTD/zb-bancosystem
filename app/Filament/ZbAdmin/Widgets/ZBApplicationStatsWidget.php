@@ -14,14 +14,25 @@ class ZBApplicationStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
+        $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+        
         // ZB-specific applications only (exclude SSB)
-        $zbApplications = ApplicationState::where(function ($query) {
+        $zbApplications = ApplicationState::where(function ($query) use ($isPgsql) {
             // ZB Account Opening applications
-            $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.wantsAccount')) = 'true'")
-                  ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.hasAccount')) = 'true'");
-        })->where(function ($query) {
+            if ($isPgsql) {
+                $query->whereRaw("form_data->>'wantsAccount' = 'true'")
+                      ->orWhereRaw("form_data->>'hasAccount' = 'true'");
+            } else {
+                $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.wantsAccount')) = 'true'")
+                      ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.hasAccount')) = 'true'");
+            }
+        })->where(function ($query) use ($isPgsql) {
             // Exclude SSB applications
-            $query->whereRaw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.employer')), '') != 'government-ssb'");
+            if ($isPgsql) {
+                $query->whereRaw("COALESCE(form_data->>'employer', '') != 'government-ssb'");
+            } else {
+                $query->whereRaw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.employer')), '') != 'government-ssb'");
+            }
         });
 
         $totalZBApplications = (clone $zbApplications)->count();

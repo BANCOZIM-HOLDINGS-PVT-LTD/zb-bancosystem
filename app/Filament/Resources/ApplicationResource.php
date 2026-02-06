@@ -166,16 +166,21 @@ class ApplicationResource extends BaseResource
                         }
 
                         // Otherwise, extract National ID from form data
-                        $data = $record->form_data['formResponses'] ?? [];
-                        $nationalId = $data['idNumber']
-                                   ?? $data['nationalIdNumber']
-                                   ?? $data['nationalId']
-                                   ?? null;
-
-                        // Return National ID if found, otherwise show the old reference code
-                        return $nationalId ?: ($record->reference_code ?: 'N/A');
+                        return data_get($record->form_data, 'formResponses.idNumber')
+                            ?? data_get($record->form_data, 'formResponses.nationalIdNumber')
+                            ?? data_get($record->form_data, 'formResponses.nationalId')
+                            ?? ($record->reference_code ?: 'N/A');
                     })
                     ->searchable(query: function (Builder $query, string $search): Builder {
+                        $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+                        
+                        if ($isPgsql) {
+                            return $query->where('reference_code', 'LIKE', "%{$search}%")
+                                ->orWhereRaw("form_data->'formResponses'->>'idNumber' ILIKE ?", ["%{$search}%"])
+                                ->orWhereRaw("form_data->'formResponses'->>'nationalIdNumber' ILIKE ?", ["%{$search}%"])
+                                ->orWhereRaw("form_data->'formResponses'->>'nationalId' ILIKE ?", ["%{$search}%"]);
+                        }
+                        
                         return $query->where('reference_code', 'LIKE', "%{$search}%")
                             ->orWhereRaw("JSON_EXTRACT(form_data, '$.formResponses.idNumber') LIKE ?", ["%{$search}%"])
                             ->orWhereRaw("JSON_EXTRACT(form_data, '$.formResponses.nationalIdNumber') LIKE ?", ["%{$search}%"])
@@ -187,27 +192,42 @@ class ApplicationResource extends BaseResource
                 Tables\Columns\TextColumn::make('applicant_name')
                     ->label('Applicant')
                     ->getStateUsing(function (Model $record) {
-                        $data = $record->form_data['formResponses'] ?? [];
-                        $firstName = $data['firstName'] ?? '';
-                        $lastName = $data['lastName'] ?? '';
+                        $firstName = data_get($record->form_data, 'formResponses.firstName', '');
+                        $lastName = data_get($record->form_data, 'formResponses.lastName', '');
                         return trim($firstName . ' ' . $lastName) ?: 'N/A';
                     })
                     ->searchable(query: function (Builder $query, string $search): Builder {
+                        $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+                        
+                        if ($isPgsql) {
+                            return $query->whereRaw("form_data->'formResponses'->>'firstName' ILIKE ?", ["%{$search}%"])
+                                ->orWhereRaw("form_data->'formResponses'->>'lastName' ILIKE ?", ["%{$search}%"]);
+                        }
+                        
                         return $query->whereRaw("JSON_EXTRACT(form_data, '$.formResponses.firstName') LIKE ?", ["%{$search}%"])
                             ->orWhereRaw("JSON_EXTRACT(form_data, '$.formResponses.lastName') LIKE ?", ["%{$search}%"]);
                     }),
                     
                 Tables\Columns\TextColumn::make('business_type')
                     ->label('Business')
-                    ->getStateUsing(fn (Model $record) => $record->form_data['selectedBusiness']['name'] ?? 'N/A')
+                    ->getStateUsing(fn (Model $record) => data_get($record->form_data, 'selectedBusiness.name', 'N/A'))
                     ->sortable(query: function (Builder $query, string $direction): Builder {
+                        $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+                        
+                        if ($isPgsql) {
+                            return $query->orderByRaw("form_data->'selectedBusiness'->>'name' $direction");
+                        }
+                        
                         return $query->orderByRaw("JSON_EXTRACT(form_data, '$.selectedBusiness.name') {$direction}");
                     }),
                     
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Amount')
-                    ->getStateUsing(fn (Model $record) => '$' . number_format($record->form_data['finalPrice'] ?? 0))
+                    ->getStateUsing(fn (Model $record) => '$' . number_format(data_get($record->form_data, 'finalPrice', 0)))
                     ->sortable(query: function (Builder $query, string $direction): Builder {
+                        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql') {
+                            return $query->orderByRaw("(form_data->>'finalPrice')::numeric $direction");
+                        }
                         return $query->orderByRaw("CAST(JSON_EXTRACT(form_data, '$.finalPrice') AS DECIMAL(10,2)) {$direction}");
                     }),
                     
@@ -305,8 +325,12 @@ class ApplicationResource extends BaseResource
                 TernaryFilter::make('has_documents')
                     ->label('Has Documents')
                     ->queries(
-                        true: fn (Builder $query) => $query->whereRaw("JSON_EXTRACT(form_data, '$.documents.uploadedDocuments') IS NOT NULL"),
-                        false: fn (Builder $query) => $query->whereRaw("JSON_EXTRACT(form_data, '$.documents.uploadedDocuments') IS NULL"),
+                        true: fn (Builder $query) => \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql'
+                            ? $query->whereRaw("form_data->'documents'->>'uploadedDocuments' IS NOT NULL")
+                            : $query->whereRaw("JSON_EXTRACT(form_data, '$.documents.uploadedDocuments') IS NOT NULL"),
+                        false: fn (Builder $query) => \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql'
+                            ? $query->whereRaw("form_data->'documents'->>'uploadedDocuments' IS NULL")
+                            : $query->whereRaw("JSON_EXTRACT(form_data, '$.documents.uploadedDocuments') IS NULL"),
                     ),
                     
                 Filter::make('amount_range')
@@ -322,11 +346,15 @@ class ApplicationResource extends BaseResource
                         return $query
                             ->when(
                                 $data['min_amount'],
-                                fn (Builder $query, $amount): Builder => $query->whereRaw("CAST(JSON_EXTRACT(form_data, '$.finalPrice') AS DECIMAL(10,2)) >= ?", [$amount]),
+                                fn (Builder $query, $amount): Builder => \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql' 
+                                    ? $query->whereRaw("(form_data->>'finalPrice')::numeric >= ?", [$amount])
+                                    : $query->whereRaw("CAST(JSON_EXTRACT(form_data, '$.finalPrice') AS DECIMAL(10,2)) >= ?", [$amount]),
                             )
                             ->when(
                                 $data['max_amount'],
-                                fn (Builder $query, $amount): Builder => $query->whereRaw("CAST(JSON_EXTRACT(form_data, '$.finalPrice') AS DECIMAL(10,2)) <= ?", [$amount]),
+                                fn (Builder $query, $amount): Builder => \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql'
+                                    ? $query->whereRaw("(form_data->>'finalPrice')::numeric <= ?", [$amount])
+                                    : $query->whereRaw("CAST(JSON_EXTRACT(form_data, '$.finalPrice') AS DECIMAL(10,2)) <= ?", [$amount]),
                             );
                     }),
             ])

@@ -30,16 +30,26 @@ class ZbApplicationResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+        
         return parent::getEloquentQuery()
-            ->where(function ($query) {
+            ->where(function ($query) use ($isPgsql) {
                 // Only ZB applications (has account or wants account)
-                // MySQL/MariaDB compatible JSON query
-                $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.hasAccount')) = 'true'")
-                      ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.wantsAccount')) = 'true'");
+                if ($isPgsql) {
+                    $query->whereRaw("form_data->>'hasAccount' = 'true'")
+                          ->orWhereRaw("form_data->>'wantsAccount' = 'true'");
+                } else {
+                    $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.hasAccount')) = 'true'")
+                          ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.wantsAccount')) = 'true'");
+                }
             })
-            ->where(function ($query) {
+            ->where(function ($query) use ($isPgsql) {
                 // Exclude SSB applications
-                $query->whereRaw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.employer')), '') != 'government-ssb'");
+                if ($isPgsql) {
+                    $query->whereRaw("COALESCE(form_data->>'employer', '') != 'government-ssb'");
+                } else {
+                    $query->whereRaw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.employer')), '') != 'government-ssb'");
+                }
             })
             // Exclude agent applications
             ->where('current_step', 'not like', 'agent_%');
