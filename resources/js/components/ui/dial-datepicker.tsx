@@ -106,16 +106,19 @@ const DialDatePicker: React.FC<DialDatePickerProps> = ({
 
   // Update date when components change
   const updateDate = (newDay: string, newMonth: string, newYear: string) => {
-    if (newDay && newMonth && newYear) {
+    // If hiding day, default to first of the month
+    const effectiveDay = hideDay ? (newDay || '01') : newDay;
+
+    if (effectiveDay && newMonth && newYear) {
       // Validate the date
-      const date = new Date(parseInt(newYear), parseInt(newMonth) - 1, parseInt(newDay));
+      const date = new Date(parseInt(newYear), parseInt(newMonth) - 1, parseInt(effectiveDay));
 
       // Check if the date is valid
-      if (date.getDate() == parseInt(newDay) &&
+      if (date.getDate() == parseInt(effectiveDay) &&
         date.getMonth() == parseInt(newMonth) - 1 &&
         date.getFullYear() == parseInt(newYear)) {
 
-        const dateString = `${newYear}-${newMonth}-${newDay}`;
+        const dateString = `${newYear}-${newMonth}-${effectiveDay}`;
 
         // Check min/max constraints
         if (minDate && dateString < minDate) return;
