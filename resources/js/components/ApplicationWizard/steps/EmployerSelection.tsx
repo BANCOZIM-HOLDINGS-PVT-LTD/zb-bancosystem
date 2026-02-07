@@ -18,6 +18,7 @@ interface EmployerOption {
     icon: LucideIcon;
     isSpecial: boolean;
     description?: string;
+    disabled?: boolean;
 }
 
 
@@ -41,7 +42,9 @@ const employerOptions: EmployerOption[] = [
         id: 'government-ssb',
         name: 'Government of Zimbabwe - SSB',
         icon: Building,
-        isSpecial: false
+        isSpecial: false,
+        disabled: true,
+        description: 'Coming soon'
     },
     {
         id: 'government-non-ssb',
@@ -172,25 +175,30 @@ const EmployerSelection: React.FC<EmployerSelectionProps> = ({ data, onNext, onB
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {employerOptions.map((employer) => {
                     const Icon = employer.icon;
+                    const isDisabled = employer.disabled || loading;
                     return (
                         <button
                             key={employer.id}
-                            onClick={() => !loading && handleEmployerSelect(employer.id)}
-                            className="group p-4 text-left rounded-lg border border-[#e3e3e0] transition-all hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-lg dark:border-[#3E3E3A] dark:hover:border-emerald-500 dark:hover:bg-emerald-950/20"
+                            onClick={() => !isDisabled && handleEmployerSelect(employer.id)}
+                            disabled={isDisabled}
+                            className={`group p-4 text-left rounded-lg border transition-all ${isDisabled
+                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60 dark:border-gray-700 dark:bg-gray-800/50'
+                                : 'border-[#e3e3e0] hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-lg dark:border-[#3E3E3A] dark:hover:border-emerald-500 dark:hover:bg-emerald-950/20'
+                                }`}
                         >
                             <div className="flex items-start space-x-3">
-                                <Icon className="h-6 w-6 text-emerald-600 flex-shrink-0 mt-1" />
+                                <Icon className={`h-6 w-6 flex-shrink-0 mt-1 ${isDisabled ? 'text-gray-400' : 'text-emerald-600'}`} />
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="text-sm font-medium mb-1 group-hover:text-emerald-600 leading-tight">
+                                    <h3 className={`text-sm font-medium mb-1 leading-tight ${isDisabled ? 'text-gray-400' : 'group-hover:text-emerald-600'}`}>
                                         {employer.name}
                                     </h3>
                                     {employer.description && (
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        <p className={`text-xs ${isDisabled ? 'text-gray-400 italic' : 'text-gray-500 dark:text-gray-400'}`}>
                                             {employer.description}
                                         </p>
                                     )}
                                 </div>
-                                <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0 group-hover:text-emerald-600" />
+                                <ChevronRight className={`h-4 w-4 flex-shrink-0 ${isDisabled ? 'text-gray-300' : 'text-gray-400 group-hover:text-emerald-600'}`} />
                             </div>
                         </button>
                     );
