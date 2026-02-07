@@ -169,7 +169,8 @@ class WhatsAppStateMachine
             ['id' => 'mb_butchery', 'name' => 'Meat Processing Equipment', 'desc' => '🥩 small scale'],
             ['id' => 'mb_events', 'name' => 'Events Management', 'desc' => '🎉 PA & Tents'],
             ['id' => 'mb_snack', 'name' => 'Snack Production', 'desc' => '🍿 Maputi & Popcorn'],
-            ['id' => 'mb_printing', 'name' => 'Branding and Material Printing', 'desc' => '🖨️ Branding'], // Added Printing to the list if not present, but checking first
+            ['id' => 'mb_printing', 'name' => 'Branding and Material Printing', 'desc' => '🖨️ Branding'],
+            ['id' => 'mb_mining', 'name' => 'Small Scale Mining', 'desc' => '⛏️ Mining Equipment'],
         ],
         // Option 2: Personal & Homeware (from HirePurchaseSeeder - 15 categories, showing first 9)
         'personal' => [
