@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import FormField from '@/components/ApplicationWizard/components/FormField';
+import AddressInput, { AddressData } from '@/components/ui/address-input';
 import { formatZimbabweId } from '@/components/ApplicationWizard/utils/formatters';
 import { ChevronLeft, User, Building, CreditCard, Users, Smartphone } from 'lucide-react';
 import { securityCompanies } from '@/components/ApplicationWizard/data/securityCompanies';
@@ -144,7 +145,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
         hobbies: '',
 
         // Contact Details
-        residentialAddress: '',
+        residentialAddress: { type: '', addressLine: '' } as AddressData,
         telephoneRes: '',
         mobile: data.formResponses?.mobile || '',
         bus: '',
@@ -173,7 +174,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
         spouseTitle: '',
         spouseFirstName: '',
         spouseSurname: '',
-        spouseAddress: '',
+        spouseAddress: { type: '', addressLine: '' } as AddressData,
         spouseIdNumber: '',
         spouseContact: '',
         spouseRelationship: '',
@@ -826,13 +827,11 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
 
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="md:col-span-2">
-                            <FormField
+                            <AddressInput
                                 id="residentialAddress"
-                                name="residentialAddress"
-                                label="Residential Address *"
-                                type="text"
-                                value={typeof formData.residentialAddress === 'string' ? formData.residentialAddress : ''}
-                                onChange={(value) => handleInputChange('residentialAddress', value)}
+                                label="Residential Address"
+                                value={formData.residentialAddress}
+                                onChange={(value) => setFormData(prev => ({ ...prev, residentialAddress: value }))}
                                 required
                             />
                         </div>
@@ -1101,14 +1100,12 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                             />
                         </div>
 
-                        <div>
-                            <FormField
+                        <div className="md:col-span-2">
+                            <AddressInput
                                 id="spouseAddress"
-                                name="spouseAddress"
-                                label="Address"
-                                type="text"
-                                value={typeof formData.spouseAddress === 'string' ? formData.spouseAddress : ''}
-                                onChange={(value) => handleInputChange('spouseAddress', value)}
+                                label="Residential Address"
+                                value={formData.spouseAddress}
+                                onChange={(value) => setFormData(prev => ({ ...prev, spouseAddress: value }))}
                             />
                         </div>
                     </div>

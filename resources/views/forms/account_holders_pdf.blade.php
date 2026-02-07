@@ -27,7 +27,28 @@
             return is_string($value) ? $value : '';
         }
 
-        // Build address from components
+        // NEW: Handle simplified Urban/Rural format
+        if (isset($decoded['type'])) {
+            $parts = [];
+            if ($decoded['type'] === 'urban') {
+                if (!empty($decoded['addressLine'])) {
+                    $parts[] = $decoded['addressLine'];
+                }
+                if (!empty($decoded['city'])) {
+                    $parts[] = $decoded['city'];
+                }
+            } elseif ($decoded['type'] === 'rural') {
+                if (!empty($decoded['addressLine'])) {
+                    $parts[] = $decoded['addressLine'];
+                }
+                if (!empty($decoded['wardDistrict'])) {
+                    $parts[] = $decoded['wardDistrict'];
+                }
+            }
+            return implode(', ', $parts);
+        }
+
+        // LEGACY: Build address from old format components
         $parts = [];
 
         if (!empty($decoded['houseNumber'])) {

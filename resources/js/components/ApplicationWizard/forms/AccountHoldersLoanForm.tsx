@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, User, Building, CreditCard, Users, DollarSign } from 'lucide-react';
 import FormField from '@/components/ApplicationWizard/components/FormField';
+import AddressInput, { AddressData } from '@/components/ui/address-input';
 import { formatZimbabweId } from '@/components/ApplicationWizard/utils/formatters';
 import { zimbabweBanks } from '@/components/ApplicationWizard/data/zimbabweBanks';
 import { securityCompanies } from '@/components/ApplicationWizard/data/securityCompanies';
@@ -130,7 +131,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
         responsiblePaymaster: '',
         employerName: '',
         employerAddress: '',
-        permanentAddress: '',
+        permanentAddress: { type: '', addressLine: '' } as AddressData,
         propertyOwnership: '',
         periodAtAddress: '',
         employmentStatus: '',
@@ -144,8 +145,8 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
 
         // Spouse and Next of Kin
         spouseDetails: [
-            { fullName: '', relationship: '', phoneNumber: '', residentialAddress: '' },
-            { fullName: '', relationship: '', phoneNumber: '', residentialAddress: '' }
+            { fullName: '', relationship: '', phoneNumber: '', residentialAddress: { type: '', addressLine: '' } as AddressData },
+            { fullName: '', relationship: '', phoneNumber: '', residentialAddress: { type: '', addressLine: '' } as AddressData }
         ],
 
         // Banking Details - Pre-fill ZB Bank if user has ZB account
@@ -531,12 +532,12 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                             />
                         </div>
                         <div className="md:col-span-2 lg:col-span-3">
-                            <FormField
+                            <AddressInput
                                 id="permanentAddress"
                                 label="Residential Address"
-                                type="text"
-                                value={typeof formData.permanentAddress === 'string' ? formData.permanentAddress : ''}
-                                onChange={(value) => handleInputChange('permanentAddress', value)}
+                                value={formData.permanentAddress}
+                                onChange={(value) => setFormData(prev => ({ ...prev, permanentAddress: value }))}
+                                required
                             />
                         </div>
 
@@ -880,13 +881,20 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                     />
                                 </div>
 
-                                <div>
-                                    <FormField
+                                <div className="md:col-span-2">
+                                    <AddressInput
                                         id={`spouse-${index}-address`}
-                                        label="Residential address"
-                                        type="text"
-                                        value={typeof spouse.residentialAddress === 'string' ? spouse.residentialAddress : ''}
-                                        onChange={(value) => handleSpouseChange(index, 'residentialAddress', value)}
+                                        label="Residential Address"
+                                        value={spouse.residentialAddress as AddressData}
+                                        onChange={(value) => {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                spouseDetails: prev.spouseDetails.map((s, i) =>
+                                                    i === index ? { ...s, residentialAddress: value } : s
+                                                )
+                                            }));
+                                        }}
+                                        required={index === 0}
                                     />
                                 </div>
                             </div>

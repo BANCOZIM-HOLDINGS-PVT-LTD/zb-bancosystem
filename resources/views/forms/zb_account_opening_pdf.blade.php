@@ -28,7 +28,27 @@
             $address = (array)$address;
             $parts = [];
 
-            // Add house/building number
+            // NEW: Handle simplified Urban/Rural format
+            if (isset($address['type'])) {
+                if ($address['type'] === 'urban') {
+                    if (!empty($address['addressLine'])) {
+                        $parts[] = $address['addressLine'];
+                    }
+                    if (!empty($address['city'])) {
+                        $parts[] = $address['city'];
+                    }
+                } elseif ($address['type'] === 'rural') {
+                    if (!empty($address['addressLine'])) {
+                        $parts[] = $address['addressLine'];
+                    }
+                    if (!empty($address['wardDistrict'])) {
+                        $parts[] = $address['wardDistrict'];
+                    }
+                }
+                return implode(', ', array_filter($parts));
+            }
+
+            // LEGACY: Add house/building number
             if (!empty($address['houseNumber'])) {
                 $parts[] = $address['houseNumber'];
             }

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, User, Building, CreditCard, Users } from 'lucide-react';
 import FormField from '../components/FormField';
+import AddressInput, { AddressData } from '@/components/ui/address-input';
 import { formatZimbabweId } from '../utils/formatters';
 import { zimbabweBanks } from '../data/zimbabweBanks';
 
@@ -108,7 +109,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
         responsibleMinistry: '',
         employerName: '',
         employerAddress: '',
-        permanentAddress: '',
+        permanentAddress: { type: '', addressLine: '' } as AddressData,
         propertyOwnership: '',
         periodAtAddress: '',
         employmentStatus: '',
@@ -121,8 +122,8 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
 
         // Spouse and Next of Kin
         spouseDetails: [
-            { fullName: '', relationship: '', phoneNumber: '', residentialAddress: '' },
-            { fullName: '', relationship: '', phoneNumber: '', residentialAddress: '' }
+            { fullName: '', relationship: '', phoneNumber: '', residentialAddress: { type: '', addressLine: '' } as AddressData },
+            { fullName: '', relationship: '', phoneNumber: '', residentialAddress: { type: '', addressLine: '' } as AddressData }
         ],
 
         // Banking Details
@@ -237,12 +238,14 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
         }
 
         // Validate that BOTH spouse/next of kin entries are filled in
-        const allSpousesValid = formData.spouseDetails.every(spouse =>
-            spouse.fullName.trim() !== '' &&
-            spouse.relationship.trim() !== '' &&
-            spouse.phoneNumber.trim() !== '' &&
-            spouse.residentialAddress.trim() !== ''
-        );
+        const allSpousesValid = formData.spouseDetails.every(spouse => {
+            const addr = spouse.residentialAddress as AddressData;
+            const hasAddress = addr && addr.type && addr.addressLine?.trim();
+            return spouse.fullName.trim() !== '' &&
+                spouse.relationship.trim() !== '' &&
+                spouse.phoneNumber.trim() !== '' &&
+                hasAddress;
+        });
 
         if (!allSpousesValid) {
             setSpouseError('Both Spouse/Next of Kin entries are required. Please fill in all fields for both contacts.');
@@ -306,10 +309,17 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
         formResponses.responsibleMinistry = formData.responsibleMinistry;
         formResponses.loanAmount = formData.loanAmount;
         formResponses.loanTenure = formData.loanTenure;
-        formResponses.residentialAddress = formData.permanentAddress;
+        // Serialize address to JSON for PDF template
+        formResponses.residentialAddress = JSON.stringify(formData.permanentAddress);
+        formResponses.permanentAddress = JSON.stringify(formData.permanentAddress);
         formResponses.checkLetter = '';
         formResponses.propertyOwnership = convertPropertyOwnership(formData.propertyOwnership);
         formResponses.periodAtAddress = convertPeriodToText(formData.periodAtAddress);
+        // Serialize spouse addresses to JSON for PDF template
+        formResponses.spouseDetails = formData.spouseDetails.map(spouse => ({
+            ...spouse,
+            residentialAddress: JSON.stringify(spouse.residentialAddress)
+        }));
 
         // Add hasOtherLoans flag and handle N/A case
         formResponses.hasOtherLoans = hasOtherLoans;
@@ -518,12 +528,11 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                         />
 
                         <div className="md:col-span-2 lg:col-span-3">
-                            <FormField
+                            <AddressInput
                                 id="permanentAddress"
                                 label="Residential Address"
-                                type="text"
-                                value={typeof formData.permanentAddress === 'string' ? formData.permanentAddress : ''}
-                                onChange={(value) => handleInputChange('permanentAddress', value)}
+                                value={formData.permanentAddress}
+                                onChange={(value) => setFormData(prev => ({ ...prev, permanentAddress: value }))}
                                 required
                             />
                         </div>
@@ -802,13 +811,22 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                     required={index === 0 && !!spouse.fullName}
                                 />
 
-                                <FormField
-                                    id={`spouse-${index}-address`}
-                                    label="Residential Address"
-                                    type="text"
-                                    value={typeof spouse.residentialAddress === 'string' ? spouse.residentialAddress : ''}
-                                    onChange={(value) => handleSpouseChange(index, 'residentialAddress', value)}
-                                />
+                                <div className="md:col-span-2">
+                                    <AddressInput
+                                        id={`spouse-${index}-address`}
+                                        label="Residential Address"
+                                        value={spouse.residentialAddress as AddressData}
+                                        onChange={(value) => {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                spouseDetails: prev.spouseDetails.map((s, i) =>
+                                                    i === index ? { ...s, residentialAddress: value } : s
+                                                )
+                                            }));
+                                        }}
+                                        required={index === 0}
+                                    />
+                                </div>
                             </div>
                         );
                     })}
