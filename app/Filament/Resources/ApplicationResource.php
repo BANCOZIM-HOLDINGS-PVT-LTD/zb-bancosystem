@@ -1317,12 +1317,19 @@ class ApplicationResource extends BaseResource
         return parent::getEloquentQuery()
             // Exclude agent application states from Loan Applications
             ->where(function ($query) {
+                $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+                
                 $query->where('current_step', 'not like', 'agent_%')
-                    // Use MySQL JSON_EXTRACT instead of PostgreSQL operators
-                    ->where(function ($q) {
-                        $q->whereNull('form_data')
-                          ->orWhereRaw("JSON_EXTRACT(form_data, '$.outcome') IS NULL")
-                          ->orWhereRaw("JSON_EXTRACT(form_data, '$.outcome') != 'agent_application_submitted'");
+                    ->where(function ($q) use ($isPgsql) {
+                        $q->whereNull('form_data');
+                        
+                        if ($isPgsql) {
+                            $q->orWhereRaw("form_data->>'outcome' IS NULL")
+                              ->orWhereRaw("form_data->>'outcome' != 'agent_application_submitted'");
+                        } else {
+                            $q->orWhereRaw("JSON_EXTRACT(form_data, '$.outcome') IS NULL")
+                              ->orWhereRaw("JSON_EXTRACT(form_data, '$.outcome') != 'agent_application_submitted'");
+                        }
                     });
             });
     }

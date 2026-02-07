@@ -31,9 +31,10 @@ return new class extends Migration
             $table->index(['created_at'], 'idx_created_at');
             $table->index(['updated_at'], 'idx_updated_at');
 
-            // JSON field indexes (MySQL 5.7+ / PostgreSQL)
-            // Skip JSON indexes for MariaDB compatibility
-            if (config('database.default') === 'mysql' && !str_contains(DB::connection()->getPdo()->getAttribute(\PDO::ATTR_SERVER_VERSION), 'MariaDB')) {
+            // JSON field indexes (Driver specific)
+            $driver = config('database.default');
+            
+            if ($driver === 'mysql' && !str_contains(DB::connection()->getPdo()->getAttribute(\PDO::ATTR_SERVER_VERSION), 'MariaDB')) {
                 // MySQL JSON indexes (not MariaDB)
                 try {
                     DB::statement("ALTER TABLE application_states ADD INDEX idx_form_id ((JSON_EXTRACT(form_data, '$.formId')))");
@@ -45,6 +46,20 @@ return new class extends Migration
                     DB::statement("ALTER TABLE application_states ADD INDEX idx_national_id ((JSON_EXTRACT(form_data, '$.formResponses.nationalIdNumber')))");
                 } catch (\Exception $e) {
                     // Skip JSON indexes if they fail
+                }
+            } elseif ($driver === 'pgsql') {
+                // PostgreSQL Functional Indexes for JSONB/JSON
+                try {
+                    // Check if indexes exist before creating to avoid errors
+                    DB::statement("CREATE INDEX IF NOT EXISTS idx_form_id ON application_states ((form_data->>'formId'))");
+                    DB::statement("CREATE INDEX IF NOT EXISTS idx_employer ON application_states ((form_data->>'employer'))");
+                    DB::statement("CREATE INDEX IF NOT EXISTS idx_has_account ON application_states ((form_data->>'hasAccount'))");
+                    DB::statement("CREATE INDEX IF NOT EXISTS idx_amount ON application_states ((form_data->>'amount'))");
+                    DB::statement("CREATE INDEX IF NOT EXISTS idx_email ON application_states ((form_data->'formResponses'->>'emailAddress'))");
+                    DB::statement("CREATE INDEX IF NOT EXISTS idx_mobile_response ON application_states ((form_data->'formResponses'->>'mobile'))");
+                    DB::statement("CREATE INDEX IF NOT EXISTS idx_national_id ON application_states ((form_data->'formResponses'->>'nationalIdNumber'))");
+                } catch (\Exception $e) {
+                    Log::warning('Failed to create PostgreSQL indexes: ' . $e->getMessage());
                 }
             }
         });

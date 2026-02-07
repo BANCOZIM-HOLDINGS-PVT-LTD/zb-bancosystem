@@ -18,12 +18,23 @@ class ZBLoanExport implements FromCollection, WithHeadings, WithMapping
             ->whereIn('current_step', ['approved', 'completed'])
             ->where(function ($query) {
                 // ZB applications (has account or wants account)
-                $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.hasAccount')) = 'true'")
-                      ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.wantsAccount')) = 'true'");
+                $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+                if ($isPgsql) {
+                    $query->whereRaw("form_data->>'hasAccount' = 'true'")
+                          ->orWhereRaw("form_data->>'wantsAccount' = 'true'");
+                } else {
+                    $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.hasAccount')) = 'true'")
+                          ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.wantsAccount')) = 'true'");
+                }
             })
             ->where(function ($query) {
                 // Exclude SSB applications
-                $query->whereRaw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.employer')), '') != 'government-ssb'");
+                $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+                if ($isPgsql) {
+                    $query->whereRaw("COALESCE(form_data->>'employer', '') != 'government-ssb'");
+                } else {
+                    $query->whereRaw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.employer')), '') != 'government-ssb'");
+                }
             })
             ->orderBy('approved_at', 'desc')
             ->get();

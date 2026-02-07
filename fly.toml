@@ -35,3 +35,7 @@ primary_region = "jnb" # Johannesburg, closest to Zimbabwe
 [[statics]]
   guest_path = "/var/www/html/public"
   url_prefix = "/"
+
+[mounts]
+  source = "storage_vol"
+  destination = "/var/www/html/storage/app/public"
