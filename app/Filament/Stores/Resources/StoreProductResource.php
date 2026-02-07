@@ -25,8 +25,6 @@ class StoreProductResource extends Resource
         // Filter out MicroBiz products as per requirement ("not microbiz")
         // MicroBiz is likely a category/purchase_type.
         // Assuming 'purchase_type' column or checking category name.
-        // I'll check 'purchase_type' != 'microbiz' if the column exists (CashPurchase has it, Product might not).
-        // Viewing Product.php might reveal the scope.
         // Assuming strict filter later. For now, general products.
         return parent::getEloquentQuery();
     }

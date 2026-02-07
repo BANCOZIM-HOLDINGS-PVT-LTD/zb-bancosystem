@@ -17,7 +17,6 @@ class AgentDashboard extends BaseDashboard
         return [
             \App\Filament\Agent\Widgets\CommissionBalanceWidget::class,
             \App\Filament\Agent\Widgets\ClientCommissionsWidget::class, // Credit/Loan referrals
-            \App\Filament\Agent\Widgets\CashPurchaseReferralsWidget::class, // Cash purchase referrals
         ];
     }
 

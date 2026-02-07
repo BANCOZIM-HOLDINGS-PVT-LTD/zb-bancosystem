@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApplicationState;
-use App\Models\CashPurchase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -19,7 +18,7 @@ class WelcomeController extends Controller
         $hasApplications = false;
         $hasCompletedApplications = false;
 
-        // Check if user is authenticated and has any applications or cash purchases
+        // Check if user is authenticated and has any applications
         if (Auth::check()) {
             $user = Auth::user();
 
@@ -73,13 +72,7 @@ class WelcomeController extends Controller
 
                 // Check if user has any COMPLETED applications (submitted, not just in-progress)
                 if ($hasApplications) {
-                    // We need to clone the query or create a new one because the previous one was already executed/modified
-                    // But since we are just appending, it's fine, EXCEPT that exists() might have side effects on some versions?
-                    // Safer to just check the status.
                     $hasCompletedApplications = ApplicationState::where(function($query) use ($user) {
-                            // Re-apply the user identifier logic or just trust that if hasApplications is true, we can check for status
-                            // But we need to filter by THIS user's applications.
-                            // Let's just re-use the logic but simpler:
                              $query->where('user_identifier', $user->email)
                                    ->orWhere('user_identifier', $user->phone)
                                    ->orWhere('user_identifier', $user->national_id);
@@ -93,13 +86,6 @@ class WelcomeController extends Controller
                         })
                         ->whereIn('current_step', ['completed', 'approved', 'in_review', 'processing', 'pending_documents'])
                         ->exists();
-                }
-
-                // If no applications found, check for cash purchases
-                if (!$hasApplications && $user->national_id) {
-                    $hasCashPurchases = CashPurchase::where('national_id', $user->national_id)->exists();
-                    $hasApplications = $hasCashPurchases;
-                    $hasCompletedApplications = $hasCashPurchases; // Cash purchases are considered completed
                 }
             }
         }

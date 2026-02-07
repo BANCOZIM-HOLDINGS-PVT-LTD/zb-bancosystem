@@ -61,7 +61,7 @@ class SaveApplicationStateRequest extends FormRequest
                 // All valid intent values from the wizard
                 Rule::in([
                     'hirePurchase', 'microBiz', 'checkStatus', 'trackDelivery', 
-                    'loan', 'account', 'personalServices', 'cashPurchase',
+                    'loan', 'account', 'personalServices',
                     'ssbLoan', 'zbLoan', 'accountOpening', 'rdcLoan',
                     'houseConstruction', 'agentApplication', 'agentLogin',
                     // New intent values from welcome page

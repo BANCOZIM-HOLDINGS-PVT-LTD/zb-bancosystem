@@ -3,7 +3,6 @@
 namespace App\Filament\Stores\Widgets;
 
 use App\Models\DeliveryTracking;
-use App\Models\CashPurchase;
 use App\Models\ProductInventory;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -28,11 +27,6 @@ class StoresStatsWidget extends BaseWidget
         // Delivered today
         $deliveredToday = DeliveryTracking::where('status', 'delivered')
             ->whereDate('delivered_at', today())
-            ->count();
-
-        // Cash purchase pending delivery
-        $cashPendingDelivery = CashPurchase::where('payment_status', 'paid')
-            ->whereIn('status', ['pending', 'processing'])
             ->count();
 
         // Low stock items (if ProductInventory exists)
@@ -64,11 +58,6 @@ class StoresStatsWidget extends BaseWidget
                 ->descriptionIcon('heroicon-m-check-circle')
                 ->color('success'),
 
-            Stat::make('Cash Orders Pending', $cashPendingDelivery)
-                ->description('Paid, awaiting dispatch')
-                ->descriptionIcon('heroicon-m-banknotes')
-                ->color($cashPendingDelivery > 5 ? 'warning' : 'success'),
-
             Stat::make('Low Stock Items', $lowStockCount)
                 ->description('Items below threshold')
                 ->descriptionIcon('heroicon-m-exclamation-triangle')
@@ -76,3 +65,4 @@ class StoresStatsWidget extends BaseWidget
         ];
     }
 }
+

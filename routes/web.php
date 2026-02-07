@@ -44,10 +44,6 @@ Route::post('/deposit/initiate', [\App\Http\Controllers\DepositPaymentController
 Route::post('/deposit/callback', [\App\Http\Controllers\DepositPaymentController::class, 'paymentCallback'])->name('deposit.callback');
 Route::get('/deposit/status/{referenceCode}', [\App\Http\Controllers\DepositPaymentController::class, 'getPaymentStatus'])->name('deposit.status');
 
-// Cash Purchase Routes
-Route::get('/cash-purchase', [\App\Http\Controllers\CashPurchaseController::class, 'index'])->name('cash.purchase');
-Route::get('/cash-purchase/success/{purchase}', [\App\Http\Controllers\CashPurchaseController::class, 'success'])->name('cash.purchase.success');
-Route::get('/cash-purchase/error', [\App\Http\Controllers\CashPurchaseController::class, 'error'])->name('cash.purchase.error');
 
 // Cross-platform synchronization routes
 Route::post('/application/switch-to-whatsapp', [ApplicationWizardController::class, 'switchToWhatsApp'])->name('application.switch.whatsapp');

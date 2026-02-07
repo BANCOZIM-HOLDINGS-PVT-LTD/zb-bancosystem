@@ -302,8 +302,8 @@ class WhatsAppConversationService
                 
             case '2':
             case '4':
-                // Cash purchase - redirect to website
-                $this->redirectToCashPurchase($from, $state, $message);
+                // Cash purchase - redirect to external website
+                $this->redirectToWebsiteForCash($from, $state, $message);
                 break;
                 
             case '3':
@@ -315,15 +315,15 @@ class WhatsAppConversationService
     }
     
     /**
-     * Redirect to website for cash purchases
+     * Redirect to external website for cash purchases
      */
-    private function redirectToCashPurchase(string $from, $state, string $choice): void
+    private function redirectToWebsiteForCash(string $from, $state, string $choice): void
     {
         $productType = ($choice == '2') ? 'Starter Pack' : 'Gadgets/Furniture';
         
         $message = "✅ Thank you for choosing to purchase *{$productType}* for cash!\n\n";
         $message .= "Please proceed to our website to complete your purchase:\n\n";
-        $message .= "🌐 *" . config('app.url', 'https://bancosystem.fly.dev') . "*\n\n";
+        $message .= "🌐 *https://microbizimbabwe.co.zw*\n\n";
         $message .= "Or tap the link below to get started! 👇";
         
         $this->whatsAppService->sendMessage($from, $message);
@@ -334,7 +334,7 @@ class WhatsAppConversationService
             'whatsapp',
             $state->user_identifier,
             'completed',
-            array_merge($state->form_data ?? [], ['outcome' => 'redirected_to_website']),
+            array_merge($state->form_data ?? [], ['outcome' => 'redirected_to_website_for_cash']),
             $state->metadata ?? []
         );
     }

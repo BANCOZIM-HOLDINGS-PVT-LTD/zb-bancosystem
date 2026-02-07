@@ -11,7 +11,6 @@ class Commission extends Model
     protected $fillable = [
         'agent_id',
         'application_id',
-        'cash_purchase_id',
         'reference_number',
         'type',
         'amount',
@@ -59,13 +58,6 @@ class Commission extends Model
         return $this->belongsTo(ApplicationState::class, 'application_id');
     }
 
-    /**
-     * Get the cash purchase
-     */
-    public function cashPurchase(): BelongsTo
-    {
-        return $this->belongsTo(CashPurchase::class, 'cash_purchase_id');
-    }
 
     /**
      * Check if commission is paid
@@ -154,30 +146,6 @@ class Commission extends Model
             'metadata' => [
                 'application_session_id' => $application->session_id,
                 'loan_amount' => $loanAmount,
-                'calculated_at' => now()->toISOString(),
-            ],
-        ]);
-    }
-
-    /**
-     * Create commission for cash purchase
-     */
-    public static function createForCashPurchase(CashPurchase $purchase, Agent $agent): self
-    {
-        $amount = $purchase->amount_paid;
-        $commissionAmount = self::calculateCommission($amount, $agent->commission_rate);
-
-        return self::create([
-            'agent_id' => $agent->id,
-            'cash_purchase_id' => $purchase->id,
-            'type' => 'delivery', // Or 'sales' or 'cash_purchase'
-            'amount' => $commissionAmount,
-            'rate' => $agent->commission_rate,
-            'base_amount' => $amount,
-            'status' => 'pending',
-            'earned_date' => now(),
-            'metadata' => [
-                'purchase_number' => $purchase->purchase_number,
                 'calculated_at' => now()->toISOString(),
             ],
         ]);

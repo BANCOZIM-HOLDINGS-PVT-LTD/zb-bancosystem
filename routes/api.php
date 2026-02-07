@@ -324,17 +324,9 @@ Route::prefix('delivery')->group(function () {
     Route::get('/tracking/{reference}', [\App\Http\Controllers\DeliveryTrackingController::class, 'getStatus']);
 });
 
-// Cash Purchase API routes
-Route::prefix('cash-purchases')->group(function () {
-    Route::post('/', [\App\Http\Controllers\CashPurchaseController::class, 'store']);
-    Route::get('/{purchaseNumber}', [\App\Http\Controllers\CashPurchaseController::class, 'show']);
-    Route::post('/track', [\App\Http\Controllers\CashPurchaseController::class, 'track']);
-});
-
 // Invoice SMS Notification API routes
 Route::prefix('invoice-sms')->group(function () {
     Route::post('/hire-purchase', [\App\Http\Controllers\Api\InvoiceSMSController::class, 'sendHirePurchaseSMS']);
-    Route::post('/cash-purchase', [\App\Http\Controllers\Api\InvoiceSMSController::class, 'sendCashPurchaseSMS']);
 });
 
 // SMS API routes
@@ -432,16 +424,12 @@ Route::post('/paynow/webhook', function (Request $request) {
         $result = $paynowService->handleWebhook($request->all());
 
         if ($result['verified'] && $result['is_paid']) {
-            // Update the cash purchase payment status
-            $purchase = \App\Models\CashPurchase::where('purchase_number', $result['reference'])->first();
-
-            if ($purchase) {
-                $purchase->markAsPaid($result['paynow_reference']);
-                \Log::info('Paynow webhook: Payment confirmed', [
-                    'purchase_number' => $result['reference'],
-                    'amount' => $result['amount'],
-                ]);
-            }
+            // Log successful payment notification
+            \Log::info('Paynow webhook: Payment confirmed', [
+                'reference' => $result['reference'],
+                'amount' => $result['amount'],
+                'paynow_reference' => $result['paynow_reference'] ?? null,
+            ]);
         }
 
         return response('OK', 200);

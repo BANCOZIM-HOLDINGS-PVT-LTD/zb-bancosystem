@@ -1,7 +1,7 @@
 import { type SharedData } from '@/types';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
-import { Globe, CreditCard, Briefcase, FileText, Package, ChevronRight, User, DollarSign, ShoppingBag, Banknote, Hammer, GraduationCap, Laptop, Home } from 'lucide-react';
+import { Globe, CreditCard, Briefcase, FileText, Package, ChevronRight, User, DollarSign, ShoppingBag, Hammer, GraduationCap, Laptop, Home } from 'lucide-react';
 import Footer from '@/components/Footer';
 
 interface WelcomeProps {
@@ -43,16 +43,10 @@ const PRODUCT_INTENTS = [
 export default function Welcome({ hasApplications, hasCompletedApplications, referralCode, agentId, agentName }: WelcomeProps) {
     const { auth } = usePage<SharedData>().props;
 
-    // Steps: language -> paymentMode -> intent -> currency
-    const getInitialStep = () => {
-        // Always start at language, regardless of auth status
-        return 'language';
-    };
-
-    const [currentStep, setCurrentStep] = useState<'language' | 'paymentMode' | 'intent' | 'currency'>('language');
+    // Steps: language -> intent -> currency (credit-only flow)
+    const [currentStep, setCurrentStep] = useState<'language' | 'intent' | 'currency'>('language');
     const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
     const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
-    const [paymentMode, setPaymentMode] = useState<'cash' | 'credit' | null>(null);
     const [lastSelectedIntent, setLastSelectedIntent] = useState<string | null>(null);
 
     const languages = [
@@ -81,12 +75,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
 
     const handleLanguageSelect = (language: string) => {
         setSelectedLanguage(language);
-        // Skip auth step - go directly to payment mode
-        setCurrentStep('paymentMode');
-    };
-
-    const handlePaymentModeSelect = (mode: 'cash' | 'credit') => {
-        setPaymentMode(mode);
+        // Go directly to intent selection (credit-only flow)
         setCurrentStep('intent');
     };
 
@@ -106,30 +95,21 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
 
     const handleCurrencySelect = (currency: string) => {
         setSelectedCurrency(currency);
-        if (!lastSelectedIntent || !paymentMode) return;
+        if (!lastSelectedIntent) return;
 
-        // Build route params
+        // Build route params for credit flow
         const params: Record<string, string> = {
             language: selectedLanguage,
-            currency: currency
+            currency: currency,
+            intent: lastSelectedIntent
         };
 
         if (referralCode) {
             params.ref = referralCode;
         }
 
-        if (paymentMode === 'cash') {
-            // Cash Purchase Flow
-            // We pass the new intent ID as the 'type' to the cash purchase page
-            // The CashPurchase component/wizard will need to handle these new types
-            params.type = lastSelectedIntent;
-            router.visit(route('cash.purchase', params));
-        } else {
-            // Credit Flow
-            // We pass the new intent ID as 'intent'
-            params.intent = lastSelectedIntent;
-            router.visit(route('application.wizard', params));
-        }
+        // Credit flow only
+        router.visit(route('application.wizard', params));
     };
 
     const selectedLang = languages.find(l => l.code === selectedLanguage);
@@ -178,8 +158,8 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                         />
                                         <h1 className="text-3xl font-bold mb-4">Hello there! I am Adala</h1>
                                         <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                            Consider me your smart uncle and digital assistant. My mission is to ensure you get the best user experience for your intended acquisition, because we are family.
-                    </p>
+                                            Consider me your smart uncle and digital assistant. My mission is to ensure you get the best user experience for your credit purchase on the Buy Now Pay Later facility, because we are family.
+                                        </p>
                                     </div>
 
                                     <div className="flex justify-center max-w-md mx-auto">
@@ -195,67 +175,6 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                 </div>
                             )}
 
-
-                            {currentStep === 'paymentMode' && (
-                                <div className="space-y-8">
-                                    <div className="text-center">
-                                        <h1 className="text-3xl font-bold mb-4">
-                                            Start Application
-                                        </h1>
-                                        <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                            How would you like to purchase today?
-                                        </p>
-                                        {!auth.user && (
-                                            <button
-                                                onClick={() => setCurrentStep('language')}
-                                                className="mt-4 text-sm text-emerald-600 hover:text-emerald-700"
-                                            >
-                                                ← Back
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    <div className="grid gap-4 sm:grid-cols-2 max-w-2xl mx-auto">
-                                        <button
-                                            onClick={() => handlePaymentModeSelect('credit')}
-
-                                            className="group p-8 text-center rounded-lg border border-[#e3e3e0] transition-all hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-lg dark:border-[#3E3E3A] dark:hover:border-emerald-500 dark:hover:bg-emerald-950/20"
-                                        >
-                                            <div className="flex flex-col items-center space-y-3">
-                                                <div className="p-3 bg-emerald-100 dark:bg-emerald-900 rounded-full">
-                                                    <CreditCard className="h-8 w-8 text-emerald-600" />
-                                                </div>
-                                                <h3 className="text-xl font-semibold group-hover:text-emerald-600">
-                                                    Buy on Credit
-                                                </h3>
-                                                <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                    (apply for hire purchase)
-                                                </p>
-                                                <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-emerald-600" />
-                                            </div>
-                                        </button>
-
-                                        <button
-                                            onClick={() => handlePaymentModeSelect('cash')}
-                                            className="group p-8 text-center rounded-lg border border-[#e3e3e0] transition-all hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-lg dark:border-[#3E3E3A] dark:hover:border-emerald-500 dark:hover:bg-emerald-950/20"
-                                        >
-                                            <div className="flex flex-col items-center space-y-3">
-                                                <div className="p-3 bg-emerald-100 dark:bg-emerald-900 rounded-full">
-                                                    <Banknote className="h-8 w-8 text-emerald-600" />
-                                                </div>
-                                                <h3 className="text-xl font-semibold group-hover:text-emerald-600">
-                                                    Buy with Cash
-                                                </h3>
-                                                <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                    (EcoCash/Zimswitch/Mastercard/Visa)
-                                                </p>
-                                                <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-emerald-600" />
-                                            </div>
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
                             {currentStep === 'intent' && (
                                 <div className="space-y-8">
                                     <div className="text-center">
@@ -263,13 +182,13 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                             Select Category
                                         </h1>
                                         <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                            You are viewing <strong>{paymentMode === 'cash' ? 'Cash Purchase' : 'Credit'}</strong> options.
+                                            Choose the category that best fits your needs
                                         </p>
                                         <button
-                                            onClick={() => setCurrentStep('paymentMode')}
+                                            onClick={() => setCurrentStep('language')}
                                             className="mt-4 text-sm text-emerald-600 hover:text-emerald-700"
                                         >
-                                            ← Change Mode
+                                            ← Back
                                         </button>
                                     </div>
 
@@ -365,3 +284,4 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
         </>
     );
 }
+

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApplicationState;
-use App\Models\CashPurchase;
 use App\Services\ReferenceCodeService;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
@@ -21,16 +20,7 @@ class DeliveryTrackingController extends Controller
     {
         $reference = strtoupper(str_replace([" ", "-"], "", trim($reference)));
 
-        // First, try to find a cash purchase by purchase number or national ID
-        $cashPurchase = CashPurchase::where('purchase_number', $reference)
-            ->orWhere('national_id', $reference)
-            ->first();
-
-        if ($cashPurchase) {
-            return $this->getCashPurchaseStatus($cashPurchase);
-        }
-
-        // If not found, search regular loan applications
+        // Search for loan applications
         $application = $this->referenceCodeService->getStateByReferenceCode($reference);
 
         if (!$application) {
@@ -113,50 +103,9 @@ class DeliveryTrackingController extends Controller
             "estimatedDelivery" => $estimatedDelivery,
             "trackingNumber" => $trackingNumber,
             "trackingType" => $trackingType,
-            "purchaseType" => "loan", // Indicate this is a loan application
+            "purchaseType" => "loan",
             "deliveredAt" => $deliveryTracking ? $deliveryTracking->delivered_at : null,
         ]);
     }
-
-    /**
-     * Get cash purchase delivery status
-     */
-    private function getCashPurchaseStatus(CashPurchase $purchase): JsonResponse
-    {
-        // Calculate estimated delivery date
-        $estimatedDelivery = null;
-        if ($purchase->dispatched_at) {
-            $estimatedDelivery = Carbon::parse($purchase->dispatched_at)->addDays(3)->format("F j, Y");
-        } elseif ($purchase->created_at) {
-            // Default to 5-7 business days from purchase date
-            $estimatedDelivery = Carbon::parse($purchase->created_at)->addDays(7)->format("F j, Y");
-        }
-
-        // Determine depot information
-        $depot = "Not yet assigned";
-        if ($purchase->delivery_type === 'gain_outlet' && $purchase->depot_name) {
-            $depot = $purchase->depot_name . ($purchase->region ? " ({$purchase->region})" : "");
-        } elseif ($purchase->delivery_type === 'zimpost' && $purchase->city) {
-            $depot = "Zimpost Delivery - {$purchase->city}";
-        }
-
-        // Determine tracking number
-        $trackingNumber = "Not yet assigned";
-        $trackingType = $purchase->delivery_type === 'zimpost' ? "Zimpost Tracking Number" : "Depot Collection";
-
-        return response()->json([
-            "sessionId" => $purchase->purchase_number,
-            "customerName" => $purchase->full_name,
-            "product" => $purchase->product_name,
-            "status" => $purchase->status,
-            "depot" => $depot,
-            "estimatedDelivery" => $estimatedDelivery,
-            "trackingNumber" => $trackingNumber,
-            "trackingType" => $trackingType,
-            "purchaseType" => "cash", // Indicate this is a cash purchase
-            "paymentStatus" => $purchase->payment_status,
-            "amountPaid" => '$' . number_format($purchase->amount_paid, 2),
-            "deliveredAt" => $purchase->status === 'delivered' ? ($purchase->updated_at ?? $purchase->created_at) : null,
-        ]);
-    }
 }
+

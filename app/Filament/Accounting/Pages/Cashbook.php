@@ -5,7 +5,6 @@ namespace App\Filament\Accounting\Pages;
 use Filament\Pages\Page;
 use App\Models\Sale;
 use App\Models\Expense;
-use App\Models\CashPurchase;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -77,16 +76,7 @@ class Cashbook extends Page implements HasTable
             'created_at' => $e->created_at,
         ]);
         
-        // Cash Purchases (assuming paid in cash)
-        $purchases = CashPurchase::where('payment_status', 'completed')->get()->map(fn($p) => [
-            'date' => $p->created_at, // assuming created_date is purchase date
-            'description' => "Purchase: {$p->product_name}",
-            'credit' => 0,
-            'debit' => $p->amount_paid,
-            'created_at' => $p->created_at,
-        ]);
-        
-        $entries = $sales->concat($expenses)->concat($purchases)->sortBy('date');
+        $entries = $sales->concat($expenses)->sortBy('date');
         
         // Calculate running balance
         $balance = 0;
@@ -104,3 +94,4 @@ class Cashbook extends Page implements HasTable
         ];
     }
 }
+
