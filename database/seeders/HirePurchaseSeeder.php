@@ -646,7 +646,7 @@ class HirePurchaseSeeder extends Seeder
     private function seedMotherToBe()
     {
         $category = ProductCategory::firstOrCreate(
-            ['name' => 'Mother-to-be preparation'],
+            ['name' => 'Expecting Mother Preparation'],
             ['emoji' => '🤰', 'type' => 'hire_purchase']
         );
 

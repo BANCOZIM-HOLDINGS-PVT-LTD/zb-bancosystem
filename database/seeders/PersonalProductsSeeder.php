@@ -9,10 +9,16 @@ class PersonalProductsSeeder extends Seeder
 {
     /**
      * Run the database seeds for Personal Products (Hire Purchase)
-     * Only Services: School Fees, Drivers License, Holiday Package
+     * Personal Services: School Fees, Drivers License, Small Business Support, Nurse Aid, Zimparks Holiday
+     * Personal Gadgets: Starlink Internet
+     * Construction category (for Home Construction intent)
      */
     public function run(): void
     {
+        // ==========================================
+        // PERSONAL SERVICES (NOT for Personal Gadgets)
+        // ==========================================
+
         // 1. School Fees Support
         $schoolFeesCategory = DB::table('product_categories')->insertGetId([
             'name' => 'School Fees Assistance',
@@ -117,7 +123,6 @@ class PersonalProductsSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        // Provisional
         $provisionalId = DB::table('products')->insertGetId([
             'product_sub_category_id' => $driversLicenseSubcategory,
             'name' => 'Provisional License',
@@ -131,7 +136,6 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $provisionalId, 'name' => 'Study Pack & Exam', 'multiplier' => 1.00, 'custom_price' => 20.00, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // Drivers Edition (Full License lessons/test)
         $driversEditionId = DB::table('products')->insertGetId([
             'product_sub_category_id' => $driversLicenseSubcategory,
             'name' => 'Drivers License Edition',
@@ -146,69 +150,7 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $driversEditionId, 'name' => 'Full Course (Lessons + Test)', 'multiplier' => 2.00, 'custom_price' => 300.00, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 3. Nurse Aid Course
-        $nurseAidCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'Nurse Aid Course',
-            'emoji' => '⚕️',
-            'type' => 'hire_purchase',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $nurseAidSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $nurseAidCategory,
-            'name' => 'Certification',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $nurseAidId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $nurseAidSubcategory,
-            'name' => 'Nurse Aid Certification',
-            'base_price' => 200.00,
-            'image_url' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        DB::table('product_package_sizes')->insert([
-            ['product_id' => $nurseAidId, 'name' => 'Registration & Theory', 'multiplier' => 1.00, 'custom_price' => 200.00, 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => $nurseAidId, 'name' => 'Full Course (Theory + Practicals)', 'multiplier' => 1.50, 'custom_price' => 300.00, 'created_at' => now(), 'updated_at' => now()],
-        ]);
-
-        // 4. Zimparks Holiday Package
-        $holidayPackageCategory = DB::table('product_categories')->insertGetId([
-            'name' => 'Zimparks Holiday Package',
-            'emoji' => '🏕️',
-            'type' => 'hire_purchase',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $vacationPackagesSubcategory = DB::table('product_sub_categories')->insertGetId([
-            'product_category_id' => $holidayPackageCategory,
-            'name' => 'Destinations',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $vacationId = DB::table('products')->insertGetId([
-            'product_sub_category_id' => $vacationPackagesSubcategory,
-            'name' => 'Zimparks Vacation Package',
-            'base_price' => 280.00,
-            'image_url' => null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        DB::table('product_package_sizes')->insert([
-            ['product_id' => $vacationId, 'name' => 'Lite Package', 'multiplier' => 1.00, 'custom_price' => 280.00, 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => $vacationId, 'name' => 'Standard Package', 'multiplier' => 1.75, 'custom_price' => 490.00, 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => $vacationId, 'name' => 'Full House Package', 'multiplier' => 3.32, 'custom_price' => 930.00, 'created_at' => now(), 'updated_at' => now()],
-            ['product_id' => $vacationId, 'name' => 'Gold Package', 'multiplier' => 5.36, 'custom_price' => 1500.00, 'created_at' => now(), 'updated_at' => now()],
-        ]);
-
-        // 5. Small Business Support
+        // 3. Small Business Support
         $businessSupportCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Small Business Support',
             'emoji' => '💼',
@@ -258,8 +200,69 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $companyRegId, 'name' => 'Standard', 'multiplier' => 1.00, 'custom_price' => 130.00, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
+        // 4. Nurse Aid Course
+        $nurseAidCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Nurse Aid Course',
+            'emoji' => '⚕️',
+            'type' => 'hire_purchase',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
-        // 6. Starlink Internet Kit (Personal Gadget)
+        $nurseAidSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $nurseAidCategory,
+            'name' => 'Certification',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $nurseAidId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $nurseAidSubcategory,
+            'name' => 'Nurse Aid Certification',
+            'base_price' => 200.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $nurseAidId, 'name' => 'Registration & Theory', 'multiplier' => 1.00, 'custom_price' => 200.00, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $nurseAidId, 'name' => 'Full Course (Theory + Practicals)', 'multiplier' => 1.50, 'custom_price' => 300.00, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 2. Zimparks Holiday Package
+        $holidayPackageCategory = DB::table('product_categories')->insertGetId([
+            'name' => 'Zimparks Holiday Package',
+            'emoji' => '🏕️',
+            'type' => 'hire_purchase',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $vacationPackagesSubcategory = DB::table('product_sub_categories')->insertGetId([
+            'product_category_id' => $holidayPackageCategory,
+            'name' => 'Destinations',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $vacationId = DB::table('products')->insertGetId([
+            'product_sub_category_id' => $vacationPackagesSubcategory,
+            'name' => 'Zimparks Vacation Package',
+            'base_price' => 280.00,
+            'image_url' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('product_package_sizes')->insert([
+            ['product_id' => $vacationId, 'name' => 'Lite Package', 'multiplier' => 1.00, 'custom_price' => 280.00, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $vacationId, 'name' => 'Standard Package', 'multiplier' => 1.75, 'custom_price' => 490.00, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $vacationId, 'name' => 'Full House Package', 'multiplier' => 3.32, 'custom_price' => 930.00, 'created_at' => now(), 'updated_at' => now()],
+            ['product_id' => $vacationId, 'name' => 'Gold Package', 'multiplier' => 5.36, 'custom_price' => 1500.00, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        // 3. Starlink Internet Kit (Personal Gadget)
         $starlinkCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Starlink Internet',
             'emoji' => '📡',
@@ -290,11 +293,11 @@ class PersonalProductsSeeder extends Seeder
             ['product_id' => $starlinkId, 'name' => 'Mobile Priority', 'multiplier' => 5.69, 'custom_price' => 2846.00, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 7. Construction Category (Home Construction)
+        // 4. Construction Category (Home Construction)
         $constructionCategory = DB::table('product_categories')->insertGetId([
             'name' => 'Construction',
             'emoji' => '🏗️',
-            'type' => 'hire_purchase', // Type Update
+            'type' => 'hire_purchase',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -480,4 +483,3 @@ class PersonalProductsSeeder extends Seeder
         $this->command->info('Personal Products (Services & Construction) seeded successfully!');
     }
 }
-

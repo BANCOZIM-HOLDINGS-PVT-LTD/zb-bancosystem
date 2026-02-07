@@ -46,6 +46,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [showZBBankingNotification, setShowZBBankingNotification] = useState<boolean>(false);
     const [selectedDestination, setSelectedDestination] = useState<ZimparksDestination | null>(null);
     const [showDestinationModal, setShowDestinationModal] = useState<boolean>(false);
+    const [showConstructionUnavailableModal, setShowConstructionUnavailableModal] = useState<boolean>(false);
 
     // Cart State
     const [cart, setCart] = useState<{ businessId: number; name: string; price: number; quantity: number; color?: string; interiorColor?: string; exteriorColor?: string; scale?: string }[]>(data.cart || []);
@@ -84,12 +85,14 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 intentKeywords = ['Building', 'Cement', 'Roofing', 'Plumbing', 'Hardware', 'Paint', 'Timber', 'Electrical', 'Tank', 'Brick', 'Door', 'Window', 'Construction', 'Solar', 'Tile', 'Glass', 'Steel'];
                 break;
             case 'personalServices':
-                intentKeywords = ['Nurse', 'License', 'Holiday', 'School', 'Fees', 'Vacation', 'Travel', 'Tourism', 'Clinic', 'Zimparks', 'Driving'];
+                // Services: School Fees, Drivers License, Small Business Support, Nurse Aid, Zimparks Holiday
+                intentKeywords = ['Nurse', 'License', 'Holiday', 'School', 'Fees', 'Vacation', 'Travel', 'Tourism', 'Clinic', 'Zimparks', 'Driving', 'Small Business', 'Consultancy', 'Company Reg', 'Mother', 'Expecting'];
                 break;
             case 'personalGadgets':
             case 'hirePurchase':
             default:
-                intentKeywords = ['Phone', 'Laptop', 'TV', 'Fridge', 'Stove', 'Bed', 'Sofa', 'Furniture', 'Solar', 'Appliance', 'Techno', 'Redmi', 'Samsung', 'Gadget', 'Computer', 'Radio', 'Audio', 'Freezer', 'Microwave', 'Kettle', 'Iron', 'Agriculture', 'Fertilizer', 'Seed', 'Small', 'Business', 'Support', 'Fee', 'Licens', 'Company', 'Reg'];
+                // Gadgets only - NO services like School Fees, Drivers License, Small Business Support
+                intentKeywords = ['Phone', 'Laptop', 'TV', 'Fridge', 'Stove', 'Bed', 'Sofa', 'Furniture', 'Solar', 'Appliance', 'Techno', 'Redmi', 'Samsung', 'Gadget', 'Computer', 'Radio', 'Audio', 'Freezer', 'Microwave', 'Kettle', 'Iron', 'Agriculture', 'Fertilizer', 'Seed', 'Starlink'];
                 break;
         }
 
@@ -159,8 +162,23 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     }, [data.intent, selectedCurrency]); // Re-run if intent or currency changes
 
     const handleCategorySelect = (category: Category) => {
+        // Check if Construction category is clicked - show unavailable modal
+        if (category.name === 'Construction') {
+            setShowConstructionUnavailableModal(true);
+            return;
+        }
         setSelectedCategory(category);
         setCurrentView('subcategories');
+    };
+
+    const handleConstructionRedirect = () => {
+        setShowConstructionUnavailableModal(false);
+        // Find Building Materials category and select it
+        const buildingMaterials = productCategories.find(cat => cat.name === 'Building Materials');
+        if (buildingMaterials) {
+            setSelectedCategory(buildingMaterials);
+            setCurrentView('subcategories');
+        }
     };
 
     const handleSubcategorySelect = (subcategory: Subcategory) => {
@@ -1556,6 +1574,50 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                         </Button>
                         <Button onClick={handleDestinationConfirm} className="bg-emerald-600 hover:bg-emerald-700 text-white">
                             Select & Proceed
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Construction Unavailable Modal */}
+            <Dialog open={showConstructionUnavailableModal} onOpenChange={setShowConstructionUnavailableModal}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold text-amber-600 flex items-center gap-3">
+                            <div className="p-2 bg-amber-100 rounded-full">
+                                <Info className="h-6 w-6 text-amber-600" />
+                            </div>
+                            Construction Services
+                        </DialogTitle>
+                        <DialogDescription className="text-base pt-2">
+                            Currently unavailable
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-6">
+                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
+                            <p className="text-gray-700 text-lg leading-relaxed mb-4">
+                                <strong>Construction services are not available at the moment.</strong>
+                            </p>
+                            <p className="text-gray-600 leading-relaxed">
+                                However, you can proceed to purchase <span className="font-semibold text-emerald-600">Building Materials</span> for your construction project.
+                            </p>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-3 sm:gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowConstructionUnavailableModal(false)}
+                            className="flex-1 sm:flex-none"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleConstructionRedirect}
+                            className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                            View Building Materials
                         </Button>
                     </DialogFooter>
                 </DialogContent>
