@@ -85,6 +85,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
     const currencySymbol = isZiG ? 'ZiG' : '$';
 
     const [hasOtherLoans, setHasOtherLoans] = useState<string>(''); // 'yes' or 'no'
+    const [loanType, setLoanType] = useState<string>(''); // 'qupa' | 'other' | 'both'
     const [isCustomBranch, setIsCustomBranch] = useState<boolean>(false);
     const [spouseError, setSpouseError] = useState<string>(''); // Error message for spouse/next of kin validation
     const [employmentError, setEmploymentError] = useState<string>(''); // Error message for employment validation
@@ -131,7 +132,17 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
         branch: '',
         accountNumber: '',
 
-        // Other Loans
+        // Other Loans - Qupa (ZB) and Other Institutions
+        qupaLoan: {
+            maturityDate: '',
+            monthlyInstallment: '',
+        },
+        otherInstitutionLoan: {
+            institutionName: '',
+            maturityDate: '',
+            monthlyInstallment: '',
+        },
+        // Legacy format for backward compatibility
         otherLoans: [
             { institution: '', monthlyInstallment: '', currentBalance: '', maturityDate: '' },
             { institution: '', monthlyInstallment: '', currentBalance: '', maturityDate: '' }
@@ -321,13 +332,20 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
             residentialAddress: JSON.stringify(spouse.residentialAddress)
         }));
 
-        // Add hasOtherLoans flag and handle N/A case
+        // Add hasOtherLoans flag and loan data
         formResponses.hasOtherLoans = hasOtherLoans;
+        formResponses.loanType = loanType;
+        formResponses.qupaLoan = formData.qupaLoan;
+        formResponses.otherInstitutionLoan = formData.otherInstitutionLoan;
+
         if (hasOtherLoans === 'no') {
             formResponses.otherLoans = [
                 { institution: 'N/A', monthlyInstallment: 'N/A', currentBalance: 'N/A', maturityDate: 'N/A' },
                 { institution: 'N/A', monthlyInstallment: 'N/A', currentBalance: 'N/A', maturityDate: 'N/A' }
             ];
+        } else {
+            // Map new loan structure to legacy format for backward compatibility
+            formResponses.otherLoans = formData.otherLoans;
         }
 
         const mappedData = {
@@ -933,16 +951,26 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                     </div>
                 </Card>
 
-                {/* Other Loans */}
+                {/* Loans with Other Institutions */}
                 <Card className="p-6">
                     <div className="flex items-center mb-4">
                         <CreditCard className="h-6 w-6 text-emerald-600 mr-3" />
-                        <h3 className="text-lg font-semibold">Other Loans</h3>
+                        <h3 className="text-lg font-semibold">Existing Loans</h3>
                     </div>
 
+                    {/* Question 1: Do you have a loan? */}
                     <div className="mb-4">
-                        <Label htmlFor="hasOtherLoans">Do you have loans with other institutions? *</Label>
-                        <Select value={hasOtherLoans} onValueChange={setHasOtherLoans} required>
+                        <Label htmlFor="hasOtherLoans">Do you have a loan with any other financial institution? *</Label>
+                        <Select
+                            value={hasOtherLoans}
+                            onValueChange={(value) => {
+                                setHasOtherLoans(value);
+                                if (value === 'no') {
+                                    setLoanType('');
+                                }
+                            }}
+                            required
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Select an option" />
                             </SelectTrigger>
@@ -953,29 +981,124 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                         </Select>
                     </div>
 
+                    {/* Question 2: What type of loan? (Only if Yes) */}
                     {hasOtherLoans === 'yes' && (
-                        <>
-                            {formData.otherLoans.map((loan, index) => (
-                                <div key={index} className="grid gap-4 md:grid-cols-2 mb-4 p-4 border rounded-lg">
-                                    <FormField
-                                        id={`loan-${index}-institution`}
-                                        label="Institution"
-                                        type="text"
-                                        value={loan.institution}
-                                        onChange={(value) => handleLoanChange(index, 'institution', value)}
-                                        autoCapitalize={true}
-                                    />
+                        <div className="mb-4">
+                            <Label htmlFor="loanType">Is it Qupa (ZB), Other Institution, or Both? *</Label>
+                            <Select value={loanType} onValueChange={setLoanType} required>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select loan type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="qupa">Qupa (ZB) Only</SelectItem>
+                                    <SelectItem value="other">Other Institution Only</SelectItem>
+                                    <SelectItem value="both">Both Qupa and Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
 
+                    {/* Qupa Loan Details (shown for 'qupa' or 'both') */}
+                    {hasOtherLoans === 'yes' && (loanType === 'qupa' || loanType === 'both') && (
+                        <div className="mb-4 p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                            <h4 className="text-md font-medium text-blue-800 dark:text-blue-300 mb-3">
+                                Qupa (ZB) Loan Details
+                            </h4>
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div>
                                     <FormField
-                                        id={`loan-${index}-installment`}
-                                        label={`Monthly Installment (${selectedCurrency})`}
-                                        type="number"
-                                        value={loan.monthlyInstallment}
-                                        onChange={(value) => handleLoanChange(index, 'monthlyInstallment', value)}
+                                        id="qupa-maturity"
+                                        label="Maturity Date *"
+                                        type="dial-date"
+                                        value={formData.qupaLoan.maturityDate}
+                                        onChange={(value) => setFormData(prev => ({
+                                            ...prev,
+                                            qupaLoan: { ...prev.qupaLoan, maturityDate: value }
+                                        }))}
+                                        minDate={currentDate}
+                                        maxDate="2050-12-31"
+                                        defaultAge={0}
+                                        required
                                     />
                                 </div>
-                            ))}
-                        </>
+                                <div>
+                                    <Label htmlFor="qupa-installment">Monthly Installment ({selectedCurrency}) *</Label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2.5 text-gray-500">{currencySymbol}</span>
+                                        <Input
+                                            id="qupa-installment"
+                                            type="number"
+                                            value={formData.qupaLoan.monthlyInstallment}
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                qupaLoan: { ...prev.qupaLoan, monthlyInstallment: e.target.value }
+                                            }))}
+                                            className="pl-8"
+                                            placeholder="0.00"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Other Institution Loan Details (shown for 'other' or 'both') */}
+                    {hasOtherLoans === 'yes' && (loanType === 'other' || loanType === 'both') && (
+                        <div className="mb-4 p-4 border rounded-lg bg-orange-50 dark:bg-orange-900/20">
+                            <h4 className="text-md font-medium text-orange-800 dark:text-orange-300 mb-3">
+                                Other Institution Loan Details
+                            </h4>
+                            <div className="grid gap-4 md:grid-cols-3">
+                                <div>
+                                    <Label htmlFor="other-institution">Institution Name *</Label>
+                                    <Input
+                                        id="other-institution"
+                                        value={formData.otherInstitutionLoan.institutionName}
+                                        onChange={(e) => setFormData(prev => ({
+                                            ...prev,
+                                            otherInstitutionLoan: { ...prev.otherInstitutionLoan, institutionName: e.target.value }
+                                        }))}
+                                        placeholder="e.g., CBZ, FBC, CABS"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <FormField
+                                        id="other-maturity"
+                                        label="Maturity Date *"
+                                        type="dial-date"
+                                        value={formData.otherInstitutionLoan.maturityDate}
+                                        onChange={(value) => setFormData(prev => ({
+                                            ...prev,
+                                            otherInstitutionLoan: { ...prev.otherInstitutionLoan, maturityDate: value }
+                                        }))}
+                                        minDate={currentDate}
+                                        maxDate="2050-12-31"
+                                        defaultAge={0}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="other-installment">Monthly Installment ({selectedCurrency}) *</Label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2.5 text-gray-500">{currencySymbol}</span>
+                                        <Input
+                                            id="other-installment"
+                                            type="number"
+                                            value={formData.otherInstitutionLoan.monthlyInstallment}
+                                            onChange={(e) => setFormData(prev => ({
+                                                ...prev,
+                                                otherInstitutionLoan: { ...prev.otherInstitutionLoan, monthlyInstallment: e.target.value }
+                                            }))}
+                                            className="pl-8"
+                                            placeholder="0.00"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     )}
                 </Card>
 
