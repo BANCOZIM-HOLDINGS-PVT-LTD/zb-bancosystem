@@ -42,9 +42,7 @@ const employerOptions: EmployerOption[] = [
         id: 'government-ssb',
         name: 'Government of Zimbabwe - SSB',
         icon: Building,
-        isSpecial: false,
-        disabled: true,
-        description: 'Coming soon'
+        isSpecial: false
     },
     {
         id: 'government-non-ssb',
