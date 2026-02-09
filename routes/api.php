@@ -36,6 +36,8 @@ Route::prefix('states')->group(function () {
     Route::post('/retrieve', [StateController::class, 'retrieveState']);
     Route::post('/create-application', [StateController::class, 'createApplication']);
     Route::post('/link', [StateController::class, 'linkSessions']);
+    Route::post('/check-existing', [StateController::class, 'checkExistingSession']);
+    Route::post('/discard', [StateController::class, 'discardSession']);
 });
 
 // Agent API routes

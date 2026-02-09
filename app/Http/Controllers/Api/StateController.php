@@ -10,6 +10,7 @@ use App\Repositories\ApplicationStateRepository;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
+use App\Models\ApplicationState;
 
 class StateController extends Controller
 {
@@ -284,5 +285,78 @@ class StateController extends Controller
             'success' => false,
             'message' => 'Feature not yet implemented',
         ], 501);
+    }
+
+    /**
+     * Check for existing incomplete session by phone number
+     */
+    public function checkExistingSession(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone' => 'required|string',
+            'current_session_id' => 'nullable|string',
+        ]);
+        
+        $phone = preg_replace('/[^0-9]/', '', $validated['phone']);
+        // Allow strictly Zimbabwe numbers or numbers with reasonable length
+        if (strlen($phone) < 9) {
+             return response()->json(['has_existing_session' => false]);
+        }
+
+        // Look for incomplete applications with this phone
+        // We check user_identifier (often "mobile_263...") and form_data
+        $existingSession = ApplicationState::query()
+            ->where('is_archived', false)
+            ->whereNotIn('current_step', ['completed', 'approved', 'rejected'])
+            ->where(function ($query) use ($phone) {
+                // Check user_identifier (e.g. mobile_26377...)
+                $query->where('user_identifier', 'LIKE', "%{$phone}%");
+                
+                // For MySQL/PostgreSQL compatibility in raw queries:
+                 $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+                 if ($isPgsql) {
+                     $query->orWhereRaw("form_data->'formResponses'->>'mobile' LIKE ?", ["%{$phone}%"])
+                           ->orWhereRaw("form_data->'formResponses'->>'phoneNumber' LIKE ?", ["%{$phone}%"]);
+                 } else {
+                     $query->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.formResponses.mobile')) LIKE ?", ["%{$phone}%"])
+                           ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.formResponses.phoneNumber')) LIKE ?", ["%{$phone}%"]);
+                 }
+            })
+            ->when($request->input('current_session_id'), function($q, $id) {
+                $q->where('session_id', '!=', $id);
+            })
+            ->latest()
+            ->first();
+        
+        if ($existingSession) {
+            return response()->json([
+                'has_existing_session' => true,
+                'session_id' => $existingSession->session_id,
+                'current_step' => $existingSession->current_step,
+                'last_activity' => $existingSession->updated_at,
+            ]);
+        }
+        
+        return response()->json(['has_existing_session' => false]);
+    }
+
+    /**
+     * Discard an existing session (Hard Delete)
+     */
+    public function discardSession(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'session_id' => 'required|string',
+        ]);
+        
+        $session = ApplicationState::where('session_id', $validated['session_id'])->first();
+        
+        if ($session) {
+            // Hard delete as requested to prevent duplicate applications
+            $session->forceDelete();
+            return response()->json(['success' => true]);
+        }
+        
+        return response()->json(['success' => false, 'message' => 'Session not found'], 404);
     }
 }
