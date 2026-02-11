@@ -371,7 +371,7 @@
             <td colspan="4">Employer Address: {{ $formatAddress($employerAddress ?? '') }}</td>
         </tr>
         <tr>
-            <td colspan="6">Permanent Address (if different from above): {{ $formatAddress($residentialAddress ?? '') }}</td>
+            <td colspan="6">Permanent Address: {{ $formatAddress($residentialAddress ?? '') }}</td>
         </tr>
         <tr>
             <td>Property Ownership:</td>
@@ -540,7 +540,7 @@
             <td style="width: 13%; text-align: center;">12 months<br/>
                 <span class="checkbox {{ $loanTenure == 12 ? 'checked' : '' }}"></span>
             </td>
-            <td style="width: 13%; text-align: center;">Other:<br/>
+            <td style="width: 13%; text-align: center;">Other months:<br/>
                 <span class="checkbox {{ !in_array($loanTenure, [3, 6, 9, 12]) ? 'checked' : '' }}"></span>
             </td>
             <td style="width: 15%;">{{ !in_array($loanTenure, [3, 6, 9, 12]) ? $loanTenure : '' }}</td>
@@ -619,20 +619,7 @@
             <td style="width: 10%; border-bottom: 1px solid #000;">{{ $applicationDate ?? '' }}</td>
         </tr>
     </table>
-    
-    <div style="margin-top: 30px; font-weight: bold;">Witness</div>
-    
-    <table class="signature-table">
-        <tr>
-            <td style="width: 15%;">Full Name:</td>
-            <td style="width: 35%; border-bottom: 1px solid #000;"></td>
-            <td style="width: 15%; text-align: right; padding-right: 10px;">Signature:</td>
-            <td style="width: 20%; border-bottom: 1px solid #000;"></td>
-            <td style="width: 5%; text-align: right;">Date:</td>
-            <td style="width: 10%; border-bottom: 1px solid #000;"></td>
-        </tr>
-    </table>
-    
+
     <div class="section-header">FOR OFFICIAL USE ONLY</div>
     
     <table class="main-table" style="margin-top: 10px;">
