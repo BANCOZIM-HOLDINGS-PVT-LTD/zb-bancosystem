@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Services\TwilioSmsService;
+use App\Contracts\SmsProviderInterface;
 use Illuminate\Support\Facades\Log;
 
 class SendOtpJob implements ShouldQueue
@@ -29,11 +29,9 @@ class SendOtpJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(SmsProviderInterface $smsService): void
     {
         try {
-            $smsService = new TwilioSmsService();
-            
             // Format number to E.164 (e.g. +263...) to ensure delivery
             $formattedPhone = $smsService->formatPhoneNumber($this->phoneNumber);
             

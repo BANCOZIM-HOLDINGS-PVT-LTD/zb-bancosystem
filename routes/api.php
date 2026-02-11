@@ -345,9 +345,9 @@ Route::post('/send-application-sms', function (Request $request) {
             ], 400);
         }
 
-        // Use TwilioSmsService to send SMS
+        // Use SmsProviderInterface to send SMS
         try {
-            $smsService = app(\App\Services\TwilioSmsService::class);
+            $smsService = app(\App\Contracts\SmsProviderInterface::class);
 
             // Format phone number using the service's method
             $formattedPhone = $smsService->formatPhoneNumber($phoneNumber);
@@ -375,7 +375,7 @@ Route::post('/send-application-sms', function (Request $request) {
                     'data' => $result
                 ]);
             } else {
-                \Log::warning('SMS sending failed but returning success for UX', [
+                \Log::warning('SMS sending failed (Provider) but returning success for UX', [
                     'to' => $formattedPhone,
                     'reference_code' => $referenceCode,
                     'error' => $result['error'] ?? 'Unknown error'

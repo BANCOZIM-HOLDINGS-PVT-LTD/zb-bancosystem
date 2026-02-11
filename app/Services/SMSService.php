@@ -4,13 +4,15 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
 
+use App\Contracts\SmsProviderInterface;
+
 class SMSService
 {
-    private TwilioSmsService $twilioSmsService;
+    private SmsProviderInterface $smsProvider;
 
-    public function __construct(TwilioSmsService $twilioSmsService)
+    public function __construct(SmsProviderInterface $smsProvider)
     {
-        $this->twilioSmsService = $twilioSmsService;
+        $this->smsProvider = $smsProvider;
     }
 
     /**
@@ -22,11 +24,11 @@ class SMSService
             // Format mobile number
             $mobile = $this->formatMobileNumber($mobile);
 
-            // Send via Twilio
-            $result = $this->twilioSmsService->sendSms($mobile, $message);
+            // Send via SMS Provider
+            $result = $this->smsProvider->sendSms($mobile, $message);
 
             if ($result['success']) {
-                Log::info('SMS sent successfully via Twilio', [
+                Log::info('SMS sent successfully via Provider', [
                     'mobile' => $mobile,
                     'message_sid' => $result['message_sid'] ?? null,
                     'sent_at' => now()->toISOString(),
@@ -84,7 +86,7 @@ class SMSService
      */
     private function formatMobileNumber(string $mobile): string
     {
-        return $this->twilioSmsService->formatPhoneNumber($mobile);
+        return $this->smsProvider->formatPhoneNumber($mobile);
     }
 
     /**
@@ -92,6 +94,6 @@ class SMSService
      */
     public function isValidMobileNumber(string $mobile): bool
     {
-        return $this->twilioSmsService->isValidZimbabweNumber($mobile);
+        return $this->smsProvider->isValidZimbabweNumber($mobile);
     }
 }

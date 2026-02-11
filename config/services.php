@@ -84,4 +84,9 @@ return [
         'api_url' => env('ECOCASH_API_URL', 'https://api.ecocash.co.zw'),
     ],
 
+    'codel' => [
+        'token' => env('CODEL_API_TOKEN', 'UfCNan5iUP2VgzJQhKRPz4EQizweGZRlimON1RhBBjn94RZQil'),
+        'sender_id' => env('CODEL_SENDER_ID', 'MicroBiz'),
+    ],
+
 ];

@@ -1,0 +1,9 @@
+Testing Sender ID variations...
+
+--- Test 1: v2 API with sender_id ---
+Status: 400
+Body: {"Authentication Error": "Sender ID not found."}
+
+--- Test 2: v2 API with senderID ---
+Status: 400
+Body: {"Key Error": "Key sender_id should be part of your request"}

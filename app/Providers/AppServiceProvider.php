@@ -20,6 +20,9 @@ class AppServiceProvider extends ServiceProvider
         // Bind interfaces to implementations
         $this->app->bind(PDFGeneratorInterface::class, PDFGeneratorService::class);
         $this->app->bind(ApplicationStateRepositoryInterface::class, ApplicationStateRepository::class);
+        
+        // Bind SMS Provider (Switch here to change providers)
+        $this->app->bind(\App\Contracts\SmsProviderInterface::class, \App\Services\CodelSmsService::class);
     }
 
     /**

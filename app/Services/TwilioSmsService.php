@@ -6,7 +6,9 @@ use App\Models\ApplicationState;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Config;
 
-class TwilioSmsService
+use App\Contracts\SmsProviderInterface;
+
+class TwilioSmsService implements SmsProviderInterface
 {
     protected $accountSid;
     protected $authToken;
