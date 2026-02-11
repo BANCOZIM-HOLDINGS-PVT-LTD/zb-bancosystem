@@ -482,7 +482,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                 {/* Gross Loan Line */}
                                 <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
                                     <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                        Gross Loan (incl. 6% admin fee)
+                                        Gross Loan (incl. 6% bank admin fee)
                                     </span>
                                     <span className="font-bold text-xl text-emerald-600">
                                         ${(data.grossLoan || data.loanAmount || data.amount)?.toLocaleString()}

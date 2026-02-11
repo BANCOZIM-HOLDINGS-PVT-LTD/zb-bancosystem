@@ -162,7 +162,7 @@ class WhatsAppStateMachine
         'microBiz' => [
             ['id' => 'mb_agric', 'name' => 'Agricultural Machinery', 'desc' => '🚜 Farming equipment'],
             ['id' => 'mb_inputs', 'name' => 'Agricultural Inputs', 'desc' => '🌾 Seeds & Fertilizer'],
-            ['id' => 'mb_chicken', 'name' => 'Chicken Projects', 'desc' => '🐔 Broilers & Incubators'],
+            ['id' => 'mb_chicken', 'name' => 'Chicken Projects', 'desc' => '🐔 Broilers & Layers'],
             ['id' => 'mb_cleaning', 'name' => 'Cleaning Services', 'desc' => '🧹 Laundry & Car wash'],
             ['id' => 'mb_beauty', 'name' => 'Beauty, Hair and Cosmetics', 'desc' => '💇 Salon & Hair Products'],
 
@@ -216,7 +216,7 @@ class WhatsAppStateMachine
         ],
         'mb_chicken' => [
             ['id' => 'sub_broiler', 'name' => 'Broiler Production'],
-            ['id' => 'sub_hatchery', 'name' => 'Egg Hatchery'],
+            ['id' => 'sub_layers', 'name' => 'Layers Production'],
         ],
         'mb_cleaning' => [
             ['id' => 'sub_laundry', 'name' => 'Laundry'],
@@ -1403,7 +1403,7 @@ class WhatsAppStateMachine
             "✅ *Ready to proceed with: {$displayName}*\n\n" .
             "💰 Currency: {$currency}\n" .
             "{$paymentLabel}\n\n" .
-            "🔗 Click here to continue:\n{$link}\n\n" .
+            "🔗 For the sake of emphasis, you are going to reselect the product in the next steps. Click here to continue:\n{$link}\n\n" .
             "Type 'hi' to start a new conversation."
         );
     }

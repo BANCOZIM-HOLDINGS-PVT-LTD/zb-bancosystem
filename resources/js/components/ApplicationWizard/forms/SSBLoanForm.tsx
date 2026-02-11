@@ -984,13 +984,13 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                     {/* Question 2: What type of loan? (Only if Yes) */}
                     {hasOtherLoans === 'yes' && (
                         <div className="mb-4">
-                            <Label htmlFor="loanType">Is it Qupa (ZB), Other Institution, or Both? *</Label>
+                            <Label htmlFor="loanType">Is it Qupa, Other Institution, or Both? *</Label>
                             <Select value={loanType} onValueChange={setLoanType} required>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select loan type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="qupa">Qupa (ZB) Only</SelectItem>
+                                    <SelectItem value="qupa">Qupa Only</SelectItem>
                                     <SelectItem value="other">Other Institution Only</SelectItem>
                                     <SelectItem value="both">Both Qupa and Other</SelectItem>
                                 </SelectContent>
@@ -1002,7 +1002,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                     {hasOtherLoans === 'yes' && (loanType === 'qupa' || loanType === 'both') && (
                         <div className="mb-4 p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/20">
                             <h4 className="text-md font-medium text-blue-800 dark:text-blue-300 mb-3">
-                                Qupa (ZB) Loan Details
+                                Qupa Loan Details
                             </h4>
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
@@ -1106,7 +1106,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                 <Card className="p-6 bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700">
                     <div className="flex items-center mb-4">
                         <CreditCard className="h-6 w-6 text-green-600 mr-3" />
-                        <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Hire Purchase Facility Application Details</h3>
+                        <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Credit Application Details</h3>
                     </div>
 
                     {/* Pre-populated readonly fields */}
@@ -1117,7 +1117,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Hire Purchase Facility Type</Label>
+                                <Label className="text-gray-700 dark:text-gray-300">Credit Facility Type</Label>
                                 <Input
                                     value={formData.creditFacilityType}
                                     readOnly

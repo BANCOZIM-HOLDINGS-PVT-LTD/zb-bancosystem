@@ -117,52 +117,77 @@
 
     // Helper to get image data for embedding
     $getImageData = function($imageKey) use ($formResponses, $documents, $selfieImage, $signatureImage) {
-        // Check if image data is already processed and passed as variable
-        if ($imageKey === 'selfie' && !empty($selfieImage)) {
-            return $selfieImage;
-        }
-        if ($imageKey === 'signature' && !empty($signatureImage)) {
-            return $signatureImage;
-        }
+        try {
+            // Check if image data is already processed and passed as variable
+            if ($imageKey === 'selfie' && !empty($selfieImage)) {
+                $img = $selfieImage;
+                // Ensure base64 prefix if missing
+                if (is_string($img) && !str_starts_with($img, 'data:image')) {
+                     // Assume PNG if unknown, or try to detect? Safest is to leave as is if we can't be sure, 
+                     // but likely it needs prefix if it's raw base64.
+                     // However, better to rely on robust checking.
+                     // Let's check if it looks like base64
+                     if (preg_match('/^[a-zA-Z0-9\/\+=]+$/', substr($img, 0, 100))) {
+                         return 'data:image/png;base64,' . $img;
+                     }
+                }
+                return $img;
+            }
+            if ($imageKey === 'signature' && !empty($signatureImage)) {
+                 $img = $signatureImage;
+                 if (is_string($img) && !str_starts_with($img, 'data:image') && preg_match('/^[a-zA-Z0-9\/\+=]+$/', substr($img, 0, 100))) {
+                     return 'data:image/png;base64,' . $img;
+                 }
+                return $img;
+            }
 
-        // Check in documents array
-        if (isset($documents[$imageKey])) {
-            $imagePath = $documents[$imageKey];
+            // Check in documents array
+            $imagePath = null;
+            if (isset($documents[$imageKey])) {
+                $imagePath = $documents[$imageKey];
+            } elseif (isset($formResponses[$imageKey])) {
+                $imagePath = $formResponses[$imageKey];
+            }
+
+            if (empty($imagePath)) {
+                return null;
+            }
 
             // If it's already base64 data URL
-            if (strpos($imagePath, 'data:image') === 0) {
+            if (is_string($imagePath) && str_starts_with($imagePath, 'data:image')) {
                 return $imagePath;
             }
 
             // If it's a file path
-            if (file_exists(public_path($imagePath))) {
-                $imageData = file_get_contents(public_path($imagePath));
-                $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                $mimeType = finfo_file($finfo, public_path($imagePath));
-                finfo_close($finfo);
-                return 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+            if (is_string($imagePath)) { 
+                // Fix for potential public_path crash on null/empty which we handled above, but double check
+                 $fullPath = public_path($imagePath);
+                 if (file_exists($fullPath) && is_file($fullPath)) {
+                    $imageData = file_get_contents($fullPath);
+                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                    $mimeType = finfo_file($finfo, $fullPath);
+                    finfo_close($finfo);
+                    return 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+                }
+
+                // Try storage path
+                if (\Storage::disk('public')->exists($imagePath)) {
+                    $imageData = \Storage::disk('public')->get($imagePath);
+                    $extension = pathinfo($imagePath, PATHINFO_EXTENSION);
+                    $mimeType = 'image/' . ($extension === 'jpg' ? 'jpeg' : $extension);
+                    // Fallback mime type
+                    if (empty($mimeType) || $mimeType === 'image/') $mimeType = 'image/png';
+                    
+                    return 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+                }
             }
 
-            // Try storage path
-            if (\Storage::disk('public')->exists($imagePath)) {
-                $imageData = \Storage::disk('public')->get($imagePath);
-                $extension = pathinfo($imagePath, PATHINFO_EXTENSION);
-                $mimeType = 'image/' . ($extension === 'jpg' ? 'jpeg' : $extension);
-                return 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
-            }
+            return null;
+        } catch (\Exception $e) {
+            // Log error if possible or just ignore to prevent PDF crash
+            // \Log::error("PDF Image Error [$imageKey]: " . $e->getMessage());
+            return null;
         }
-
-        // Check in formResponses
-        if (isset($formResponses[$imageKey])) {
-            $imagePath = $formResponses[$imageKey];
-
-            // If it's already base64 data URL
-            if (strpos($imagePath, 'data:image') === 0) {
-                return $imagePath;
-            }
-        }
-
-        return null;
     };
 
     $selfieImageData = $getImageData('selfie');

@@ -195,11 +195,11 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             if (value) {
                 // Check if it's exactly 13 digits
                 if (!/^\d{13}$/.test(value)) {
-                    setAccountNumberError('Account number must be exactly 13 digits');
+                    setAccountNumberError('Please enter your correct account number');
                 }
                 // Check if it starts with 4
                 else if (!value.startsWith('4')) {
-                    setAccountNumberError('ZB Bank account number must start with 4');
+                    setAccountNumberError('Please enter your correct ZB Bank account number');
                 }
             }
         }
@@ -1000,7 +1000,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                             <Label htmlFor="accountNumber">
                                 Account Number
                                 {formData.bankName === 'ZB Bank' && (
-                                    <span className="text-xs text-gray-500 ml-2">(13 digits, starts with 4)</span>
+                                    <span className="text-xs text-gray-500 ml-2">( )</span>
                                 )}
                             </Label>
                             <Input
@@ -1008,7 +1008,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 value={formData.accountNumber}
                                 onChange={(e) => handleInputChange('accountNumber', e.target.value)}
                                 maxLength={formData.bankName === 'ZB Bank' ? 13 : undefined}
-                                placeholder={formData.bankName === 'ZB Bank' ? '4XXXXXXXXXXXX' : ''}
+                                placeholder={formData.bankName === 'ZB Bank' ? 'XXXXXXXXXXXXX' : ''}
                                 className={accountNumberError ? 'border-red-500' : ''}
                             />
                             {accountNumberError && (
@@ -1051,13 +1051,13 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     {/* Question 2: What type of loan? (Only if Yes) */}
                     {hasOtherLoans === 'yes' && (
                         <div className="mb-4">
-                            <Label htmlFor="loanType">Is it Qupa (ZB), Other Institution, or Both? *</Label>
+                            <Label htmlFor="loanType">Is it Qupa, Other Institution, or Both? *</Label>
                             <Select value={loanType} onValueChange={setLoanType} required>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select loan type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="qupa">Qupa (ZB) Only</SelectItem>
+                                    <SelectItem value="qupa">Qupa Only</SelectItem>
                                     <SelectItem value="other">Other Institution Only</SelectItem>
                                     <SelectItem value="both">Both Qupa and Other</SelectItem>
                                 </SelectContent>
@@ -1069,7 +1069,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     {hasOtherLoans === 'yes' && (loanType === 'qupa' || loanType === 'both') && (
                         <div className="mb-4 p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/20">
                             <h4 className="text-md font-medium text-blue-800 dark:text-blue-300 mb-3">
-                                Qupa (ZB) Loan Details
+                                Qupa Loan Details
                             </h4>
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
@@ -1173,7 +1173,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 <Card className="p-6 bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700">
                     <div className="flex items-center mb-4">
                         <CreditCard className="h-6 w-6 text-green-600 mr-3" />
-                        <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Hire Purchase Application Details</h3>
+                        <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Credit Application Details</h3>
                     </div>
 
                     {/* Pre-populated readonly fields */}
@@ -1184,7 +1184,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label className="text-gray-700 dark:text-gray-300">Hire Purchase Facility Type</Label>
+                                <Label className="text-gray-700 dark:text-gray-300">Credit Facility Type</Label>
                                 <Input
                                     value={formData.creditFacilityType}
                                     readOnly
@@ -1257,6 +1257,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     <div className="flex items-center mb-4">
                         <User className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Guarantor Details</h3>
+                  <h5>Please fill in the guarantor details below</h5>  
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-3">
