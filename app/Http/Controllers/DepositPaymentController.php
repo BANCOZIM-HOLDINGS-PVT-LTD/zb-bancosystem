@@ -167,6 +167,7 @@ class DepositPaymentController extends Controller
                 'deposit_paid' => true,
                 'deposit_paid_at' => now(),
                 'deposit_transaction_id' => $paynowReference,
+                'current_step' => 'processing', // Move to processing
             ]);
 
             Log::info('Deposit payment successful', [
@@ -174,8 +175,77 @@ class DepositPaymentController extends Controller
                 'transaction_id' => $paynowReference,
             ]);
 
-            // TODO: Trigger delivery initiation logic here
-            // You might want to update application status or send notification
+            // Create Delivery Tracking record
+            try {
+                // Parse form data to extract delivery details
+                $formData = is_array($application->form_data) ? $application->form_data : json_decode($application->form_data, true);
+                $responses = $formData['formResponses'] ?? [];
+
+                // Determine recipient name
+                $firstName = $responses['firstName'] ?? $responses['name'] ?? '';
+                $surname = $responses['surname'] ?? '';
+                $recipientName = trim("$firstName $surname");
+                if (empty($recipientName)) {
+                    $recipientName = $responses['businessName'] ?? 'Valued Customer';
+                }
+
+                // Determine address
+                $address = $responses['residentialAddress'] ?? $responses['businessAddress'] ?? 'Address requires update';
+                $city = $responses['city'] ?? $responses['town'] ?? '';
+                if ($city) {
+                    $address .= ", $city";
+                }
+
+                // Determine product info
+                $productType = $formData['selectedCategory']['name'] ?? $formData['category'] ?? 'General Product';
+                
+                // Create the tracking record
+                $tracking = \App\Models\DeliveryTracking::create([
+                    'application_state_id' => $application->id,
+                    'status' => 'processing', // Start as processing
+                    'product_type' => $productType,
+                    'courier_type' => 'Pending Assignment', // To be updated by admin
+                    'delivery_address' => $address,
+                    'recipient_name' => $recipientName,
+                    'recipient_phone' => $responses['mobile'] ?? $responses['phoneNumber'] ?? $responses['phone'] ?? null,
+                    'client_national_id' => $responses['nationalIdNumber'] ?? null,
+                    'status_history' => [
+                        [
+                            'status' => 'processing',
+                            'notes' => 'Deposit payment confirmed. Order processing started.',
+                            'updated_at' => now()->toISOString(),
+                            'metadata' => [
+                                'payment_ref' => $paynowReference,
+                                'amount' => $application->deposit_amount
+                            ]
+                        ]
+                    ]
+                ]);
+
+                Log::info("Created DeliveryTracking record", ['tracking_id' => $tracking->id, 'reference' => $referenceCode]);
+
+                // Send Confirmation SMS
+                // The DeliveryTracking model doesn't send SMS for 'processing', only 'dispatched' and 'delivered'
+                // So we send a specific 'Deposit Received' SMS here
+                try {
+                     $smsService = app(\App\Services\SMSService::class);
+                     $phone = $tracking->recipient_phone;
+                     if ($phone) {
+                         $msg = "Payment Received! Your BancoZim order ({$referenceCode}) is now being processed. You will be notified when it is dispatched.";
+                         $smsService->sendSMS($phone, $msg);
+                     }
+                } catch (\Exception $e) {
+                    Log::error("Failed to send payment confirmation SMS: " . $e->getMessage());
+                }
+
+            } catch (\Exception $e) {
+                Log::error("Failed to initiate delivery for paid application", [
+                    'reference' => $referenceCode,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                // We don't fail the response because payment was successful
+            }
 
             return response('OK', 200);
         }

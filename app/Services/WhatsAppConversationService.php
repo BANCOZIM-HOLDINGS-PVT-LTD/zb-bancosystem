@@ -33,7 +33,7 @@ class WhatsAppConversationService
     /**
      * Process incoming WhatsApp message using State Machine
      */
-    public function processIncomingMessage(string $from, string $message): void
+    public function processIncomingMessage(string $from, string $message, ?string $senderName = null): void
     {
         $phoneNumber = WhatsAppCloudApiService::extractPhoneNumber($from);
         $originalMessage = trim($message);
@@ -42,9 +42,14 @@ class WhatsAppConversationService
         // Greetings that should always restart the conversation
         $greetings = ['hi', 'hie', 'hallo', 'hello', 'hey', 'hesi', 'makadii', 'start', 'begin', 'restart', 'menu'];
 
-        Log::info("WhatsApp message received from {$phoneNumber}: {$originalMessage}");
+        Log::info("WhatsApp message received from {$phoneNumber}: {$originalMessage} (Name: " . ($senderName ?? 'N/A') . ")");
 
         try {
+            // Update user name in metadata if provided
+            if ($senderName) {
+                $this->updateUserName($phoneNumber, $senderName);
+            }
+
             // If user sends a greeting, ALWAYS start fresh conversation
             if (in_array($lowerMessage, $greetings)) {
                 Log::info("Greeting received, starting fresh conversation", ['message' => $lowerMessage]);
@@ -72,6 +77,27 @@ class WhatsAppConversationService
                 'trace' => $e->getTraceAsString()
             ]);
             $this->whatsAppService->sendMessage($from, "Sorry, something went wrong. Please try again or say 'hi' to start.");
+        }
+    }
+
+    /**
+     * Update user name in state metadata
+     */
+    private function updateUserName(string $phoneNumber, string $name): void
+    {
+        try {
+            $state = $this->stateManager->retrieveState($phoneNumber, 'whatsapp');
+            if ($state) {
+                $metadata = $state->metadata ?? [];
+                // Only update if not set or different
+                if (!isset($metadata['user_name']) || $metadata['user_name'] !== $name) {
+                    $metadata['user_name'] = $name;
+                    $state->update(['metadata' => $metadata]);
+                    Log::info("Updated WhatsApp user name", ['phone' => $phoneNumber, 'name' => $name]);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning("Failed to update user name: " . $e->getMessage());
         }
     }
 
@@ -257,8 +283,19 @@ class WhatsAppConversationService
         
         Log::info("State saved for Microbiz menu", ['sessionId' => $sessionId]);
         
-        // TODO: Get user's name from WhatsApp API if possible
-        $userName = "there"; // Default fallback
+        // Get user's name from metadata if available (retrieved from webhook)
+        // We need to re-fetch state because we just saved it above, but we might have missed the name update
+        // Actually best to leverage the metadata we passed to saveState if we had it, but here we are in showMicrobizMainMenu
+        // which calls saveState.
+        
+        // Let's check if we can get the name from the existing state BEFORE we overwrote it, 
+        // OR better yet, let's try to update the metadata with the name if we have it?
+        // The issue is showMicrobizMainMenu doesn't receive the name directly.
+        // It relies on processIncomingMessage having called updateUserName.
+        
+        // So we should try to retrieve the FRESH state to see if metadata has the name.
+        $freshState = $this->stateManager->retrieveState($phoneNumber, 'whatsapp');
+        $userName = $freshState->metadata['user_name'] ?? 'there';
         
         $message = "Hello *{$userName}*, welcome to *Microbiz Zimbabwe*, the home of innovation and where entrepreneurs are born.\n\n";
         $message .= "How can I help you today?\n\n";

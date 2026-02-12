@@ -153,13 +153,20 @@ class WhatsAppWebhookController extends Controller
             Cache::put($cacheKey, true, 86400); // 24 hours
         }
 
+        // Extract sender name if available
+        $senderName = null;
+        if (isset($value['contacts'][0]['profile']['name'])) {
+            $senderName = $value['contacts'][0]['profile']['name'];
+        }
+
         // Format phone number to consistent format
         $formattedFrom = 'whatsapp:+' . $from;
 
         Log::info('WhatsApp Cloud API message received', [
             'from' => $from,
             'type' => $type,
-            'message_id' => $messageId
+            'message_id' => $messageId,
+            'sender_name' => $senderName
         ]);
 
         // Mark message as read
@@ -171,7 +178,7 @@ class WhatsAppWebhookController extends Controller
         switch ($type) {
             case 'text':
                 $text = $message['text']['body'] ?? '';
-                $this->processTextMessage($formattedFrom, $text);
+                $this->processTextMessage($formattedFrom, $text, $senderName);
                 break;
 
             case 'image':
@@ -188,17 +195,17 @@ class WhatsAppWebhookController extends Controller
                 
                 if ($interactiveType === 'button_reply') {
                     $buttonId = $interactive['button_reply']['id'] ?? '';
-                    $this->processTextMessage($formattedFrom, $buttonId);
+                    $this->processTextMessage($formattedFrom, $buttonId, $senderName);
                 } elseif ($interactiveType === 'list_reply') {
                     $listId = $interactive['list_reply']['id'] ?? '';
-                    $this->processTextMessage($formattedFrom, $listId);
+                    $this->processTextMessage($formattedFrom, $listId, $senderName);
                 }
                 break;
 
             case 'button':
                 // Template button replies
                 $buttonText = $message['button']['text'] ?? '';
-                $this->processTextMessage($formattedFrom, $buttonText);
+                $this->processTextMessage($formattedFrom, $buttonText, $senderName);
                 break;
 
             default:
@@ -283,7 +290,7 @@ class WhatsAppWebhookController extends Controller
     /**
      * Process text message (shared between Cloud API and Twilio)
      */
-    protected function processTextMessage(string $from, string $body): void
+    protected function processTextMessage(string $from, string $body, ?string $senderName = null): void
     {
         try {
             // DEBUG: Test direct message sending
@@ -301,7 +308,7 @@ class WhatsAppWebhookController extends Controller
             }
 
             // Process through conversation service
-            $this->conversationService->processIncomingMessage($from, $body);
+            $this->conversationService->processIncomingMessage($from, $body, $senderName);
 
         } catch (\Exception $e) {
             Log::error('Error processing text message', [

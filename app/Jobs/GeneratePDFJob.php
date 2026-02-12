@@ -58,6 +58,17 @@ class GeneratePDFJob implements ShouldQueue
         $sessionId = $this->applicationState->session_id;
         
         try {
+            // Check if job was cancelled while waiting in queue
+            $cacheKey = "pdf_job_status:{$sessionId}";
+            $cachedStatus = Cache::get($cacheKey);
+            if ($cachedStatus && ($cachedStatus['status'] ?? '') === 'cancelled') {
+                Log::info('PDF generation job skipped - was cancelled', [
+                    'session_id' => $sessionId,
+                ]);
+                $this->delete(); // Remove from queue
+                return;
+            }
+
             // Set job status to processing
             $this->updateJobStatus('processing');
             

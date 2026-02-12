@@ -54,7 +54,7 @@ class PDFJobController extends Controller
         }
 
         // Check if job is already queued
-        $existingJobStatus = $this->getJobStatus($validated['session_id']);
+        $existingJobStatus = $this->getJobStatusFromCache($validated['session_id']);
         if ($existingJobStatus && in_array($existingJobStatus['status'], ['queued', 'processing'])) {
             return response()->json([
                 'success' => false,
@@ -80,7 +80,7 @@ class PDFJobController extends Controller
             dispatch($job);
 
             // Set initial job status
-            $this->setJobStatus($validated['session_id'], 'queued', [
+            $this->setJobStatusInCache($validated['session_id'], 'queued', [
                 'queued_at' => now()->toISOString(),
                 'options' => $validated['options'] ?? [],
             ]);
@@ -107,7 +107,7 @@ class PDFJobController extends Controller
      */
     public function getJobStatus(Request $request, string $sessionId): JsonResponse
     {
-        $status = $this->getJobStatus($sessionId);
+        $status = $this->getJobStatusFromCache($sessionId);
 
         if (!$status) {
             return response()->json([
@@ -127,7 +127,7 @@ class PDFJobController extends Controller
      */
     public function cancelJob(Request $request, string $sessionId): JsonResponse
     {
-        $status = $this->getJobStatus($sessionId);
+        $status = $this->getJobStatusFromCache($sessionId);
 
         if (!$status) {
             return response()->json([
@@ -144,14 +144,26 @@ class PDFJobController extends Controller
         }
 
         try {
+            // Attempt to delete the job from the database queue
+            $deleted = false;
+            if (config('queue.default') === 'database') {
+                // Search for the job in the jobs table by payload content (session_id)
+                $deleted = \Illuminate\Support\Facades\DB::table('jobs')
+                    ->where('payload', 'like', '%' . $sessionId . '%')
+                    ->delete();
+            }
+
             // Update status to cancelled
-            $this->setJobStatus($sessionId, 'cancelled', [
+            $this->setJobStatusInCache($sessionId, 'cancelled', [
                 'cancelled_at' => now()->toISOString(),
                 'cancelled_by' => $request->user()?->id ?? 'system',
+                'queue_job_deleted' => $deleted > 0,
             ]);
 
-            // TODO: Implement actual job cancellation in queue
-            // This would require additional queue management
+            \Illuminate\Support\Facades\Log::info('PDF job cancelled', [
+                'session_id' => $sessionId,
+                'queue_jobs_deleted' => $deleted,
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -170,7 +182,7 @@ class PDFJobController extends Controller
     /**
      * Get job status from cache
      */
-    private function getJobStatus(string $sessionId): ?array
+    private function getJobStatusFromCache(string $sessionId): ?array
     {
         $cacheKey = "pdf_job_status:{$sessionId}";
         return Cache::get($cacheKey);
@@ -179,7 +191,7 @@ class PDFJobController extends Controller
     /**
      * Set job status in cache
      */
-    private function setJobStatus(string $sessionId, string $status, array $data = []): void
+    private function setJobStatusInCache(string $sessionId, string $status, array $data = []): void
     {
         $cacheKey = "pdf_job_status:{$sessionId}";
         
@@ -226,7 +238,7 @@ class PDFJobController extends Controller
         )->take($limit);
 
         foreach ($recentApplications as $application) {
-            $status = $this->getJobStatus($application->session_id);
+            $status = $this->getJobStatusFromCache($application->session_id);
             if ($status && (!isset($validated['status']) || $status['status'] === $validated['status'])) {
                 $allStatuses[] = $status;
             }
@@ -276,7 +288,7 @@ class PDFJobController extends Controller
 
         // Check job statuses
         foreach ($recentApplications as $application) {
-            $status = $this->getJobStatus($application->session_id);
+            $status = $this->getJobStatusFromCache($application->session_id);
             if ($status) {
                 switch ($status['status']) {
                     case 'queued':

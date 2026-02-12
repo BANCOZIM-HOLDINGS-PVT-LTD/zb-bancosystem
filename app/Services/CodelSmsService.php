@@ -43,7 +43,7 @@ class CodelSmsService implements SmsProviderInterface
 
             Log::info("Sending Codel SMS to {$destination}", ['payload' => $payload]);
 
-            $response = Http::post($url, $payload);
+            $response = Http::timeout(15)->post($url, $payload);
             $result = $response->json();
             
             Log::info("Codel SMS Response", ['response' => $result]);
@@ -108,7 +108,7 @@ class CodelSmsService implements SmsProviderInterface
 
             Log::info("Sending Codel Bulk SMS", ['count' => count($recipients)]);
 
-            $response = Http::post($url, $payload);
+            $response = Http::timeout(30)->post($url, $payload);
             $result = $response->json();
 
             // Docs say response is a list, typically containing status object

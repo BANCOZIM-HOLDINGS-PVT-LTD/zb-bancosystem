@@ -345,67 +345,40 @@ Route::post('/send-application-sms', function (Request $request) {
             ], 400);
         }
 
-        // Use SmsProviderInterface to send SMS
+        // Dispatch background job for SMS sending
         try {
-            $smsService = app(\App\Contracts\SmsProviderInterface::class);
+            \App\Jobs\SendSmsJob::dispatch($phoneNumber, $message, $referenceCode);
 
-            // Format phone number using the service's method
-            $formattedPhone = $smsService->formatPhoneNumber($phoneNumber);
-
-            // Log the SMS request
-            \Log::info('Application SMS request', [
-                'phone' => $formattedPhone,
-                'reference' => $referenceCode,
-                'message_preview' => substr($message, 0, 50) . '...'
+            \Log::info('Application SMS job dispatched', [
+                'phone' => $phoneNumber,
+                'reference' => $referenceCode
             ]);
 
-            // Send SMS
-            $result = $smsService->sendSms($formattedPhone, $message);
+            return response()->json([
+                'success' => true,
+                'message' => 'SMS queued successfully',
+                'data' => [
+                    'phone' => $phoneNumber,
+                    'status' => 'queued',
+                    'timestamp' => now()->toISOString()
+                ]
+            ]);
 
-            if ($result['success']) {
-                \Log::info('Application SMS sent successfully', [
-                    'to' => $formattedPhone,
-                    'reference_code' => $referenceCode,
-                    'message_sid' => $result['message_sid'] ?? null
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'SMS sent successfully',
-                    'data' => $result
-                ]);
-            } else {
-                \Log::warning('SMS sending failed (Provider) but returning success for UX', [
-                    'to' => $formattedPhone,
-                    'reference_code' => $referenceCode,
-                    'error' => $result['error'] ?? 'Unknown error'
-                ]);
-
-                // Return success anyway for better UX (logged for debugging)
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Application completed successfully',
-                    'data' => [
-                        'phone' => $formattedPhone,
-                        'status' => 'queued',
-                        'timestamp' => now()->toISOString()
-                    ]
-                ]);
-            }
         } catch (\Exception $e) {
-            \Log::error('SMS sending failed', [
+            \Log::error('SMS job dispatch failed', [
                 'error' => $e->getMessage(),
                 'phone' => $phoneNumber,
                 'reference_code' => $referenceCode
             ]);
 
             // Return success anyway for better UX (logged for debugging)
+            // If the queue is down, we don't want to block the user
             return response()->json([
                 'success' => true,
                 'message' => 'Application completed successfully',
                 'data' => [
                     'phone' => $phoneNumber,
-                    'status' => 'queued',
+                    'status' => 'queued_failed',
                     'timestamp' => now()->toISOString()
                 ]
             ]);

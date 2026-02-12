@@ -278,13 +278,62 @@ class StateController extends Controller
     /**
      * Link sessions across channels
      */
+    /**
+     * Link sessions across channels (Web -> WhatsApp)
+     */
     public function linkSessions(Request $request): JsonResponse
     {
-        // This will be implemented later
-        return response()->json([
-            'success' => false,
-            'message' => 'Feature not yet implemented',
-        ], 501);
+        $validated = $request->validate([
+            'session_id' => 'required|string',
+            'phone' => 'required|string',
+        ]);
+
+        try {
+            $sessionId = $validated['session_id'];
+            $phone = $validated['phone'];
+            
+            
+            // 1. Sync data to WhatsApp session
+            $syncService = app(\App\Services\CrossPlatformSyncService::class);
+            $result = $syncService->switchToWhatsApp($sessionId, $phone);
+            
+            // 2. Send notification to user via WhatsApp
+            try {
+                // We need to resolve the service since it's not injected in constructor to avoid circular deps if any
+                $whatsappService = app(\App\Services\WhatsAppCloudApiService::class);
+                
+                if ($whatsappService->isConfigured()) {
+                    $refCode = $result['reference_code'] ?? 'CODE';
+                    $message = "Your application has been linked! Reply *RESUME {$refCode}* to continue where you left off.";
+                    
+                    $whatsappService->sendMessage($phone, $message);
+                } else {
+                     \Log::warning("WhatsApp Cloud API not configured, skipping link notification");
+                }
+            } catch (\Exception $e) {
+                // Don't fail the linking process just because notification failed
+                \Log::error("Failed to send WhatsApp link notification: " . $e->getMessage());
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Session linked successfully',
+                'whatsapp_session_id' => $result['whatsapp_state']->session_id ?? null,
+                'reference_code' => $result['reference_code'] ?? null,
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Session linking failed', [
+                'session_id' => $validated['session_id'],
+                'phone' => $validated['phone'],
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to link session: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
