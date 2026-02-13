@@ -404,7 +404,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             <form onSubmit={handleSubmit} className="space-y-6">
 
                 {/* Personal Details */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <User className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Personal Details</h3>
@@ -541,7 +541,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
 
                         <div className="md:col-span-2 lg:col-span-3">
                             <Label>Accommodation Status</Label>
-                            <div className="flex gap-4 mt-2">
+                            <div className="flex flex-wrap gap-4 mt-2">
                                 {['Owned', 'Employer Owned', 'Rented', 'Mortgaged', 'Parents Owned'].map((option) => (
                                     <label key={option} className="flex items-center space-x-2">
                                         <input
@@ -560,7 +560,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
 
                         <div className="md:col-span-2 lg:col-span-3">
                             <Label>Period at current address</Label>
-                            <div className="flex gap-4 mt-2">
+                            <div className="flex flex-wrap gap-4 mt-2">
                                 {['Less than One Year', 'Between 1-2 years', 'Between 2-5 years', 'More than 5 years'].map((option) => (
                                     <label key={option} className="flex items-center space-x-2">
                                         <input
@@ -579,7 +579,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
 
                         <div className="md:col-span-2 lg:col-span-3">
                             <Label>Status of employment</Label>
-                            <div className="flex gap-4 mt-2">
+                            <div className="flex flex-wrap gap-4 mt-2">
                                 {['Permanent', 'Contract', 'Part time'].map((option) => (
                                     <label key={option} className="flex items-center space-x-2">
                                         <input
@@ -599,7 +599,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 </Card>
 
                 {/* Employment Details */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <Building className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Employment Details</h3>
@@ -763,7 +763,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 </Card>
 
                 {/* Spouse and Next of Kin */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <Users className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">

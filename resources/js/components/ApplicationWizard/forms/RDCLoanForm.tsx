@@ -348,7 +348,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
             <form onSubmit={handleSubmit} className="space-y-6">
 
                 {/* Personal Details */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <User className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Personal Details</h3>
@@ -466,9 +466,9 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                         />
 
                         <div>
-                            <div className="flex items-center space-x-2 mb-2">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
                                 <Label htmlFor="whatsApp" className="mb-0">WhatsApp Number</Label>
-                                <div className="flex items-center space-x-2 ml-4">
+                                <div className="flex items-center space-x-2 ml-0 sm:ml-4">
                                     <Checkbox
                                         id="sameAsCell"
                                         checked={sameAsCell}
@@ -559,7 +559,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                 </Card>
 
                 {/* Employment Details */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <Building className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Employment Details</h3>
@@ -695,7 +695,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                 </Card>
 
                 {/* Spouse and Next of Kin */}
-                <Card className="p-6" id="spouse-section">
+                <Card className="p-4 md:p-6" id="spouse-section">
                     <div className="flex items-center mb-4">
                         <Users className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">
@@ -781,7 +781,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                 </Card>
 
                 {/* Banking Details */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <Building className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Banking Details</h3>
