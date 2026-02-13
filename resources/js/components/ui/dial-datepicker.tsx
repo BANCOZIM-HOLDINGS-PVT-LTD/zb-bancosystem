@@ -266,11 +266,8 @@ const DialDatePicker: React.FC<DialDatePickerProps> = ({
         </p>
       )}
 
-      <p className="text-xs text-gray-500">
-        Select day, month, and year separately
-        {minDate && ` • Minimum: ${new Date(minDate).toLocaleDateString()}`}
-        {maxDate && ` • Maximum: ${new Date(maxDate).toLocaleDateString()}`}
-      </p>
+
+
     </div>
   );
 };
