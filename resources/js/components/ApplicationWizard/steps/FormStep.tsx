@@ -5,7 +5,7 @@ import RDCLoanForm from '../forms/RDCLoanForm';
 import ZBAccountOpeningForm from '../forms/ZBAccountOpeningForm';
 import SMEBusinessForm from '../forms/SMEBusinessForm';
 // Import with exact path to fix resolution issues
-import PensionerLoanForm from '@/components/ApplicationWizard/forms/PensionerLoanApplicationForm';
+import PensionerLoanForm from '../forms/PensionerLoanForm';
 
 interface FormStepProps {
     data: any;

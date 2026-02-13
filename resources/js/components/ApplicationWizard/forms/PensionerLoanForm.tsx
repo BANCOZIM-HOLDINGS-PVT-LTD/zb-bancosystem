@@ -449,7 +449,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             label="Date of Birth"
                             type="dial-date"
                             value={formData.dateOfBirth}
-                            onChange={(value: string) => handleInputChange('dateOfBirth', value)}
+                            onChange={(value) => handleInputChange('dateOfBirth', value)}
                             maxDate={`${new Date().getFullYear() - 18}-12-31`}
                             minDate="1930-01-01"
                             defaultAge={20}
@@ -477,7 +477,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             label="Nationality"
                             type="text"
                             value={formData.nationality}
-                            onChange={(value: string) => handleInputChange('nationality', value)}
+                            onChange={(value) => handleInputChange('nationality', value)}
                             autoCapitalize={true}
                             required
                         />
@@ -487,7 +487,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             label="ID Number"
                             type="text"
                             value={formData.idNumber}
-                            onChange={(value: string) => handleInputChange('idNumber', value)}
+                            onChange={(value) => handleInputChange('idNumber', value)}
                             capitalizeCheckLetter={true}
                             placeholder="e.g. 12-345678 A 12"
                             title="Zimbabwe ID format: 12-345678 A 12"
@@ -501,7 +501,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             label="Cell Number"
                             type="phone"
                             value={formData.cellNumber}
-                            onChange={(value: string) => handleInputChange('cellNumber', value)}
+                            onChange={(value) => handleInputChange('cellNumber', value)}
                             required
                         />
 
@@ -512,7 +512,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                                     <Checkbox
                                         id="sameAsCell"
                                         checked={sameAsCell}
-                                        onCheckedChange={(checked: boolean) => setSameAsCell(checked as boolean)}
+                                        onCheckedChange={(checked: boolean) => setIsCustomBranch(checked as boolean)}
                                     />
                                     <label
                                         htmlFor="sameAsCell"
@@ -533,7 +533,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                                 label=""
                                 type="phone"
                                 value={formData.whatsApp}
-                                onChange={(value: string) => {
+                                onChange={(value) => {
                                     handleInputChange('whatsApp', value);
                                     if (sameAsCell && value !== formData.cellNumber) {
                                         setSameAsCell(false);
@@ -547,7 +547,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             label="Email Address"
                             type="email"
                             value={formData.emailAddress}
-                            onChange={(value: string) => handleInputChange('emailAddress', value)}
+                            onChange={(value) => handleInputChange('emailAddress', value)}
                             required
                         />
 
@@ -556,7 +556,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                                 id="permanentAddress"
                                 label="Residential Address"
                                 value={formData.permanentAddress}
-                                onChange={(value: AddressData) => setFormData(prev => ({ ...prev, permanentAddress: value }))}
+                                onChange={(value) => setFormData(prev => ({ ...prev, permanentAddress: value }))}
                                 required
                             />
                         </div>
@@ -581,7 +581,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             label="Period at Address (Years)"
                             type="number"
                             value={formData.periodAtAddress}
-                            onChange={(value: string) => handleInputChange('periodAtAddress', value)}
+                            onChange={(value) => handleInputChange('periodAtAddress', value)}
                         />
 
                         <div className="md:col-span-2 lg:col-span-3">
@@ -634,7 +634,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             label="Name of Institution"
                             type="text"
                             value={formData.employerName}
-                            onChange={(value: string) => handleInputChange('employerName', value)}
+                            onChange={(value) => handleInputChange('employerName', value)}
                             autoCapitalize={true}
                             required
                         />
@@ -644,7 +644,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             label="Institution Address"
                             type="text"
                             value={typeof formData.employerAddress === 'string' ? formData.employerAddress : ''}
-                            onChange={(value: string) => handleInputChange('employerAddress', value)}
+                            onChange={(value) => handleInputChange('employerAddress', value)}
                             required
                         />
 
@@ -667,7 +667,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             label="Job Title"
                             type="text"
                             value={formData.jobTitle}
-                            onChange={(value: string) => handleInputChange('jobTitle', value)}
+                            onChange={(value) => handleInputChange('jobTitle', value)}
                             autoCapitalize={true}
                             required
                         />
@@ -677,7 +677,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             label="Date of Employment"
                             type="dial-date"
                             value={formData.dateOfEmployment}
-                            onChange={(value: string) => handleInputChange('dateOfEmployment', value)}
+                            onChange={(value) => handleInputChange('dateOfEmployment', value)}
                             maxDate={currentDate}
                             defaultAge={0}
                             required
@@ -744,7 +744,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             label="Name of Immediate Supervisor"
                             type="text"
                             value={formData.headOfInstitution}
-                            onChange={(value: string) => handleInputChange('headOfInstitution', value)}
+                            onChange={(value) => handleInputChange('headOfInstitution', value)}
                             autoCapitalize={true}
                             required
                         />
@@ -754,7 +754,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             label="Cell No of Immediate Supervisor"
                             type="phone"
                             value={formData.headOfInstitutionCell}
-                            onChange={(value: string) => handleInputChange('headOfInstitutionCell', value)}
+                            onChange={(value) => handleInputChange('headOfInstitutionCell', value)}
                             required
                         />
                     </div>
@@ -802,7 +802,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                                     label={`Full Name${index === 0 ? ' *' : ''}`}
                                     type="text"
                                     value={spouse.fullName}
-                                    onChange={(value: string) => handleSpouseChange(index, 'fullName', value)}
+                                    onChange={(value) => handleSpouseChange(index, 'fullName', value)}
                                     autoCapitalize={true}
                                     required={index === 0}
                                 />
@@ -833,7 +833,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                                     label={`Phone Number${index === 0 && spouse.fullName ? ' *' : ''}`}
                                     type="phone"
                                     value={spouse.phoneNumber}
-                                    onChange={(value: string) => handleSpouseChange(index, 'phoneNumber', value)}
+                                    onChange={(value) => handleSpouseChange(index, 'phoneNumber', value)}
                                     required={index === 0 && !!spouse.fullName}
                                 />
 
@@ -842,7 +842,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                                         id={`spouse-${index}-address`}
                                         label="Residential Address"
                                         value={spouse.residentialAddress as AddressData}
-                                        onChange={(value: AddressData) => {
+                                        onChange={(value) => {
                                             setFormData(prev => ({
                                                 ...prev,
                                                 spouseDetails: prev.spouseDetails.map((s, i) =>
@@ -953,7 +953,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             label="Account Number"
                             type="text"
                             value={formData.accountNumber}
-                            onChange={(value: string) => handleInputChange('accountNumber', value)}
+                            onChange={(value) => handleInputChange('accountNumber', value)}
                             required
                         />
                     </div>
