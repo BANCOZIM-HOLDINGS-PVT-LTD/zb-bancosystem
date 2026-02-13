@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronLeft, User, Building, CreditCard, Users, DollarSign } from 'lucide-react';
 import FormField from '@/components/ApplicationWizard/components/FormField';
 import AddressInput, { AddressData } from '@/components/ui/address-input';
@@ -104,6 +105,8 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
     const [loanType, setLoanType] = useState<string>(''); // 'qupa' | 'other' | 'both'
     const [isCustomBranch, setIsCustomBranch] = useState<boolean>(false);
     const [accountNumberError, setAccountNumberError] = useState<string>('');
+    const [consentGiven, setConsentGiven] = useState<boolean>(false);
+    const [consentError, setConsentError] = useState<string>('');
 
     const [formData, setFormData] = useState({
         // Credit Facility Details (pre-populated)
@@ -264,6 +267,13 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validate consent
+        if (!consentGiven) {
+            setConsentError('Please give consent to proceed.');
+            // Scroll to bottom to see error if needed, or just relying on the red text being near button
+            return;
+        }
 
         // Validate account number for ZB Bank before submission
         if (formData.bankName === 'ZB Bank' && formData.accountNumber) {
@@ -1254,6 +1264,28 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                         </div>
                     </div>
                 </Card>
+
+                <div className="flex items-start space-x-2 my-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <Checkbox
+                        id="consent"
+                        checked={consentGiven}
+                        onCheckedChange={(checked) => {
+                            setConsentGiven(checked as boolean);
+                            if (checked) setConsentError('');
+                        }}
+                    />
+                    <div className="grid gap-1.5 leading-none">
+                        <Label
+                            htmlFor="consent"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                            I give consent to Qupa to deduct the agreed instalment from my zb account every month. *
+                        </Label>
+                        {consentError && (
+                            <p className="text-sm font-medium text-red-500 mt-1">{consentError}</p>
+                        )}
+                    </div>
+                </div>
 
                 <div className="flex justify-between pt-4">
                     <Button

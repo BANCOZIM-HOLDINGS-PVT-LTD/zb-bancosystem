@@ -1382,6 +1382,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 <label htmlFor="loan-duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Select Loan Duration
                                 </label>
+                                  <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-2 font-medium">
+                    Note: Select an installment that is not more than 40% of your net salary (for zb account holders only)
+                </p>
                                 <select
                                     id="loan-duration"
                                     value={selectedTermMonths || ''}

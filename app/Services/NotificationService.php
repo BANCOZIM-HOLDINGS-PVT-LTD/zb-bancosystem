@@ -292,7 +292,17 @@ class NotificationService
 
             $referenceCode = $applicationState->reference_code ?? $applicationState->session_id;
 
-            $message = "Thank you {$applicantName}! Your application ({$referenceCode}) has been received and is under review. We will notify you of any updates.";
+            $referenceCode = $applicationState->reference_code ?? $applicationState->session_id;
+
+            // Check if application includes M&E or Training
+            $includesME = $formData['includesMESystem'] ?? false;
+            $includesTraining = $formData['includesTraining'] ?? false;
+
+            if ($includesME || $includesTraining) {
+                $message = "YOUR APPLICATION HAS BEEN Completed TOGETHER WITH THE TRAINING AND OR M&E SYSTEM";
+            } else {
+                $message = "Thank you {$applicantName}! Your application ({$referenceCode}) has been received and is under review. We will notify you of any updates.";
+            }
             
             Log::info("Sending submission confirmation SMS to {$phone}: {$message}");
 
