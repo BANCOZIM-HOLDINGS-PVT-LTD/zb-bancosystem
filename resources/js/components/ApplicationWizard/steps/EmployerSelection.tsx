@@ -50,6 +50,13 @@ const employerOptions: EmployerOption[] = [
         icon: Building,
         isSpecial: false
     },
+{
+        id: 'government-pensioner',
+        name: 'Government Pensioner',
+        icon: Building,
+        isSpecial: false
+    },
+
     {
         id: 'security-company',
         name: 'Security Company',

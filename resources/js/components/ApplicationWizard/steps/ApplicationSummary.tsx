@@ -63,8 +63,12 @@ interface ApplicationSummaryProps {
 const getFormIdByEmployer = (employerId: string, hasAccount: boolean, wantsAccount: boolean) => {
     switch (employerId) {
         case 'government-ssb':
+        // SSB employers always use SSB form
+        case 'government-ssb':
             // SSB employers always use SSB form
             return 'ssb_account_opening_form.json';
+        case 'government-pensioner':
+            return 'pensioner_loan_application.json';
         case 'entrepreneur':
             // Entrepreneurs use SME form
             return 'smes_business_account_opening.json';
@@ -166,6 +170,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
     const getEmployerName = (employerId: string) => {
         const employerMap: { [key: string]: string } = {
             'government-ssb': 'Government of Zimbabwe - SSB',
+            'government-pensioner': 'Government Pensioner',
             'government-non-ssb': 'Government of Zimbabwe - Non SSB',
             'municipality-rdc': 'Municipality and Rural District Council',
             'parastatal': 'Parastatal',
@@ -188,7 +193,8 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
             'rdc_loan_application.json': 'RDC Loan Application',
             'individual_account_opening.json': 'New ZB Account Opening',
             'smes_business_account_opening.json': 'SME Business Account Opening',
-            'pensioners_loan_account.json': 'Pensioners Loan Account'
+            'pensioners_loan_account.json': 'Pensioners Loan Account',
+            'pensioner_loan_application.json': 'Government Pensioner Loan Application'
         };
         return formTypeMap[formId] || 'Application Form';
     };
@@ -217,6 +223,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                             {data.hasAccount && !data.wantsAccount && 'You will complete the Account Holder Loan Application form.'}
                             {data.wantsAccount && 'You will complete the New Account Opening form.'}
                             {data.employer === 'government-ssb' && 'You will complete the SSB Loan Application form.'}
+                            {data.employer === 'government-pensioner' && 'You will complete the Government Pensioner Loan Application form.'}
                             {data.employer === 'entrepreneur' && 'You will complete the SME Business Account Opening form.'}
                         </p>
                     </div>

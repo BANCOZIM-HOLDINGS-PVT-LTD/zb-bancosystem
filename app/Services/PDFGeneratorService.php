@@ -574,6 +574,7 @@ class PDFGeneratorService implements PDFGeneratorInterface
         $types = [
             'account_holder_loan_application.json' => 'Account Holder Loan',
             'ssb_account_opening_form.json' => 'SSB Loan',
+            'pensioner_loan_application.json' => 'Government Pensioner Loan',
             'individual_account_opening.json' => 'ZB Account Opening',
             'smes_business_account_opening.json' => 'SME Business Account',
         ];
@@ -981,6 +982,10 @@ class PDFGeneratorService implements PDFGeneratorInterface
             return 'forms.sme_account_opening_pdf';
         }
         
+        if ($employer === 'government-pensioner') {
+            return 'forms.pensioner_loan_pdf';
+        }
+        
         if (!$hasAccount) {
             return 'forms.zb_account_opening_pdf';
         }
@@ -1082,6 +1087,46 @@ class PDFGeneratorService implements PDFGeneratorInterface
                     'purposeOfLoan' => '',
                     'purposeAsset' => '',
                     'checkLetter' => '',
+                ]);
+
+            case 'forms.pensioner_loan_pdf':
+                return array_merge($baseFields, [
+                    // Pensioner specific fields (mostly similar to SSB)
+                    'responsibleMinistry' => '',
+                    'employerName' => 'Government Pensioner',
+                    'employerAddress' => '',
+                    'employmentStatus' => 'Pensioner',
+                    'jobTitle' => 'Pensioner',
+                    'dateOfEmployment' => '',
+                    'pensionNumber' => '',
+                    'employmentNumber' => '', // Using this for Pension Number mapping
+                    'headOfInstitution' => '',
+                    'headOfInstitutionCell' => '',
+                    'netSalary' => '', // Pension amount
+                    
+                    // Spouse/Next of Kin
+                    'spouseDetails' => [
+                        ['fullName' => '', 'relationship' => '', 'phoneNumber' => '', 'residentialAddress' => ''],
+                        ['fullName' => '', 'relationship' => '', 'phoneNumber' => '', 'residentialAddress' => '']
+                    ],
+                    
+                    // Banking
+                    'bankName' => '',
+                    'branch' => '',
+                    'accountNumber' => '',
+                    
+                    // Other Loans
+                    'otherLoans' => [
+                        ['institution' => '', 'monthlyInstallment' => '', 'currentBalance' => '', 'maturityDate' => ''],
+                        ['institution' => '', 'monthlyInstallment' => '', 'currentBalance' => '', 'maturityDate' => '']
+                    ],
+                    
+                    // Loan Details
+                    'loanAmount' => '',
+                    'loanTenure' => '',
+                    'monthlyPayment' => '',
+                    'creditFacilityType' => '',
+                    'purposeOfLoan' => '',
                 ]);
                 
             case 'forms.zb_account_opening_pdf':

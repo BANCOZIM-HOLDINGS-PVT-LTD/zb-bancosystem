@@ -4,6 +4,8 @@ import SSBLoanForm from '../forms/SSBLoanForm';
 import RDCLoanForm from '../forms/RDCLoanForm';
 import ZBAccountOpeningForm from '../forms/ZBAccountOpeningForm';
 import SMEBusinessForm from '../forms/SMEBusinessForm';
+// Import with exact path to fix resolution issues
+import PensionerLoanForm from '@/components/ApplicationWizard/forms/PensionerLoanApplicationForm';
 
 interface FormStepProps {
     data: any;
@@ -68,6 +70,16 @@ const FormStep: React.FC<FormStepProps> = ({ data, onNext, onBack, loading }) =>
             case 'smes_business_account_opening.json':
                 return (
                     <SMEBusinessForm
+                        data={data}
+                        onNext={onNext}
+                        onBack={onBack}
+                        loading={loading}
+                    />
+                );
+
+            case 'pensioner_loan_application.json':
+                return (
+                    <PensionerLoanForm
                         data={data}
                         onNext={onNext}
                         onBack={onBack}
