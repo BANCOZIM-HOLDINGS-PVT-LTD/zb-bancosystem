@@ -35,7 +35,7 @@ class SSBStatusService
             'Application received, awaiting SSB approval check'
         );
 
-        $this->sendStatusNotification($application);
+        // $this->sendStatusNotification($application);
     }
 
     /**
@@ -63,6 +63,9 @@ class SSBStatusService
         }
 
         // Update status
+        // Update status column
+        $application->status = $newStatus->value;
+        
         $metadata['ssb_status'] = $newStatus->value;
         $metadata['ssb_status_updated_at'] = now()->toISOString();
         $metadata['ssb_status_message'] = $newStatus->getMessage();
@@ -85,7 +88,8 @@ class SSBStatusService
             $metadata['ssb_data'] = array_merge($metadata['ssb_data'] ?? [], $additionalData);
         }
 
-        $application->update(['metadata' => $metadata]);
+        $application->metadata = $metadata;
+        $application->save();
 
         Log::info('SSB status updated', [
             'application_id' => $application->id,

@@ -36,7 +36,7 @@ class ZBStatusService
             'Application received, awaiting credit check rating'
         );
 
-        $this->sendStatusNotification($application);
+        // $this->sendStatusNotification($application);
     }
 
     /**
@@ -64,6 +64,9 @@ class ZBStatusService
         }
 
         // Update status
+        // Update status column
+        $application->status = $newStatus->value;
+
         $metadata['zb_status'] = $newStatus->value;
         $metadata['zb_status_updated_at'] = now()->toISOString();
         $metadata['zb_status_message'] = $newStatus->getMessage();
@@ -86,7 +89,8 @@ class ZBStatusService
             $metadata['zb_data'] = array_merge($metadata['zb_data'] ?? [], $additionalData);
         }
 
-        $application->update(['metadata' => $metadata]);
+        $application->metadata = $metadata;
+        $application->save();
 
         Log::info('ZB status updated', [
             'application_id' => $application->id,

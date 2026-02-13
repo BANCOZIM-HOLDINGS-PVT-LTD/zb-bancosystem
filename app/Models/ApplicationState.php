@@ -32,6 +32,7 @@ class ApplicationState extends Model
         'check_type',
         'check_status',
         'check_result',
+        'status',
     ];
 
     protected $casts = [

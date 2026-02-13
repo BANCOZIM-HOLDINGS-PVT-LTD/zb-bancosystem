@@ -285,6 +285,7 @@ class ApplicationStatusController extends Controller
             ];
         }
 
+        $application->status = $newStatus;
         $application->metadata = $metadata;
         $application->save();
 
@@ -345,6 +346,11 @@ class ApplicationStatusController extends Controller
     private function determineApplicationStatus(ApplicationState $application): string
     {
         $metadata = $application->metadata ?? [];
+
+        // Check for explicit status in database column
+        if (!empty($application->status)) {
+            return $application->status;
+        }
 
         // Check for explicit status in metadata
         if (isset($metadata['status'])) {

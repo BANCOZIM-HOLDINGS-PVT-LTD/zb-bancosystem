@@ -485,11 +485,11 @@ class ApplicationResource extends BaseResource
                                     ->label('SSB Workflow Action')
                                     ->options([
                                         'initialize' => 'Initialize SSB Workflow',
-                                        'simulate_approved' => 'Simulate: Approved',
-                                        'simulate_insufficient_salary' => 'Simulate: Insufficient Salary',
-                                        'simulate_invalid_id' => 'Simulate: Invalid ID',
-                                        'simulate_contract_expiring' => 'Simulate: Contract Expiring',
-                                        'simulate_rejected' => 'Simulate: Rejected',
+                                        'simulate_approved' => 'Mark as SSB Approved',
+                                        'simulate_insufficient_salary' => 'Mark as Insufficient Salary',
+                                        'simulate_invalid_id' => 'Mark as Invalid ID',
+                                        'simulate_contract_expiring' => 'Mark as Contract Expiring',
+                                        'simulate_rejected' => 'Mark as Rejected',
                                     ])
                                     ->required()
                                     ->live(),
@@ -512,11 +512,11 @@ class ApplicationResource extends BaseResource
                                     ->label('ZB Workflow Action')
                                     ->options([
                                         'initialize' => 'Initialize ZB Workflow',
-                                        'credit_check_good' => 'Credit Check: Good (Approve)',
-                                        'credit_check_poor' => 'Credit Check: Poor (Reject + Blacklist Report)',
-                                        'salary_not_regular' => 'Salary Not Regular (Reject)',
-                                        'insufficient_salary' => 'Insufficient Salary (Reject + Period Adjustment)',
-                                        'approved' => 'Approved',
+                                        'credit_check_good' => 'Credit Check Passed (Approve)',
+                                        'credit_check_poor' => 'Credit Check Failed (Reject)',
+                                        'salary_not_regular' => 'Salary Irregular (Reject)',
+                                        'insufficient_salary' => 'Insufficient Salary (Reject)',
+                                        'approved' => 'Final Approval',
                                     ])
                                     ->required()
                                     ->live(),

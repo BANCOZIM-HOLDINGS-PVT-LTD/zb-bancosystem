@@ -33,6 +33,9 @@ class ZbAdminPanelProvider extends PanelProvider
                 'primary' => Color::Green,
             ])
             ->discoverResources(in: app_path('Filament/ZbAdmin/Resources'), for: 'App\\Filament\\ZbAdmin\\Resources')
+            ->resources([
+                \App\Filament\Resources\ApplicantDocumentsVerificationResource::class,
+            ])
             ->discoverPages(in: app_path('Filament/ZbAdmin/Pages'), for: 'App\\Filament\\ZbAdmin\\Pages')
             ->pages([
                 \App\Filament\ZbAdmin\Pages\Dashboard::class,

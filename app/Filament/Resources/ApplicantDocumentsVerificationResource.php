@@ -29,7 +29,10 @@ class ApplicantDocumentsVerificationResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->whereIn('current_step', ['zb_verification_pending', 'zb_approval_pending']);
+            ->where(function (Builder $query) {
+                $query->whereIn('current_step', ['zb_verification_pending', 'zb_approval_pending'])
+                      ->orWhere('status', \App\Enums\SSBLoanStatus::AWAITING_SSB_APPROVAL->value);
+            });
     }
 
     public static function form(Form $form): Form
@@ -57,6 +60,7 @@ class ApplicantDocumentsVerificationResource extends Resource
                     ->label('Stage')
                     ->colors([
                         'warning' => 'zb_verification_pending', // Checker stage
+                        'warning' => \App\Enums\SSBLoanStatus::AWAITING_SSB_APPROVAL->value, // SSB Verification
                         'primary' => 'zb_approval_pending',     // Approver stage
                     ]),
                 Tables\Columns\TextColumn::make('check_result.status')
@@ -74,7 +78,7 @@ class ApplicantDocumentsVerificationResource extends Resource
                 Action::make('checker_verify')
                     ->label('Check Documents')
                     ->icon('heroicon-o-pencil-square')
-                    ->visible(fn (Model $record) => $record->current_step === 'zb_verification_pending')
+                    ->visible(fn (Model $record) => $record->current_step === 'zb_verification_pending' || $record->status === \App\Enums\SSBLoanStatus::AWAITING_SSB_APPROVAL->value)
                     ->form([
                         Forms\Components\Section::make('Verification Checklist')
                             ->schema([
