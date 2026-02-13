@@ -34,7 +34,7 @@ class DocumentVerificationResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->where('current_step', 'pending_verification');
+            ->where('current_step', 'pending_review');
     }
 
     public static function form(Form $form): Form

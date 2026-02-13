@@ -52,10 +52,10 @@ class DepositPaymentController extends Controller
         $formData = is_array($application->form_data) ? $application->form_data : json_decode($application->form_data, true);
         $creditType = $formData['creditType'] ?? null;
 
-        if ($creditType !== 'PDC') {
+        if (!$creditType || (!str_starts_with($creditType, 'PDC') && $creditType !== 'PDC')) {
             return response()->json([
                 'success' => false,
-                'message' => 'This application does not require a deposit payment',
+                'message' => 'This application does not require a deposit payment (Credit Type: ' . ($creditType ?? 'None') . ')',
             ], 400);
         }
 

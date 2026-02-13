@@ -102,12 +102,55 @@ class ProcessApplication extends Page
             $this->record->current_step = 'processing';
             $this->record->save();
 
-            // Trigger Automated Checks
+            // Trigger Automated Checks (SSB/FCB determination)
             $checkService = app(AutomatedCheckService::class);
             $checkService->executeAutomatedChecks($this->record);
+            
+            // Reload record to get check_type updated by service
+            $this->record->refresh();
 
-            // Move to next step
-            $this->record->current_step = 'sent_for_checks';
+            // Move to next step based on check type or application type
+            if ($this->record->check_type === 'SSB') {
+                if ($this->record->check_status === 'S') {
+                    $this->record->current_step = 'ssb_check_successful';
+                    $this->record->save();
+                    
+                    // Trigger PO Creation
+                    $poService = app(\App\Services\PurchaseOrderService::class);
+                    $poService->createFromApplication($this->record);
+                    
+                    // Move to Approved
+                    $workflow = app(\App\Services\ApplicationWorkflowService::class);
+                    $workflow->approveApplication($this->record, ['auto_approved' => true, 'notes' => 'Auto-approved after successful SSB Check']);
+                    
+                    Notification::make()->title('SSB Check Successful - PO Created & Approved')->success()->send();
+                    return redirect()->to(DocumentVerificationResource::getUrl('index'));
+                } elseif ($this->record->check_status === 'F') {
+                     $this->record->current_step = 'ssb_check_failed';
+                     $this->record->save();
+                     Notification::make()->title('SSB Check Failed')->danger()->send();
+                     return redirect()->to(DocumentVerificationResource::getUrl('index'));
+                } else {
+                    $this->record->current_step = 'ssb_check_initialized';
+                }
+            } elseif ($this->record->check_type === 'FCB') {
+                 // For ZB Account Holders - Move to ZB Admin Verification
+                $this->record->current_step = 'zb_verification_pending';
+            } else {
+                // Default or Account Opening
+                // Check if it is account opening
+                $formData = $this->record->form_data;
+                $isAccountOpening = ($formData['wantsAccount'] ?? false) === true || 
+                                   ($formData['intent'] ?? '') === 'account' || 
+                                   ($formData['applicationType'] ?? '') === 'account_opening';
+                                   
+                if ($isAccountOpening) {
+                    $this->record->current_step = 'account_opening_initiated';
+                } else {
+                    $this->record->current_step = 'sent_for_checks';
+                }
+            }
+            
             $this->record->save();
 
             Notification::make()->title('Application Verified')->success()->send();
@@ -123,7 +166,7 @@ class ProcessApplication extends Page
     public function rejectApplication($reason)
     {
         try {
-            $this->record->current_step = 'rejected';
+            $this->record->current_step = 'documents_rejected';
             $this->record->status_updated_at = now();
             // Store rejection metadata
             $metadata = $this->record->metadata ?? [];

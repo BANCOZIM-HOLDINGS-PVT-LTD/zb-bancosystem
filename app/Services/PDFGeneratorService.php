@@ -1323,6 +1323,10 @@ class PDFGeneratorService implements PDFGeneratorInterface
             'sessionId' => $applicationState->session_id,
             'referenceCode' => $formData['referenceCode'] ?? $applicationState->resume_code ?? '',
             'generatedAt' => Carbon::now()->format('Y-m-d H:i:s'),
+            'metadata' => $applicationState->metadata ?? [],
+            'checkType' => $applicationState->check_type ?? '',
+            'checkStatus' => $applicationState->check_status ?? '',
+            'checkResult' => $applicationState->check_result ?? [],
         ];
         
         // Form responses - use deep merge to handle nested arrays properly

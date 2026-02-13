@@ -654,15 +654,46 @@
     <table>
         <tr>
             <td width="25%">Received & Checked by:</td>
-            <td width="30%"><span class="signature-line"></span></td>
+            <td width="30%">
+                @if(isset($checkType) && $checkType === 'SSB')
+                    @if(isset($checkStatus) && $checkStatus === 'S')
+                        <span style="color: green; font-weight: bold; font-family: monospace;">[SSB CHECK SUCCESSFUL]</span><br>
+                        <span style="font-size: 10px;">Ref: {{ $checkResult['ref'] ?? 'N/A' }}</span>
+                    @elseif(isset($checkStatus) && $checkStatus === 'F')
+                        <span style="color: red; font-weight: bold;">[SSB CHECK FAILED]</span>
+                    @else
+                        PENDING CHECK
+                    @endif
+                @else
+                    <span class="signature-line"></span>
+                @endif
+            </td>
             <td width="15%">Date:</td>
-            <td width="30%"><span class="signature-line"></span></td>
+            <td width="30%">
+                @if(isset($checkType) && $checkType === 'SSB' && isset($checkResult))
+                    <span class="filled-field">{{ $checkResult['date'] ?? date('Y-m-d') }}</span>
+                @else
+                    <span class="signature-line"></span>
+                @endif
+            </td>
         </tr>
         <tr>
             <td>Approved by:</td>
-            <td><span class="signature-line"></span></td>
+            <td>
+                @if(isset($checkType) && $checkType === 'SSB' && isset($checkStatus) && $checkStatus === 'S')
+                     <span style="font-weight: bold;">SYSTEM AUTO-APPROVAL</span>
+                @else
+                    <span class="signature-line"></span>
+                @endif
+            </td>
             <td>Date:</td>
-            <td><span class="signature-line"></span></td>
+            <td>
+                @if(isset($checkType) && $checkType === 'SSB' && isset($checkStatus) && $checkStatus === 'S')
+                    <span class="filled-field">{{ date('Y-m-d') }}</span>
+                @else
+                    <span class="signature-line"></span>
+                @endif
+            </td>
         </tr>
     </table>
 

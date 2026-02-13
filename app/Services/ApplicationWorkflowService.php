@@ -318,6 +318,17 @@ class ApplicationWorkflowService
             $formResponses = $formData['formResponses'] ?? [];
             $deliverySelection = $formData['deliverySelection'] ?? [];
 
+            // Check if this is a Paid Deposit Credit (PDC) application
+            $creditType = $formData['creditType'] ?? null;
+            if ($creditType && (str_starts_with($creditType, 'PDC') || $creditType === 'PDC')) {
+                Log::info('Skipping automatic delivery creation for PDC application - waiting for deposit payment', [
+                    'application_id' => $application->id,
+                    'reference_code' => $application->reference_code,
+                    'credit_type' => $creditType
+                ]);
+                return;
+            }
+
             // Extract client information
             $clientName = trim(
                 ($formResponses['firstName'] ?? '') . ' ' .

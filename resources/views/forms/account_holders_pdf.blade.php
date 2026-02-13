@@ -629,19 +629,27 @@
     <table class="main-table" style="margin-top: 10px;">
         <tr>
             <td class="field-label" style="width: 20%;">Received & Checked by:</td>
-            <td style="width: 20%;">Name:</td>
-            <td style="width: 20%;"></td>
+            <td style="width: 20%;">Name: {{ $metadata['zb_checker']['name'] ?? '' }}</td>
+            <td style="width: 20%;">{{ $metadata['zb_checker']['designation'] ?? '' }}</td>
             <td style="width: 15%;">Signature:</td>
-            <td style="width: 15%;"></td>
-            <td style="width: 10%;">Date:</td>
+            <td style="width: 15%;">
+                @if(isset($metadata['zb_checker']))
+                    <span style="font-family: monospace; font-size: 8pt;">[DIGITALLY SIGNED]</span>
+                @endif
+            </td>
+            <td style="width: 10%;">Date: {{ isset($metadata['zb_checker']['date']) ? date('Y-m-d', strtotime($metadata['zb_checker']['date'])) : '' }}</td>
         </tr>
         <tr>
             <td class="field-label">Approved by:</td>
-            <td>Name:</td>
+            <td>Name: {{ $metadata['zb_approver']['name'] ?? '' }}</td>
             <td></td>
             <td>Signature:</td>
-            <td></td>
-            <td>Date:</td>
+            <td>
+                @if(isset($metadata['zb_approver']))
+                     <span style="font-family: monospace; font-size: 8pt;">[DIGITALLY APPROVED]</span>
+                @endif
+            </td>
+            <td>Date: {{ isset($metadata['zb_approver']['date']) ? date('Y-m-d', strtotime($metadata['zb_approver']['date'])) : '' }}</td>
         </tr>
     </table>
     

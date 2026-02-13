@@ -149,7 +149,7 @@ class StateController extends Controller
                 $validated['sessionId'],
                 'web', // Default to web channel
                 $userIdentifier,
-                'pending_verification', 
+                'pending_review', 
                 $validated['data'],
                 [
                     'submitted_at' => now()->toISOString(),

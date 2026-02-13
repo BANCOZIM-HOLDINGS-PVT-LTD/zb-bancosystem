@@ -101,6 +101,69 @@ class AccountOpeningResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 
+                // ZB Admin Actions
+                Tables\Actions\Action::make('approve_account')
+                    ->label('Approve Opening')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn (Model $record) => $record->status === 'pending' || $record->status === 'account_opening_initiated') // Handle synced status
+                    ->form([
+                        Forms\Components\TextInput::make('account_number')
+                            ->label('ZB Account Number')
+                            ->required()
+                            ->unique(AccountOpening::class, 'zb_account_number'),
+                    ])
+                    ->action(function (Model $record, array $data) {
+                        $record->update([
+                            'status' => 'account_opened',
+                            'zb_account_number' => $data['account_number'],
+                        ]);
+                        
+                        // Sync Application State if linked
+                        if ($record->application_state_id) {
+                            $appState = \App\Models\ApplicationState::find($record->application_state_id);
+                            if ($appState) {
+                                $appState->update(['current_step' => 'account_opened']);
+                                // Notify user
+                                $notificationService = app(\App\Services\NotificationService::class);
+                                $notificationService->sendNotification(
+                                    $appState, 
+                                    "Your account has been opened! Account Number: {$data['account_number']}"
+                                );
+                            }
+                        }
+                        
+                        Notification::make()->title('Account Opened Successfully')->success()->send();
+                    }),
+
+                Tables\Actions\Action::make('approve_loan_eligibility')
+                    ->label('Approve Loan Eligibility')
+                    ->icon('heroicon-o-currency-dollar')
+                    ->color('primary')
+                    ->visible(fn (Model $record) => $record->status === 'account_opened')
+                    ->action(function (Model $record) {
+                        $record->update([
+                            'status' => 'loan_eligible',
+                            'loan_eligible' => true,
+                        ]);
+                        
+                        // Sync Application State
+                         if ($record->application_state_id) {
+                            $appState = \App\Models\ApplicationState::find($record->application_state_id);
+                            if ($appState) {
+                                $appState->update(['current_step' => 'loan_eligible']);
+                                // Notify user
+                                $notificationService = app(\App\Services\NotificationService::class);
+                                $notificationService->sendNotification(
+                                    $appState, 
+                                    "Your account is now eligible for loans. You may proceed to apply."
+                                );
+                            }
+                        }
+                        
+                        Notification::make()->title('Loan Eligibility Approved')->success()->send();
+                    }),
+
                 // Super Admin can only send custom SMS
                 Action::make('send_sms')
                     ->label('Send SMS')
@@ -144,7 +207,6 @@ class AccountOpeningResource extends Resource
         }
     }
 
-    // View-only access
     public static function canCreate(): bool
     {
         return false;
@@ -152,7 +214,7 @@ class AccountOpeningResource extends Resource
 
     public static function canEdit(Model $record): bool
     {
-        return false;
+        return true; // Allow editing to enable actions? No, actions work regardless.
     }
 
     public static function canDelete(Model $record): bool
