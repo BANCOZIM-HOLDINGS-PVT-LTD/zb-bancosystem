@@ -45,6 +45,9 @@ class PersonalService extends Model
     const TYPE_SCHOOL_FEES = 'school_fees';
     const TYPE_DRIVING_LICENSE = 'driving_license';
     const TYPE_FUNERAL_COVER = 'funeral_cover';
+    const TYPE_POULTRY = 'poultry';
+    const TYPE_GROCERIES = 'groceries';
+    const TYPE_BUILDING_MATERIALS = 'building_materials';
     const TYPE_OTHER = 'other';
 
     /**
@@ -129,6 +132,9 @@ class PersonalService extends Model
             self::TYPE_SCHOOL_FEES => 'School Fees',
             self::TYPE_DRIVING_LICENSE => 'Driving License',
             self::TYPE_FUNERAL_COVER => 'Funeral Cover',
+            self::TYPE_POULTRY => 'Poultry / Chicken Project',
+            self::TYPE_GROCERIES => 'Groceries',
+            self::TYPE_BUILDING_MATERIALS => 'Building Materials',
             self::TYPE_OTHER => 'Other',
         ];
     }

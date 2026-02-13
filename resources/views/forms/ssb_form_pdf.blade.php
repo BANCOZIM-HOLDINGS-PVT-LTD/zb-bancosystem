@@ -847,7 +847,7 @@
             <td>E.C Number:</td>
             <td><span class="filled-field">{{ $getAny(['employmentNumber', 'employeeNumber']) }}</span></td>
             <td>Delivery Address:</td>
-            <td><span class="filled-field">{{ $getAddress(['residentialAddress', 'permanentAddress']) }}</span></td>
+            <td><span class="filled-field">{{ $deliveryAddress ?: $getAddress(['residentialAddress', 'permanentAddress']) }}</span></td>
         </tr>
     </table>
 

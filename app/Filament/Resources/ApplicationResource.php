@@ -153,7 +153,7 @@ class ApplicationResource extends BaseResource
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label('App #')
-                    ->formatStateUsing(fn ($state) => 'ZB' . date('Y') . str_pad($state, 6, '0', STR_PAD_LEFT))
+                    ->formatStateUsing(fn (Model $record) => $record->application_number)
                     ->sortable()
                     ->searchable(),
                     

@@ -117,6 +117,20 @@ class ApplicationStateObserver
             'driving',
             'funeral',
             'personal service',
+            'chicken',
+            'poultry',
+            'broiler',
+            'layer',
+            'grocery',
+            'groceries',
+            'tuckshop',
+            'food',
+            'building',
+            'material',
+            'cement',
+            'timber',
+            'roofing',
+            'brick',
         ];
 
         $searchText = strtolower($category . ' ' . $business . ' ' . $productName);
@@ -193,6 +207,18 @@ class ApplicationStateObserver
 
         if (str_contains($searchText, 'funeral') || str_contains($searchText, 'cover')) {
             return PersonalService::TYPE_FUNERAL_COVER;
+        }
+
+        if (str_contains($searchText, 'chicken') || str_contains($searchText, 'poultry') || str_contains($searchText, 'broiler') || str_contains($searchText, 'layer')) {
+            return PersonalService::TYPE_POULTRY;
+        }
+
+        if (str_contains($searchText, 'grocery') || str_contains($searchText, 'groceries') || str_contains($searchText, 'tuckshop') || str_contains($searchText, 'food')) {
+            return PersonalService::TYPE_GROCERIES;
+        }
+
+        if (str_contains($searchText, 'building') || str_contains($searchText, 'cement') || str_contains($searchText, 'brick') || str_contains($searchText, 'timber') || str_contains($searchText, 'roofing')) {
+            return PersonalService::TYPE_BUILDING_MATERIALS;
         }
 
         return PersonalService::TYPE_OTHER;

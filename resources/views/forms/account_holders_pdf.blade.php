@@ -764,7 +764,7 @@
         </tr>
         <tr>
             <td class="field-label">Delivery Address</td>
-            <td colspan="3">{{ $formatAddress($residentialAddress ?? '') }}</td>
+            <td colspan="3">{{ $deliveryAddress ?: $formatAddress($residentialAddress ?? '') }}</td>
         </tr>
     </table>
     

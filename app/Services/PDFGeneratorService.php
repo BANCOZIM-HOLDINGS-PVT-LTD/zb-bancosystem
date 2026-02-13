@@ -1319,7 +1319,7 @@ class PDFGeneratorService implements PDFGeneratorInterface
         // Base data with metadata
         $data = [
             'applicationDate' => Carbon::now()->format('d/m/Y'),
-            'applicationNumber' => $this->generateApplicationNumber($applicationState),
+            'applicationNumber' => $applicationState->application_number,
             'sessionId' => $applicationState->session_id,
             'referenceCode' => $formData['referenceCode'] ?? $applicationState->resume_code ?? '',
             'generatedAt' => Carbon::now()->format('Y-m-d H:i:s'),
@@ -1362,7 +1362,6 @@ class PDFGeneratorService implements PDFGeneratorInterface
         
         // Add formResponses as a separate variable for template compatibility
         // Determine template type to provide appropriate defaults
-        // Determine template type to provide appropriate defaults
         $hasAccount = $formData['hasAccount'] ?? false;
         
         // Consistent logic with generateApplicationPDF
@@ -1375,6 +1374,34 @@ class PDFGeneratorService implements PDFGeneratorInterface
         
         // Merge defaults with actual responses (recursive to handle nested arrays)
         $mergedResponses = array_replace_recursive($defaultFields, $responses);
+        
+        // DELIVERY ADDRESS OVERRIDE
+        // If the user selected a delivery depot, we override the address fields to show the collection point
+        if (isset($formData['deliverySelection']) && !empty($formData['deliverySelection'])) {
+            $delivery = $formData['deliverySelection'];
+            $agent = $delivery['agent'] ?? '';
+            $city = $delivery['city'] ?? '';
+            $depot = $delivery['depot'] ?? '';
+            
+            $collectionAddress = "COLLECTION AT: {$agent}";
+            if ($depot) {
+                $collectionAddress .= " - {$depot}";
+            }
+            if ($city && !str_contains($depot, $city)) {
+                 $collectionAddress .= ", {$city}";
+            }
+            
+            // Do NOT overwrite residential address. Use a specific delivery address field.
+            $data['deliveryAddress'] = $collectionAddress;
+            
+            // Log this
+            Log::info("Prepared delivery address for PDF", [
+                'session_id' => $applicationState->session_id,
+                'delivery_address' => $collectionAddress
+            ]);
+        } else {
+            $data['deliveryAddress'] = '';
+        }
         
         // Clean up any unexpected nested arrays (except for known nested structures)
         $knownArrayFields = [
@@ -1860,17 +1887,7 @@ class PDFGeneratorService implements PDFGeneratorInterface
         return $merged;
     }
     
-    /**
-     * Generate unique application number
-     */
-    private function generateApplicationNumber(ApplicationState $applicationState): string
-    {
-        $prefix = 'ZB';
-        $year = Carbon::now()->format('Y');
-        $id = str_pad($applicationState->id, 6, '0', STR_PAD_LEFT);
-        
-        return "{$prefix}{$year}{$id}";
-    }
+
     
     /**
      * Generate filename for PDF
