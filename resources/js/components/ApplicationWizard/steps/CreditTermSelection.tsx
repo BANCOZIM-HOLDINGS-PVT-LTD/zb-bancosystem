@@ -80,6 +80,9 @@ const CreditTermSelection: React.FC<CreditTermSelectionProps> = ({ data, onNext,
                 <p className="text-gray-600 dark:text-gray-400">
                     Choose a repayment period that suits you
                 </p>
+                <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-2 font-medium">
+                    Note: Select an installment that is not more than 40% of your net salary (for zb account holders only)
+                </p>
             </div>
 
             {/* Loan Duration Dropdown/Grid */}
