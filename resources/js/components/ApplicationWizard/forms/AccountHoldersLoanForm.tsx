@@ -307,7 +307,11 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 employmentStatus: formData.employmentStatus,
 
                 // Employment details
-                employerName: formData.employerName,
+                employerName: formData.employerName, // Updated to reflect Institution name change if needed below? No, blade just needs to label it currently. 
+                // But user said: "Name of Employer is the name of Institution on the pdf" -> The blade field is $employerName. In form we have employerName. So this passes through.
+                // "The Name of Responsible Paymaster should render the ministry(the one the user selects) on the pdf"
+                responsiblePaymaster: data.employer === 'government-non-ssb' ? formData.employerName : formData.responsiblePaymaster,
+
                 department: formData.department, // Map department field
                 currentNetSalary: formData.currentNetSalary,
                 jobTitle: formData.jobTitle,
@@ -318,7 +322,6 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 employmentNumber: formData.employmentNumber,
                 headOfInstitution: formData.headOfInstitution,
                 headOfInstitutionCell: formData.headOfInstitutionCell,
-                responsiblePaymaster: formData.responsiblePaymaster,
 
                 // Banking details
                 bankName: formData.bankName,
@@ -351,7 +354,10 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 qupaLoan: formData.qupaLoan,
                 otherInstitutionLoan: formData.otherInstitutionLoan,
                 // Legacy format for backward compatibility
-                otherLoans: formData.otherLoans,
+                otherLoans: hasOtherLoans === 'no' ? [
+                    { institution: 'N/A', repayment: 'N/A', currentBalance: 'N/A', maturityDate: 'N/A' },
+                    { institution: 'N/A', repayment: 'N/A', currentBalance: 'N/A', maturityDate: 'N/A' }
+                ] : formData.otherLoans,
 
                 // Header fields for PDF
                 deliveryStatus: formData.deliveryStatus,

@@ -588,25 +588,25 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                     <SelectItem value="Primary and Secondary Education">Primary and Secondary Education</SelectItem>
                                     <SelectItem value="Health and Child Care">Health and Child Care</SelectItem>
                                     <SelectItem value="Home Affairs and Cultural Heritage">Home Affairs and Cultural Heritage</SelectItem>
-                                    <SelectItem value="Justice">Justice</SelectItem>
-                                    <SelectItem value="Agriculture">Agriculture</SelectItem>
+                                    <SelectItem value="Justice">Justice, Legal and Parliamentary Affairs</SelectItem>
+                                    <SelectItem value="Agriculture">Lands, Agriculture, Fisheries, Water and Rural Development</SelectItem>
                                     <SelectItem value="Energy and Power Development">Energy and Power Development</SelectItem>
-                                    <SelectItem value="Environment">Environment</SelectItem>
-                                    <SelectItem value="Finance and Economic Development">Finance and Economic Development</SelectItem>
+                                    <SelectItem value="Environment">Environment, Climate, Tourism and Hospitality Industry</SelectItem>
+                                    <SelectItem value="Finance and Economic Development">Finance, Economic Development and Investment Promotion</SelectItem>
                                     <SelectItem value="Foreign Affairs and International Trade">Foreign Affairs and International Trade</SelectItem>
-                                    <SelectItem value="Higher and Tertiary Education">Higher and Tertiary Education</SelectItem>
-                                    <SelectItem value="ICT">ICT</SelectItem>
+                                    <SelectItem value="Higher and Tertiary Education">Higher and Tertiary Education, Innovation, Science and Technology Development</SelectItem>
+                                    <SelectItem value="ICT">ICT, Postal and Courier Services</SelectItem>
                                     <SelectItem value="Industry and Commerce">Industry and Commerce</SelectItem>
                                     <SelectItem value="Lands and Agriculture">Lands and Agriculture</SelectItem>
-                                    <SelectItem value="Local Government">Local Government</SelectItem>
+                                    <SelectItem value="Local Government">Local Government and Public Works</SelectItem>
                                     <SelectItem value="Mines and Mining Development">Mines and Mining Development</SelectItem>
-                                    <SelectItem value="National Housing">National Housing</SelectItem>
-                                    <SelectItem value="Public Service">Public Service</SelectItem>
+                                    <SelectItem value="National Housing">National Housing and Social Amenities</SelectItem>
+                                    <SelectItem value="Public Service">Public Service, Labour and Social Welfare</SelectItem>
                                     <SelectItem value="Tourism and Hospitality">Tourism and Hospitality</SelectItem>
                                     <SelectItem value="Transport and Infrastructure">Transport and Infrastructure</SelectItem>
-                                    <SelectItem value="Women Affairs">Women Affairs</SelectItem>
+                                    <SelectItem value="Women Affairs">Women Affairs, Community Development and Gender Equality</SelectItem>
                                     <SelectItem value="Youth, Sport, Arts and Recreation">Youth, Sport, Arts and Recreation</SelectItem>
-                
+
 
                                 </SelectContent>
                             </Select>
@@ -694,20 +694,23 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                     }}
                                     required
                                 />
-                                <Input
-                                    id="employmentCheckLetter"
-                                    className="w-16 text-center"
-                                    placeholder="A"
-                                    maxLength={1}
-                                    value={formData.employmentNumber ? formData.employmentNumber.replace(/^\d+/, '') : ''}
-                                    onChange={(e) => {
-                                        const letter = e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 1).toUpperCase();
-                                        const currentNumMatch = formData.employmentNumber ? formData.employmentNumber.match(/^\d+/) : null;
-                                        const numStr = currentNumMatch ? currentNumMatch[0] : '';
-                                        handleInputChange('employmentNumber', numStr + letter);
-                                    }}
-                                    required
-                                />
+                                <div className="flex flex-col">
+                                    <span className="text-xs text-gray-500 mb-1">Check Letter</span>
+                                    <Input
+                                        id="employmentCheckLetter"
+                                        className="w-16 text-center"
+                                        placeholder="A"
+                                        maxLength={1}
+                                        value={formData.employmentNumber ? formData.employmentNumber.replace(/^\d+/, '') : ''}
+                                        onChange={(e) => {
+                                            const letter = e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 1).toUpperCase();
+                                            const currentNumMatch = formData.employmentNumber ? formData.employmentNumber.match(/^\d+/) : null;
+                                            const numStr = currentNumMatch ? currentNumMatch[0] : '';
+                                            handleInputChange('employmentNumber', numStr + letter);
+                                        }}
+                                        required
+                                    />
+                                </div>
                             </div>
                             {employmentError && (
                                 <p className="text-sm text-red-500 mt-1">{employmentError}</p>

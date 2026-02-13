@@ -6,8 +6,9 @@ import { cn } from '@/lib/utils';
 
 export interface AddressData {
   type: 'urban' | 'rural' | '';
-  city?: string;           // Urban only
-  wardDistrict?: string;   // Rural only  
+  city?: string;           // Urban - now text input (optional/merged) or removed as per request? User said "remove dropdown for city and town just go to the address line" so we can probably drop it or keep it as optional hidden. Let's keep the interface but optional.
+  province?: string;       // Rural only
+  district?: string;       // Rural only
   addressLine: string;     // Both
 }
 
@@ -22,37 +23,20 @@ interface AddressInputProps {
   name?: string;
 }
 
-// Zimbabwe major cities for urban selection
-const ZIMBABWE_CITIES = [
-  'Harare',
-  'Bulawayo',
-  'Chitungwiza',
-  'Mutare',
-  'Gweru',
-  'Kwekwe',
-  'Kadoma',
+// Zimbabwe Provinces for rural selection
+const ZIMBABWE_PROVINCES = [
+  'Bulawayo Metropolitan',
+  'Harare Metropolitan',
+  'Manicaland',
+  'Mashonaland Central',
+  'Mashonaland East',
+  'Mashonaland West',
   'Masvingo',
-  'Chinhoyi',
-  'Marondera',
-  'Bindura',
-  'Victoria Falls',
-  'Hwange',
-  'Beitbridge',
-  'Chiredzi',
-  'Zvishavane',
-  'Kariba',
-  'Karoi',
-  'Norton',
-  'Rusape',
-  'Chipinge',
-  'Redcliff',
-  'Chegutu',
-  'Shurugwi',
-  'Ruwa',
-  'Epworth',
-  'Gokwe',
-  'Other'
+  'Matabeleland North',
+  'Matabeleland South',
+  'Midlands'
 ];
+
 
 // Helper to normalize value to AddressData
 const normalizeValue = (value: AddressData | string | undefined): AddressData => {
@@ -68,7 +52,8 @@ const normalizeValue = (value: AddressData | string | undefined): AddressData =>
         return {
           type: parsed.type || '',
           city: parsed.city || '',
-          wardDistrict: parsed.wardDistrict || '',
+          province: parsed.province || '',
+          district: parsed.district || '',
           addressLine: parsed.addressLine || ''
         };
       } catch {
@@ -83,7 +68,8 @@ const normalizeValue = (value: AddressData | string | undefined): AddressData =>
   return {
     type: value.type || '',
     city: value.city || '',
-    wardDistrict: value.wardDistrict || '',
+    province: value.province || '',
+    district: value.district || '',
     addressLine: value.addressLine || ''
   };
 };
@@ -104,8 +90,9 @@ const AddressInput: React.FC<AddressInputProps> = ({
   const handleTypeChange = (newType: 'urban' | 'rural') => {
     onChange({
       type: newType,
-      city: newType === 'urban' ? normalizedValue.city : undefined,
-      wardDistrict: newType === 'rural' ? normalizedValue.wardDistrict : undefined,
+      city: undefined, // Clear city
+      province: newType === 'rural' ? normalizedValue.province : undefined,
+      district: newType === 'rural' ? normalizedValue.district : undefined,
       addressLine: normalizedValue.addressLine
     });
   };
@@ -145,57 +132,57 @@ const AddressInput: React.FC<AddressInputProps> = ({
         </Select>
       </div>
 
-      {/* Urban Fields */}
+      {/* Urban Fields - Just Address Line */}
       {normalizedValue.type === 'urban' && (
+        <div>
+          <Label htmlFor={`${id || name}-addressLine`} className="text-sm text-gray-600 dark:text-gray-400">
+            Street Address *
+          </Label>
+          <Input
+            id={`${id || name}-addressLine`}
+            value={normalizedValue.addressLine || ''}
+            onChange={(e) => handleFieldChange('addressLine', e.target.value)}
+            placeholder="e.g., 123 Main Street, Avondale, Harare"
+          />
+        </div>
+      )}
+
+      {/* Rural Fields - Province, District, Address Line */}
+      {normalizedValue.type === 'rural' && (
         <div className="grid gap-3 md:grid-cols-2">
-          <div>
-            <Label htmlFor={`${id || name}-city`} className="text-sm text-gray-600 dark:text-gray-400">
-              City/Town *
+          <div className="md:col-span-2">
+            <Label htmlFor={`${id || name}-province`} className="text-sm text-gray-600 dark:text-gray-400">
+              Province *
             </Label>
             <Select
-              value={normalizedValue.city || ''}
-              onValueChange={(val) => handleFieldChange('city', val)}
+              value={normalizedValue.province || ''}
+              onValueChange={(val) => handleFieldChange('province', val)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select city" />
+                <SelectValue placeholder="Select Province" />
               </SelectTrigger>
               <SelectContent>
-                {ZIMBABWE_CITIES.map((city) => (
-                  <SelectItem key={city} value={city}>
-                    {city}
+                {ZIMBABWE_PROVINCES.map((province) => (
+                  <SelectItem key={province} value={province}>
+                    {province}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label htmlFor={`${id || name}-addressLine`} className="text-sm text-gray-600 dark:text-gray-400">
-              Street Address *
-            </Label>
-            <Input
-              id={`${id || name}-addressLine`}
-              value={normalizedValue.addressLine || ''}
-              onChange={(e) => handleFieldChange('addressLine', e.target.value)}
-              placeholder="e.g., 123 Main Street, Avondale"
-            />
-          </div>
-        </div>
-      )}
 
-      {/* Rural Fields */}
-      {normalizedValue.type === 'rural' && (
-        <div className="grid gap-3 md:grid-cols-2">
           <div>
-            <Label htmlFor={`${id || name}-wardDistrict`} className="text-sm text-gray-600 dark:text-gray-400">
-              Ward / District *
+            <Label htmlFor={`${id || name}-district`} className="text-sm text-gray-600 dark:text-gray-400">
+              District *
             </Label>
             <Input
-              id={`${id || name}-wardDistrict`}
-              value={normalizedValue.wardDistrict || ''}
-              onChange={(e) => handleFieldChange('wardDistrict', e.target.value)}
-              placeholder="e.g., Ward 5, Chipinge District"
+              id={`${id || name}-district`}
+              value={normalizedValue.district || ''}
+              onChange={(e) => handleFieldChange('district', e.target.value)}
+              placeholder="e.g., Gutu"
             />
           </div>
+
           <div>
             <Label htmlFor={`${id || name}-addressLine`} className="text-sm text-gray-600 dark:text-gray-400">
               Address / Village *

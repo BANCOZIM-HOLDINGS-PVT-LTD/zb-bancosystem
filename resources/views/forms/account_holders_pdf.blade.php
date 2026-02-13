@@ -7,7 +7,11 @@
     $formResponses = $formResponses ?? [];
     $firstName = $firstName ?? '';
     $surname = $surname ?? '';
+    $firstName = $firstName ?? '';
+    $surname = $surname ?? '';
     $fcbData = $fcbData ?? null;
+    $guarantor = $guarantor ?? ($formResponses['guarantor'] ?? []);
+    $otherLoans = $otherLoans ?? ($formResponses['otherLoans'] ?? []);
 
     // Helper to format address from JSON or string
     $formatAddress = function($value) {
@@ -366,7 +370,7 @@
             <td colspan="4">Other: {{ $responsiblePaymaster !== 'Church' ? $responsiblePaymaster : '…………………………………………………………………………………….' }}</td>
         </tr>
         <tr>
-            <td>Name of Employer :</td>
+            <td>Name of Institution :</td>
             <td>{{ $employerName ?? '' }}</td>
             <td colspan="4">Employer Address: {{ $formatAddress($employerAddress ?? '') }}</td>
         </tr>
