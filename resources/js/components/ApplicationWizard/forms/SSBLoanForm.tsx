@@ -453,7 +453,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             maxDate={`${new Date().getFullYear() - 18}-12-31`}
                             minDate="1930-01-01"
                             defaultAge={20}
-                            showAgeValidation={true}
+                            showAgeValidation={false}
                             required
                         />
 
@@ -606,8 +606,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                                     <SelectItem value="Transport and Infrastructure">Transport and Infrastructure</SelectItem>
                                     <SelectItem value="Women Affairs">Women Affairs</SelectItem>
                                     <SelectItem value="Youth, Sport, Arts and Recreation">Youth, Sport, Arts and Recreation</SelectItem>
-                                    <SelectItem value="Zimbabwe National Army">Zimbabwe National Army</SelectItem>
-                                    <SelectItem value="Air Force of Zimbabwe">Air Force of Zimbabwe</SelectItem>
+                
 
                                 </SelectContent>
                             </Select>

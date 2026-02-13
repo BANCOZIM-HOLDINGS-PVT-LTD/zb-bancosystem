@@ -413,7 +413,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                             maxDate={`${new Date().getFullYear() - 18}-12-31`}
                             minDate="1930-01-01"
                             defaultAge={20}
-                            showAgeValidation={true}
+                            showAgeValidation={false}
                             required
                         />
 

@@ -104,7 +104,6 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
     const [loanType, setLoanType] = useState<string>(''); // 'qupa' | 'other' | 'both'
     const [isCustomBranch, setIsCustomBranch] = useState<boolean>(false);
     const [accountNumberError, setAccountNumberError] = useState<string>('');
-    const [employmentError, setEmploymentError] = useState<string>('');
 
     const [formData, setFormData] = useState({
         // Credit Facility Details (pre-populated)
@@ -278,14 +277,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             }
         }
 
-        // Validate Employment Number
-        const employmentNumberRegex = /^\d{7}[A-Z]$/;
-        if (formData.employmentNumber && !employmentNumberRegex.test(formData.employmentNumber)) {
-            setEmploymentError('Employment Number must be 7 digits followed by a letter (e.g. 1234567A)');
-            const el = document.getElementById('employmentNumber');
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
+
 
         // Map Account Holders form fields to match PDF template expectations
         const mappedData = {
@@ -477,7 +469,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 maxDate={`${new Date().getFullYear() - 18}-12-31`}
                                 minDate="1930-01-01"
                                 defaultAge={20}
-                                showAgeValidation={true}
+                                showAgeValidation={false}
                             />
                         </div>
 
@@ -624,7 +616,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="Ministry of Defence">Ministry of Defence</SelectItem>
-                                        <SelectItem value="Other Security Sector">Other Security Sector</SelectItem>
+                                        <SelectItem value="Ministry of State Security">Ministry of State Security</SelectItem>
                                     </SelectContent>
                                 </Select>
                             ) : data.employer === 'security-company' ? (
@@ -684,6 +676,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                     <Select
                                         value={formData.department}
                                         onValueChange={(value) => handleInputChange('department', value)}
+                                        disabled={formData.employerName === 'Ministry of State Security'}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select department" />
@@ -734,36 +727,12 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
 
                         <div>
                             <Label htmlFor="employmentNumber">Employment Number</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    id="employmentNumber"
-                                    className="flex-1"
-                                    placeholder="1234567"
-                                    maxLength={7}
-                                    value={formData.employmentNumber && formData.employmentNumber.match(/^\d+/) ? (formData.employmentNumber.match(/^\d+/) || [''])[0] : ''}
-                                    onChange={(e) => {
-                                        const num = e.target.value.replace(/\D/g, '').slice(0, 7);
-                                        const currentLetter = formData.employmentNumber ? formData.employmentNumber.replace(/^\d+/, '') : '';
-                                        handleInputChange('employmentNumber', num + currentLetter);
-                                    }}
-                                />
-                                <Input
-                                    id="employmentCheckLetter"
-                                    className="w-16 text-center"
-                                    placeholder="A"
-                                    maxLength={1}
-                                    value={formData.employmentNumber ? formData.employmentNumber.replace(/^\d+/, '') : ''}
-                                    onChange={(e) => {
-                                        const letter = e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 1).toUpperCase();
-                                        const currentNumMatch = formData.employmentNumber ? formData.employmentNumber.match(/^\d+/) : null;
-                                        const numStr = currentNumMatch ? currentNumMatch[0] : '';
-                                        handleInputChange('employmentNumber', numStr + letter);
-                                    }}
-                                />
-                            </div>
-                            {employmentError && (
-                                <p className="text-sm text-red-500 mt-1">{employmentError}</p>
-                            )}
+                            <Input
+                                id="employmentNumber"
+                                value={formData.employmentNumber}
+                                onChange={(e) => handleInputChange('employmentNumber', e.target.value)}
+                                placeholder="Enter employment number"
+                            />
                         </div>
 
                         <div>
@@ -783,24 +752,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                             </Select>
                         </div>
 
-                        <div>
-                            <Label htmlFor="headOfInstitution">Name of Immediate Supervisor</Label>
-                            <Input
-                                id="headOfInstitution"
-                                value={formData.headOfInstitution}
-                                onChange={(e) => handleInputChange('headOfInstitution', e.target.value)}
-                            />
-                        </div>
 
-                        <div>
-                            <FormField
-                                id="headOfInstitutionCell"
-                                label="Cell No of Head of Immediate Supervisor"
-                                type="phone"
-                                value={formData.headOfInstitutionCell}
-                                onChange={(value) => handleInputChange('headOfInstitutionCell', value)}
-                            />
-                        </div>
                     </div>
                 </Card>
 
@@ -1257,7 +1209,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     <div className="flex items-center mb-4">
                         <User className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Guarantor Details</h3>
-                  <h5>Please fill in the guarantor details below</h5>  
+                        <h5>Please fill in the guarantor details below</h5>
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-3">
