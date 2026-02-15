@@ -35,7 +35,7 @@ class OtpService
         try {
             $otp = $user->generateOtp();
 
-            $message = "Hello, welcome to Microbiz. Please copy this code {$otp} and enter it to complete your account verification. If you encounter any problem you may restart your application on bancosystem.fly.dev";
+            $message = "MicroBiz Verification Code: {$otp}. Use this to verify your account. Help: bancosystem.fly.dev";
 
             // Use dispatchAfterResponse for immediate processing after HTTP response
             // This sends response to user immediately, then processes the SMS

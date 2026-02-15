@@ -115,42 +115,16 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
     });
 
     const handleSubmit = async () => {
-        // Generate invoice number from national ID (remove dashes)
+        /* 
+        // SMS Notification Logic Removed
+        // The backend now handles all SMS notifications upon final submission to prevent duplicates.
+        // Previously, this triggered a "You are about to apply..." message which users found confusing
+        // when followed immediately by the "Thank you for applying" message.
+        */
+
+        // Generate invoice number from national ID (remove dashes) - Needed for submission data
         const nationalId = data.formResponses?.nationalIdNumber || data.idNumber || '';
         const invoiceNumber = nationalId.replace(/-/g, '');
-
-        // Get product name for SMS
-        const productName = data.product || data.business || data.category || 'Product';
-
-        // Get amount for SMS
-        const amount = data.grossLoan || data.loanAmount || data.amount || data.netLoan || 0;
-
-        // Get phone number
-        const phone = data.formResponses?.mobile || '';
-
-        // Send SMS notification if we have required data
-        if (nationalId && phone) {
-            try {
-                await fetch('/api/invoice-sms/hire-purchase', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                    },
-                    body: JSON.stringify({
-                        national_id: nationalId,
-                        phone: phone,
-                        product_name: productName,
-                        amount: amount,
-                        currency: data.currency || 'USD'
-                    })
-                });
-                console.log('[ApplicationSummary] SMS notification sent for invoice:', invoiceNumber);
-            } catch (error) {
-                console.error('[ApplicationSummary] Failed to send SMS:', error);
-                // Continue even if SMS fails
-            }
-        }
 
         const submissionData = {
             formId,

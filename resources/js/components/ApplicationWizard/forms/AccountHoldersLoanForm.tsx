@@ -968,7 +968,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                             <Label htmlFor="accountNumber">
                                 Account Number
                                 {formData.bankName === 'ZB Bank' && (
-                                    <span className="text-xs text-gray-500 ml-2">( )</span>
+                                    <span className="text-xs text-gray-500 ml-2"></span>
                                 )}
                             </Label>
                             <Input
