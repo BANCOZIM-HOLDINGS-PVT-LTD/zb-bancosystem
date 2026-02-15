@@ -30,6 +30,10 @@ class ZBStatusService
         );
 
         // Automatically move to awaiting credit check
+        // Also sync current_step for Filament Resource visibility
+        $application->current_step = 'zb_verification_pending';
+        $application->save();
+
         $this->updateStatus(
             $application,
             ZBLoanStatus::AWAITING_CREDIT_CHECK,
@@ -48,6 +52,7 @@ class ZBStatusService
         string $notes = '',
         array $additionalData = []
     ): bool {
+        // ... (existing code up to validation) ...
         $metadata = $application->metadata ?? [];
         $currentStatus = isset($metadata['zb_status'])
             ? ZBLoanStatus::tryFrom($metadata['zb_status'])
@@ -66,8 +71,21 @@ class ZBStatusService
         // Update status
         // Update status column
         $application->status = $newStatus->value;
+        
+        // Sync current_step for specific statuses to match Filament resources
+        if ($newStatus === ZBLoanStatus::APPROVED) {
+            $application->current_step = 'approved';
+        } elseif ($newStatus === ZBLoanStatus::CREDIT_CHECK_GOOD_APPROVED) {
+            $application->current_step = 'zb_approval_pending';
+        } elseif ($newStatus === ZBLoanStatus::REJECTED || 
+                  $newStatus === ZBLoanStatus::CREDIT_CHECK_POOR_REJECTED || 
+                  $newStatus === ZBLoanStatus::SALARY_NOT_REGULAR_REJECTED || 
+                  $newStatus === ZBLoanStatus::INSUFFICIENT_SALARY_REJECTED) {
+            $application->current_step = 'rejected';
+        }
 
         $metadata['zb_status'] = $newStatus->value;
+        // ... (rest of function) ...
         $metadata['zb_status_updated_at'] = now()->toISOString();
         $metadata['zb_status_message'] = $newStatus->getMessage();
 

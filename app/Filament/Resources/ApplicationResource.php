@@ -1274,7 +1274,8 @@ class ApplicationResource extends BaseResource
                             $csvService = app(\App\Services\CsvExportService::class);
                             
                             $query = ApplicationState::query()
-                                ->whereIn('current_step', ['approved', 'completed'])
+                                // Removed restrictive current_step filter
+                                // ->whereIn('current_step', ['approved', 'completed'])
                                 ->where(function ($query) {
                                     $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
                                     if ($isPgsql) {
@@ -1356,7 +1357,8 @@ class ApplicationResource extends BaseResource
                             $csvService = app(\App\Services\CsvExportService::class);
 
                             $query = ApplicationState::query()
-                                ->whereIn('current_step', ['approved', 'completed'])
+                                // Removed restrictive current_step filter
+                                // ->whereIn('current_step', ['approved', 'completed'])
                                 ->where(function ($query) {
                                     $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
                                     if ($isPgsql) {
