@@ -1410,7 +1410,8 @@ class PDFGeneratorService implements PDFGeneratorInterface
         // Clean up any unexpected nested arrays (except for known nested structures)
         $knownArrayFields = [
             'declaration', 'spouseDetails', 'otherLoans', 'nextOfKin', 'funeralCover', 
-            'capitalSources', 'customerBase', 'servicesRequired', 'employerType'
+            'capitalSources', 'customerBase', 'servicesRequired', 'employerType',
+            'guarantor'
         ];
         foreach ($mergedResponses as $key => &$value) {
             if (!in_array($key, $knownArrayFields) && is_array($value)) {
