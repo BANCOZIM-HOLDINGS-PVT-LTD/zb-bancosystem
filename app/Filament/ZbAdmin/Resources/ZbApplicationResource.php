@@ -175,9 +175,79 @@ class ZbApplicationResource extends Resource
                         ->icon('heroicon-o-arrow-down-tray')
                         ->color('info')
                         ->action(function () {
-                            return \Maatwebsite\Excel\Facades\Excel::download(
-                                new \App\Exports\SSBLoanExport(),
-                                'ssb_loans_export_' . date('Y-m-d') . '.csv'
+                            $csvService = app(\App\Services\CsvExportService::class);
+                            
+                            $query = ApplicationState::query()
+                                ->whereIn('current_step', ['approved', 'completed'])
+                                ->where(function ($query) {
+                                    $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+                                    if ($isPgsql) {
+                                        $query->whereRaw("COALESCE(form_data->>'employer', '') = 'government-ssb'");
+                                    } else {
+                                        $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.employer')) = 'government-ssb'");
+                                    }
+                                })
+                                ->orderBy('updated_at', 'desc');
+
+                            $headings = [
+                                'DATE', 'BRANCH', 'SURNAME', 'NAME', 'EC NUMBER', 'ID NUMBER',
+                                'PRODUCT', 'PRICE', 'INSTALLMENT', 'PERIOD', 'MOBILE', 'ADDRESS', 'NEXT OF KIN'
+                            ];
+
+                            return $csvService->download(
+                                'ssb_loans_export_' . date('Y-m-d') . '.csv',
+                                $headings,
+                                $query,
+                                function ($application) {
+                                    $formData = $application->form_data;
+                                    $formResponses = $formData['formResponses'] ?? [];
+
+                                    // Helper to get address line
+                                    $getAddressLine = function ($addressData) {
+                                        if (empty($addressData)) return '';
+                                        if (is_string($addressData) && (str_starts_with($addressData, '{') || str_starts_with($addressData, '['))) {
+                                            $decoded = json_decode($addressData, true);
+                                            return $decoded['addressLine'] ?? $addressData;
+                                        }
+                                        if (is_array($addressData)) {
+                                            return $addressData['addressLine'] ?? '';
+                                        }
+                                        return $addressData;
+                                    };
+
+                                    // Helper to get next of kin
+                                    $getNextOfKin = function ($responses) {
+                                        $spouseDetails = $responses['spouseDetails'] ?? [];
+                                        if (empty($spouseDetails)) return $responses['nextOfKinName'] ?? '';
+                                        if (is_string($spouseDetails)) {
+                                            $spouseDetails = json_decode($spouseDetails, true) ?? [];
+                                        }
+                                        if (is_array($spouseDetails) && !empty($spouseDetails)) {
+                                            foreach ($spouseDetails as $kin) {
+                                                if (!empty($kin['fullName'])) {
+                                                    return $kin['fullName'];
+                                                }
+                                            }
+                                        }
+                                        return $responses['nextOfKinName'] ?? '';
+                                    };
+
+                                    return [
+                                        $application->approved_at ? $application->approved_at->format('Y-m-d') : ($application->updated_at ? $application->updated_at->format('Y-m-d') : date('Y-m-d')),
+                                        'WESTEND',
+                                        $formResponses['surname'] ?? $formResponses['lastName'] ?? '',
+                                        $formResponses['firstName'] ?? '',
+                                        $formResponses['employmentNumber'] ?? $formResponses['employeeNumber'] ?? $formResponses['ecNumber'] ?? '',
+                                        $formResponses['nationalIdNumber'] ?? '',
+                                        $formData['productName'] ?? $formResponses['productName'] ?? '',
+                                        $formResponses['loanAmount'] ?? $formData['finalPrice'] ?? '',
+                                        $formResponses['monthlyPayment'] ?? $formData['monthlyInstallment'] ?? '',
+                                        $formResponses['loanTenure'] ?? $formData['creditDuration'] ?? '',
+                                        $formResponses['mobile'] ?? $formResponses['phoneNumber'] ?? '',
+                                        $getAddressLine($formResponses['residentialAddress'] ?? ''),
+                                        $getNextOfKin($formResponses),
+                                    ];
+                                }
                             );
                         })
                         ->deselectRecordsAfterCompletion(),
@@ -187,9 +257,89 @@ class ZbApplicationResource extends Resource
                         ->icon('heroicon-o-arrow-down-tray')
                         ->color('success')
                         ->action(function () {
-                            return \Maatwebsite\Excel\Facades\Excel::download(
-                                new \App\Exports\ZBLoanExport(),
-                                'zb_loans_export_' . date('Y-m-d') . '.csv'
+                            $csvService = app(\App\Services\CsvExportService::class);
+
+                            $query = ApplicationState::query()
+                                ->whereIn('current_step', ['approved', 'completed'])
+                                ->where(function ($query) {
+                                    $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+                                    if ($isPgsql) {
+                                        $query->whereRaw("form_data->>'hasAccount' = 'true'")
+                                              ->orWhereRaw("form_data->>'wantsAccount' = 'true'");
+                                    } else {
+                                        $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.hasAccount')) = 'true'")
+                                              ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.wantsAccount')) = 'true'");
+                                    }
+                                })
+                                ->where(function ($query) {
+                                    $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+                                    if ($isPgsql) {
+                                        $query->whereRaw("COALESCE(form_data->>'employer', '') != 'government-ssb'");
+                                    } else {
+                                        $query->whereRaw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.employer')), '') != 'government-ssb'");
+                                    }
+                                })
+                                ->orderBy('updated_at', 'desc');
+
+                            $headings = [
+                                'DATE', 'BRANCH', 'SURNAME', 'NAME', 'EC NUMBER', 'ID NUMBER',
+                                'PRODUCT', 'PRICE', 'INSTALLMENT', 'PERIOD', 'MOBILE', 'ADDRESS', 'NEXT OF KIN'
+                            ];
+
+                            return $csvService->download(
+                                'zb_loans_export_' . date('Y-m-d') . '.csv',
+                                $headings,
+                                $query,
+                                function ($application) {
+                                    $formData = $application->form_data;
+                                    $formResponses = $formData['formResponses'] ?? [];
+
+                                    // Helper to get address line
+                                    $getAddressLine = function ($addressData) {
+                                        if (empty($addressData)) return '';
+                                        if (is_string($addressData) && (str_starts_with($addressData, '{') || str_starts_with($addressData, '['))) {
+                                            $decoded = json_decode($addressData, true);
+                                            return $decoded['addressLine'] ?? $addressData;
+                                        }
+                                        if (is_array($addressData)) {
+                                            return $addressData['addressLine'] ?? '';
+                                        }
+                                        return $addressData;
+                                    };
+
+                                    // Helper to get next of kin
+                                    $getNextOfKin = function ($responses) {
+                                        $spouseDetails = $responses['spouseDetails'] ?? [];
+                                        if (empty($spouseDetails)) return $responses['nextOfKinName'] ?? '';
+                                        if (is_string($spouseDetails)) {
+                                            $spouseDetails = json_decode($spouseDetails, true) ?? [];
+                                        }
+                                        if (is_array($spouseDetails) && !empty($spouseDetails)) {
+                                            foreach ($spouseDetails as $kin) {
+                                                if (!empty($kin['fullName'])) {
+                                                    return $kin['fullName'];
+                                                }
+                                            }
+                                        }
+                                        return $responses['nextOfKinName'] ?? '';
+                                    };
+
+                                    return [
+                                        $application->approved_at ? $application->approved_at->format('Y-m-d') : ($application->updated_at ? $application->updated_at->format('Y-m-d') : date('Y-m-d')),
+                                        'WESTEND',
+                                        $formResponses['surname'] ?? $formResponses['lastName'] ?? '',
+                                        $formResponses['firstName'] ?? '',
+                                        $formResponses['employmentNumber'] ?? $formResponses['employeeNumber'] ?? $formResponses['ecNumber'] ?? '',
+                                        $formResponses['nationalIdNumber'] ?? '',
+                                        $formData['productName'] ?? $formResponses['productName'] ?? '',
+                                        $formResponses['loanAmount'] ?? $formData['finalPrice'] ?? '',
+                                        $formResponses['monthlyPayment'] ?? $formData['monthlyInstallment'] ?? '',
+                                        $formResponses['loanTenure'] ?? $formData['creditDuration'] ?? '',
+                                        $formResponses['mobile'] ?? $formResponses['phoneNumber'] ?? '',
+                                        $getAddressLine($formResponses['residentialAddress'] ?? ''),
+                                        $getNextOfKin($formResponses),
+                                    ];
+                                }
                             );
                         })
                         ->deselectRecordsAfterCompletion(),

@@ -83,7 +83,7 @@ class ApplicantDocumentsVerificationResource extends Resource
                         Forms\Components\Section::make('Verification Checklist')
                             ->schema([
                                 Forms\Components\Radio::make('paid_deposit_consistency')
-                                    ->label('Paid Deposit Consistency')
+                                    ->label('Salary Deposit Consistency')
                                     ->options([
                                         'yes' => 'Yes',
                                         'no' => 'No'
