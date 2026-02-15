@@ -206,6 +206,40 @@ class StateController extends Controller
             }
 
             
+            // Initialization Logic: Set Status based on application type
+            // This ensures applications appear in the correct verification lists
+            try {
+                $isSSB = false;
+                $employer = data_get($validated['data'], 'employer') ?? data_get($validated['data'], 'formResponses.employer');
+                $employerType = data_get($validated['data'], 'formResponses.employerType');
+
+                if (($employer && stripos($employer, 'Civil Service') !== false) ||
+                    ($employer && stripos($employer, 'SSB') !== false) ||
+                    ($employer && stripos($employer, 'Government') !== false) ||
+                    (is_array($employerType) && !empty($employerType['government'])) ||
+                    ($employerType === 'government')
+                ) {
+                    $isSSB = true;
+                }
+
+                if ($isSSB) {
+                    $ssbService = app(\App\Services\SSBStatusService::class);
+                    $ssbService->initializeSSBApplication($state);
+                } else {
+                    // Default to ZB workflow for non-SSB
+                    // Only start ZB workflow if it's NOT just an account opening (e.g. Loans)
+                    // But ZBStatusService covers general "ZB Application" workflow
+                    $zbService = app(\App\Services\ZBStatusService::class);
+                    $zbService->initializeZBApplication($state);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to initialize application status', [
+                    'id' => $state->id,
+                    'error' => $e->getMessage()
+                ]);
+                // Continue execution - failure to init status shouldn't block submission
+            }
+
             // Send confirmation SMS
             try {
                 // We use the app() helper to resolve the service since it might not be injected in the method

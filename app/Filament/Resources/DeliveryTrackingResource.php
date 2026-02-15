@@ -335,7 +335,7 @@ class DeliveryTrackingResource extends BaseResource
                             ->columnSpanFull(),
 
                         Forms\Components\FileUpload::make('delivery_photo')
-                            ->label('Proof of Delivery Photo')
+                            ->label('Upload or Scan Client Acknowledgement Note')
                             ->image()
                             ->directory('delivery-photos')
                             ->visibility('private')
