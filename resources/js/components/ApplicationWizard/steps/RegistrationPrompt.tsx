@@ -167,9 +167,9 @@ const RegistrationPrompt: React.FC<RegistrationPromptProps> = ({ data, onBack, s
         <div className="space-y-6">
             <div className="text-center">
                 <UserPlus className="mx-auto h-16 w-16 text-emerald-600 mb-4" />
-                <h2 className="text-2xl font-semibold mb-2">Register or Login to Continue</h2>
+                <h2 className="text-2xl font-semibold mb-2">Register to continue</h2>
                 <p className="text-gray-600 dark:text-gray-400">
-                    To proceed with your application, please login or create an account
+                    To proceed with your application, please create an account
                 </p>
             </div>
 
@@ -181,7 +181,7 @@ const RegistrationPrompt: React.FC<RegistrationPromptProps> = ({ data, onBack, s
                     <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                         <li className="flex items-start">
                             <span className="text-emerald-600 mr-2">✓</span>
-                            <span>Complete your hire purchase application</span>
+                            <span>Complete your application</span>
                         </li>
                         <li className="flex items-start">
                             <span className="text-emerald-600 mr-2">✓</span>
@@ -208,23 +208,10 @@ const RegistrationPrompt: React.FC<RegistrationPromptProps> = ({ data, onBack, s
 
                         <div className="relative">
                             <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t border-gray-300 dark:border-gray-600" />
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">
-                                    Or
-                                </span>
+
                             </div>
                         </div>
 
-                        <Button
-                            onClick={handleLogin}
-                            variant="outline"
-                            className="w-full flex items-center justify-center gap-2"
-                        >
-                            <LogIn className="h-5 w-5" />
-                            Login with ID Number
-                        </Button>
                     </div>
                 </div>
             </Card>
