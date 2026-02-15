@@ -13,7 +13,8 @@ import {
     ArrowLeft,
     Phone,
     CreditCard,
-    DollarSign
+    DollarSign,
+    Package
 } from 'lucide-react';
 import { Link } from '@inertiajs/react';
 import Footer from '@/components/Footer';
@@ -140,6 +141,13 @@ export default function ApplicationStatus() {
                 label: 'Pending Review',
                 description: 'Your application is in queue and will be reviewed soon.'
             },
+            'submitted': {
+                icon: Clock,
+                color: 'text-yellow-600 dark:text-yellow-400',
+                bg: 'bg-yellow-50 dark:bg-yellow-900/20',
+                label: 'Application Submitted',
+                description: 'Your application has been received and is pending review.'
+            },
             'pending_verification': {
                 icon: Clock,
                 color: 'text-amber-600 dark:text-amber-400',
@@ -154,6 +162,20 @@ export default function ApplicationStatus() {
                 label: 'Processing Checks',
                 description: 'Your application has been verified and is undergoing automated checks.'
             },
+            'awaiting_credit_check': {
+                icon: AlertCircle,
+                color: 'text-indigo-600 dark:text-indigo-400',
+                bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+                label: 'Credit Check in Progress',
+                description: 'We are currently assessing your credit eligibility.'
+            },
+            'awaiting_ssb_approval': {
+                icon: AlertCircle,
+                color: 'text-indigo-600 dark:text-indigo-400',
+                bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+                label: 'SSB Approval in Progress',
+                description: 'Your application has been sent to SSB for approval.'
+            },
             'under_review': {
                 icon: AlertCircle,
                 color: 'text-blue-600 dark:text-blue-400',
@@ -167,6 +189,34 @@ export default function ApplicationStatus() {
                 bg: 'bg-green-50 dark:bg-green-900/20',
                 label: 'Approved',
                 description: 'Congratulations! Your application has been approved.'
+            },
+            'ssb_approved': {
+                icon: CheckCircle,
+                color: 'text-green-600 dark:text-green-400',
+                bg: 'bg-green-50 dark:bg-green-900/20',
+                label: 'Approved',
+                description: 'Congratulations! Your SSB loan application has been approved.'
+            },
+            'approved_awaiting_delivery': {
+                icon: Package,
+                color: 'text-emerald-600 dark:text-emerald-400',
+                bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+                label: 'Approved - Awaiting Delivery',
+                description: 'Your application is approved and being prepared for delivery.'
+            },
+            'credit_check_good_approved': {
+                icon: CheckCircle,
+                color: 'text-green-600 dark:text-green-400',
+                bg: 'bg-green-50 dark:bg-green-900/20',
+                label: 'Credit Check Passed',
+                description: 'Your credit check was successful. Finalizing approval.'
+            },
+            'credit_check_poor_rejected': {
+                icon: XCircle,
+                color: 'text-red-600 dark:text-red-400',
+                bg: 'bg-red-50 dark:bg-red-900/20',
+                label: 'Application Rejected',
+                description: 'We regret to inform you that your application was not successful due to credit check results.'
             },
             'rejected': {
                 icon: XCircle,

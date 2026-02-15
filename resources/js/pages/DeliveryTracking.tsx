@@ -92,7 +92,7 @@ export default function DeliveryTracking() {
             'in_transit': { icon: Truck, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20', label: 'In Transit' },
             'out_for_delivery': { icon: Truck, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20', label: 'Out for Delivery' },
             'delivered': { icon: CheckCircle, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', label: 'Delivered' },
-            'pending': { icon: Clock, color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-50 dark:bg-gray-900/20', label: 'Pending' },
+            'pending': { icon: Clock, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', label: 'Order Processing' },
         };
 
         const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
@@ -353,7 +353,7 @@ export default function DeliveryTracking() {
                     )}
                 </div >
             </div >
-            
+
             <Footer />
         </>
     );

@@ -222,6 +222,15 @@ class StateController extends Controller
                     $isSSB = true;
                 }
 
+                // FIX: ZB Account Holders should ALWAYS go through ZB workflow (FCB check),
+                // even if they are government employees.
+                $isAccountHolder = ($validated['data']['hasAccount'] ?? false) === true || 
+                                   ($validated['data']['formType'] ?? '') === 'account_holder_loan_application';
+
+                if ($isAccountHolder) {
+                    $isSSB = false; 
+                }
+
                 if ($isSSB) {
                     $ssbService = app(\App\Services\SSBStatusService::class);
                     $ssbService->initializeSSBApplication($state);
