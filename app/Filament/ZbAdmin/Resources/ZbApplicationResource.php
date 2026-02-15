@@ -90,7 +90,7 @@ class ZbApplicationResource extends Resource
                         'danger' => 'rejected',
                     ]),
                 Tables\Columns\BadgeColumn::make('check_status')
-                    ->label('SSB Check')
+                    ->label('FCB Check')
                     ->colors([
                         'success' => fn ($state): bool => in_array($state, ['S', 'A']), // Success / Approved
                         'danger' => fn ($state): bool => in_array($state, ['F', 'B']), // Failure / Blacklisted
