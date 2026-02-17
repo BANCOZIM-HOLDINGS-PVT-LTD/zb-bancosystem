@@ -10,21 +10,21 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Product extends Model
 {
     protected $fillable = [
+        'product_code',
         'product_sub_category_id',
         'product_series_id',
+        'supplier_id',
         'name',
         'base_price',
         'image_url',
-        'colors',
-        'purchase_price', // Added
-        'markup_percentage', // Added
+        'purchase_price',
+        'markup_percentage',
     ];
 
     protected $casts = [
         'base_price' => 'decimal:2',
         'purchase_price' => 'decimal:2',
         'markup_percentage' => 'decimal:2',
-        'colors' => 'array',
     ];
 
     /**
@@ -41,6 +41,32 @@ class Product extends Model
     public function series(): BelongsTo
     {
         return $this->belongsTo(ProductSeries::class, 'product_series_id');
+    }
+
+    /**
+     * Get the supplier for this product
+     */
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
+    /**
+     * Get MicroBiz package tiers where this product IS the business
+     */
+    public function microbizPackages(): HasMany
+    {
+        return $this->hasMany(MicrobizPackage::class);
+    }
+
+    /**
+     * Get MicroBiz packages this product is included in (as an inventory item)
+     */
+    public function inPackages()
+    {
+        return $this->belongsToMany(MicrobizPackage::class, 'package_products')
+            ->withPivot(['quantity', 'unit_cost'])
+            ->withTimestamps();
     }
 
     /**

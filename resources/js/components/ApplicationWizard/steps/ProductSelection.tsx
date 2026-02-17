@@ -14,7 +14,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Check } from 'lucide-react';
+
 
 interface ProductSelectionProps {
     data: any;
@@ -32,9 +32,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
     const [selectedBusiness, setSelectedBusiness] = useState<BusinessType | null>(null);
     const [selectedScale, setSelectedScale] = useState<{ id?: number; name: string; multiplier: number; custom_price?: number } | null>(null);
-    const [selectedColor, setSelectedColor] = useState<string | null>(null);
-    const [selectedInteriorColor, setSelectedInteriorColor] = useState<string | null>(null);
-    const [selectedExteriorColor, setSelectedExteriorColor] = useState<string | null>(null);
+
     const [finalAmount, setFinalAmount] = useState<number>(0);
     const [includesMESystem, setIncludesMESystem] = useState<boolean>(false);
     const [includesTraining, setIncludesTraining] = useState<boolean>(false);
@@ -49,7 +47,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [showConstructionUnavailableModal, setShowConstructionUnavailableModal] = useState<boolean>(false);
 
     // Cart State
-    const [cart, setCart] = useState<{ businessId: number; name: string; price: number; quantity: number; color?: string; interiorColor?: string; exteriorColor?: string; scale?: string }[]>(data.cart || []);
+    const [cart, setCart] = useState<{ businessId: number; name: string; price: number; quantity: number; scale?: string }[]>(data.cart || []);
     const [cartQuantity, setCartQuantity] = useState<number>(1);
     const isCartMode = selectedCategory?.name === 'Building Materials' || (selectedCategory?.name === 'Agricultural Inputs' && data.intent !== 'microBiz') || data.intent === 'homeConstruction';
 
@@ -204,9 +202,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     salesData: []
                 },
                 selectedScale: null,
-                color: null,
-                interiorColor: null,
-                exteriorColor: null
             });
             return;
         }
@@ -231,9 +226,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     salesData: []
                 },
                 selectedScale: null,
-                color: null,
-                interiorColor: null,
-                exteriorColor: null
             });
             return;
         }
@@ -253,9 +245,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
     const handleBusinessSelect = (business: BusinessType) => {
         setSelectedBusiness(business);
-        setSelectedColor(null); // Reset color
-        setSelectedInteriorColor(null); // Reset interior color
-        setSelectedExteriorColor(null); // Reset exterior color
         setSelectedScale(null); // Reset scale/storage
 
         if (business.name === 'Zimparks Vacation Package') {
@@ -315,8 +304,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                         custom_price: scale.custom_price
                     },
                     color: null,
-                    interiorColor: null,
-                    exteriorColor: null
                 });
             }
             return;
@@ -507,18 +494,18 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             meSystemFee,
             includesTraining,
             trainingFee,
+            // Product details
+            productCode: selectedBusiness?.product_code,
             selectedBusiness: {
                 id: selectedBusiness?.id?.toString(),
                 name: selectedBusiness?.name,
+                product_code: selectedBusiness?.product_code,
                 salesData: []
             },
             selectedScale: selectedScale ? {
                 id: selectedScale.id?.toString(),
                 name: selectedScale.name
             } : undefined,
-            color: selectedColor,
-            interiorColor: selectedInteriorColor,
-            exteriorColor: selectedExteriorColor
         });
     };
 
@@ -545,7 +532,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 setCurrentView('businesses');
                 setSelectedBusiness(null);
                 setSelectedScale(null);
-                setSelectedColor(null);
                 break;
             case 'scales':
                 if (selectedBusiness?.name === 'Zimparks Vacation Package') {
@@ -580,12 +566,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const handleAddToCart = () => {
         // Validation: Must have business.
         if (!selectedBusiness) return;
-        // Validation: If colors exist, must have color selected.
-        if (selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && !selectedColor) return;
-        // Validation: If interior colors exist, must have interior color selected.
-        if (selectedBusiness.interiorColors && Array.isArray(selectedBusiness.interiorColors) && selectedBusiness.interiorColors.length > 0 && !selectedInteriorColor) return;
-        // Validation: If exterior colors exist, must have exterior color selected.
-        if (selectedBusiness.exteriorColors && Array.isArray(selectedBusiness.exteriorColors) && selectedBusiness.exteriorColors.length > 0 && !selectedExteriorColor) return;
 
         const scale = selectedScale; // Can be null
         const price = scale?.custom_price || (selectedBusiness.basePrice * (scale?.multiplier || 1));
@@ -595,9 +575,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             name: selectedBusiness.name,
             price: price,
             quantity: cartQuantity,
-            color: selectedColor || undefined,
-            interiorColor: selectedInteriorColor || undefined,
-            exteriorColor: selectedExteriorColor || undefined,
             scale: scale?.name
         };
 
@@ -620,8 +597,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         setCartQuantity(1);
         setSelectedBusiness(null);
         setSelectedSubcategory(null);
-        setSelectedInteriorColor(null);
-        setSelectedExteriorColor(null);
         setCurrentView('subcategories');
     };
 
@@ -660,11 +635,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             return;
         }
 
-        // Check if color is required but not selected
-        if (selectedBusiness.colors && selectedBusiness.colors.length > 0 && !selectedColor) {
-            setValidationError('Please select a color');
-            return;
-        }
+
 
         // For MicroBiz/Zimparks, validation happens before this step or logic is different, 
         // but generally we proceed to terms or show package details.
@@ -697,7 +668,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 <div>
                                     <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{item.name}</span>
                                     <div className="text-xs text-gray-500">
-                                        {item.color && <span className="mr-2">Color: {item.color}</span>}
                                         {item.scale && <span>Size: {item.scale}</span>}
                                         <span className="ml-2">x{item.quantity}</span>
                                     </div>
@@ -741,68 +711,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         );
     }
 
-    const getColorHex = (colorName: string): string => {
-        const map: Record<string, string> = {
-            'phantom black': '#000000',
-            'phantom silver': '#C0C0C0',
-            'awesome black': '#111111',
-            'awesome white': '#F0F0F0',
-            'awesome blue': '#0070BB',
-            'black titanium': '#1E1E1E',
-            'white titanium': '#E3E3E3',
-            'blue titanium': '#2F3C53',
-            'midnight black': '#000000',
-            'polar white': '#F8F9FA',
-            'obsidian': '#1C1C1C',
-            'porcelain': '#FDFDFD',
-            'bay': '#87CEEB',
-            'hazel': '#8E7618',
-            'white gloss': '#FFFFFF',
-            'oak': '#DEB887',
-            'metallic': '#D4AF37',
-            'elephant grey': '#4A4A4A',
-            'savanna beige': '#F5F5DC',
-            'buffalo brown': '#8B4513',
-            'deep blue': '#00008B',
-            'sunset orange': '#FD5E53',
-            'sand': '#C2B280',
-            'genuine leather brown': '#5D4037',
-            'velvet green': '#006400',
-            'teak': '#8B5A2B',
-            'white wash': '#F0EAD6',
-            'grey velvet': '#808080',
-            'cream linen': '#FFFDD0',
-            'black leather': '#000000',
-            'natural black': '#1A1A1A',
-            'dark brown': '#654321',
-            'burgundy': '#800020',
-            'neutral': '#D3D3D3',
-            'navy': '#000080',
-            'cream': '#FFFDD0',
-            'gold': '#FFD700',
-            'silver': '#C0C0C0',
-            'grey': '#808080',
-            'black': '#000000',
-            'white': '#FFFFFF',
-            'blue': '#0000FF',
-            'red': '#FF0000',
-            'green': '#008000',
-            'pink': '#FFC0CB',
-            'purple': '#800080',
-            'brown': '#A52A2A',
-            'beige': '#F5F5DC',
-            'natural teak': '#C19A6B',
-            'dark oak': '#4B3621',
-            'varnish': '#D2691E',
-            'natural pine': '#F4A460',
-            'clear varnish': '#DEB887',
-            'peach': '#FFDAB9',
-            'terracotta': '#E2725B',
-            'sky blue': '#87CEEB',
-            'light grey': '#D3D3D3',
-        };
-        return map[colorName.toLowerCase()] || colorName.toLowerCase();
-    };
 
     return (
         <div className="space-y-6">
@@ -939,25 +847,15 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 )}
                                 <div className="flex-grow">
                                     <h3 className="text-lg font-medium mb-1">{business.name}</h3>
+                                    {business.product_code && (
+                                        <span className="inline-block text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded mb-1">
+                                            {business.product_code}
+                                        </span>
+                                    )}
                                     <div className="flex items-center text-sm text-gray-500 mb-1">
                                         <div className="font-semibold mr-1">{isZiG ? 'ZiG' : '$'}</div>
                                         From {formatCurrency(isZiG ? business.basePrice * ZIG_RATE : business.basePrice)}
                                     </div>
-                                    {business.colors && Array.isArray(business.colors) && business.colors.length > 0 && (
-                                        <div className="flex gap-1 mt-2">
-                                            {business.colors.slice(0, 3).map((color, i) => (
-                                                <div
-                                                    key={i}
-                                                    className="w-4 h-4 rounded-full border border-gray-200"
-                                                    style={{ backgroundColor: getColorHex(color) }}
-                                                    title={color}
-                                                />
-                                            ))}
-                                            {business.colors.length > 3 && (
-                                                <span className="text-xs text-gray-400">+{business.colors.length - 3}</span>
-                                            )}
-                                        </div>
-                                    )}
                                 </div>
                                 <ChevronRight className="h-5 w-5 text-gray-400" />
                             </Card>
@@ -1011,7 +909,12 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                         {/* Product Details */}
                         <div className="space-y-6">
                             <div>
-                                <h2 className="text-3xl font-bold text-gray-900 mb-2">{selectedBusiness.name}</h2>
+                                <h2 className="text-3xl font-bold text-gray-900 mb-1">{selectedBusiness.name}</h2>
+                                {selectedBusiness.product_code && (
+                                    <span className="inline-block text-sm font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded mb-2">
+                                        Code: {selectedBusiness.product_code}
+                                    </span>
+                                )}
                                 <div className="text-2xl font-bold text-emerald-600">
                                     {finalAmount > 0
                                         ? formatCurrency(finalAmount)
@@ -1046,95 +949,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 </div>
                             )}
 
-                            {/* Color Selection (Legacy - single color) */}
-                            {selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Color: <span className="text-gray-500 font-normal">{selectedColor || 'Select a color'}</span>
-                                    </label>
-                                    <div className="flex flex-wrap gap-3">
-                                        {selectedBusiness.colors.map((color) => (
-                                            <button
-                                                key={color}
-                                                onClick={() => setSelectedColor(color)}
-                                                className={`
-                                                    w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all
-                                                    ${selectedColor === color
-                                                        ? 'border-emerald-600 ring-2 ring-emerald-100 scale-110'
-                                                        : 'border-transparent hover:scale-105'
-                                                    }
-                                                `}
-                                                style={{ backgroundColor: getColorHex(color), boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
-                                                title={color}
-                                            >
-                                                {selectedColor === color && (
-                                                    <Check className={`h-5 w-5 ${['white', 'yellow', 'cream', 'polar white', 'white titanium', 'porcelain', 'white gloss', 'savanna beige', 'white wash', 'cream linen', 'beige'].includes(color.toLowerCase()) ? 'text-black' : 'text-white'}`} />
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Interior Paint Color Selection */}
-                            {selectedBusiness.interiorColors && Array.isArray(selectedBusiness.interiorColors) && selectedBusiness.interiorColors.length > 0 && (
-                                <div className="mt-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        🎨 Interior Paint Color: <span className="text-gray-500 font-normal">{selectedInteriorColor || 'Select interior color'}</span>
-                                    </label>
-                                    <div className="flex flex-wrap gap-3">
-                                        {selectedBusiness.interiorColors.map((color) => (
-                                            <button
-                                                key={`interior-${color}`}
-                                                onClick={() => setSelectedInteriorColor(color)}
-                                                className={`
-                                                    w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all
-                                                    ${selectedInteriorColor === color
-                                                        ? 'border-blue-600 ring-2 ring-blue-100 scale-110'
-                                                        : 'border-transparent hover:scale-105'
-                                                    }
-                                                `}
-                                                style={{ backgroundColor: getColorHex(color), boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
-                                                title={`Interior: ${color}`}
-                                            >
-                                                {selectedInteriorColor === color && (
-                                                    <Check className={`h-5 w-5 ${['white', 'yellow', 'cream', 'light grey', 'peach', 'sky blue', 'lavender'].includes(color.toLowerCase()) ? 'text-black' : 'text-white'}`} />
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Exterior Paint Color Selection */}
-                            {selectedBusiness.exteriorColors && Array.isArray(selectedBusiness.exteriorColors) && selectedBusiness.exteriorColors.length > 0 && (
-                                <div className="mt-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        🏠 Exterior Paint Color: <span className="text-gray-500 font-normal">{selectedExteriorColor || 'Select exterior color'}</span>
-                                    </label>
-                                    <div className="flex flex-wrap gap-3">
-                                        {selectedBusiness.exteriorColors.map((color) => (
-                                            <button
-                                                key={`exterior-${color}`}
-                                                onClick={() => setSelectedExteriorColor(color)}
-                                                className={`
-                                                    w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all
-                                                    ${selectedExteriorColor === color
-                                                        ? 'border-orange-600 ring-2 ring-orange-100 scale-110'
-                                                        : 'border-transparent hover:scale-105'
-                                                    }
-                                                `}
-                                                style={{ backgroundColor: getColorHex(color), boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
-                                                title={`Exterior: ${color}`}
-                                            >
-                                                {selectedExteriorColor === color && (
-                                                    <Check className={`h-5 w-5 ${['white', 'yellow', 'cream', 'light grey', 'sand'].includes(color.toLowerCase()) ? 'text-black' : 'text-white'}`} />
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
                             {/* Action Button */}
                             <div className="pt-6">
                                 {isCartMode ? (
@@ -1142,10 +956,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                         <Button
                                             onClick={handleAddToCart}
                                             disabled={
-                                                (selectedBusiness.scales && selectedBusiness.scales.length > 0 && !selectedScale) ||
-                                                (selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && !selectedColor) ||
-                                                (selectedBusiness.interiorColors && Array.isArray(selectedBusiness.interiorColors) && selectedBusiness.interiorColors.length > 0 && !selectedInteriorColor) ||
-                                                (selectedBusiness.exteriorColors && Array.isArray(selectedBusiness.exteriorColors) && selectedBusiness.exteriorColors.length > 0 && !selectedExteriorColor)
+                                                (selectedBusiness.scales && selectedBusiness.scales.length > 0 && !selectedScale)
                                             }
                                             className={`w-full text-white py-6 text-lg ${selectedBusiness.name.toLowerCase().includes('core house')
                                                 ? 'bg-emerald-600 hover:bg-emerald-700'
@@ -1188,10 +999,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                     <Button
                                         onClick={handleNext}
                                         disabled={
-                                            (selectedBusiness.scales && selectedBusiness.scales.length > 0 && !selectedScale) ||
-                                            (selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && !selectedColor) ||
-                                            (selectedBusiness.interiorColors && Array.isArray(selectedBusiness.interiorColors) && selectedBusiness.interiorColors.length > 0 && !selectedInteriorColor) ||
-                                            (selectedBusiness.exteriorColors && Array.isArray(selectedBusiness.exteriorColors) && selectedBusiness.exteriorColors.length > 0 && !selectedExteriorColor)
+                                            (selectedBusiness.scales && selectedBusiness.scales.length > 0 && !selectedScale)
                                         }
                                         className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg"
                                     >
@@ -1204,13 +1012,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                     <p className="text-xs text-gray-500 text-center mt-3">
                                         {!selectedScale && selectedBusiness.scales && selectedBusiness.scales.length > 0
                                             ? "Please select an option to continue"
-                                            : (selectedBusiness.colors && Array.isArray(selectedBusiness.colors) && selectedBusiness.colors.length > 0 && !selectedColor)
-                                                ? "Please select a color to continue"
-                                                : (selectedBusiness.interiorColors && Array.isArray(selectedBusiness.interiorColors) && selectedBusiness.interiorColors.length > 0 && !selectedInteriorColor)
-                                                    ? "Please select an interior paint color"
-                                                    : (selectedBusiness.exteriorColors && Array.isArray(selectedBusiness.exteriorColors) && selectedBusiness.exteriorColors.length > 0 && !selectedExteriorColor)
-                                                        ? "Please select an exterior paint color"
-                                                        : "Next: Choose your repayment plan"
+                                            : "Next: Choose your repayment plan"
                                         }
                                     </p>
                                 )}
@@ -1382,9 +1184,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 <label htmlFor="loan-duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Select Loan Duration
                                 </label>
-                                  <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-2 font-medium">
-                    Note: Select an installment that is not more than 40% of your net salary (for zb account holders only)
-                </p>
+                                <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-2 font-medium">
+                                    Note: Select an installment that is not more than 40% of your net salary (for zb account holders only)
+                                </p>
                                 <select
                                     id="loan-duration"
                                     value={selectedTermMonths || ''}

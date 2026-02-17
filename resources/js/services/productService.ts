@@ -4,12 +4,9 @@ import axios from 'axios';
 export interface BusinessType {
   id?: number;
   name: string;
+  product_code?: string;
   basePrice: number;
   image_url?: string;
-  description?: string;
-  colors?: string[];
-  interiorColors?: string[];
-  exteriorColors?: string[];
   scales: {
     id?: number;
     name: string;
@@ -86,29 +83,6 @@ class ProductService {
   /**
    * Search products by name or category
    */
-  /**
-   * Helper to parse colors safely
-   */
-  private parseColors(colors: any): string[] {
-    if (Array.isArray(colors)) return colors;
-    if (typeof colors === 'string') {
-      // Handle comma-separated string or JSON string
-      if (colors.startsWith('[') && colors.endsWith(']')) {
-        try {
-          const parsed = JSON.parse(colors);
-          return Array.isArray(parsed) ? parsed : [];
-        } catch (e) {
-          return [];
-        }
-      }
-      return colors.split(',').map(c => c.trim()).filter(c => c.length > 0);
-    }
-    return [];
-  }
-
-  /**
-   * Search products by name or category
-   */
   async searchProducts(query: string, categoryId?: string): Promise<BusinessType[]> {
     try {
       const params = new URLSearchParams({ query });
@@ -122,9 +96,9 @@ class ProductService {
         return response.data.data.map((product: any) => ({
           id: product.id,
           name: product.name,
+          product_code: product.product_code,
           basePrice: product.base_price,
           image_url: product.image_url,
-          colors: this.parseColors(product.colors),
           scales: product.package_sizes.map((size: any) => ({
             id: size.id,
             name: size.name,
@@ -153,9 +127,9 @@ class ProductService {
         return {
           id: product.id,
           name: product.name,
+          product_code: product.product_code,
           basePrice: product.base_price,
           image_url: product.image_url,
-          colors: this.parseColors(product.colors),
           scales: product.package_sizes.map((size: any) => ({
             id: size.id,
             name: size.name,
@@ -184,9 +158,9 @@ class ProductService {
         return response.data.data.map((product: any) => ({
           id: product.id,
           name: product.name,
+          product_code: product.product_code,
           basePrice: product.base_price,
           image_url: product.image_url,
-          colors: this.parseColors(product.colors),
           scales: product.package_sizes.map((size: any) => ({
             id: size.id,
             name: size.name,
@@ -323,7 +297,6 @@ class ProductService {
               {
                 name: 'Teak Door',
                 basePrice: 150,
-                colors: ['Natural Teak', 'Dark Oak', 'Varnish', 'White'],
                 scales: [
                   { name: 'Standard', multiplier: 1 },
                   { name: 'Double', multiplier: 2 }
@@ -332,7 +305,6 @@ class ProductService {
               {
                 name: 'Pine Door',
                 basePrice: 80,
-                colors: ['Natural Pine', 'Clear Varnish', 'White Wash'],
                 scales: [
                   { name: 'Standard', multiplier: 1 },
                   { name: 'Double', multiplier: 1.8 }
@@ -346,7 +318,6 @@ class ProductService {
               {
                 name: 'Interior Paint',
                 basePrice: 40,
-                colors: ['White', 'Cream', 'Peach', 'Light Grey', 'Sky Blue'],
                 scales: [
                   { name: '5L', multiplier: 1 },
                   { name: '20L', multiplier: 3.5 }
@@ -355,7 +326,6 @@ class ProductService {
               {
                 name: 'Exterior Paint',
                 basePrice: 55,
-                colors: ['White', 'Cream', 'Grey', 'Terracotta', 'Green'],
                 scales: [
                   { name: '5L', multiplier: 1 },
                   { name: '20L', multiplier: 3.5 }

@@ -3,8 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\InventoryManagementResource\Pages;
-use App\Models\ProductInventory;
 use App\Models\Product;
+use App\Models\ProductCategory;
+use App\Models\ProductSubCategory;
+use App\Models\ProductSeries;
+use App\Models\Supplier;
+use App\Models\ProductInventory;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -17,157 +21,187 @@ use Illuminate\Database\Eloquent\Builder;
 
 class InventoryManagementResource extends BaseResource
 {
-    protected static ?string $model = ProductInventory::class;
+    protected static ?string $model = Product::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-cube-transparent';
 
-    protected static ?string $navigationLabel = 'Inventory Management';
+    protected static ?string $navigationLabel = 'Product Inventory';
 
     protected static ?string $navigationGroup = 'Inventory';
 
     protected static ?int $navigationSort = 1;
 
+    protected static ?string $slug = 'inventory-products';
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Product Information')
+                Forms\Components\Section::make('Product Identification')
                     ->schema([
-                        Forms\Components\Select::make('product_id')
-                            ->label('Product')
-                            ->relationship('product', 'name')
-                            ->searchable()
-                            ->preload()
-                            ->required()
-                            ->createOptionForm([
+                        Forms\Components\Grid::make(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('product_code')
+                                    ->label('Product Code')
+                                    ->required()
+                                    ->unique(ignoreRecord: true)
+                                    ->placeholder('e.g., HP-CEL-SAM-024')
+                                    ->maxLength(50)
+                                    ->helperText('Unique product identifier used across the system'),
                                 Forms\Components\TextInput::make('name')
+                                    ->label('Product Name')
                                     ->required()
                                     ->maxLength(255),
-                                Forms\Components\Select::make('product_sub_category_id')
-                                    ->relationship('subCategory', 'name')
-                                    ->required(),
-                                Forms\Components\TextInput::make('base_price')
-                                    ->numeric()
-                                    ->prefix('$')
-                                    ->required(),
                             ]),
-                    ])
-                    ->columns(1),
+                    ]),
 
-                Forms\Components\Section::make('Stock Management')
+                Forms\Components\Section::make('Classification')
                     ->schema([
-                        Forms\Components\Grid::make(3)
+                        Forms\Components\Grid::make(2)
                             ->schema([
-                                Forms\Components\TextInput::make('stock_quantity')
-                                    ->label('Current Stock')
-                                    ->numeric()
-                                    ->default(0)
-                                    ->required(),
-                                Forms\Components\TextInput::make('reserved_quantity')
-                                    ->label('Reserved Stock')
-                                    ->numeric()
-                                    ->default(0)
-                                    ->disabled()
-                                    ->dehydrated(false),
-                                Forms\Components\TextInput::make('available_stock')
-                                    ->label('Available Stock')
-                                    ->disabled()
+                                Forms\Components\Select::make('category_type')
+                                    ->label('Product Type')
+                                    ->options([
+                                        'microbiz' => 'MicroBiz Business',
+                                        'hire_purchase' => 'Hire Purchase',
+                                    ])
+                                    ->required()
+                                    ->reactive()
                                     ->dehydrated(false)
-                                    ->formatStateUsing(fn ($record) => $record ? $record->available_stock : 0),
+                                    ->afterStateHydrated(function ($set, $record) {
+                                        if ($record && $record->subCategory && $record->subCategory->category) {
+                                            $set('category_type', $record->subCategory->category->type);
+                                        }
+                                    }),
+                                Forms\Components\Select::make('product_sub_category_id')
+                                    ->label('Category / Subcategory')
+                                    ->options(function (callable $get) {
+                                        $type = $get('category_type');
+                                        if (!$type) return [];
+                                        
+                                        return ProductSubCategory::whereHas('category', function ($q) use ($type) {
+                                            $q->where('type', $type);
+                                        })
+                                        ->with('category')
+                                        ->get()
+                                        ->mapWithKeys(function ($sub) {
+                                            return [$sub->id => $sub->category->emoji . ' ' . $sub->category->name . ' → ' . $sub->name];
+                                        });
+                                    })
+                                    ->searchable()
+                                    ->required()
+                                    ->reactive()
+                                    ->createOptionForm([
+                                        Forms\Components\Select::make('product_category_id')
+                                            ->label('Parent Category')
+                                            ->options(ProductCategory::pluck('name', 'id'))
+                                            ->searchable()
+                                            ->required()
+                                            ->createOptionForm([
+                                                Forms\Components\TextInput::make('name')->required(),
+                                                Forms\Components\TextInput::make('emoji')->required()->placeholder('🌾'),
+                                                Forms\Components\Select::make('type')
+                                                    ->options(['microbiz' => 'MicroBiz', 'hire_purchase' => 'Hire Purchase'])
+                                                    ->required(),
+                                            ])
+                                            ->createOptionUsing(function (array $data) {
+                                                return ProductCategory::create($data)->id;
+                                            }),
+                                        Forms\Components\TextInput::make('name')
+                                            ->label('Subcategory Name')
+                                            ->required(),
+                                    ])
+                                    ->createOptionUsing(function (array $data) {
+                                        return ProductSubCategory::create($data)->id;
+                                    }),
                             ]),
-                        Forms\Components\Grid::make(3)
+                        Forms\Components\Grid::make(2)
                             ->schema([
-                                Forms\Components\TextInput::make('minimum_stock_level')
-                                    ->label('Minimum Level')
-                                    ->numeric()
-                                    ->default(0)
-                                    ->required(),
-                                Forms\Components\TextInput::make('reorder_point')
-                                    ->label('Reorder Point')
-                                    ->numeric()
-                                    ->default(10)
-                                    ->required(),
-                                Forms\Components\TextInput::make('reorder_quantity')
-                                    ->label('Reorder Quantity')
-                                    ->numeric()
-                                    ->default(50)
-                                    ->required(),
+                                Forms\Components\Select::make('product_series_id')
+                                    ->label('Series / Model Line')
+                                    ->options(function (callable $get) {
+                                        $subCatId = $get('product_sub_category_id');
+                                        if (!$subCatId) return [];
+                                        
+                                        return ProductSeries::where('product_sub_category_id', $subCatId)
+                                            ->pluck('name', 'id');
+                                    })
+                                    ->searchable()
+                                    ->nullable()
+                                    ->reactive()
+                                    ->createOptionForm([
+                                        Forms\Components\TextInput::make('name')->required(),
+                                        Forms\Components\Textarea::make('description'),
+                                    ])
+                                    ->createOptionUsing(function (array $data, callable $get) {
+                                        $data['product_sub_category_id'] = $get('product_sub_category_id');
+                                        return ProductSeries::create($data)->id;
+                                    }),
+                                Forms\Components\Select::make('supplier_id')
+                                    ->label('Supplier')
+                                    ->relationship('supplier', 'name')
+                                    ->searchable()
+                                    ->preload()
+                                    ->nullable()
+                                    ->helperText('Assign a supplier or leave empty'),
                             ]),
-                        Forms\Components\TextInput::make('maximum_stock_level')
-                            ->label('Maximum Stock Level')
-                            ->numeric()
-                            ->placeholder('Leave empty for unlimited'),
-                    ])
-                    ->columns(1),
+                    ]),
 
-                Forms\Components\Section::make('Pricing Information')
+                Forms\Components\Section::make('Pricing')
                     ->schema([
                         Forms\Components\Grid::make(3)
                             ->schema([
-                                Forms\Components\TextInput::make('cost_price')
-                                    ->label('Cost Price')
+                                Forms\Components\TextInput::make('base_price')
+                                    ->label('Cost / Base Price')
                                     ->numeric()
                                     ->prefix('$')
-                                    ->step(0.01),
-                                Forms\Components\TextInput::make('selling_price')
-                                    ->label('Selling Price')
-                                    ->numeric()
-                                    ->prefix('$')
-                                    ->step(0.01),
+                                    ->step(0.01)
+                                    ->required()
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        $markup = $get('markup_percentage');
+                                        if ($state && $markup) {
+                                            $set('purchase_price', round($state * (1 + $markup / 100), 2));
+                                        }
+                                    }),
                                 Forms\Components\TextInput::make('markup_percentage')
                                     ->label('Markup %')
                                     ->numeric()
                                     ->suffix('%')
-                                    ->step(0.01),
+                                    ->step(0.01)
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        $base = $get('base_price');
+                                        if ($base && $state) {
+                                            $set('purchase_price', round($base * (1 + $state / 100), 2));
+                                        }
+                                    }),
+                                Forms\Components\TextInput::make('purchase_price')
+                                    ->label('Selling Price')
+                                    ->numeric()
+                                    ->prefix('$')
+                                    ->step(0.01)
+                                    ->helperText('Auto-calculated from base + markup'),
                             ]),
-                    ])
-                    ->columns(1),
+                    ]),
 
-                Forms\Components\Section::make('Availability & Status')
+                Forms\Components\Section::make('Media')
                     ->schema([
-                        Forms\Components\Grid::make(2)
-                            ->schema([
-                                Forms\Components\Toggle::make('is_active')
-                                    ->label('Active')
-                                    ->default(true),
-                                Forms\Components\Toggle::make('is_featured')
-                                    ->label('Featured Product'),
-                            ]),
-                        Forms\Components\Select::make('availability_status')
-                            ->label('Availability Status')
-                            ->options([
-                                'available' => 'Available',
-                                'out_of_stock' => 'Out of Stock',
-                                'discontinued' => 'Discontinued',
-                                'coming_soon' => 'Coming Soon',
-                            ])
-                            ->default('available')
-                            ->required(),
-                        Forms\Components\Grid::make(2)
-                            ->schema([
-                                Forms\Components\DateTimePicker::make('availability_date')
-                                    ->label('Available From'),
-                                Forms\Components\DateTimePicker::make('discontinue_date')
-                                    ->label('Discontinue Date'),
-                            ]),
+                        Forms\Components\FileUpload::make('image_url')
+                            ->label('Product Image')
+                            ->image()
+                            ->disk('public_uploads')
+                            ->directory('products')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
+                            ->maxSize(2048)
+                            ->imageResizeMode('cover')
+                            ->imageCropAspectRatio('1:1')
+                            ->imageResizeTargetWidth('400')
+                            ->imageResizeTargetHeight('400'),
                     ])
-                    ->columns(1),
-
-                Forms\Components\Section::make('Additional Information')
-                    ->schema([
-                        Forms\Components\TextInput::make('warehouse_location')
-                            ->label('Warehouse Location')
-                            ->maxLength(255),
-                        Forms\Components\Textarea::make('notes')
-                            ->label('Notes')
-                            ->rows(3),
-                        Forms\Components\KeyValue::make('supplier_info')
-                            ->label('Supplier Information')
-                            ->keyLabel('Field')
-                            ->valueLabel('Value'),
-                    ])
-                    ->columns(1)
-                    ->collapsible(),
+                    ->collapsible()
+                    ->collapsed(),
             ]);
     }
 
@@ -175,192 +209,151 @@ class InventoryManagementResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('product.name')
-                    ->label('Product')
+                Tables\Columns\TextColumn::make('product_code')
+                    ->label('Code')
                     ->searchable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('product.subCategory.name')
+                    ->sortable()
+                    ->copyable()
+                    ->badge()
+                    ->color('primary'),
+                Tables\Columns\TextColumn::make('name')
+                    ->label('Product Name')
+                    ->searchable()
+                    ->sortable()
+                    ->limit(40),
+                Tables\Columns\TextColumn::make('subCategory.category.type')
+                    ->label('Type')
+                    ->badge()
+                    ->colors([
+                        'success' => 'microbiz',
+                        'info' => 'hire_purchase',
+                    ])
+                    ->formatStateUsing(fn ($state) => $state === 'microbiz' ? 'MicroBiz' : 'Hire Purchase'),
+                Tables\Columns\TextColumn::make('subCategory.category.name')
                     ->label('Category')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('subCategory.name')
+                    ->label('Subcategory')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('series.name')
+                    ->label('Series')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('supplier.name')
+                    ->label('Supplier')
+                    ->searchable()
+                    ->sortable()
+                    ->placeholder('Unassigned')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('base_price')
+                    ->label('Cost Price')
+                    ->money('USD')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('stock_quantity')
+                Tables\Columns\TextColumn::make('purchase_price')
+                    ->label('Selling Price')
+                    ->money('USD')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('inventory.stock_quantity')
                     ->label('Stock')
                     ->numeric()
                     ->sortable()
-                    ->color(fn ($record) => $record->stock_status_color),
-                Tables\Columns\TextColumn::make('available_stock')
-                    ->label('Available')
-                    ->numeric()
+                    ->placeholder('—')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
                     ->sortable()
-                    ->getStateUsing(fn ($record) => $record->available_stock),
-                Tables\Columns\TextColumn::make('reserved_quantity')
-                    ->label('Reserved')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\BadgeColumn::make('stock_status')
-                    ->label('Status')
-                    ->getStateUsing(fn ($record) => ucfirst(str_replace('_', ' ', $record->stock_status)))
-                    ->colors([
-                        'success' => 'in_stock',
-                        'warning' => 'low',
-                        'danger' => ['critical', 'out_of_stock'],
-                        'gray' => 'inactive',
-                    ]),
-                Tables\Columns\TextColumn::make('selling_price')
-                    ->label('Price')
-                    ->money('USD')
-                    ->sortable(),
-                Tables\Columns\IconColumn::make('is_active')
-                    ->label('Active')
-                    ->boolean(),
-                Tables\Columns\IconColumn::make('is_featured')
-                    ->label('Featured')
-                    ->boolean(),
-                Tables\Columns\TextColumn::make('warehouse_location')
-                    ->label('Location')
-                    ->limit(20)
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('stock_status')
-                    ->label('Stock Status')
+                SelectFilter::make('type')
+                    ->label('Product Type')
                     ->options([
-                        'in_stock' => 'In Stock',
-                        'low' => 'Low Stock',
-                        'critical' => 'Critical Stock',
-                        'out_of_stock' => 'Out of Stock',
-                        'inactive' => 'Inactive',
+                        'microbiz' => 'MicroBiz',
+                        'hire_purchase' => 'Hire Purchase',
                     ])
                     ->query(function (Builder $query, array $data): Builder {
-                        return match ($data['value'] ?? null) {
-                            'in_stock' => $query->whereRaw('(stock_quantity - reserved_quantity) > reorder_point'),
-                            'low' => $query->whereRaw('(stock_quantity - reserved_quantity) <= reorder_point')
-                                ->whereRaw('(stock_quantity - reserved_quantity) > minimum_stock_level'),
-                            'critical' => $query->whereRaw('(stock_quantity - reserved_quantity) <= minimum_stock_level')
-                                ->whereRaw('(stock_quantity - reserved_quantity) > 0'),
-                            'out_of_stock' => $query->whereRaw('(stock_quantity - reserved_quantity) <= 0'),
-                            'inactive' => $query->where('is_active', false),
-                            default => $query,
-                        };
+                        if ($data['value'] ?? null) {
+                            return $query->whereHas('subCategory.category', function ($q) use ($data) {
+                                $q->where('type', $data['value']);
+                            });
+                        }
+                        return $query;
                     }),
-                SelectFilter::make('availability_status')
-                    ->options([
-                        'available' => 'Available',
-                        'out_of_stock' => 'Out of Stock',
-                        'discontinued' => 'Discontinued',
-                        'coming_soon' => 'Coming Soon',
-                    ]),
-                Tables\Filters\TernaryFilter::make('is_active')
-                    ->label('Active Status'),
-                Tables\Filters\TernaryFilter::make('is_featured')
-                    ->label('Featured'),
-                Filter::make('low_stock')
-                    ->label('Low Stock Alert')
-                    ->query(fn (Builder $query): Builder => $query->lowStock()),
+                SelectFilter::make('supplier_id')
+                    ->label('Supplier')
+                    ->relationship('supplier', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('category')
+                    ->label('Category')
+                    ->options(function () {
+                        return ProductCategory::pluck('name', 'id');
+                    })
+                    ->query(function (Builder $query, array $data): Builder {
+                        if ($data['value'] ?? null) {
+                            return $query->whereHas('subCategory', function ($q) use ($data) {
+                                $q->where('product_category_id', $data['value']);
+                            });
+                        }
+                        return $query;
+                    }),
+                Filter::make('missing_code')
+                    ->label('Missing Product Code')
+                    ->query(fn (Builder $query): Builder => $query->whereNull('product_code'))
+                    ->toggle(),
+                Filter::make('no_supplier')
+                    ->label('No Supplier Assigned')
+                    ->query(fn (Builder $query): Builder => $query->whereNull('supplier_id'))
+                    ->toggle(),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                
                 Tables\Actions\Action::make('adjust_stock')
-                    ->label('Adjust Stock')
+                    ->label('Stock')
                     ->icon('heroicon-o-adjustments-horizontal')
                     ->color('warning')
                     ->form([
                         Forms\Components\Select::make('adjustment_type')
-                            ->label('Adjustment Type')
+                            ->label('Type')
                             ->options([
                                 'add' => 'Add Stock',
                                 'remove' => 'Remove Stock',
-                                'set' => 'Set Stock Level',
                             ])
-                            ->required()
-                            ->reactive(),
+                            ->required(),
                         Forms\Components\TextInput::make('quantity')
-                            ->label('Quantity')
                             ->numeric()
                             ->required()
                             ->minValue(1),
                         Forms\Components\TextInput::make('reason')
-                            ->label('Reason')
                             ->required()
-                            ->placeholder('e.g., Stock count correction, Damaged goods, etc.'),
-                        Forms\Components\Textarea::make('notes')
-                            ->label('Notes')
-                            ->placeholder('Additional details about this adjustment...'),
+                            ->default('Restock'),
                     ])
-                    ->action(function ($record, array $data): void {
-                        $inventory = $record;
-                        $success = false;
-                        
-                        switch ($data['adjustment_type']) {
-                            case 'add':
-                                $inventory->addStock($data['quantity'], $data['reason']);
-                                $success = true;
-                                break;
-                            case 'remove':
-                                $success = $inventory->removeStock($data['quantity'], $data['reason']);
-                                break;
-                            case 'set':
-                                $currentStock = $inventory->stock_quantity;
-                                $difference = $data['quantity'] - $currentStock;
-                                if ($difference > 0) {
-                                    $inventory->addStock($difference, $data['reason']);
-                                } elseif ($difference < 0) {
-                                    $success = $inventory->removeStock(abs($difference), $data['reason']);
-                                }
-                                $success = true;
-                                break;
-                        }
-                        
-                        if ($success) {
-                            Notification::make()
-                                ->title('Stock Adjusted Successfully')
-                                ->body("Stock has been {$data['adjustment_type']}ed for {$inventory->product->name}")
-                                ->success()
-                                ->send();
+                    ->action(function (Product $record, array $data): void {
+                        $inventory = ProductInventory::firstOrCreate(
+                            ['product_id' => $record->id],
+                            ['stock_quantity' => 0, 'reserved_quantity' => 0, 'reorder_point' => 10]
+                        );
+
+                        if ($data['adjustment_type'] === 'add') {
+                            $inventory->addStock((int) $data['quantity'], $data['reason']);
+                            Notification::make()->title('Stock Added')->success()->send();
                         } else {
-                            Notification::make()
-                                ->title('Stock Adjustment Failed')
-                                ->body('Insufficient stock for this operation')
-                                ->danger()
-                                ->send();
+                            if ($inventory->removeStock((int) $data['quantity'], $data['reason'])) {
+                                Notification::make()->title('Stock Removed')->success()->send();
+                            } else {
+                                Notification::make()->title('Insufficient Stock')->danger()->send();
+                            }
                         }
-                    })
-                    ->requiresConfirmation()
-                    ->modalHeading('Adjust Stock Level')
-                    ->modalDescription('This will create an inventory movement record for audit purposes.'),
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                    
-                    Tables\Actions\BulkAction::make('activate')
-                        ->label('Activate Selected')
-                        ->icon('heroicon-o-check-circle')
-                        ->color('success')
-                        ->action(function ($records): void {
-                            $records->each->update(['is_active' => true]);
-                            
-                            Notification::make()
-                                ->title('Products Activated')
-                                ->body(count($records) . ' products have been activated')
-                                ->success()
-                                ->send();
-                        }),
-                    
-                    Tables\Actions\BulkAction::make('deactivate')
-                        ->label('Deactivate Selected')
-                        ->icon('heroicon-o-x-circle')
-                        ->color('danger')
-                        ->action(function ($records): void {
-                            $records->each->update(['is_active' => false]);
-                            
-                            Notification::make()
-                                ->title('Products Deactivated')
-                                ->body(count($records) . ' products have been deactivated')
-                                ->success()
-                                ->send();
-                        }),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -368,9 +361,7 @@ class InventoryManagementResource extends BaseResource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
@@ -383,16 +374,13 @@ class InventoryManagementResource extends BaseResource
         ];
     }
 
-    protected static ?string $slug = 'inventory-managements';
-
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::lowStock()->count();
+        return static::getModel()::count();
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        $lowStockCount = static::getModel()::lowStock()->count();
-        return $lowStockCount > 0 ? 'warning' : null;
+        return 'primary';
     }
 }

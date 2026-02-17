@@ -56,7 +56,7 @@ class QuickActionsWidget extends Widget
                 'label' => 'Manage Products',
                 'icon' => 'heroicon-o-cube',
                 'color' => 'primary',
-                'url' => route('filament.admin.resources.products.index'),
+                'url' => route('filament.admin.resources.inventory-management.index'),
                 'badge' => Product::count(),
             ],
             [

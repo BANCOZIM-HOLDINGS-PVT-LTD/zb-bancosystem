@@ -116,6 +116,17 @@ class PurchaseOrderResource extends BaseResource
                                             }
                                         }
                                     }),
+
+                                Forms\Components\Placeholder::make('product_code_display')
+                                    ->label('Product Code')
+                                    ->content(function (Forms\Get $get) {
+                                        $productId = $get('product_id');
+                                        if ($productId) {
+                                            $product = Product::find($productId);
+                                            return $product?->product_code ?? '—';
+                                        }
+                                        return '—';
+                                    }),
                                 
                                 Forms\Components\TextInput::make('quantity_ordered')
                                     ->label('Quantity')
@@ -150,7 +161,7 @@ class PurchaseOrderResource extends BaseResource
                                 Forms\Components\TextInput::make('notes')
                                     ->label('Notes'),
                             ])
-                            ->columns(5)
+                            ->columns(6)
                             ->defaultItems(0)
                             ->createItemButtonLabel('Add Item')
                             ->collapsible()
@@ -290,7 +301,40 @@ class PurchaseOrderResource extends BaseResource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('created_at', 'desc')
+            ->headerActions([
+                Tables\Actions\Action::make('export_csv')
+                    ->label('Export CSV')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->action(function () {
+                        $orders = PurchaseOrder::with(['supplier', 'items.product'])->get();
+
+                        $csv = "PO Number,Supplier,Status,Product Code,Product Name,Qty,Unit Price,Total,Order Date\n";
+
+                        foreach ($orders as $order) {
+                            foreach ($order->items as $item) {
+                                $csv .= implode(',', [
+                                    $order->po_number,
+                                    '"' . ($order->supplier?->name ?? 'Unassigned') . '"',
+                                    $order->status,
+                                    $item->product?->product_code ?? '',
+                                    '"' . ($item->product?->name ?? 'Unknown') . '"',
+                                    $item->quantity_ordered,
+                                    number_format($item->unit_price, 2),
+                                    number_format($item->total_price, 2),
+                                    $order->order_date?->format('Y-m-d') ?? '',
+                                ]) . "\n";
+                            }
+                        }
+
+                        return response()->streamDownload(
+                            fn() => print($csv),
+                            'purchase_orders_' . now()->format('Y-m-d') . '.csv',
+                            ['Content-Type' => 'text/csv']
+                        );
+                    }),
+            ]);
     }
 
     public static function getRelations(): array

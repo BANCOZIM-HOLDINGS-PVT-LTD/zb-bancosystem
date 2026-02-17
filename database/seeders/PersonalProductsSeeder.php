@@ -315,7 +315,6 @@ class PersonalProductsSeeder extends Seeder
             'product_sub_category_id' => $coreHouseSubcategory,
             'name' => 'Core House - Basic (No Finishings)',
             'base_price' => 8500.00,
-            'description' => 'A compact, affordable starter home with essential structural elements. Includes foundation, walls, roof, doors, and windows. Perfect for those who prefer to customize their own interior finishes over time.',
             'image_url' => null,
             'created_at' => now(),
             'updated_at' => now(),
@@ -329,12 +328,9 @@ class PersonalProductsSeeder extends Seeder
         // Core House Option 2: Basic core house complete
         $basicCompleteId = DB::table('products')->insertGetId([
             'product_sub_category_id' => $coreHouseSubcategory,
-            'name' => ' Core House - Basic (Complete)',
+            'name' => 'Core House - Basic (Complete)',
             'base_price' => 12000.00,
-            'description' => 'A fully finished basic home ready for immediate occupancy. Includes plastered walls, floor screed, ceiling, electrical wiring, plumbing, interior and exterior paint, and all essential fixtures.',
             'image_url' => null,
-            'interior_colors' => json_encode(['White', 'Cream', 'Light Grey', 'Peach', 'Sky Blue']),
-            'exterior_colors' => json_encode(['White', 'Cream', 'Sand', 'Terracotta', 'Light Grey']),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -348,10 +344,7 @@ class PersonalProductsSeeder extends Seeder
             'product_sub_category_id' => $coreHouseSubcategory,
             'name' => 'Core House - Deluxe (Complete)',
             'base_price' => 18000.00,
-            'description' => 'A premium finished home with upgraded features including quality tiles, modern kitchen fittings, built-in wardrobes, premium paint finishes, and enhanced security features. Move-in ready with a touch of luxury.',
-            'image_url' => null,    
-            'interior_colors' => json_encode(['White', 'Cream', 'Light Grey', 'Peach', 'Sky Blue', 'Sage Green', 'Lavender']),
-            'exterior_colors' => json_encode(['White', 'Cream', 'Sand', 'Terracotta', 'Light Grey', 'Charcoal', 'Olive']),
+            'image_url' => null,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -415,9 +408,7 @@ class PersonalProductsSeeder extends Seeder
             'product_sub_category_id' => $gateFencingSubcategory,
             'name' => 'Sliding Gate',
             'base_price' => 1500.00,
-            'description' => 'Steel sliding gate with motor option for residential or commercial properties.',
             'image_url' => null,
-            'colors' => json_encode(['Black', 'Grey', 'Green', 'Brown']),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -433,9 +424,7 @@ class PersonalProductsSeeder extends Seeder
             'product_sub_category_id' => $gateFencingSubcategory,
             'name' => 'Swing Gate',
             'base_price' => 1200.00,
-            'description' => 'Double-leaf swing gate for driveways and entrances.',
             'image_url' => null,
-            'colors' => json_encode(['Black', 'Grey', 'Green', 'Brown']),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -451,9 +440,7 @@ class PersonalProductsSeeder extends Seeder
             'product_sub_category_id' => $gateFencingSubcategory,
             'name' => 'Palisade Fencing',
             'base_price' => 800.00,
-            'description' => 'Steel palisade security fencing for perimeter protection.',
             'image_url' => null,
-            'colors' => json_encode(['Black', 'Green', 'Grey']),
             'created_at' => now(),
             'updated_at' => now(),
         ]);

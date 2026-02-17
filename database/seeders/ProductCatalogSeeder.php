@@ -58,8 +58,13 @@ class ProductCatalogSeeder extends Seeder
                 ]);
 
                 foreach ($subcategoryData['businesses'] as $businessData) {
+                    // Auto-generate product code for MicroBiz businesses
+                    $shortName = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $businessData['name']), 0, 8));
+                    $productCode = 'MB-' . $shortName . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+
                     $productId = DB::table('products')->insertGetId([
                         'product_sub_category_id' => $subcategoryId,
+                        'product_code' => $productCode,
                         'name' => $businessData['name'],
                         'base_price' => 280.00, // Base price is effectively the Lite Package price
                         'image_url' => 'https://via.placeholder.com/150',
@@ -85,7 +90,7 @@ class ProductCatalogSeeder extends Seeder
                         ['name' => 'Lite Package', 'custom_price' => 280.00, 'multiplier' => 1.0],
                         ['name' => 'Standard Package', 'custom_price' => 490.00, 'multiplier' => 1.75],
                         ['name' => 'Full House Package', 'custom_price' => 930.00, 'multiplier' => 3.32],
-                        ['name' => 'Gold Package', 'custom_price' => 1500.00, 'multiplier' => 5.36], // NEW 4th tier
+                        ['name' => 'Gold Package', 'custom_price' => 2000.00, 'multiplier' => 7.14], // Updated: $2,000
                     ];
 
                     foreach ($scales as $scaleData) {

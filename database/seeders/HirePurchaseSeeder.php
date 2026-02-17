@@ -680,13 +680,18 @@ class HirePurchaseSeeder extends Seeder
             );
 
             foreach ($data['products'] as $productName) {
+                // Auto-generate a product code from category prefix and product name
+                $prefix = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $category->name), 0, 3));
+                $shortName = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $productName), 0, 8));
+                $productCode = "HP-{$prefix}-{$shortName}-" . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+
                 $product = Product::firstOrCreate(
                     ['product_sub_category_id' => $subcategory->id, 'name' => $productName],
                     [
                         'product_series_id' => $series->id,
+                        'product_code' => $productCode,
                         'base_price' => rand(100, 3000),
                         'image_url' => null,
-                        'colors' => isset($data['colors']) ? $data['colors'] : ($hasColors ? ['Standard'] : null)
                     ]
                 );
 
