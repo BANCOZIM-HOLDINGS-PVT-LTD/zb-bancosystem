@@ -25,13 +25,18 @@ class InventoryManagementResource extends BaseResource
 
     protected static ?string $navigationIcon = 'heroicon-o-cube-transparent';
 
-    protected static ?string $navigationLabel = 'Product Inventory';
+    protected static ?string $navigationLabel = 'Hire Purchase Products';
 
     protected static ?string $navigationGroup = 'Inventory';
 
     protected static ?int $navigationSort = 1;
 
     protected static ?string $slug = 'inventory-products';
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->hirePurchaseOnly();
+    }
 
     public static function form(Form $form): Form
     {
@@ -59,28 +64,11 @@ class InventoryManagementResource extends BaseResource
                     ->schema([
                         Forms\Components\Grid::make(2)
                             ->schema([
-                                Forms\Components\Select::make('category_type')
-                                    ->label('Product Type')
-                                    ->options([
-                                        'microbiz' => 'MicroBiz Business',
-                                        'hire_purchase' => 'Hire Purchase',
-                                    ])
-                                    ->required()
-                                    ->reactive()
-                                    ->dehydrated(false)
-                                    ->afterStateHydrated(function ($set, $record) {
-                                        if ($record && $record->subCategory && $record->subCategory->category) {
-                                            $set('category_type', $record->subCategory->category->type);
-                                        }
-                                    }),
                                 Forms\Components\Select::make('product_sub_category_id')
                                     ->label('Category / Subcategory')
-                                    ->options(function (callable $get) {
-                                        $type = $get('category_type');
-                                        if (!$type) return [];
-                                        
-                                        return ProductSubCategory::whereHas('category', function ($q) use ($type) {
-                                            $q->where('type', $type);
+                                    ->options(function () {
+                                        return ProductSubCategory::whereHas('category', function ($q) {
+                                            $q->where('type', 'hire_purchase');
                                         })
                                         ->with('category')
                                         ->get()
@@ -94,17 +82,15 @@ class InventoryManagementResource extends BaseResource
                                     ->createOptionForm([
                                         Forms\Components\Select::make('product_category_id')
                                             ->label('Parent Category')
-                                            ->options(ProductCategory::pluck('name', 'id'))
+                                            ->options(ProductCategory::where('type', 'hire_purchase')->pluck('name', 'id'))
                                             ->searchable()
                                             ->required()
                                             ->createOptionForm([
                                                 Forms\Components\TextInput::make('name')->required(),
-                                                Forms\Components\TextInput::make('emoji')->required()->placeholder('🌾'),
-                                                Forms\Components\Select::make('type')
-                                                    ->options(['microbiz' => 'MicroBiz', 'hire_purchase' => 'Hire Purchase'])
-                                                    ->required(),
+                                                Forms\Components\TextInput::make('emoji')->required()->placeholder('📱'),
                                             ])
                                             ->createOptionUsing(function (array $data) {
+                                                $data['type'] = 'hire_purchase';
                                                 return ProductCategory::create($data)->id;
                                             }),
                                         Forms\Components\TextInput::make('name')
@@ -221,14 +207,6 @@ class InventoryManagementResource extends BaseResource
                     ->searchable()
                     ->sortable()
                     ->limit(40),
-                Tables\Columns\TextColumn::make('subCategory.category.type')
-                    ->label('Type')
-                    ->badge()
-                    ->colors([
-                        'success' => 'microbiz',
-                        'info' => 'hire_purchase',
-                    ])
-                    ->formatStateUsing(fn ($state) => $state === 'microbiz' ? 'MicroBiz' : 'Hire Purchase'),
                 Tables\Columns\TextColumn::make('subCategory.category.name')
                     ->label('Category')
                     ->searchable()
@@ -269,20 +247,6 @@ class InventoryManagementResource extends BaseResource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('type')
-                    ->label('Product Type')
-                    ->options([
-                        'microbiz' => 'MicroBiz',
-                        'hire_purchase' => 'Hire Purchase',
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        if ($data['value'] ?? null) {
-                            return $query->whereHas('subCategory.category', function ($q) use ($data) {
-                                $q->where('type', $data['value']);
-                            });
-                        }
-                        return $query;
-                    }),
                 SelectFilter::make('supplier_id')
                     ->label('Supplier')
                     ->relationship('supplier', 'name')

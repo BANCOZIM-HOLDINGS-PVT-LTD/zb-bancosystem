@@ -10,8 +10,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class MicrobizPackage extends Model
 {
     protected $fillable = [
-        'product_id',
+        'microbiz_subcategory_id',
         'tier',
+        'name',
+        'description',
         'price',
     ];
 
@@ -20,28 +22,28 @@ class MicrobizPackage extends Model
     ];
 
     /**
-     * The MicroBiz business this package belongs to.
+     * The business subcategory this package/tier belongs to.
      */
-    public function business(): BelongsTo
+    public function subcategory(): BelongsTo
     {
-        return $this->belongsTo(Product::class, 'product_id');
+        return $this->belongsTo(MicrobizSubcategory::class, 'microbiz_subcategory_id');
     }
 
     /**
-     * Get the package product line items.
+     * Get the tier line items.
      */
-    public function items(): HasMany
+    public function tierItems(): HasMany
     {
-        return $this->hasMany(PackageProduct::class);
+        return $this->hasMany(MicrobizTierItem::class);
     }
 
     /**
-     * Get the inventory products included in this package.
+     * Get the MicroBiz items included in this package.
      */
-    public function products(): BelongsToMany
+    public function items(): BelongsToMany
     {
-        return $this->belongsToMany(Product::class, 'package_products')
-            ->withPivot(['quantity', 'unit_cost'])
+        return $this->belongsToMany(MicrobizItem::class, 'microbiz_tier_items')
+            ->withPivot('quantity')
             ->withTimestamps();
     }
 
@@ -55,7 +57,7 @@ class MicrobizPackage extends Model
             'standard' => 'Standard Package',
             'full_house' => 'Full House Package',
             'gold' => 'Gold Package',
-            default => ucfirst($this->tier),
+            default => ucfirst(str_replace('_', ' ', $this->tier)) . ' Package',
         };
     }
 
@@ -64,8 +66,8 @@ class MicrobizPackage extends Model
      */
     public function getTotalItemsCostAttribute(): float
     {
-        return $this->items->sum(function ($item) {
-            return ($item->unit_cost ?? 0) * $item->quantity;
+        return $this->tierItems->sum(function ($tierItem) {
+            return ($tierItem->item->unit_cost ?? 0) * $tierItem->quantity;
         });
     }
 

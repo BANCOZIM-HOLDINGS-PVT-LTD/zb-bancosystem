@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Builder;
 
 class Product extends Model
 {
@@ -52,21 +53,13 @@ class Product extends Model
     }
 
     /**
-     * Get MicroBiz package tiers where this product IS the business
+     * Scope to only show hire purchase products.
      */
-    public function microbizPackages(): HasMany
+    public function scopeHirePurchaseOnly(Builder $query): Builder
     {
-        return $this->hasMany(MicrobizPackage::class);
-    }
-
-    /**
-     * Get MicroBiz packages this product is included in (as an inventory item)
-     */
-    public function inPackages()
-    {
-        return $this->belongsToMany(MicrobizPackage::class, 'package_products')
-            ->withPivot(['quantity', 'unit_cost'])
-            ->withTimestamps();
+        return $query->whereHas('subCategory.category', function ($q) {
+            $q->where('type', 'hire_purchase');
+        });
     }
 
     /**

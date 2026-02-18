@@ -3,9 +3,10 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\MicrobizPackageResource\Pages;
+use App\Models\MicrobizCategory;
+use App\Models\MicrobizItem;
 use App\Models\MicrobizPackage;
-use App\Models\Product;
-use App\Models\ProductSubCategory;
+use App\Models\MicrobizSubcategory;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -19,112 +20,119 @@ class MicrobizPackageResource extends BaseResource
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-plus';
 
-    protected static ?string $navigationLabel = 'MicroBiz Packages';
+    protected static ?string $navigationLabel = 'MicroBiz Tiers';
 
-    protected static ?string $navigationGroup = 'Inventory';
+    protected static ?string $navigationGroup = 'MicroBiz';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 2;
+
+    protected static ?string $modelLabel = 'Tier Package';
+
+    protected static ?string $pluralModelLabel = 'Tier Packages';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Package Definition')
+                Forms\Components\Section::make('Tier Definition')
                     ->schema([
-                        Forms\Components\Grid::make(3)
+                        Forms\Components\Grid::make(2)
                             ->schema([
-                                Forms\Components\Select::make('product_id')
-                                    ->label('MicroBiz Business')
+                                Forms\Components\Select::make('microbiz_subcategory_id')
+                                    ->label('Business')
                                     ->options(function () {
-                                        // Only show products that belong to microbiz categories
-                                        return Product::whereHas('subCategory.category', function ($q) {
-                                            $q->where('type', 'microbiz');
-                                        })
-                                        ->orderBy('name')
-                                        ->pluck('name', 'id');
-                                    })
-                                    ->searchable()
-                                    ->required()
-                                    ->helperText('The MicroBiz business this package is for'),
-                                Forms\Components\Select::make('tier')
-                                    ->options([
-                                        'lite' => 'Lite Package ($280)',
-                                        'standard' => 'Standard Package ($490)',
-                                        'full_house' => 'Full House Package ($930)',
-                                        'gold' => 'Gold Package ($2,000)',
-                                    ])
-                                    ->required()
-                                    ->reactive()
-                                    ->afterStateUpdated(function ($state, callable $set) {
-                                        $defaults = [
-                                            'lite' => 280.00,
-                                            'standard' => 490.00,
-                                            'full_house' => 930.00,
-                                            'gold' => 2000.00,
-                                        ];
-                                        $set('price', $defaults[$state] ?? 0);
-                                    }),
-                                Forms\Components\TextInput::make('price')
-                                    ->label('Fixed Package Price')
-                                    ->numeric()
-                                    ->prefix('$')
-                                    ->step(0.01)
-                                    ->required()
-                                    ->helperText('User-facing price (not sum of items)'),
-                            ]),
-                    ]),
-
-                Forms\Components\Section::make('Package Contents')
-                    ->schema([
-                        Forms\Components\Repeater::make('items')
-                            ->relationship()
-                            ->schema([
-                                Forms\Components\Select::make('product_id')
-                                    ->label('Inventory Product')
-                                    ->options(function () {
-                                        return Product::orderBy('name')
+                                        return MicrobizSubcategory::with('category')
                                             ->get()
-                                            ->mapWithKeys(function ($product) {
-                                                $code = $product->product_code ? "[{$product->product_code}] " : '';
-                                                $price = $product->base_price ? " - \${$product->base_price}" : '';
-                                                return [$product->id => "{$code}{$product->name}{$price}"];
+                                            ->mapWithKeys(function ($sub) {
+                                                $emoji = $sub->category->emoji ?? '📦';
+                                                return [$sub->id => "{$emoji} {$sub->category->name} → {$sub->name}"];
                                             });
                                     })
                                     ->searchable()
                                     ->required()
                                     ->reactive()
-                                    ->afterStateUpdated(function ($state, callable $set) {
-                                        if ($state) {
-                                            $product = Product::find($state);
-                                            if ($product) {
-                                                $set('unit_cost', $product->base_price);
-                                            }
+                                    ->helperText('Select the MicroBiz business this tier belongs to'),
+                                Forms\Components\Select::make('tier')
+                                    ->label('Tier')
+                                    ->options([
+                                        'lite' => 'Lite',
+                                        'standard' => 'Standard',
+                                        'full_house' => 'Full House',
+                                        'gold' => 'Gold',
+                                    ])
+                                    ->required()
+                                    ->searchable()
+                                    ->allowHtml(false),
+                            ]),
+                        Forms\Components\Grid::make(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('name')
+                                    ->label('Package Name')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->placeholder('e.g., Lite Layers Starter Pack'),
+                                Forms\Components\TextInput::make('price')
+                                    ->label('Package Price')
+                                    ->numeric()
+                                    ->prefix('$')
+                                    ->step(0.01)
+                                    ->required()
+                                    ->helperText('User-facing price for this tier'),
+                            ]),
+                        Forms\Components\Textarea::make('description')
+                            ->label('Package Description')
+                            ->rows(3)
+                            ->placeholder('Describe what\'s included in this package for the customer to see...')
+                            ->helperText('This description will be visible to applicants'),
+                    ]),
+
+                Forms\Components\Section::make('Package Contents')
+                    ->description('Add items from the selected business to this tier. Only items defined in the business will appear here.')
+                    ->schema([
+                        Forms\Components\Repeater::make('tierItems')
+                            ->relationship()
+                            ->schema([
+                                Forms\Components\Select::make('microbiz_item_id')
+                                    ->label('Item')
+                                    ->options(function (callable $get) {
+                                        $subcategoryId = $get('../../microbiz_subcategory_id');
+                                        if (!$subcategoryId) {
+                                            return MicrobizItem::orderBy('name')
+                                                ->get()
+                                                ->mapWithKeys(function ($item) {
+                                                    return [$item->id => "[{$item->item_code}] {$item->name} - \${$item->unit_cost}"];
+                                                });
                                         }
+
+                                        return MicrobizItem::where('microbiz_subcategory_id', $subcategoryId)
+                                            ->orderBy('name')
+                                            ->get()
+                                            ->mapWithKeys(function ($item) {
+                                                $unit = $item->unit ? " ({$item->unit})" : '';
+                                                return [$item->id => "[{$item->item_code}] {$item->name}{$unit} - \${$item->unit_cost}"];
+                                            });
                                     })
-                                    ->columnSpan(2),
+                                    ->searchable()
+                                    ->required()
+                                    ->columnSpan(3),
                                 Forms\Components\TextInput::make('quantity')
                                     ->numeric()
                                     ->default(1)
                                     ->minValue(1)
-                                    ->required(),
-                                Forms\Components\TextInput::make('unit_cost')
-                                    ->label('Unit Cost')
-                                    ->numeric()
-                                    ->prefix('$')
-                                    ->step(0.01)
-                                    ->helperText('Auto-filled from product cost'),
+                                    ->required()
+                                    ->columnSpan(1),
                             ])
                             ->columns(4)
                             ->defaultItems(0)
-                            ->addActionLabel('Add Product to Package')
+                            ->addActionLabel('Add Item to Tier')
                             ->reorderable(false)
                             ->collapsible()
                             ->itemLabel(function (array $state): ?string {
-                                if (!($state['product_id'] ?? null)) return null;
-                                $product = Product::find($state['product_id']);
-                                if (!$product) return null;
+                                if (!($state['microbiz_item_id'] ?? null)) return null;
+                                $item = MicrobizItem::find($state['microbiz_item_id']);
+                                if (!$item) return null;
                                 $qty = $state['quantity'] ?? 1;
-                                return "{$product->name} × {$qty}";
+                                return "[{$item->item_code}] {$item->name} × {$qty}";
                             }),
                     ]),
             ]);
@@ -134,14 +142,15 @@ class MicrobizPackageResource extends BaseResource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('business.name')
+                Tables\Columns\TextColumn::make('subcategory.category.name')
+                    ->label('Category')
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('subcategory.name')
                     ->label('Business')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('business.subCategory.category.name')
-                    ->label('Category')
-                    ->sortable()
-                    ->toggleable(),
                 Tables\Columns\BadgeColumn::make('tier')
                     ->label('Tier')
                     ->colors([
@@ -155,16 +164,22 @@ class MicrobizPackageResource extends BaseResource
                         'standard' => 'Standard',
                         'full_house' => 'Full House',
                         'gold' => 'Gold',
-                        default => $state,
+                        default => ucfirst(str_replace('_', ' ', $state)),
                     }),
+                Tables\Columns\TextColumn::make('name')
+                    ->label('Package Name')
+                    ->searchable()
+                    ->limit(30),
                 Tables\Columns\TextColumn::make('price')
-                    ->label('Package Price')
+                    ->label('Price')
                     ->money('USD')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('items_count')
-                    ->counts('items')
+                Tables\Columns\TextColumn::make('tier_items_count')
+                    ->counts('tierItems')
                     ->label('Items')
-                    ->sortable(),
+                    ->sortable()
+                    ->badge()
+                    ->color('info'),
                 Tables\Columns\TextColumn::make('total_items_cost')
                     ->label('Total Cost')
                     ->money('USD')
@@ -182,6 +197,14 @@ class MicrobizPackageResource extends BaseResource
                         'full_house' => 'Full House',
                         'gold' => 'Gold',
                     ]),
+                Tables\Filters\SelectFilter::make('microbiz_subcategory_id')
+                    ->label('Business')
+                    ->options(function () {
+                        return MicrobizSubcategory::with('category')
+                            ->get()
+                            ->mapWithKeys(fn ($sub) => [$sub->id => "{$sub->category->name} → {$sub->name}"]);
+                    })
+                    ->searchable(),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -193,7 +216,7 @@ class MicrobizPackageResource extends BaseResource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('business.name');
+            ->defaultSort('subcategory.name');
     }
 
     public static function getRelations(): array
@@ -213,6 +236,6 @@ class MicrobizPackageResource extends BaseResource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::count();
+        return static::getModel()::count() ?: null;
     }
 }

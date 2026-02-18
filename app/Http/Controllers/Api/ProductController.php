@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\MicrobizCategory;
 use App\Models\ProductSubCategory;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -41,6 +42,10 @@ class ProductController extends Controller
             $validTypes = ['microbiz', 'hire_purchase'];
             
             if (in_array($type, $validTypes)) {
+                // For MicroBiz, use the dedicated microbiz tables
+                if ($type === 'microbiz') {
+                    return $this->getMicrobizFrontendCatalog();
+                }
                 $query->where('type', $type);
             }
         }
@@ -379,6 +384,10 @@ class ProductController extends Controller
             $validTypes = ['microbiz', 'hire_purchase'];
             
             if (in_array($type, $validTypes)) {
+                // For MicroBiz, use the dedicated microbiz tables
+                if ($type === 'microbiz') {
+                    return $this->getMicrobizFrontendCatalog();
+                }
                 $query->where('type', $type);
             }
         }
@@ -499,5 +508,58 @@ class ProductController extends Controller
             'success' => true,
             'data' => $stats,
         ]);
+    }
+
+    /**
+     * Get MicroBiz product catalog from dedicated microbiz tables.
+     * Maps: MicrobizCategory -> Category, MicrobizSubcategory -> Business, MicrobizPackage tiers -> Scales
+     */
+    private function getMicrobizFrontendCatalog(): JsonResponse
+    {
+        $categories = MicrobizCategory::with(['subcategories.packages'])
+            ->orderBy('name')
+            ->get();
+
+        $frontendData = $categories->map(function ($category) {
+            return [
+                'id' => strtolower(str_replace(' ', '-', $category->name)),
+                'name' => $category->name,
+                'emoji' => $category->emoji,
+                'subcategories' => $category->subcategories->map(function ($subcategory) {
+                    // Each MicrobizSubcategory is a business type
+                    // Its MicrobizPackage tiers become the "scales"
+                    $scales = $subcategory->packages
+                        ->sortBy('price')
+                        ->values()
+                        ->map(function ($package) {
+                            return [
+                                'id' => $package->id,
+                                'name' => $package->name,
+                                'multiplier' => 1.0,
+                                'custom_price' => (float) $package->price,
+                            ];
+                        })->toArray();
+
+                    return [
+                        'name' => $subcategory->name,
+                        'series' => [],
+                        'businesses' => [[
+                            'id' => $subcategory->id,
+                            'name' => $subcategory->name,
+                            'basePrice' => (float) ($subcategory->packages->sortBy('price')->first()?->price ?? 280.00),
+                            'image_url' => null,
+                            'description' => $subcategory->description,
+                            'colors' => null,
+                            'interiorColors' => null,
+                            'exteriorColors' => null,
+                            'scales' => $scales,
+                            'tenure' => 24,
+                        ]],
+                    ];
+                })->toArray(),
+            ];
+        })->toArray();
+
+        return response()->json($frontendData);
     }
 }

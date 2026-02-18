@@ -66,6 +66,14 @@ class Supplier extends Model
     {
         return $this->hasMany(Product::class);
     }
+
+    /**
+     * Get MicroBiz business subcategories supplied by this supplier
+     */
+    public function microbizSubcategories(): HasMany
+    {
+        return $this->hasMany(MicrobizSubcategory::class);
+    }
     
     /**
      * Get total orders count
