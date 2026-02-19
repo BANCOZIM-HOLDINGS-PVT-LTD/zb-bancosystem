@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use App\Models\MicrobizCategory;
 use App\Models\MicrobizSubcategory;
 use App\Models\MicrobizPackage;
+use Illuminate\Support\Facades\DB;
 
 class MicrobizBusinessSeeder extends Seeder
 {
