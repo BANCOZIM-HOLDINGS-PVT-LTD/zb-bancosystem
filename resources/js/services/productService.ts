@@ -5,7 +5,9 @@ export interface BusinessType {
   id?: number;
   name: string;
   product_code?: string;
+  specification?: string;
   basePrice: number;
+  originalPrice?: number;
   image_url?: string;
   scales: {
     id?: number;

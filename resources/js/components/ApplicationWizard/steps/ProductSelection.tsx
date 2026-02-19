@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ChevronLeft, ChevronRight, ArrowLeft, DollarSign, Calendar, Loader2, Monitor, GraduationCap, Info, ShoppingBasket, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft, DollarSign, Calendar, Loader2, Monitor, GraduationCap, Info, X } from 'lucide-react';
 import { productService, getCreditTermOptions, type BusinessType, type Subcategory, type Category, type Series } from '../../../services/productService';
 import { zimparksDestinations, type ZimparksDestination } from '../data/zimparksDestinations';
 import { getPackageDescription } from '../data/packageDescriptions';
@@ -46,10 +46,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [showDestinationModal, setShowDestinationModal] = useState<boolean>(false);
     const [showConstructionUnavailableModal, setShowConstructionUnavailableModal] = useState<boolean>(false);
 
-    // Cart State
-    const [cart, setCart] = useState<{ businessId: number; name: string; price: number; quantity: number; scale?: string }[]>(data.cart || []);
-    const [cartQuantity, setCartQuantity] = useState<number>(1);
-    const isCartMode = selectedCategory?.name === 'Building Materials' || (selectedCategory?.name === 'Agricultural Inputs' && data.intent !== 'microBiz') || data.intent === 'homeConstruction';
+
 
     const ME_SYSTEM_PERCENTAGE = 0.10; // 10% of loan amount
     const TRAINING_PERCENTAGE = 0.055; // 5.5%
@@ -443,26 +440,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         const firstPaymentDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
         const lastPaymentDate = new Date(today.getFullYear(), today.getMonth() + selectedTermMonths, 1);
 
-        if (isCartMode) {
-            onNext({
-                category: selectedCategory?.id,
-                amount: grossLoan,
-                cart: cart,
-                currency: selectedCurrency,
-                business: cart.map(item => item.name).join(', '),
-                finalPrice: finalAmount, // Cart total
-                loanAmount: grossLoan,
-                selectedBusiness: null,
-                selectedScale: null,
-                color: null,
-                creditTerm: selectedTermMonths,
-                monthlyPayment: parseFloat(monthlyPayment.toFixed(2)),
-                interestRate: '96%',
-                firstPaymentDate: firstPaymentDate.toISOString().split('T')[0],
-                lastPaymentDate: lastPaymentDate.toISOString().split('T')[0],
-            });
-            return;
-        }
+
 
         onNext({
             // Legacy fields for backward compatibility
@@ -549,7 +527,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 setSelectedDestination(null);
                 break;
             case 'terms':
-                if (isPersonalProducts || isCartMode) {
+                if (isPersonalProducts) {
                     setCurrentView('product_detail');
                 } else {
                     setCurrentView('scales');
@@ -563,68 +541,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
 
 
-    const handleAddToCart = () => {
-        // Validation: Must have business.
-        if (!selectedBusiness) return;
 
-        const scale = selectedScale; // Can be null
-        const price = scale?.custom_price || (selectedBusiness.basePrice * (scale?.multiplier || 1));
-
-        const newItem = {
-            businessId: selectedBusiness.id || 0,
-            name: selectedBusiness.name,
-            price: price,
-            quantity: cartQuantity,
-            scale: scale?.name
-        };
-
-        const newCart = [...cart, newItem];
-        setCart(newCart);
-
-        // Auto-proceed for Core House in Construction flow
-        if (data.intent === 'homeConstruction' && selectedBusiness.name.toLowerCase().includes('core house')) {
-            onNext({
-                cart: newCart,
-                // Provide validation data required by validateProductStep
-                category: 'Construction', // Ensure a category is present
-                subcategory: 'Core House', // Ensure subcategory is present for step filtering
-                amount: price, // Ensure an amount is present
-                isCoreHouseFlow: true // Explicitly flag as Core House flow
-            });
-            return;
-        }
-
-        setCartQuantity(1);
-        setSelectedBusiness(null);
-        setSelectedSubcategory(null);
-        setCurrentView('subcategories');
-    };
-
-    const handleRemoveFromCart = (index: number) => {
-        const newCart = [...cart];
-        newCart.splice(index, 1);
-        setCart(newCart);
-    };
-
-    const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-    // Sync finalAmount with cartTotal when cart changes in cart mode (when viewing terms)
-    useEffect(() => {
-        if (isCartMode && currentView === 'terms') {
-            setFinalAmount(cartTotal);
-        }
-    }, [cart, cartTotal, isCartMode, currentView]);
 
     const handleNext = () => {
-        if (isCartMode) {
-            if (cart.length === 0) {
-                setValidationError('Please add at least one item to your basket.');
-                return;
-            }
-            setFinalAmount(cartTotal);
-            setCurrentView('terms');
-            return;
-        }
 
         // Standard Flow
         if (!selectedBusiness) return;
@@ -644,53 +563,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         setCurrentView('terms');
     };
 
-    // If isCartMode, render Basket Summary
-    const renderCartSummary = () => {
-        // If it's a Core House flow and we have items, we might not want to show the specific cart if it's just the core house
-        // However, the user said "only building materials should add to basket".
-        // Let's hide the basket display if the ONLY thing in it is a Core House
-        // This makes it feel like "Selection" rather than "Shopping"
-        const hasCoreHouse = cart.some(item => item.name.toLowerCase().includes('core house'));
-        if (hasCoreHouse && cart.length === 1 && data.intent === 'homeConstruction') return null;
 
-        return (
-            <Card className="p-4 mb-6 bg-white dark:bg-[#1b1b18] border-[#e5e7eb] dark:border-[#27272a]">
-                <h3 className="font-semibold mb-4 text-[#1b1b18] dark:text-[#EDEDEC] flex items-center">
-                    <ShoppingBasket className="w-5 h-5 mr-2" />
-                    Shopping Basket
-                </h3>
-                {cart.length === 0 ? (
-                    <p className="text-sm text-gray-500">Your basket is empty.</p>
-                ) : (
-                    <div className="space-y-3">
-                        {cart.map((item, index) => (
-                            <div key={index} className="flex justify-between items-center text-sm">
-                                <div>
-                                    <span className="font-medium text-[#1b1b18] dark:text-[#EDEDEC]">{item.name}</span>
-                                    <div className="text-xs text-gray-500">
-                                        {item.scale && <span>Size: {item.scale}</span>}
-                                        <span className="ml-2">x{item.quantity}</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center">
-                                    <span className="font-medium mr-3">{formatCurrency(item.price * item.quantity)}</span>
-                                    <Button variant="ghost" size="sm" onClick={() => handleRemoveFromCart(index)} className="text-red-500 h-6 w-6 p-0 hover:bg-red-50">
-                                        <X className="w-4 h-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
-                        <div className="border-t pt-2 mt-2 flex justify-between font-bold">
-                            <span>Total</span>
-                            <span>{formatCurrency(cartTotal)}</span>
-                        </div>
-                    </div>
-                )}
-            </Card>
-        );
-    };
 
-    const creditTerms = (selectedBusiness || isCartMode) ? getCreditTermOptions(finalAmount) : [];
+    const creditTerms = selectedBusiness ? getCreditTermOptions(finalAmount) : [];
 
     if (isLoadingProducts) {
         return (
@@ -714,7 +589,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
     return (
         <div className="space-y-6">
-            {isCartMode && renderCartSummary()}
+
             <div className="text-center">
                 <h2 className="text-2xl font-semibold mb-2">
                     {currentView === 'categories' && (isPersonalProducts ? 'Select Product Category' : 'Select Business Category')}
@@ -848,9 +723,14 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 <div className="flex-grow">
                                     <h3 className="text-lg font-medium mb-1">{business.name}</h3>
                                     {business.product_code && (
-                                        <span className="inline-block text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded mb-1">
+                                        <span className="inline-block text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded mb-1 mr-2">
                                             {business.product_code}
                                         </span>
+                                    )}
+                                    {business.specification && (
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">
+                                            {business.specification}
+                                        </p>
                                     )}
                                     <div className="flex items-center text-sm text-gray-500 mb-1">
                                         <div className="font-semibold mr-1">{isZiG ? 'ZiG' : '$'}</div>
@@ -911,9 +791,19 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                             <div>
                                 <h2 className="text-3xl font-bold text-gray-900 mb-1">{selectedBusiness.name}</h2>
                                 {selectedBusiness.product_code && (
-                                    <span className="inline-block text-sm font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded mb-2">
-                                        Code: {selectedBusiness.product_code}
-                                    </span>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        <span className="inline-block text-sm font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded">
+                                            Code: {selectedBusiness.product_code}
+                                        </span>
+                                    </div>
+                                )}
+                                {selectedBusiness.specification && (
+                                    <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700 mb-4">
+                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Specification</h4>
+                                        <p className="text-gray-600 dark:text-gray-400">
+                                            {selectedBusiness.specification}
+                                        </p>
+                                    </div>
                                 )}
                                 <div className="text-2xl font-bold text-emerald-600">
                                     {finalAmount > 0
@@ -951,71 +841,23 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
                             {/* Action Button */}
                             <div className="pt-6">
-                                {isCartMode ? (
-                                    <div className="flex flex-col gap-3">
-                                        <Button
-                                            onClick={handleAddToCart}
-                                            disabled={
-                                                (selectedBusiness.scales && selectedBusiness.scales.length > 0 && !selectedScale)
-                                            }
-                                            className={`w-full text-white py-6 text-lg ${selectedBusiness.name.toLowerCase().includes('core house')
-                                                ? 'bg-emerald-600 hover:bg-emerald-700'
-                                                : 'bg-blue-600 hover:bg-blue-700'
-                                                }`}
-                                        >
-                                            {selectedBusiness.name.toLowerCase().includes('core house') ? (
-                                                <>
-                                                    Select & Continue
-                                                    <ChevronRight className="ml-2 h-5 w-5" />
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <ShoppingBasket className="mr-2 h-5 w-5" />
-                                                    Add to Basket
-                                                </>
-                                            )}
-                                        </Button>
-                                        <p className="text-xs text-gray-500 text-center">
-                                            Add item to your basket to proceed
-                                        </p>
+                                <Button
+                                    onClick={handleNext}
+                                    disabled={
+                                        (selectedBusiness.scales && selectedBusiness.scales.length > 0 && !selectedScale)
+                                    }
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg"
+                                >
+                                    Continue to Payment Terms
+                                    <ChevronRight className="ml-2 h-5 w-5" />
+                                </Button>
 
-                                        <div className="relative flex py-2 items-center">
-                                            <div className="flex-grow border-t border-gray-300"></div>
-                                            <span className="flex-shrink-0 mx-4 text-gray-400 text-sm">Review Cart</span>
-                                            <div className="flex-grow border-t border-gray-300"></div>
-                                        </div>
-
-                                        <Button
-                                            onClick={handleNext}
-                                            disabled={cart.length === 0}
-                                            variant="outline"
-                                            className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 py-4"
-                                        >
-                                            Proceed to Terms
-                                            <ChevronRight className="ml-2 h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <Button
-                                        onClick={handleNext}
-                                        disabled={
-                                            (selectedBusiness.scales && selectedBusiness.scales.length > 0 && !selectedScale)
-                                        }
-                                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg"
-                                    >
-                                        Continue to Payment Terms
-                                        <ChevronRight className="ml-2 h-5 w-5" />
-                                    </Button>
-                                )}
-
-                                {!isCartMode && (
-                                    <p className="text-xs text-gray-500 text-center mt-3">
-                                        {!selectedScale && selectedBusiness.scales && selectedBusiness.scales.length > 0
-                                            ? "Please select an option to continue"
-                                            : "Next: Choose your repayment plan"
-                                        }
-                                    </p>
-                                )}
+                                <p className="text-xs text-gray-500 text-center mt-3">
+                                    {!selectedScale && selectedBusiness.scales && selectedBusiness.scales.length > 0
+                                        ? "Please select an option to continue"
+                                        : "Next: Choose your repayment plan"
+                                    }
+                                </p>
                             </div>
                         </div >
                     </div >
@@ -1314,16 +1156,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     Back
                 </Button>
 
-                {/* Cart Mode Done Button */}
-                {isCartMode && cart.length > 0 && currentView !== 'terms' && (
-                    <Button
-                        onClick={handleNext}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                        Proceed
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
-                )}
+
 
                 {/* Hide Continue button for Core House as it has its own flow */}
                 {currentView === 'terms' && (!data.intent || data.intent !== 'homeConstruction') && (

@@ -97,21 +97,7 @@ class ProductController extends Controller
                         }
                     }
 
-                    // Parse colors if stored as JSON string
-                    $colors = null;
-                    if ($product->colors) {
-                        $colors = is_string($product->colors) ? json_decode($product->colors, true) : $product->colors;
-                    }
 
-                    // Parse interior and exterior colors
-                    $interiorColors = null;
-                    if (isset($product->interior_colors) && $product->interior_colors) {
-                        $interiorColors = is_string($product->interior_colors) ? json_decode($product->interior_colors, true) : $product->interior_colors;
-                    }
-                    $exteriorColors = null;
-                    if (isset($product->exterior_colors) && $product->exterior_colors) {
-                        $exteriorColors = is_string($product->exterior_colors) ? json_decode($product->exterior_colors, true) : $product->exterior_colors;
-                    }
 
                     $productData = [
                         'id' => $product->id,
@@ -119,9 +105,7 @@ class ProductController extends Controller
                         'basePrice' => (float) $product->base_price,
                         'imageUrl' => $imageUrl,
                         'description' => $product->description ?? null,
-                        'colors' => $colors,
-                        'interiorColors' => $interiorColors,
-                        'exteriorColors' => $exteriorColors,
+                        'description' => $product->description ?? null,
                         'scales' => [],
                     ];
 
@@ -281,7 +265,7 @@ class ProductController extends Controller
                 'name' => $product->name,
                 'base_price' => $product->base_price,
                 'image_url' => $product->image_url,
-                'colors' => $product->colors,
+                'image_url' => $product->image_url,
                 'category' => [
                     'id' => $product->category->id,
                     'name' => $product->category->name,
@@ -430,9 +414,12 @@ class ProductController extends Controller
                                     return [
                                         'id' => $product->id,
                                         'name' => $product->name,
-                                        'basePrice' => (float) $product->base_price,
+                                        'product_code' => $product->product_code,
+                                        'specification' => $product->specification,
+                                        'basePrice' => (float) $product->selling_price,
+                                        'originalPrice' => (float) $product->base_price,
                                         'image_url' => $product->image_url,
-                                        'colors' => $product->colors,
+                                        'image_url' => $product->image_url,
                                         'scales' => $product->packageSizes->map(function ($size) {
                                             return [
                                                 'id' => $size->id,
@@ -447,25 +434,16 @@ class ProductController extends Controller
                             ];
                         })->toArray(),
                         'businesses' => $directProducts->map(function ($product) {
-                            // Parse interior and exterior colors
-                            $interiorColors = null;
-                            if ($product->interior_colors) {
-                                $interiorColors = is_string($product->interior_colors) ? json_decode($product->interior_colors, true) : $product->interior_colors;
-                            }
-                            $exteriorColors = null;
-                            if ($product->exterior_colors) {
-                                $exteriorColors = is_string($product->exterior_colors) ? json_decode($product->exterior_colors, true) : $product->exterior_colors;
-                            }
-
                             return [
                                 'id' => $product->id,
                                 'name' => $product->name,
-                                'basePrice' => (float) $product->base_price,
+                                'product_code' => $product->product_code,
+                                'specification' => $product->specification,
+                                'basePrice' => (float) $product->selling_price,
+                                'originalPrice' => (float) $product->base_price,
                                 'image_url' => $product->image_url,
                                 'description' => $product->description,
-                                'colors' => $product->colors,
-                                'interiorColors' => $interiorColors,
-                                'exteriorColors' => $exteriorColors,
+                                'description' => $product->description,
                                 'scales' => $product->packageSizes->map(function ($size) {
                                     return [
                                         'id' => $size->id,
@@ -557,9 +535,6 @@ private function getMicrobizFrontendCatalog(): JsonResponse
                         'basePrice' => (float) ($subcategory->packages->sortBy('price')->first()?->price ?? 280.00),
                         'image_url' => $subcategory->image_url,
                         'description' => $subcategory->description,
-                        'colors' => null,
-                        'interiorColors' => null,
-                        'exteriorColors' => null,
                         'scales' => $scales,
                         'tenure' => 24,
                     ]],
@@ -610,9 +585,6 @@ private function getServiceFrontendCatalog(): JsonResponse
                         'image_url' => $subcategory->image_url,
                         'description' => $subcategory->description,
                         'specification' => null,
-                        'colors' => null,
-                        'interiorColors' => null,
-                        'exteriorColors' => null,
                         'scales' => $scales,
                         'tenure' => 24,
                     ]],
