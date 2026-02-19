@@ -32,9 +32,19 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AdminUserSeeder::class, // Create admin user first (admin@bancosystem.fly.dev)
             PortalUsersSeeder::class, // Create portal users (zbadmin, accounts, stores, hr, partners)
-            ProductCatalogSeeder::class,
+            
+            SupplierSeeder::class, // Suppliers for products
+
+            ProductCatalogSeeder::class, // Categories + General Microbiz Products
+            ServicePackageSeeder::class, // Service domain products
+            
+            MicrobizBusinessSeeder::class, // Detailed Microbiz businesses
+            MicrobizChickenProjectSeeder::class, // Broiler Production specific
+            MicrobizLayersProjectSeeder::class, // Layers Production specific (NEW)
+
             HirePurchaseSeeder::class, // Main Hire Purchase products (Goods with Series)
             PersonalProductsSeeder::class, // Other Personal products (Services like Holiday, School Fees)
+            
             AgentSeeder::class,
         ]);
     }

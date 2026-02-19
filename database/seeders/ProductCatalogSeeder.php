@@ -10,6 +10,20 @@ class ProductCatalogSeeder extends Seeder
     
     public function run(): void
     {
+        try {
+            DB::beginTransaction();
+
+            $this->seedCategories();
+            
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            dump("ProductCatalogSeeder Error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    private function seedCategories() {
         // MicroBiz Main Categories (Updated with new names)
         $categories = [
             ['id' => 'agric-mechanization', 'name' => 'Agricultural Machinery', 'emoji' => '🚜'],
@@ -39,49 +53,82 @@ class ProductCatalogSeeder extends Seeder
         ];
         
         foreach ($categories as $categoryData) {
-            $categoryId = DB::table('product_categories')->insertGetId([
-                'name' => $categoryData['name'],
-                'emoji' => $categoryData['emoji'],
-                'type' => 'microbiz',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            // Idempotent Category Check
+            $category = DB::table('product_categories')->where('name', $categoryData['name'])->first();
+            
+            if (!$category) {
+                $categoryId = DB::table('product_categories')->insertGetId([
+                    'name' => $categoryData['name'],
+                    'emoji' => $categoryData['emoji'],
+                    'type' => 'microbiz',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } else {
+                $categoryId = $category->id;
+                // Optional: Update emoji if needed
+                DB::table('product_categories')->where('id', $categoryId)->update(['emoji' => $categoryData['emoji']]);
+            }
 
             $subcategories = $this->getSubcategoriesForCategory($categoryData['id']);
 
             foreach ($subcategories as $subcategoryData) {
-                $subcategoryId = DB::table('product_sub_categories')->insertGetId([
-                    'product_category_id' => $categoryId,
-                    'name' => $subcategoryData['name'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                 // Idempotent Subcategory Check
+                $subcategory = DB::table('product_sub_categories')
+                    ->where('product_category_id', $categoryId)
+                    ->where('name', $subcategoryData['name'])
+                    ->first();
 
-                foreach ($subcategoryData['businesses'] as $businessData) {
-                    // Auto-generate product code for MicroBiz businesses
-                    $shortName = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $businessData['name']), 0, 8));
-                    $productCode = 'MB-' . $shortName . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
-
-                    $productId = DB::table('products')->insertGetId([
-                        'product_sub_category_id' => $subcategoryId,
-                        'product_code' => $productCode,
-                        'name' => $businessData['name'],
-                        'base_price' => 280.00, // Base price is effectively the Lite Package price
-                        'image_url' => 'https://via.placeholder.com/150',
+                if (!$subcategory) {
+                    $subcategoryId = DB::table('product_sub_categories')->insertGetId([
+                        'product_category_id' => $categoryId,
+                        'name' => $subcategoryData['name'],
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
+                } else {
+                    $subcategoryId = $subcategory->id;
+                }
 
-                    if ($businessData['name'] === 'Company Registration') {
-                        // Company Registration has no variants/scales, just one standard price
-                        DB::table('product_package_sizes')->insert([
-                            'product_id' => $productId,
-                            'name' => 'Standard',
-                            'multiplier' => 1.0,
-                            'custom_price' => 195.00,
+                foreach ($subcategoryData['businesses'] as $businessData) {
+                    // Idempotent Product Check
+                    $product = DB::table('products')
+                        ->where('product_sub_category_id', $subcategoryId)
+                        ->where('name', $businessData['name'])
+                        ->first();
+
+                    if (!$product) {
+                        // Auto-generate product code for MicroBiz businesses
+                        $shortName = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $businessData['name']), 0, 8));
+                        $productCode = 'MB-' . $shortName . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+
+                        $productId = DB::table('products')->insertGetId([
+                            'product_sub_category_id' => $subcategoryId,
+                            'product_code' => $productCode,
+                            'name' => $businessData['name'],
+                            'base_price' => 280.00, // Base price is effectively the Lite Package price
+                            'image_url' => 'https://via.placeholder.com/150',
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
+                    } else {
+                        $productId = $product->id;
+                    }
+
+                    if ($businessData['name'] === 'Company Registration') {
+                        // Idempotent Package Size Check for Company Reg
+                        DB::table('product_package_sizes')->updateOrInsert(
+                            [
+                                'product_id' => $productId,
+                                'name' => 'Standard',
+                            ],
+                            [
+                                'multiplier' => 1.0,
+                                'custom_price' => 195.00,
+                                'updated_at' => now(),
+                                // 'created_at' => now() // logic issue with updateOrInsert and timestamps, handled below if needed or ignored
+                            ]
+                        );
                         continue;
                     }
 
@@ -90,18 +137,21 @@ class ProductCatalogSeeder extends Seeder
                         ['name' => 'Lite Package', 'custom_price' => 280.00, 'multiplier' => 1.0],
                         ['name' => 'Standard Package', 'custom_price' => 490.00, 'multiplier' => 1.75],
                         ['name' => 'Full House Package', 'custom_price' => 930.00, 'multiplier' => 3.32],
-                        ['name' => 'Gold Package', 'custom_price' => 2000.00, 'multiplier' => 7.14], // Updated: $2,000
+                        ['name' => 'Gold Package', 'custom_price' => 1700.00, 'multiplier' => 7.14], // Updated: $1,700
                     ];
 
                     foreach ($scales as $scaleData) {
-                        DB::table('product_package_sizes')->insert([
-                            'product_id' => $productId,
-                            'name' => $scaleData['name'],
-                            'multiplier' => $scaleData['multiplier'],
-                            'custom_price' => $scaleData['custom_price'],
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
+                        DB::table('product_package_sizes')->updateOrInsert(
+                            [
+                                'product_id' => $productId,
+                                'name' => $scaleData['name'],
+                            ],
+                            [
+                                'multiplier' => $scaleData['multiplier'],
+                                'custom_price' => $scaleData['custom_price'],
+                                'updated_at' => now(),
+                            ]
+                        );
                     }
                 }
             }
@@ -109,12 +159,13 @@ class ProductCatalogSeeder extends Seeder
 
         $repaymentTerms = [6, 12, 18, 24, 36];
         foreach ($repaymentTerms as $months) {
-            DB::table('repayment_terms')->insert([
-                'months' => $months,
-                'interest_rate' => 10.00,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+             DB::table('repayment_terms')->updateOrInsert(
+                ['months' => $months],
+                [
+                    'interest_rate' => 10.00,
+                    'updated_at' => now(),
+                ]
+            );
         }
     }
 

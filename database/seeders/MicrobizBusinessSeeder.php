@@ -11,6 +11,20 @@ class MicrobizBusinessSeeder extends Seeder
 {
     public function run(): void
     {
+        try {
+            DB::beginTransaction();
+
+            $this->seedBusinesses();
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            dump("MicrobizBusinessSeeder Error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    private function seedBusinesses() {
         $categories = [
             ['name' => 'Agricultural Machinery', 'emoji' => '🚜', 'subcategories' => [
                 'Maize sheller',
@@ -18,7 +32,7 @@ class MicrobizBusinessSeeder extends Seeder
                 'Tractors',
                 'Irrigation systems',
                 'Land security',
-                'Incubation',
+                'Incubaters',
                 'Greenhouses',
                 'Tobacco bailing machine',
                 'Peanut butter machine',
@@ -161,7 +175,7 @@ class MicrobizBusinessSeeder extends Seeder
             ['tier' => 'lite',       'name' => 'Lite Package',       'price' => 280.00],
             ['tier' => 'standard',   'name' => 'Standard Package',   'price' => 490.00],
             ['tier' => 'full_house', 'name' => 'Full House Package', 'price' => 930.00],
-            ['tier' => 'gold',       'name' => 'Gold Package',       'price' => 2000.00],
+            ['tier' => 'gold',       'name' => 'Gold Package',       'price' => 1700.00],
         ];
 
         // Special case: Company Registration only has one tier
@@ -184,7 +198,7 @@ class MicrobizBusinessSeeder extends Seeder
                 $tiersToSeed = ($subName === 'Company Registration') ? $companyRegTiers : $tiers;
 
                 foreach ($tiersToSeed as $tierData) {
-                    MicrobizPackage::firstOrCreate(
+                    MicrobizPackage::updateOrCreate(
                         [
                             'microbiz_subcategory_id' => $subcategory->id,
                             'tier' => $tierData['tier'],

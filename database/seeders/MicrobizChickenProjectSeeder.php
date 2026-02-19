@@ -132,7 +132,7 @@ class MicrobizChickenProjectSeeder extends Seeder
                 ],
                 'gold' => [
                     'name' => 'Gold Package',
-                    'price' => 1111.08,
+                    'price' => 1700.00,
                     'items' => [
                         'MCPB001' => 200,
                         'MCPB003' => 2,

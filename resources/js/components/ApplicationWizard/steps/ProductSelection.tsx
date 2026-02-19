@@ -915,7 +915,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                         >
                                             <h3 className="text-lg font-medium mb-2">{formatScaleName(scale.name)}</h3>
                                             <div className="text-xl font-bold text-emerald-600 mb-2">
-                                                Cost: {formatCurrency(isZiG ? amount * ZIG_RATE : amount)}
+                                                {formatCurrency(isZiG ? amount * ZIG_RATE : amount)}
                                             </div>
                                         </Card>
                                     );
