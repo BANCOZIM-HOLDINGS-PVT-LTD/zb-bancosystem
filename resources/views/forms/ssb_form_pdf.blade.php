@@ -889,12 +889,31 @@
             <th width="15%">QUANTITY</th>
             <th>INSTALMENT</th>
         </tr>
-        <tr>
-            <td><span class="filled-field">{{ $getAny(['creditFacilityType', 'business']) }}</span></td>
-            <td>........................</td>
-            <td class="center">1</td>
-            <td><span class="filled-field">${{ $formData['monthlyPayment'] ?? '' }}</span></td>
-        </tr>
+        @if(isset($lineItems) && count($lineItems) > 0)
+            @php $itemCount = 0; @endphp
+            @foreach($lineItems as $item)
+                @php $itemCount++; @endphp
+                <tr>
+                    <td>{{ $itemCount }}) {{ $item['name'] }} @if(!empty($item['specification'])) <br><span style="font-size: 8pt;">{{ $item['specification'] }}</span> @endif</td>
+                    <td>{{ $item['code'] ?? '' }}</td>
+                    <td class="center">{{ $item['quantity'] }}</td>
+                    <td><span class="filled-field">
+                        @if($loop->last)
+                            ${{ $monthlyPayment ?? $formData['monthlyPayment'] ?? '' }}
+                        @else
+                            -
+                        @endif
+                    </span></td>
+                </tr>
+            @endforeach
+        @else
+            <tr>
+                <td><span class="filled-field">{{ $productDescription ?: ($getAny(['creditFacilityType', 'business']) ?? '') }}</span></td>
+                <td>........................</td>
+                <td class="center">1</td>
+                <td><span class="filled-field">${{ $monthlyPayment ?? $formData['monthlyPayment'] ?? '' }}</span></td>
+            </tr>
+        @endif
         <tr>
             <td class="right" colspan="3"><strong>TOTAL:</strong></td>
             <td><span class="filled-field">${{ $formData['monthlyPayment'] ?? '' }}</span></td>

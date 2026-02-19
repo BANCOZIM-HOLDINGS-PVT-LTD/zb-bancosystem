@@ -26,6 +26,21 @@ class Product extends Model
         'tc_code',
     ];
 
+    /**
+     * Get the auto-generated description using specification and supplier.
+     */
+    public function getGeneratedDescriptionAttribute(): string
+    {
+        $desc = $this->specification ?? $this->name;
+        
+        // Add Supplier info if available
+        if ($this->supplier) {
+            $desc .= "\nSupplier: " . $this->supplier->name;
+        }
+        
+        return $desc;
+    }
+
     protected $casts = [
         'base_price' => 'decimal:2',
         'purchase_price' => 'decimal:2',

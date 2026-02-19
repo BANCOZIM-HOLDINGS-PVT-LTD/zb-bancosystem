@@ -21,6 +21,38 @@ class MicrobizPackage extends Model
         'tc_code',
     ];
 
+    /**
+     * Get the auto-generated description listing all items in the package.
+     */
+    public function getGeneratedDescriptionAttribute(): string
+    {
+        $items = $this->items;
+        $description = "This " . ($this->tier_label ?? 'package') . " involves the following:\n";
+        
+        foreach ($items as $item) {
+            $qty = $item->pivot->quantity ?? 1;
+            $description .= "- " . ($item->product_code ? "[{$item->product_code}] " : "") . "{$item->name} (x{$qty})\n";
+        }
+
+        // Add Transport Info if applicable
+        if ($this->transport_method) {
+            $methodName = match($this->transport_method) {
+                'small_truck' => 'Small Truck',
+                'indrive' => 'InDrive',
+                default => ucfirst(str_replace('_', ' ', $this->transport_method))
+            };
+            
+            $description .= "\nTransport: {$methodName}";
+            
+            if ($this->courier) {
+                $courierName = $this->courier === 'other' ? 'Courier' : ucfirst($this->courier);
+                $description .= " via {$courierName}";
+            }
+        }
+
+        return $description;
+    }
+
     protected $casts = [
         'price' => 'decimal:2',
     ];

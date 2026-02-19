@@ -1,9 +1,0 @@
-{
-    "session_id": "debug_session_file",
-    "channel": "web",
-    "user_identifier": "debug_user",
-    "current_step": "language_selection",
-    "form_data": {
-        "test": "value"
-    }
-}

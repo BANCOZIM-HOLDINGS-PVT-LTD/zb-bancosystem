@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\ApplicationState;
+use App\Models\Product;
+use App\Models\MicrobizPackage;
 use App\Contracts\PDFGeneratorInterface;
 use App\Exceptions\PDF\PDFException;
 use App\Exceptions\PDF\PDFGenerationException;
@@ -1333,13 +1335,104 @@ class PDFGeneratorService implements PDFGeneratorInterface
         $data = $this->deepMerge($data, $responses);
         
         // Format and enhance product selection data
-        if (isset($formData['selectedBusiness'])) {
+        // Format and enhance product selection data
+        $lineItems = [];
+        $productDescription = '';
+        $itemsTotal = 0;
+
+        // Check for Shopping Cart (Construction / Agro Inputs)
+        if (isset($formData['cart']) && is_array($formData['cart']) && count($formData['cart']) > 0) {
+            $productDescription = "Itemized Order List:\n";
+            
+            foreach ($formData['cart'] as $cartItem) {
+                // For cart items (Construction/Agro), businessId maps to Product ID
+                $product = Product::find($cartItem['businessId'] ?? 0);
+                
+                $name = $cartItem['name'] ?? 'Unknown Item';
+                $qty = $cartItem['quantity'] ?? 1;
+                $desc = '';
+                
+                if ($product) {
+                    $desc = $product->specification ?? $product->name;
+                    // Append supplier if available
+                    if ($product->supplier) {
+                        $desc .= " (Supplier: {$product->supplier->name})";
+                    }
+                }
+                
+                $lineItems[] = [
+                    'name' => $name,
+                    'quantity' => $qty,
+                    'code' => $product->product_code ?? '',
+                    'specification' => $desc,
+                    'is_package' => false
+                ];
+                
+                $productDescription .= "- {$name} (x{$qty})\n";
+            }
+            
+            $data['productName'] = "Combined Order (" . count($formData['cart']) . " items)";
+            
+        } elseif (isset($formData['selectedBusiness'])) {
+            // Single Item Selection
             $data['productName'] = $formData['selectedBusiness']['name'] ?? '';
-            $data['productDescription'] = $formData['selectedBusiness']['description'] ?? '';
-            $data['productAmount'] = $this->formatCurrency($formData['finalPrice'] ?? 0);
+            $data['productTotal'] = $this->formatCurrency($formData['finalPrice'] ?? 0);
             $data['productScale'] = $formData['selectedScale']['name'] ?? '';
-            $data['productScaleDescription'] = $formData['selectedScale']['description'] ?? '';
+            
+            // Log logic for strict debugging
+            $intent = $formData['intent'] ?? $applicationState->channel ?? '';
+            
+            // MicroBiz or Service Logic
+            if ($intent === 'microBiz' || 
+                in_array($formData['subcategory'] ?? '', ['License Courses', 'Driving School', 'Zimparks', 'School Fees']) ||
+                str_contains(strtolower($intent), 'service')) {
+                
+                $packageId = $formData['selectedScale']['id'] ?? $formData['scaleId'] ?? null;
+                $package = MicrobizPackage::with(['items', 'subcategory'])->find($packageId);
+                
+                if ($package) {
+                    $productDescription = $package->generated_description;
+                    
+                    // Add items for table display
+                    foreach ($package->items as $item) {
+                        $lineItems[] = [
+                            'name' => $item->name,
+                            'quantity' => $item->pivot->quantity ?? 1,
+                            'code' => $item->product_code ?? '',
+                            'specification' => $item->specification ?? '', // Add spec if available
+                            'is_package' => true
+                        ];
+                    }
+                } else {
+                    // Fallback if package not found (using frontend data)
+                     $productDescription = $formData['selectedBusiness']['description'] ?? '';
+                }
+                
+            } else {
+                // Personal Products / Hire Purchase Logic
+                $productId = $formData['selectedBusiness']['id'] ?? $formData['productId'] ?? null;
+                $product = Product::with('supplier')->find($productId);
+                
+                if ($product) {
+                    $productDescription = $product->generated_description;
+                    
+                     $lineItems[] = [
+                        'name' => $product->name,
+                        'quantity' => 1, // Usually 1 for single selection
+                        'code' => $product->product_code ?? '',
+                        'specification' => $product->specification ?? '',
+                        'is_package' => false
+                    ];
+                } else {
+                     $productDescription = $formData['selectedBusiness']['description'] ?? '';
+                }
+            }
         }
+        
+        $data['productDescription'] = $productDescription;
+        $data['lineItems'] = $lineItems;
+        $data['productAmount'] = $this->formatCurrency($formData['finalPrice'] ?? 0);
+        $data['productScaleDescription'] = $formData['selectedScale']['description'] ?? '';
         
         // Add employer specific fields with enhanced information
         $employer = $formData['employer'] ?? '';

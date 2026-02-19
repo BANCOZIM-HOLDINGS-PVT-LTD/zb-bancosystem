@@ -783,24 +783,43 @@
             <th style="width: 20%;">QUANTITY</th>
             <th style="width: 20%;">INSTALMENT</th>
         </tr>
-        <tr>
-            <td>1) {{ $productName ?? $purposeAsset ?? '' }}</td>
-            <td></td>
-            <td>1</td>
-            <td>${{ $monthlyPayment ?? '' }}</td>
-        </tr>
-        <tr>
-            <td>2)</td>
-            <td></td>
-            <td></td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>3)</td>
-            <td></td>
-            <td></td>
-            <td></td>
-        </tr>
+        @if(isset($lineItems) && count($lineItems) > 0)
+            @php $itemCount = 0; @endphp
+            @foreach($lineItems as $item)
+                @php $itemCount++; @endphp
+                <tr>
+                    <td>{{ $itemCount }}) {{ $item['name'] }} @if(!empty($item['specification'])) <br><span style="font-size: 8pt;">{{ $item['specification'] }}</span> @endif</td>
+                    <td>{{ $item['code'] ?? '' }}</td>
+                    <td style="text-align: center;">{{ $item['quantity'] }}</td>
+                    <td style="text-align: center;">
+                        @if($loop->last)
+                            ${{ $monthlyPayment ?? '' }}
+                        @else
+                            -
+                        @endif
+                    </td>
+                </tr>
+            @endforeach
+        @else
+            <tr>
+                <td>1) {{ $productDescription ?: ($productName ?? $purposeAsset ?? '') }}</td>
+                <td></td>
+                <td style="text-align: center;">1</td>
+                <td style="text-align: center;">${{ $monthlyPayment ?? '' }}</td>
+            </tr>
+            <tr>
+                <td>2)</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>3)</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        @endif
         <tr>
             <td style="text-align: right; font-weight: bold;">TOTAL:-</td>
             <td></td>
