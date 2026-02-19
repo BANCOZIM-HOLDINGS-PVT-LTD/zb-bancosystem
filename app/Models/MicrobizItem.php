@@ -12,12 +12,16 @@ class MicrobizItem extends Model
         'microbiz_subcategory_id',
         'item_code',
         'name',
+        'specification',
         'unit_cost',
+        'markup_percentage',
         'unit',
+        'image_url',
     ];
 
     protected $casts = [
         'unit_cost' => 'decimal:2',
+        'markup_percentage' => 'decimal:2',
     ];
 
     protected static function boot()
@@ -56,7 +60,19 @@ class MicrobizItem extends Model
     public function packages(): BelongsToMany
     {
         return $this->belongsToMany(MicrobizPackage::class, 'microbiz_tier_items')
-            ->withPivot('quantity')
+            ->withPivot('quantity', 'is_delivered')
             ->withTimestamps();
+    }
+
+    /**
+     * Computed selling price: unit_cost + (unit_cost × markup%) 
+     * Transport is added at tier level, not item level.
+     */
+    public function getSellingPriceAttribute(): float
+    {
+        $cost = (float) $this->unit_cost;
+        $markup = (float) $this->markup_percentage;
+
+        return round($cost + ($cost * $markup / 100), 2);
     }
 }

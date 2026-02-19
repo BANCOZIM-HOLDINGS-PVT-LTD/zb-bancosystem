@@ -46,6 +46,10 @@ class ProductController extends Controller
                 if ($type === 'microbiz') {
                     return $this->getMicrobizFrontendCatalog();
                 }
+                // For services, use microbiz tables with domain='service'
+                if (in_array($intent, ['personalServices', 'homeConstruction', 'construction', 'services'])) {
+                    return $this->getServiceFrontendCatalog();
+                }
                 $query->where('type', $type);
             }
         }
@@ -388,6 +392,10 @@ class ProductController extends Controller
                 if ($type === 'microbiz') {
                     return $this->getMicrobizFrontendCatalog();
                 }
+                // For services, use microbiz tables with domain='service'
+                if (in_array($intent, ['personalServices', 'homeConstruction', 'construction', 'services'])) {
+                    return $this->getServiceFrontendCatalog();
+                }
                 $query->where('type', $type);
             }
         }
@@ -511,55 +519,108 @@ class ProductController extends Controller
     }
 
     /**
-     * Get MicroBiz product catalog from dedicated microbiz tables.
-     * Maps: MicrobizCategory -> Category, MicrobizSubcategory -> Business, MicrobizPackage tiers -> Scales
-     */
-    private function getMicrobizFrontendCatalog(): JsonResponse
-    {
-        $categories = MicrobizCategory::with(['subcategories.packages'])
-            ->orderBy('name')
-            ->get();
+ * Get MicroBiz product catalog from dedicated microbiz tables.
+ * Maps: MicrobizCategory -> Category, MicrobizSubcategory -> Business, MicrobizPackage tiers -> Scales
+ * Only returns domain='microbiz' categories.
+ */
+private function getMicrobizFrontendCatalog(): JsonResponse
+{
+    $categories = MicrobizCategory::microbiz()
+        ->with(['subcategories.packages'])
+        ->orderBy('name')
+        ->get();
 
-        $frontendData = $categories->map(function ($category) {
-            return [
-                'id' => strtolower(str_replace(' ', '-', $category->name)),
-                'name' => $category->name,
-                'emoji' => $category->emoji,
-                'subcategories' => $category->subcategories->map(function ($subcategory) {
-                    // Each MicrobizSubcategory is a business type
-                    // Its MicrobizPackage tiers become the "scales"
-                    $scales = $subcategory->packages
-                        ->sortBy('price')
-                        ->values()
-                        ->map(function ($package) {
-                            return [
-                                'id' => $package->id,
-                                'name' => $package->name,
-                                'multiplier' => 1.0,
-                                'custom_price' => (float) $package->price,
-                            ];
-                        })->toArray();
+    $frontendData = $categories->map(function ($category) {
+        return [
+            'id' => strtolower(str_replace(' ', '-', $category->name)),
+            'name' => $category->name,
+            'emoji' => $category->emoji,
+            'subcategories' => $category->subcategories->map(function ($subcategory) {
+                $scales = $subcategory->packages
+                    ->sortBy('price')
+                    ->values()
+                    ->map(function ($package) {
+                        return [
+                            'id' => $package->id,
+                            'name' => $package->name,
+                            'multiplier' => 1.0,
+                            'custom_price' => (float) $package->price,
+                        ];
+                    })->toArray();
 
-                    return [
+                return [
+                    'name' => $subcategory->name,
+                    'series' => [],
+                    'businesses' => [[
+                        'id' => $subcategory->id,
                         'name' => $subcategory->name,
-                        'series' => [],
-                        'businesses' => [[
-                            'id' => $subcategory->id,
-                            'name' => $subcategory->name,
-                            'basePrice' => (float) ($subcategory->packages->sortBy('price')->first()?->price ?? 280.00),
-                            'image_url' => null,
-                            'description' => $subcategory->description,
-                            'colors' => null,
-                            'interiorColors' => null,
-                            'exteriorColors' => null,
-                            'scales' => $scales,
-                            'tenure' => 24,
-                        ]],
-                    ];
-                })->toArray(),
-            ];
-        })->toArray();
+                        'basePrice' => (float) ($subcategory->packages->sortBy('price')->first()?->price ?? 280.00),
+                        'image_url' => $subcategory->image_url,
+                        'description' => $subcategory->description,
+                        'colors' => null,
+                        'interiorColors' => null,
+                        'exteriorColors' => null,
+                        'scales' => $scales,
+                        'tenure' => 24,
+                    ]],
+                ];
+            })->toArray(),
+        ];
+    })->toArray();
 
-        return response()->json($frontendData);
-    }
+    return response()->json($frontendData);
+}
+
+/**
+ * Get Service catalog from microbiz tables with domain='service'.
+ * Same structure as MicroBiz but filtered to services.
+ */
+private function getServiceFrontendCatalog(): JsonResponse
+{
+    $categories = MicrobizCategory::service()
+        ->with(['subcategories.packages'])
+        ->orderBy('name')
+        ->get();
+
+    $frontendData = $categories->map(function ($category) {
+        return [
+            'id' => strtolower(str_replace(' ', '-', $category->name)),
+            'name' => $category->name,
+            'emoji' => $category->emoji,
+            'subcategories' => $category->subcategories->map(function ($subcategory) {
+                $scales = $subcategory->packages
+                    ->sortBy('price')
+                    ->values()
+                    ->map(function ($package) {
+                        return [
+                            'id' => $package->id,
+                            'name' => $package->name,
+                            'multiplier' => 1.0,
+                            'custom_price' => (float) $package->price,
+                        ];
+                    })->toArray();
+
+                return [
+                    'name' => $subcategory->name,
+                    'series' => [],
+                    'businesses' => [[
+                        'id' => $subcategory->id,
+                        'name' => $subcategory->name,
+                        'basePrice' => (float) ($subcategory->packages->sortBy('price')->first()?->price ?? 0),
+                        'image_url' => $subcategory->image_url,
+                        'description' => $subcategory->description,
+                        'specification' => null,
+                        'colors' => null,
+                        'interiorColors' => null,
+                        'exteriorColors' => null,
+                        'scales' => $scales,
+                        'tenure' => 24,
+                    ]],
+                ];
+            })->toArray(),
+        ];
+    })->toArray();
+
+    return response()->json($frontendData);
+}
 }

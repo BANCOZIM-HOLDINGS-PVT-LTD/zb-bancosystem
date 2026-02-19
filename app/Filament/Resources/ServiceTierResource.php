@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\MicrobizPackageResource\Pages;
+use App\Filament\Resources\ServiceTierResource\Pages;
 use App\Models\MicrobizCategory;
 use App\Models\MicrobizItem;
 use App\Models\MicrobizPackage;
@@ -14,44 +14,46 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
-class MicrobizPackageResource extends BaseResource
+class ServiceTierResource extends BaseResource
 {
     protected static ?string $model = MicrobizPackage::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-squares-plus';
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationLabel = 'MicroBiz Tiers';
+    protected static ?string $navigationLabel = 'Service Tiers';
 
-    protected static ?string $navigationGroup = 'MicroBiz';
+    protected static ?string $navigationGroup = 'Services';
 
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $modelLabel = 'Tier Package';
+    protected static ?string $slug = 'service-tiers';
 
-    protected static ?string $pluralModelLabel = 'Tier Packages';
+    protected static ?string $modelLabel = 'Service Tier';
+
+    protected static ?string $pluralModelLabel = 'Service Tiers';
 
     /**
-     * Only show tiers for microbiz domain businesses.
+     * Only show tiers for service domain.
      */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->whereHas('subcategory.category', fn (Builder $q) => $q->where('domain', 'microbiz'));
+            ->whereHas('subcategory.category', fn (Builder $q) => $q->where('domain', 'service'));
     }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Tier Definition')
+                Forms\Components\Section::make('Service Tier Definition')
                     ->schema([
                         Forms\Components\Grid::make(2)
                             ->schema([
                                 Forms\Components\Select::make('microbiz_subcategory_id')
-                                    ->label('Business Subcategory')
+                                    ->label('Service Package')
                                     ->options(function () {
                                         return MicrobizSubcategory::with('category')
-                                            ->whereHas('category', fn ($q) => $q->where('domain', 'microbiz'))
+                                            ->whereHas('category', fn ($q) => $q->where('domain', 'service'))
                                             ->get()
                                             ->mapWithKeys(function ($sub) {
                                                 $emoji = $sub->category->emoji ?? '📦';
@@ -60,8 +62,7 @@ class MicrobizPackageResource extends BaseResource
                                     })
                                     ->searchable()
                                     ->required()
-                                    ->reactive()
-                                    ->helperText('Select the MicroBiz business this tier belongs to'),
+                                    ->reactive(),
                                 Forms\Components\Select::make('tier')
                                     ->label('Tier')
                                     ->options([
@@ -71,33 +72,29 @@ class MicrobizPackageResource extends BaseResource
                                         'gold' => 'Gold',
                                     ])
                                     ->required()
-                                    ->searchable()
-                                    ->allowHtml(false),
+                                    ->searchable(),
                             ]),
                         Forms\Components\Grid::make(2)
                             ->schema([
                                 Forms\Components\TextInput::make('name')
-                                    ->label('Package Name')
+                                    ->label('Tier Name')
                                     ->required()
                                     ->maxLength(255)
-                                    ->placeholder('e.g., Lite Layers Starter Pack'),
+                                    ->placeholder('e.g., Standard Construction Package'),
                                 Forms\Components\TextInput::make('price')
-                                    ->label('Package Price')
+                                    ->label('Tier Price')
                                     ->numeric()
                                     ->prefix('$')
                                     ->step(0.01)
-                                    ->required()
-                                    ->helperText('User-facing price for this tier'),
+                                    ->required(),
                             ]),
                         Forms\Components\Textarea::make('description')
-                            ->label('Package Description')
                             ->rows(3)
-                            ->placeholder('Describe what\'s included in this package...')
-                            ->helperText('This description will be visible to applicants'),
+                            ->placeholder('Describe what\'s included...'),
                     ]),
 
                 Forms\Components\Section::make('Transport')
-                    ->description('Transport settings for this tier. TS = Transport from Source, TC = 10% of delivered items total.')
+                    ->description('TS = Transport from Source, TC = 10% of delivered items total.')
                     ->schema([
                         Forms\Components\Grid::make(4)
                             ->schema([
@@ -107,8 +104,7 @@ class MicrobizPackageResource extends BaseResource
                                         'small_truck' => 'Small Truck ($20)',
                                         'indrive' => 'InDrive ($5)',
                                     ])
-                                    ->nullable()
-                                    ->helperText('Transport from source'),
+                                    ->nullable(),
                                 Forms\Components\TextInput::make('courier')
                                     ->label('Courier')
                                     ->default('zimpost')
@@ -116,18 +112,16 @@ class MicrobizPackageResource extends BaseResource
                                 Forms\Components\TextInput::make('ts_code')
                                     ->label('TS Code')
                                     ->prefix('TS-')
-                                    ->placeholder('Enter code')
-                                    ->helperText('Transport from Source code'),
+                                    ->placeholder('Enter code'),
                                 Forms\Components\TextInput::make('tc_code')
                                     ->label('TC Code')
                                     ->prefix('TC-')
-                                    ->placeholder('Enter code')
-                                    ->helperText('Transport from Courier code'),
+                                    ->placeholder('Enter code'),
                             ]),
                     ]),
 
-                Forms\Components\Section::make('Package Contents')
-                    ->description('Add items from the selected business. Toggle "Delivered?" for items that need delivery — this affects TC cost calculation.')
+                Forms\Components\Section::make('Tier Contents')
+                    ->description('Add items. Toggle "Delivered?" for items needing delivery.')
                     ->schema([
                         Forms\Components\Repeater::make('tierItems')
                             ->relationship()
@@ -139,9 +133,7 @@ class MicrobizPackageResource extends BaseResource
                                         if (!$subcategoryId) {
                                             return MicrobizItem::orderBy('name')
                                                 ->get()
-                                                ->mapWithKeys(function ($item) {
-                                                    return [$item->id => "[{$item->item_code}] {$item->name} - \${$item->unit_cost}"];
-                                                });
+                                                ->mapWithKeys(fn ($item) => [$item->id => "[{$item->item_code}] {$item->name} - \${$item->unit_cost}"]);
                                         }
 
                                         return MicrobizItem::where('microbiz_subcategory_id', $subcategoryId)
@@ -149,8 +141,7 @@ class MicrobizPackageResource extends BaseResource
                                             ->get()
                                             ->mapWithKeys(function ($item) {
                                                 $unit = $item->unit ? " ({$item->unit})" : '';
-                                                $spec = $item->specification ? " [{$item->specification}]" : '';
-                                                return [$item->id => "[{$item->item_code}] {$item->name}{$unit}{$spec} - \${$item->unit_cost}"];
+                                                return [$item->id => "[{$item->item_code}] {$item->name}{$unit} - \${$item->unit_cost}"];
                                             });
                                     })
                                     ->searchable()
@@ -164,13 +155,12 @@ class MicrobizPackageResource extends BaseResource
                                     ->columnSpan(1),
                                 Forms\Components\Toggle::make('is_delivered')
                                     ->label('Delivered?')
-                                    ->helperText('Needs delivery to client')
                                     ->default(false)
                                     ->columnSpan(1),
                             ])
                             ->columns(5)
                             ->defaultItems(0)
-                            ->addActionLabel('Add Item to Tier')
+                            ->addActionLabel('Add Item')
                             ->reorderable(false)
                             ->collapsible()
                             ->itemLabel(function (array $state): ?string {
@@ -190,12 +180,11 @@ class MicrobizPackageResource extends BaseResource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('subcategory.category.name')
-                    ->label('Category')
+                    ->label('Service Category')
                     ->sortable()
-                    ->searchable()
-                    ->toggleable(),
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('subcategory.name')
-                    ->label('Business Subcategory')
+                    ->label('Service Package')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\BadgeColumn::make('tier')
@@ -214,7 +203,7 @@ class MicrobizPackageResource extends BaseResource
                         default => ucfirst(str_replace('_', ' ', $state)),
                     }),
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Package Name')
+                    ->label('Tier Name')
                     ->searchable()
                     ->limit(30),
                 Tables\Columns\TextColumn::make('price')
@@ -233,23 +222,13 @@ class MicrobizPackageResource extends BaseResource
                 Tables\Columns\TextColumn::make('tier_items_count')
                     ->counts('tierItems')
                     ->label('Items')
-                    ->sortable()
                     ->badge()
                     ->color('info'),
-                Tables\Columns\TextColumn::make('total_items_cost')
-                    ->label('Items Cost')
-                    ->money('USD')
-                    ->getStateUsing(fn ($record) => $record->total_items_cost)
-                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('total_transport_cost')
                     ->label('Transport')
                     ->money('USD')
                     ->getStateUsing(fn ($record) => $record->total_transport_cost)
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('tier')
@@ -260,10 +239,10 @@ class MicrobizPackageResource extends BaseResource
                         'gold' => 'Gold',
                     ]),
                 Tables\Filters\SelectFilter::make('microbiz_subcategory_id')
-                    ->label('Business Subcategory')
+                    ->label('Service Package')
                     ->options(function () {
                         return MicrobizSubcategory::with('category')
-                            ->whereHas('category', fn ($q) => $q->where('domain', 'microbiz'))
+                            ->whereHas('category', fn ($q) => $q->where('domain', 'service'))
                             ->get()
                             ->mapWithKeys(fn ($sub) => [$sub->id => "{$sub->category->name} → {$sub->name}"]);
                     })
@@ -290,10 +269,10 @@ class MicrobizPackageResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListMicrobizPackages::route('/'),
-            'create' => Pages\CreateMicrobizPackage::route('/create'),
-            'view' => Pages\ViewMicrobizPackage::route('/{record}'),
-            'edit' => Pages\EditMicrobizPackage::route('/{record}/edit'),
+            'index' => Pages\ListServiceTiers::route('/'),
+            'create' => Pages\CreateServiceTier::route('/create'),
+            'view' => Pages\ViewServiceTier::route('/{record}'),
+            'edit' => Pages\EditServiceTier::route('/{record}/edit'),
         ];
     }
 

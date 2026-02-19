@@ -25,7 +25,7 @@ class InventoryManagementResource extends BaseResource
 
     protected static ?string $navigationIcon = 'heroicon-o-cube-transparent';
 
-    protected static ?string $navigationLabel = 'Hire Purchase Products';
+    protected static ?string $navigationLabel = 'BancoZim Products';
 
     protected static ?string $navigationGroup = 'Inventory';
 
@@ -58,6 +58,12 @@ class InventoryManagementResource extends BaseResource
                                     ->required()
                                     ->maxLength(255),
                             ]),
+                        Forms\Components\Textarea::make('specification')
+                            ->label('Specification')
+                            ->rows(3)
+                            ->placeholder('Brand, storage, RAM, screen size, tyre specs, etc.')
+                            ->helperText('Detailed product specifications shown to customers')
+                            ->columnSpanFull(),
                     ]),
 
                 Forms\Components\Section::make('Classification')
@@ -167,9 +173,35 @@ class InventoryManagementResource extends BaseResource
                                     ->numeric()
                                     ->prefix('$')
                                     ->step(0.01)
-                                    ->helperText('Auto-calculated from base + markup'),
+                                    ->helperText('Auto-calculated from base + markup + transport'),
                             ]),
                     ]),
+
+                Forms\Components\Section::make('Transport')
+                    ->description('TS = Transport from Source, TC = 10% of product cost. Leave empty for no transport charges.')
+                    ->schema([
+                        Forms\Components\Grid::make(4)
+                            ->schema([
+                                Forms\Components\Select::make('transport_method')
+                                    ->label('TS Method')
+                                    ->options([
+                                        'small_truck' => 'Small Truck ($20)',
+                                        'indrive' => 'InDrive ($5)',
+                                    ])
+                                    ->nullable()
+                                    ->helperText('Transport from source'),
+                                Forms\Components\TextInput::make('ts_code')
+                                    ->label('TS Code')
+                                    ->prefix('TS-')
+                                    ->placeholder('Enter code'),
+                                Forms\Components\TextInput::make('tc_code')
+                                    ->label('TC Code')
+                                    ->prefix('TC-')
+                                    ->placeholder('Enter code'),
+                            ]),
+                    ])
+                    ->collapsible()
+                    ->collapsed(),
 
                 Forms\Components\Section::make('Media')
                     ->schema([
@@ -234,6 +266,20 @@ class InventoryManagementResource extends BaseResource
                     ->label('Selling Price')
                     ->money('USD')
                     ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('transport_method')
+                    ->label('TS')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => match ($state) {
+                        'small_truck' => 'Truck $20',
+                        'indrive' => 'InDrive $5',
+                        default => '—',
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\ImageColumn::make('image_url')
+                    ->label('Image')
+                    ->circular()
+                    ->disk('public_uploads')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('inventory.stock_quantity')
                     ->label('Stock')

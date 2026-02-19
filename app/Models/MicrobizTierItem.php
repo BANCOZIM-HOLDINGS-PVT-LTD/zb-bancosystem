@@ -13,10 +13,12 @@ class MicrobizTierItem extends Model
         'microbiz_package_id',
         'microbiz_item_id',
         'quantity',
+        'is_delivered',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
+        'is_delivered' => 'boolean',
     ];
 
     /**
@@ -33,5 +35,13 @@ class MicrobizTierItem extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(MicrobizItem::class, 'microbiz_item_id');
+    }
+
+    /**
+     * Line total = quantity × item selling price
+     */
+    public function getLineTotalAttribute(): float
+    {
+        return $this->quantity * ($this->item->selling_price ?? 0);
     }
 }

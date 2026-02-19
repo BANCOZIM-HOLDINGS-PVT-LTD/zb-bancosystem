@@ -16,10 +16,14 @@ class Product extends Model
         'product_series_id',
         'supplier_id',
         'name',
+        'specification',
         'base_price',
         'image_url',
         'purchase_price',
         'markup_percentage',
+        'transport_method',
+        'ts_code',
+        'tc_code',
     ];
 
     protected $casts = [
@@ -27,6 +31,37 @@ class Product extends Model
         'purchase_price' => 'decimal:2',
         'markup_percentage' => 'decimal:2',
     ];
+
+    /**
+     * TS Cost: Transport from Source. Small Truck = $20, InDrive = $5.
+     */
+    public function getTsCostAttribute(): float
+    {
+        return match ($this->transport_method) {
+            'small_truck' => 20.00,
+            'indrive' => 5.00,
+            default => 0.00,
+        };
+    }
+
+    /**
+     * TC Cost: Transport from Courier = 10% of product base price.
+     */
+    public function getTcCostAttribute(): float
+    {
+        if (!$this->transport_method) return 0.00;
+        return round((float) $this->base_price * 0.10, 2);
+    }
+
+    /**
+     * Selling price = base_price + markup + TS + TC
+     */
+    public function getSellingPriceAttribute(): float
+    {
+        $cost = (float) $this->base_price;
+        $markup = (float) $this->markup_percentage;
+        return round($cost + ($cost * $markup / 100) + $this->ts_cost + $this->tc_cost, 2);
+    }
 
     /**
      * Get the subcategory this product belongs to

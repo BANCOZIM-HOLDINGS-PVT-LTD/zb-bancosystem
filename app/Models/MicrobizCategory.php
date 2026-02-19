@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 
 class MicrobizCategory extends Model
 {
     protected $fillable = [
         'name',
         'emoji',
+        'domain',
     ];
 
     /**
@@ -26,5 +28,21 @@ class MicrobizCategory extends Model
     public function getSubcategoryCountAttribute(): int
     {
         return $this->subcategories()->count();
+    }
+
+    /**
+     * Scope: only MicroBiz domain categories.
+     */
+    public function scopeMicrobiz(Builder $query): Builder
+    {
+        return $query->where('domain', 'microbiz');
+    }
+
+    /**
+     * Scope: only Service domain categories.
+     */
+    public function scopeService(Builder $query): Builder
+    {
+        return $query->where('domain', 'service');
     }
 }

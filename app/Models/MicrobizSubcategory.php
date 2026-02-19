@@ -13,6 +13,7 @@ class MicrobizSubcategory extends Model
         'supplier_id',
         'name',
         'description',
+        'image_url',
     ];
 
     /**

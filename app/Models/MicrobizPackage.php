@@ -15,6 +15,10 @@ class MicrobizPackage extends Model
         'name',
         'description',
         'price',
+        'transport_method',
+        'courier',
+        'ts_code',
+        'tc_code',
     ];
 
     protected $casts = [
@@ -43,7 +47,7 @@ class MicrobizPackage extends Model
     public function items(): BelongsToMany
     {
         return $this->belongsToMany(MicrobizItem::class, 'microbiz_tier_items')
-            ->withPivot('quantity')
+            ->withPivot('quantity', 'is_delivered')
             ->withTimestamps();
     }
 
@@ -62,13 +66,57 @@ class MicrobizPackage extends Model
     }
 
     /**
-     * Get the total cost of all items in this package.
+     * TS Cost: Transport from Source
+     * Small Truck = $20, InDrive = $5, None = $0
+     */
+    public function getTsCostAttribute(): float
+    {
+        return match ($this->transport_method) {
+            'small_truck' => 20.00,
+            'indrive' => 5.00,
+            default => 0.00,
+        };
+    }
+
+    /**
+     * TC Cost: Transport from Courier = 10% of total cost of delivered items.
+     */
+    public function getTcCostAttribute(): float
+    {
+        $deliveredTotal = $this->tierItems()
+            ->where('is_delivered', true)
+            ->get()
+            ->sum(function ($tierItem) {
+                return ($tierItem->item->unit_cost ?? 0) * $tierItem->quantity;
+            });
+
+        return round($deliveredTotal * 0.10, 2);
+    }
+
+    /**
+     * Total transport cost = TS + TC
+     */
+    public function getTotalTransportCostAttribute(): float
+    {
+        return $this->ts_cost + $this->tc_cost;
+    }
+
+    /**
+     * Get the total cost of all items in this package (before transport).
      */
     public function getTotalItemsCostAttribute(): float
     {
         return $this->tierItems->sum(function ($tierItem) {
             return ($tierItem->item->unit_cost ?? 0) * $tierItem->quantity;
         });
+    }
+
+    /**
+     * Grand total = items cost + transport cost
+     */
+    public function getGrandTotalAttribute(): float
+    {
+        return $this->total_items_cost + $this->total_transport_cost;
     }
 
     /**
