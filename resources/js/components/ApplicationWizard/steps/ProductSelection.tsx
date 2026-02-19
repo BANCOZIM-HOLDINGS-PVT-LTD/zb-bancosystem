@@ -31,7 +31,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [selectedSubcategory, setSelectedSubcategory] = useState<Subcategory | null>(null);
     const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
     const [selectedBusiness, setSelectedBusiness] = useState<BusinessType | null>(null);
-    const [selectedScale, setSelectedScale] = useState<{ id?: number; name: string; multiplier: number; custom_price?: number } | null>(null);
+    const [selectedScale, setSelectedScale] = useState<{ id?: number; name: string; multiplier: number; custom_price?: number; description?: string } | null>(null);
 
     const [finalAmount, setFinalAmount] = useState<number>(0);
     const [includesMESystem, setIncludesMESystem] = useState<boolean>(false);
@@ -344,7 +344,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         }
     };
 
-    const handleScaleSelect = (scale: { id?: number; name: string; multiplier: number; custom_price?: number }) => {
+    const handleScaleSelect = (scale: { id?: number; name: string; multiplier: number; custom_price?: number; description?: string }) => {
         setSelectedScale(scale);
 
         let amount = 0;
@@ -929,9 +929,13 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                         <h3 className="text-lg font-semibold text-emerald-800 dark:text-emerald-400 mb-2">
                                             Package Details
                                         </h3>
-                                        <p className="text-gray-700 dark:text-gray-300 mb-6 text-lg">
-                                            {getPackageDescription(selectedBusiness.name, selectedScale.name)}
-                                        </p>
+                                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                            {selectedScale.description ? (
+                                                <p className="whitespace-pre-line">{selectedScale.description}</p>
+                                            ) : (
+                                                <p>{getPackageDescription(selectedBusiness.name, selectedScale.name)}</p>
+                                            )}
+                                        </div>
                                         <div className="flex justify-end">
                                             <Button
                                                 onClick={handleProceedToTerms}

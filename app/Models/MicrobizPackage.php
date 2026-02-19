@@ -31,23 +31,7 @@ class MicrobizPackage extends Model
         
         foreach ($items as $item) {
             $qty = $item->pivot->quantity ?? 1;
-            $description .= "- " . ($item->product_code ? "[{$item->product_code}] " : "") . "{$item->name} (x{$qty})\n";
-        }
-
-        // Add Transport Info if applicable
-        if ($this->transport_method) {
-            $methodName = match($this->transport_method) {
-                'small_truck' => 'Small Truck',
-                'indrive' => 'InDrive',
-                default => ucfirst(str_replace('_', ' ', $this->transport_method))
-            };
-            
-            $description .= "\nTransport: {$methodName}";
-            
-            if ($this->courier) {
-                $courierName = $this->courier === 'other' ? 'Courier' : ucfirst($this->courier);
-                $description .= " via {$courierName}";
-            }
+            $description .= "-" . ($item->product_code ? "[{$item->product_code}] " : "") . "{$item->name} (x{$qty})\n";
         }
 
         return $description;

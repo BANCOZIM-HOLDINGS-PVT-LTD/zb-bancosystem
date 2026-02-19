@@ -978,19 +978,38 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>{{ $creditFacilityType ?? $productName ?? $business ?? $purposeAsset ?? $loanPurpose ?? $category ?? '' }}</td>
-                    <td>{{ $productCode ?? '' }}</td>
-                    <td>${{ number_format((float)str_replace(',', '', $loanAmount ?? $amount ?? $finalPrice ?? $netLoan ?? $productAmount ?? $sellingPrice ?? '0'), 2) }}</td>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
+                @if(isset($lineItems) && count($lineItems) > 0)
+                    @foreach($lineItems as $item)
+                        <tr>
+                            <td style="text-align: left; padding-left: 10px;">
+                                {{ $item['name'] }} @if(!empty($item['specification'])) <br><span style="font-size: 8pt; color: #555;">{{ $item['specification'] }}</span> @endif
+                                @if(isset($item['quantity']) && $item['quantity'] > 1) <br><span style="font-size: 9pt; font-style: italic;">(Qty: {{ $item['quantity'] }})</span> @endif
+                            </td>
+                            <td>{{ $item['code'] ?? '' }}</td>
+                            <td>
+                                {{-- Price hidden for individual items as requested, unless it's a single item purchase --}}
+                                @if(isset($item['price']) && $item['price'] > 0 && count($lineItems) == 1)
+                                    ${{ number_format((float)$item['price'], 2) }}
+                                @else
+                                    -
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td>{{ $creditFacilityType ?? $productName ?? $business ?? $purposeAsset ?? $loanPurpose ?? $category ?? '' }}</td>
+                        <td>{{ $productCode ?? '' }}</td>
+                        <td>${{ number_format((float)str_replace(',', '', $loanAmount ?? $amount ?? $finalPrice ?? $netLoan ?? $productAmount ?? $sellingPrice ?? '0'), 2) }}</td>
+                    </tr>
+                @endif
+                
+                {{-- Total Row --}}
                 <tr class="invoice-total-row">
-                    <td colspan="2" style="text-align: right;">TOTAL DUE:</td>
-                    <td>${{ number_format((float)str_replace(',', '', $loanAmount ?? $amount ?? $finalPrice ?? $netLoan ?? $productAmount ?? $sellingPrice ?? '0'), 2) }}</td>
+                    <td colspan="2" style="text-align: right; padding-right: 15px;">TOTAL DUE</td>
+                    <td style="background-color: #e8f5e9;">
+                        ${{ number_format((float)str_replace(',', '', $loanAmount ?? $amount ?? $finalPrice ?? $netLoan ?? $productAmount ?? $sellingPrice ?? '0'), 2) }}
+                    </td>
                 </tr>
             </tbody>
         </table>

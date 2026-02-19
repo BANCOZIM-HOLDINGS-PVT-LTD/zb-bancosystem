@@ -14,6 +14,10 @@ export interface BusinessType {
     name: string;
     multiplier: number;
     custom_price?: number;
+    display_name?: string;
+    calculated_price?: number;
+    formatted_price?: string;
+    description?: string; // Added description
   }[];
   tenure?: number;
 }
