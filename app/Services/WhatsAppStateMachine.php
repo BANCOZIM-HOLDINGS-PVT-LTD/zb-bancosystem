@@ -1108,7 +1108,7 @@ class WhatsAppStateMachine
         
         // Send welcome message with Adala persona
         $welcomeText = "Hello *{$displayName}*! 👋\n\n";
-        $welcomeText .= "Welcome to *Microbiz Zimbabwe* powered by Qupa (a division of *ZB Bank*).\n\n";
+        $welcomeText .= "Welcome to *Microbiz Zimbabwe* powered by Qupa (a division of *ZB Financial Holdings*).\n\n";
         $welcomeText .= "I am *Adala*, consider me your smart uncle and digital assistant. My mission is to ensure you get the best user experience for your intended acquisition, because we are family.\n\n";
         $welcomeText .= "🌐 Please select your preferred language:";
         

@@ -86,13 +86,13 @@ class ApplicationState extends Model
         $prefix = 'ZB';
         $formData = $this->form_data ?? [];
         
-        // 1. Check for Account Holders (ZBAH) - Prioritize explicit form type
-        if (($formData['formType'] ?? '') === 'account_holder_loan_application' || $this->isAccountHolderApplication($formData)) {
-            $prefix = 'ZBAH';
-        }
-        // 2. Check for SSB / Government (SSBB)
-        elseif ($this->isSSBApplication($formData)) {
+        // 1. Check for SSB / Government (SSBB)
+        if ($this->isSSBApplication($formData) || ($formData['formType'] ?? '') === 'ssb') {
             $prefix = 'SSBB';
+        }
+        // 2. Check for Account Holders (ZBAH) - Prioritize explicit form type
+        elseif (($formData['formType'] ?? '') === 'account_holder_loan_application' || $this->isAccountHolderApplication($formData)) {
+            $prefix = 'ZBAH';
         } 
         // 3. Check for Government Pensioners (GOZP)
         elseif ($this->isPensionerApplication($formData)) {
