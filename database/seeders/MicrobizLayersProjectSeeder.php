@@ -150,7 +150,7 @@ class MicrobizLayersProjectSeeder extends Seeder
                         'name' => $pkgData['name'],
                         'price' => $pkgData['price'],
                         'transport_method' => null,
-                        'courier' => null,
+                        'courier' => 'None',
                     ]
                 );
 
