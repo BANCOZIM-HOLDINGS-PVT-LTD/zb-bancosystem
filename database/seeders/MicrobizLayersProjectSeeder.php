@@ -75,7 +75,7 @@ class MicrobizLayersProjectSeeder extends Seeder
             $packages = [
                 'lite' => [
                     'name' => 'Lite Package',
-                    'price' => 263.20, // (50*1 + 32 + 3*26 + 28) * 1.4 = 188 * 1.4 = 263.2
+                    'price' => 280.00,
                     'items' => [
                         'MCPL025' => 50,
                         'MCPL026' => 1,
@@ -85,7 +85,7 @@ class MicrobizLayersProjectSeeder extends Seeder
                 ],
                 'standard' => [
                     'name' => 'Standard Package',
-                    'price' => 487.20, // (100*1 + 2*32 + 6*26 + 28) * 1.4 = 348 * 1.4 = 487.2
+                    'price' => 490.00,
                     'items' => [
                         'MCPL025' => 100,
                         'MCPL026' => 2,
@@ -95,7 +95,7 @@ class MicrobizLayersProjectSeeder extends Seeder
                 ],
                 'full_house' => [
                     'name' => 'Full House Package',
-                    'price' => 926.80, // 662 * 1.4 = 926.8
+                    'price' => 930.00,
                     'items' => [
                         'MCPL025' => 100,
                         'MCPL026' => 2,

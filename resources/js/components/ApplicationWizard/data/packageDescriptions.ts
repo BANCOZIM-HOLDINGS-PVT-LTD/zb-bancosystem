@@ -5,16 +5,19 @@ export const packageDescriptions: Record<string, Record<string, string>> = {
         "3 Packages": "6 Nights Accommodation, 3 Activities, Breakfast & Dinner"
     },
     // Poultry / Broiler Production
-    "Broiler production Equipment": {
-        "Small": "50 Birds, Starters, Grower and Finisher, Equipment",
-        "Medium": "100 Birds, Starters, Grower and Finisher, Equipment",
-        "Large": "200 Birds, Starters, Grower and Finisher, Equipment"
+    "Broiler Production": {
+        "Lite Package": "50 Birds, Starters, Grower and Finisher, Equipment. 30% Margin.",
+        "Standard Package": "100 Birds, Starters, Grower and Finisher, Equipment. 30% Margin.",
+        "Full House Package": "100 Birds, Starters, Grower and Finisher, Equipment, Housing. 30% Margin.",
+        "Gold Package": "200 Birds, Starters, Grower and Finisher, Equipment, Housing. 30% Margin."
     },
-    "Broiler production": {
-        "Small": "50 Birds, Starters, Grower and Finisher, Equipment",
-        "Medium": "100 Birds, Starters, Grower and Finisher, Equipment",
-        "Large": "200 Birds, Starters, Grower and Finisher, Equipment"
+    "Layers": {
+        "Lite Package": "50 Birds, Starters, Grower and Layer Mash, Equipment. 40% Margin.",
+        "Standard Package": "100 Birds, Starters, Grower and Layer Mash, Equipment. 40% Margin.",
+        "Full House Package": "100 Birds, Starters, Grower and Layer Mash, Equipment, Housing. 40% Margin.",
+        "Gold Package": "200 Birds, Starters, Grower and Layer Mash, Equipment, Housing. 40% Margin."
     },
+
     // Crop Production
     "Cash crop production": {
         "1 Ha": "Seed, Fertilizer, Chemicals for 1 Hectare",
