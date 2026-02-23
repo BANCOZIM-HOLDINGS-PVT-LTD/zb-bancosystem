@@ -1513,12 +1513,19 @@ class PDFGeneratorService implements PDFGeneratorInterface
             $data['beneficiaryName'] = $delivery['beneficiaryName'] ?? '';
             $data['beneficiaryId'] = $delivery['beneficiaryId'] ?? '';
             
+            // Extract collector info
+            $data['collectorType'] = $delivery['collectorType'] ?? 'self';
+            $data['collectorName'] = $delivery['collectorName'] ?? '';
+            $data['collectorId'] = $delivery['collectorId'] ?? '';
+            
             // Log this
             Log::info("Prepared delivery address for PDF", [
                 'session_id' => $applicationState->session_id,
                 'delivery_address' => $collectionAddress,
                 'beneficiary_type' => $data['beneficiaryType'],
                 'beneficiary_name' => $data['beneficiaryName'],
+                'collector_type' => $data['collectorType'],
+                'collector_name' => $data['collectorName'],
             ]);
         } else {
             $data['deliveryAddress'] = '';
@@ -1526,6 +1533,9 @@ class PDFGeneratorService implements PDFGeneratorInterface
             $data['beneficiaryType'] = 'self';
             $data['beneficiaryName'] = '';
             $data['beneficiaryId'] = '';
+            $data['collectorType'] = 'self';
+            $data['collectorName'] = '';
+            $data['collectorId'] = '';
         }
         
         // Clean up any unexpected nested arrays (except for known nested structures)

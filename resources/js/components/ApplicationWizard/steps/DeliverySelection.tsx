@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, MapPin, Building2, Info, Calendar, User, Users, Phone, Mail } from 'lucide-react';
+import { Truck, MapPin, Building2, Info, Calendar, User, Users, Phone, Mail, Package } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -205,6 +205,13 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
     const [beneficiaryName, setBeneficiaryName] = useState<string>(data.deliverySelection?.beneficiaryName || '');
     const [beneficiaryId, setBeneficiaryId] = useState<string>(data.deliverySelection?.beneficiaryId || '');
 
+    // Collector state
+    const [collectorType, setCollectorType] = useState<'self' | 'other'>(
+        data.deliverySelection?.collectorType || 'self'
+    );
+    const [collectorName, setCollectorName] = useState<string>(data.deliverySelection?.collectorName || '');
+    const [collectorId, setCollectorId] = useState<string>(data.deliverySelection?.collectorId || '');
+
     // Delivery location state
     const [selectedAgent, setSelectedAgent] = useState<string>(data.deliverySelection?.agent || '');
     const [selectedCity, setSelectedCity] = useState<string>(data.deliverySelection?.city || '');
@@ -269,6 +276,22 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
             if (!beneficiaryId.trim()) { setError('Please enter the beneficiary\'s National ID'); return; }
         }
 
+        // Validate collector
+        if (collectorType === 'other') {
+            if (!collectorName.trim()) { setError('Please enter the collector\'s full name'); return; }
+            if (!collectorId.trim()) { setError('Please enter the collector\'s National ID'); return; }
+        }
+
+        // Helper to build common person fields
+        const personFields = {
+            beneficiaryType,
+            beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
+            beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+            collectorType,
+            collectorName: collectorType === 'other' ? collectorName : '',
+            collectorId: collectorType === 'other' ? collectorId : '',
+        };
+
         // ---- Zimparks: Auto-fill, pass through ----
         if (deliveryType === 'zimparks') {
             onNext({
@@ -276,9 +299,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                 deliverySelection: {
                     agent: 'Zimparks',
                     depot: data.destinationName || '',
-                    beneficiaryType,
-                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
-                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    ...personFields,
                     supplierName: 'Zimparks',
                 },
                 bookingDetails: {
@@ -299,9 +320,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                 deliverySelection: {
                     agent: 'Easy Go',
                     depot: selectedDepot,
-                    beneficiaryType,
-                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
-                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    ...personFields,
                     supplierName: 'Easy Go',
                 }
             });
@@ -318,9 +337,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                 deliverySelection: {
                     agent: supplierInfo?.name || 'Training Academy',
                     depot: selectedDepot || supplierInfo?.address || '',
-                    beneficiaryType,
-                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
-                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    ...personFields,
                     supplierName: supplierInfo?.name || '',
                 }
             });
@@ -335,9 +352,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                 deliverySelection: {
                     agent: supplierInfo?.name || 'Farm & City',
                     depot: selectedDepot,
-                    beneficiaryType,
-                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
-                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    ...personFields,
                     supplierName: supplierInfo?.name || 'Farm & City',
                 }
             });
@@ -356,9 +371,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                     depot: selectedDepot,
                     zimpostCity,
                     zimpostBranch,
-                    beneficiaryType,
-                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
-                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    ...personFields,
                     supplierName: supplierInfo?.name || 'Farm & City',
                 }
             });
@@ -373,9 +386,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                 deliverySelection: {
                     agent: supplierInfo?.name || 'Farm & City',
                     depot: selectedDepot,
-                    beneficiaryType,
-                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
-                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    ...personFields,
                     supplierName: supplierInfo?.name || 'Farm & City',
                 }
             });
@@ -390,9 +401,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                 deliverySelection: {
                     agent: 'PG Building Materials',
                     depot: selectedDepot,
-                    beneficiaryType,
-                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
-                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    ...personFields,
                     supplierName: 'PG Building Materials',
                 }
             });
@@ -407,9 +416,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                 deliverySelection: {
                     agent: tuckshopAgent,
                     depot: selectedDepot,
-                    beneficiaryType,
-                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
-                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    ...personFields,
                     supplierName: tuckshopAgent,
                     isAgentEditable: true,
                 }
@@ -426,9 +433,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                 agent: 'Zim Post Office',
                 city: selectedCity,
                 depot: selectedDepot,
-                beneficiaryType,
-                beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
-                beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                ...personFields,
                 supplierName: 'Zim Post Office',
             }
         });
@@ -797,6 +802,78 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                             type="text"
                                             value={beneficiaryId}
                                             onChange={(e) => setBeneficiaryId(e.target.value)}
+                                            placeholder="e.g. 63-123456-A-78"
+                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* ===== Collector Section ===== */}
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                <Package className="w-5 h-5 text-emerald-600" /> Who will collect?
+                            </h3>
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setCollectorType('self')}
+                                    className={`p-4 border-2 rounded-lg transition-all text-left ${collectorType === 'self'
+                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${collectorType === 'self' ? 'border-emerald-600' : 'border-gray-400'}`}>
+                                            {collectorType === 'self' && <div className="w-2.5 h-2.5 bg-emerald-600 rounded-full" />}
+                                        </div>
+                                        <User className="w-4 h-4" />
+                                        <span className="font-medium">Self</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1 ml-7">I will collect myself</p>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCollectorType('other')}
+                                    className={`p-4 border-2 rounded-lg transition-all text-left ${collectorType === 'other'
+                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${collectorType === 'other' ? 'border-emerald-600' : 'border-gray-400'}`}>
+                                            {collectorType === 'other' && <div className="w-2.5 h-2.5 bg-emerald-600 rounded-full" />}
+                                        </div>
+                                        <Users className="w-4 h-4" />
+                                        <span className="font-medium">Other</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1 ml-7">Someone else will collect</p>
+                                </button>
+                            </div>
+
+                            {collectorType === 'other' && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Collector Full Name <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={collectorName}
+                                            onChange={(e) => setCollectorName(e.target.value)}
+                                            placeholder="Enter full name"
+                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Collector National ID <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={collectorId}
+                                            onChange={(e) => setCollectorId(e.target.value)}
                                             placeholder="e.g. 63-123456-A-78"
                                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                         />

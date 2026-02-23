@@ -770,6 +770,12 @@
             <td colspan="3">{{ $beneficiaryName }} — ID: {{ $beneficiaryId ?? 'N/A' }}</td>
         </tr>
         @endif
+        @if(isset($collectorType) && $collectorType === 'other' && !empty($collectorName))
+        <tr>
+            <td class="field-label">Collector</td>
+            <td colspan="3">{{ $collectorName }} — ID: {{ $collectorId ?? 'N/A' }}</td>
+        </tr>
+        @endif
     </table>
     
     <table class="main-table" style="margin-top: 20px;">
