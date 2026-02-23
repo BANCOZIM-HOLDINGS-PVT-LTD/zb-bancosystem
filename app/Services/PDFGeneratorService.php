@@ -1398,7 +1398,7 @@ class PDFGeneratorService implements PDFGeneratorInterface
                         $lineItems[] = [
                             'name' => $item->name,
                             'quantity' => $item->pivot->quantity ?? 1,
-                            'code' => $item->product_code ?? '',
+                            'code' => $item->item_code ?? $item->product_code ?? '',
                             'specification' => $item->specification ?? '', // Add spec if available
                             'is_package' => true
                         ];

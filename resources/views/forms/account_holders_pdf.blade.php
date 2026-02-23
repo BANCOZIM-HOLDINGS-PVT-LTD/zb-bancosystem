@@ -793,7 +793,7 @@
                     <td style="text-align: center;">{{ $item['quantity'] }}</td>
                     <td style="text-align: center;">
                         @if($loop->last)
-                            ${{ $monthlyPayment ?? '' }}
+                            ${{ $loanAmount ?? $amount ?? '' }}
                         @else
                             -
                         @endif
@@ -805,7 +805,7 @@
                 <td>1) {{ $productDescription ?: ($productName ?? $purposeAsset ?? '') }}</td>
                 <td></td>
                 <td style="text-align: center;">1</td>
-                <td style="text-align: center;">${{ $monthlyPayment ?? '' }}</td>
+                <td style="text-align: center;">${{ $loanAmount ?? $amount ?? '' }}</td>
             </tr>
             <tr>
                 <td>2)</td>
@@ -824,7 +824,7 @@
             <td style="text-align: right; font-weight: bold;">TOTAL:-</td>
             <td></td>
             <td>1</td>
-            <td>${{ $monthlyPayment ?? '' }}</td>
+            <td>${{ $loanAmount ?? $amount ?? '' }}</td>
         </tr>
     </table>
     
@@ -1000,7 +1000,7 @@
                     <tr>
                         <td>{{ $creditFacilityType ?? $productName ?? $business ?? $purposeAsset ?? $loanPurpose ?? $category ?? '' }}</td>
                         <td>{{ $productCode ?? '' }}</td>
-                        <td>${{ number_format((float)str_replace(',', '', $loanAmount ?? $amount ?? $finalPrice ?? $netLoan ?? $productAmount ?? $sellingPrice ?? '0'), 2) }}</td>
+                        <td>${{ number_format((float)str_replace(',', '', $productAmount ?? $finalPrice ?? $netLoan ?? $loanAmount ?? $amount ?? $sellingPrice ?? '0'), 2) }}</td>
                     </tr>
                 @endif
                 
@@ -1008,7 +1008,7 @@
                 <tr class="invoice-total-row">
                     <td colspan="2" style="text-align: right; padding-right: 15px;">TOTAL DUE</td>
                     <td style="background-color: #e8f5e9;">
-                        ${{ number_format((float)str_replace(',', '', $loanAmount ?? $amount ?? $finalPrice ?? $netLoan ?? $productAmount ?? $sellingPrice ?? '0'), 2) }}
+                        ${{ number_format((float)str_replace(',', '', $productAmount ?? $finalPrice ?? $netLoan ?? $loanAmount ?? $amount ?? $sellingPrice ?? '0'), 2) }}
                     </td>
                 </tr>
             </tbody>
