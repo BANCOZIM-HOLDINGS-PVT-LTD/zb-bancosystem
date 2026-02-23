@@ -1489,6 +1489,7 @@ class PDFGeneratorService implements PDFGeneratorInterface
             $agent = $delivery['agent'] ?? '';
             $city = $delivery['city'] ?? '';
             $depot = $delivery['depot'] ?? '';
+            $supplierName = $delivery['supplierName'] ?? $agent;
             
             $collectionAddress = "COLLECTION AT: {$agent}";
             if ($depot) {
@@ -1498,16 +1499,33 @@ class PDFGeneratorService implements PDFGeneratorInterface
                  $collectionAddress .= ", {$city}";
             }
             
+            // For full-house chicken projects with zimpost delivery
+            if (isset($delivery['zimpostCity']) && isset($delivery['zimpostBranch'])) {
+                $collectionAddress .= " | COOP DELIVERY: Zimpost - {$delivery['zimpostBranch']}, {$delivery['zimpostCity']}";
+            }
+            
             // Do NOT overwrite residential address. Use a specific delivery address field.
             $data['deliveryAddress'] = $collectionAddress;
+            $data['deliverySupplier'] = $supplierName;
+            
+            // Extract beneficiary info
+            $data['beneficiaryType'] = $delivery['beneficiaryType'] ?? 'self';
+            $data['beneficiaryName'] = $delivery['beneficiaryName'] ?? '';
+            $data['beneficiaryId'] = $delivery['beneficiaryId'] ?? '';
             
             // Log this
             Log::info("Prepared delivery address for PDF", [
                 'session_id' => $applicationState->session_id,
-                'delivery_address' => $collectionAddress
+                'delivery_address' => $collectionAddress,
+                'beneficiary_type' => $data['beneficiaryType'],
+                'beneficiary_name' => $data['beneficiaryName'],
             ]);
         } else {
             $data['deliveryAddress'] = '';
+            $data['deliverySupplier'] = '';
+            $data['beneficiaryType'] = 'self';
+            $data['beneficiaryName'] = '';
+            $data['beneficiaryId'] = '';
         }
         
         // Clean up any unexpected nested arrays (except for known nested structures)

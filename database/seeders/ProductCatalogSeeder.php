@@ -196,7 +196,6 @@ class ProductCatalogSeeder extends Seeder
             // 3. Chicken Projects
             'chicken-projects' => [
                 ['name' => 'Broiler Production', 'businesses' => [['name' => 'Broiler Production']]],
-                ['name' => 'Egg Hatchery', 'businesses' => [['name' => 'Egg Hatchery']]],
             ],
             // 4. Cleaning Services
             'cleaning-services' => [

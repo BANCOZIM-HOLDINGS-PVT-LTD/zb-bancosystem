@@ -764,6 +764,12 @@
             <td class="field-label">Delivery Address</td>
             <td colspan="3">{{ $deliveryAddress ?: $formatAddress($residentialAddress ?? '') }}</td>
         </tr>
+        @if(isset($beneficiaryType) && $beneficiaryType === 'other' && !empty($beneficiaryName))
+        <tr>
+            <td class="field-label">Beneficiary</td>
+            <td colspan="3">{{ $beneficiaryName }} — ID: {{ $beneficiaryId ?? 'N/A' }}</td>
+        </tr>
+        @endif
     </table>
     
     <table class="main-table" style="margin-top: 20px;">

@@ -20,13 +20,15 @@ class Supplier extends Model
         'status',
         'rating',
         'payment_terms',
-        'metadata'
+        'metadata',
+        'branches'
     ];
     
     protected $casts = [
         'rating' => 'decimal:2',
         'payment_terms' => 'array',
         'metadata' => 'array',
+        'branches' => 'array',
     ];
     
     protected static function boot()

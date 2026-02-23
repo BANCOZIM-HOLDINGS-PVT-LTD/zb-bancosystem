@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, MapPin, Building2, Info, Calendar } from 'lucide-react';
+import { Truck, MapPin, Building2, Info, Calendar, User, Users, Phone, Mail } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 
 interface DeliverySelectionProps {
     data: any;
@@ -12,7 +10,18 @@ interface DeliverySelectionProps {
     loading?: boolean;
 }
 
-// Gain Outlet depots (Cleaned of Metro branches)
+interface SupplierInfo {
+    id: number;
+    name: string;
+    contact_person: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    branches: { name: string; address: string; city: string; phone: string }[];
+}
+
+// Gain Outlet depots
 const GAIN_DEPOTS = [
     'BK Boka - Harare Boka', 'CV Chivhu - Chivhu',
     'DA DOMBOSAVA - Domboshava', 'GS Graniteside - Harare', 'HA HATCLIFFE - Harare Hetcliff',
@@ -43,59 +52,20 @@ const GAIN_DEPOTS = [
     'WX Gokwe - gokwe'
 ].sort();
 
-// Metro Peech & Browne Depots (Extracted & Migrated)
+// Metro Peech & Browne Depots
 const METRO_DEPOTS = [
-    'Bindura',
-    'Bulawayo',
-    'Chegutu',
-    'Chinhoyi',
-    'Chipinge',
-    'Chiredzi',
-    'Chitungwiza',
-    'Gokwe',
-    'Gwanda',
-    'Gweru',
-    'Kadoma',
-    'Khami',
-    'Kwekwe',
-    'Masvingo',
-    'Msasa',
-    'Mutare',
-    'Rusape',
-    'Sakubva',
-    'Seke Road',
-    'Zvishavane'
+    'Bindura', 'Bulawayo', 'Chegutu', 'Chinhoyi', 'Chipinge', 'Chiredzi',
+    'Chitungwiza', 'Gokwe', 'Gwanda', 'Gweru', 'Kadoma', 'Khami', 'Kwekwe',
+    'Masvingo', 'Msasa', 'Mutare', 'Rusape', 'Sakubva', 'Seke Road', 'Zvishavane'
 ].sort();
 
-// Farm & City Depots (Major Cities)
+// Farm & City Depots
 const FARM_AND_CITY_DEPOTS = [
-    'Harare',
-    'Bulawayo',
-    'Chitungwiza',
-    'Mutare',
-    'Epworth',
-    'Gweru',
-    'Kwekwe',
-    'Kadoma',
-    'Masvingo',
-    'Chinhoyi',
-    'Norton',
-    'Marondera',
-    'Ruwa',
-    'Chegutu',
-    'Zvishavane',
-    'Bindura',
-    'Beitbridge',
-    'Redcliff',
-    'Victoria Falls',
-    'Hwange',
-    'Rusape',
-    'Chiredzi',
-    'Kariba',
-    'Karoi',
-    'Chipinge',
-    'Gokwe',
-    'Shurugwi'
+    'Harare', 'Bulawayo', 'Chitungwiza', 'Mutare', 'Epworth', 'Gweru',
+    'Kwekwe', 'Kadoma', 'Masvingo', 'Chinhoyi', 'Norton', 'Marondera',
+    'Ruwa', 'Chegutu', 'Zvishavane', 'Bindura', 'Beitbridge', 'Redcliff',
+    'Victoria Falls', 'Hwange', 'Rusape', 'Chiredzi', 'Kariba', 'Karoi',
+    'Chipinge', 'Gokwe', 'Shurugwi'
 ].sort();
 
 // PG Building Materials Depots
@@ -109,7 +79,7 @@ const PG_DEPOTS = [
     'MUTARE - 7 Bvumba Road, Paulington, Mutare'
 ];
 
-// Grouped Zimpost Offices - Updated 2026 (5 Provinces)
+// Grouped Zimpost Offices
 const ZIMPOST_LOCATIONS: Record<string, string[]> = {
     'Harare City & Chitungwiza': [
         'Avondale', 'Borrowdale', 'Causeway', 'Chisipite', 'Chitungwiza',
@@ -147,8 +117,7 @@ const ZIMPOST_LOCATIONS: Record<string, string[]> = {
         'Beitbridge', 'Colleen Bawn', 'Cowdray Park',
         'Dete', 'Donnington', 'Enqameni', 'Gwanda', 'Hillside', 'Hwange',
         'Lupane', 'Magwegwe', 'Maphisa', 'Matabisa', 'Mbalabala',
-        'Northend',
-        'Turkmine', 'Victoria Falls', 'West Nich'
+        'Northend', 'Turkmine', 'Victoria Falls', 'West Nich'
     ],
     'Bulawayo City ': [
         'Ascot', 'Belmont', 'Bulawayo Main', 'Entumbane', 'Esigodini', 'Famona',
@@ -157,192 +126,593 @@ const ZIMPOST_LOCATIONS: Record<string, string[]> = {
     ]
 };
 
-// Flatten to keep compatibility if needed, though we use grouped now
-const ALL_ZIMPOST_BRANCHES = Object.values(ZIMPOST_LOCATIONS).flat().sort();
+// Product Delivery Type Determination
+type DeliveryType = 'training' | 'driving' | 'zimparks' | 'chicken_lite' | 'chicken_fullhouse' | 'agri' | 'building' | 'tuckshop' | 'zimpost_default';
 
-// Determine delivery agent based on product category/subcategory
-const determineDeliveryAgent = (category?: string, subcategory?: string, business?: string): {
-    agent: 'Gain Cash & Carry' | 'Metro Peech & Browne' | 'Zim Post Office' | 'Farm & City' | 'PG Building Materials';
-    allowedAgents: string[];
-    reason: string;
-} => {
-    const categoryLower = (category || '').toLowerCase();
-    const subcategoryLower = (subcategory || '').toLowerCase();
-    const businessLower = (business || '').toLowerCase();
-    const combinedText = `${categoryLower} ${subcategoryLower} ${businessLower}`;
+const determineProductDeliveryType = (data: any): DeliveryType => {
+    const category = (data.category || '').toLowerCase();
+    const subcategory = (data.subcategory || '').toLowerCase();
+    const business = (data.business || '').toLowerCase();
+    const scaleName = (data.selectedScale?.name || data.scale || '').toLowerCase();
+    const intent = (data.intent || '').toLowerCase();
+    const combined = `${category} ${subcategory} ${business}`;
 
-    // 1. Check for Farm & City products (Agri inputs, mechanization, machinery, chickens)
-    if (
-        combinedText.includes('agriculture') ||
-        combinedText.includes('agri') ||
-        combinedText.includes('mechanization') ||
-        combinedText.includes('machinery') ||
-        combinedText.includes('chicken') ||
-        combinedText.includes('poultry') ||
-        combinedText.includes('livestock') ||
-        combinedText.includes('broiler') ||
-        combinedText.includes('layer') ||
-        combinedText.includes('fertilizer') ||
-        combinedText.includes('seed') ||
-        combinedText.includes('tractor')
-    ) {
-        return {
-            agent: 'Farm & City',
-            allowedAgents: ['Farm & City'],
-            reason: 'All agricultural inputs, mechanization, machinery, and chickens will be collected at your nearest Farm and City depot.'
-        };
+    // Zimparks
+    if (business.includes('zimparks') || subcategory.includes('zimparks')) return 'zimparks';
+
+    // Driving School
+    if (subcategory.includes('driving') || subcategory.includes('license course')) return 'driving';
+
+    // Training (personalServices but not driving or zimparks)
+    if (intent === 'personalservices' && !subcategory.includes('driving') && !business.includes('zimparks')) return 'training';
+
+    // Chicken projects
+    if (combined.includes('chicken') || combined.includes('broiler') || combined.includes('layer') || combined.includes('poultry')) {
+        if (scaleName.includes('full house')) return 'chicken_fullhouse';
+        return 'chicken_lite';
     }
 
-    // 2. Check for Building Materials -> PG
-    if (
-        combinedText.includes('building') ||
-        combinedText.includes('construction') ||
-        combinedText.includes('cement') ||
-        combinedText.includes('timber') ||
-        combinedText.includes('roofing') ||
-        combinedText.includes('brick') ||
-        combinedText.includes('door') ||
-        combinedText.includes('window') ||
-        combinedText.includes('plumbing') ||
-        combinedText.includes('core house')
-    ) {
-        return {
-            agent: 'PG Building Materials',
-            allowedAgents: ['PG Building Materials'],
-            reason: 'All Building Materials will be collected at your nearest PG depot.'
-        };
-    }
+    // Building materials
+    if (combined.includes('building') || combined.includes('construction') || combined.includes('cement') ||
+        combined.includes('timber') || combined.includes('roofing') || combined.includes('brick') ||
+        combined.includes('core house')) return 'building';
 
-    // 3. Check for Tuckshop -> Gain Cash & Carry OR Metro
-    if (
-        combinedText.includes('tuckshop') ||
-        combinedText.includes('groceries') ||
-        combinedText.includes('grocery') ||
-        combinedText.includes('airtime') ||
-        combinedText.includes('candy') ||
-        combinedText.includes('back to school') ||
-        combinedText.includes('book') ||
-        combinedText.includes('stationery') ||
-        combinedText.includes('stationary') ||
-        combinedText.includes('retailing') ||
-        combinedText.includes('retail')
-    ) {
-        // Default to Gain, but user can switch to Metro
-        return {
-            agent: 'Gain Cash & Carry',
-            allowedAgents: ['Gain Cash & Carry', 'Metro Peech & Browne'],
-            reason: 'Tuckshops, groceries, airtime, candy, books, and stationery are delivered through Gain Cash & Carry or Metro Peech & Browne depots.'
-        };
-    }
+    // Agri / farming / greenhouse / specialised
+    if (combined.includes('agriculture') || combined.includes('agri') || combined.includes('farming') ||
+        combined.includes('machinery') || combined.includes('greenhouse') || combined.includes('green house') ||
+        combined.includes('irrigation') || combined.includes('tractor') || combined.includes('fertilizer') ||
+        combined.includes('seed') || combined.includes('carport') || combined.includes('mechanization')) return 'agri';
 
-    // 4. Default to Zim Post Office
-    return {
-        agent: 'Zim Post Office',
-        allowedAgents: ['Zim Post Office'],
-        reason: 'Products are delivered through the Zim Post Office.'
-    };
+    // Tuckshop / groceries
+    if (combined.includes('tuckshop') || combined.includes('grocery') || combined.includes('groceries') ||
+        combined.includes('retailing') || combined.includes('retail') || combined.includes('airtime') ||
+        combined.includes('candy') || combined.includes('back to school') || combined.includes('stationery')) return 'tuckshop';
+
+    // Default: ZimPost courier (Bancozim and other MicroBiz)
+    return 'zimpost_default';
+};
+
+const getDeliveryMessage = (deliveryType: DeliveryType, supplierInfo: SupplierInfo | null, data: any): string => {
+    switch (deliveryType) {
+        case 'training':
+            return 'Please note if the transaction is executed successfully, then you or your beneficiary will receive training from our partnering Training Academy whose address is listed below.';
+        case 'driving':
+            return 'Please note if the transaction is executed successfully, then you or your beneficiary will receive training from our partnering Driving School whose address is listed below, kindly choose which city/town where you would want to receive the training.';
+        case 'zimparks':
+            return 'Please note if the transaction is executed successfully, then you or your beneficiary will receive accommodation from our partnering Hotel/Resort details are listed below, kindly choose location and dates below.';
+        case 'chicken_lite':
+            return 'Please note if the transaction is executed successfully, then you or your beneficiary will collect your products from the supplier listed below, kindly choose from which location you would want to collect from.';
+        case 'chicken_fullhouse':
+            return 'Please note if the transaction is executed successfully, then you or your beneficiary will collect your products from the supplier listed below, kindly choose from which location you would want to collect from. The Chicken coop will be delivered by a Zimpost Courier Service, delivering countrywide. Please choose the nearest Post Office nearest to you where you will collect from.';
+        case 'agri':
+            return 'Please note if the transaction is executed successfully, then you or your beneficiary will collect your products from the supplier listed below, kindly choose from which location you would want to collect from.';
+        case 'building':
+            return 'Please note if the transaction is executed successfully, then you or your beneficiary will collect your products from the supplier listed below, kindly choose from which location you would want to collect from.';
+        case 'tuckshop':
+            return 'Please note if the transaction is executed successfully, then you or your beneficiary will collect your products from the supplier listed below, kindly choose from which location you would want to collect from.';
+        case 'zimpost_default':
+            return 'Please note if the transaction is executed successfully then the product will be delivered by a Zimpost Courier Service, delivering countrywide. Please choose the nearest Post Office where then you or your beneficiary will collect from.';
+    }
 };
 
 const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onBack, loading }) => {
-    const deliveryAgentInfo = determineDeliveryAgent(data.category, data.subcategory, data.business);
+    const deliveryType = determineProductDeliveryType(data);
 
-    const [selectedAgent, setSelectedAgent] = useState<'Gain Cash & Carry' | 'Metro Peech & Browne' | 'Zim Post Office' | 'Farm & City' | 'PG Building Materials'>(
-        (data.deliverySelection?.agent as any) || deliveryAgentInfo.agent
+    // Beneficiary state
+    const [beneficiaryType, setBeneficiaryType] = useState<'self' | 'other'>(
+        data.deliverySelection?.beneficiaryType || 'self'
     );
+    const [beneficiaryName, setBeneficiaryName] = useState<string>(data.deliverySelection?.beneficiaryName || '');
+    const [beneficiaryId, setBeneficiaryId] = useState<string>(data.deliverySelection?.beneficiaryId || '');
 
-    // For Zimpost, selectedCity will store the "Province/City" key, and selectedDepot will store the actual branch
+    // Delivery location state
+    const [selectedAgent, setSelectedAgent] = useState<string>(data.deliverySelection?.agent || '');
     const [selectedCity, setSelectedCity] = useState<string>(data.deliverySelection?.city || '');
     const [selectedDepot, setSelectedDepot] = useState<string>(data.deliverySelection?.depot || '');
 
-    // Booking dates for Zimparks
-    const [startDate, setStartDate] = useState<Date | null>(
-        data.bookingDetails?.startDate ? new Date(data.bookingDetails.startDate) : null
+    // For full-house chickens: need both supplier branch AND zimpost
+    const [zimpostCity, setZimpostCity] = useState<string>(data.deliverySelection?.zimpostCity || '');
+    const [zimpostBranch, setZimpostBranch] = useState<string>(data.deliverySelection?.zimpostBranch || '');
+
+    // Tuckshop agent toggle
+    const [tuckshopAgent, setTuckshopAgent] = useState<'Gain Cash & Carry' | 'Metro Peech & Browne'>(
+        data.deliverySelection?.agent === 'Metro Peech & Browne' ? 'Metro Peech & Browne' : 'Gain Cash & Carry'
     );
-    const [endDate, setEndDate] = useState<Date | null>(
-        data.bookingDetails?.endDate ? new Date(data.bookingDetails.endDate) : null
-    );
+
+    // Supplier info from API
+    const [supplierInfo, setSupplierInfo] = useState<SupplierInfo | null>(null);
+    const [supplierLoading, setSupplierLoading] = useState(false);
 
     const [error, setError] = useState<string>('');
 
-    // Check if this is a Zimparks product
-    const isZimparks = data.business === 'Zimparks Vacation Package';
-
-    // Update selected agent if product changes (only for non-Zimparks)
+    // Fetch supplier info when component mounts
     useEffect(() => {
-        if (!isZimparks) {
-            // If the currently selected agent is NOT in the allowed list, reset to the default agent
-            if (!deliveryAgentInfo.allowedAgents.includes(selectedAgent)) {
-                setSelectedAgent(deliveryAgentInfo.agent);
+        const fetchSupplierInfo = async () => {
+            // Only fetch for product types that need supplier info from API
+            if (!['training', 'chicken_lite', 'chicken_fullhouse', 'agri', 'driving'].includes(deliveryType)) return;
+
+            setSupplierLoading(true);
+            try {
+                const params = new URLSearchParams();
+                if (data.subcategory) params.set('subcategory', data.subcategory);
+                if (data.business) params.set('business', data.business);
+                if (data.category) params.set('category', data.category);
+
+                const response = await fetch(`/api/products/supplier-info?${params.toString()}`);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    setSupplierInfo(result.data);
+
+                    // If supplier has only 1 branch, auto-select it
+                    if (result.data.branches?.length === 1) {
+                        setSelectedDepot(result.data.branches[0].name);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch supplier info:', err);
+            } finally {
+                setSupplierLoading(false);
             }
-        }
-    }, [data.category, data.subcategory, data.business, isZimparks, deliveryAgentInfo.agent, deliveryAgentInfo.allowedAgents]);
+        };
+
+        fetchSupplierInfo();
+    }, [deliveryType, data.subcategory, data.business, data.category]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        if (isZimparks) {
-            // Validate dates
-            if (!startDate) {
-                setError('Please select a check-in date');
-                return;
-            }
-            if (!endDate) {
-                setError('Please select a check-out date');
-                return;
-            }
-            if (startDate < new Date()) {
-                setError('Check-in date cannot be in the past');
-                return;
-            }
-            if (endDate <= startDate) {
-                setError('Check-out date must be after check-in date');
-                return;
-            }
+        // Validate beneficiary
+        if (beneficiaryType === 'other') {
+            if (!beneficiaryName.trim()) { setError('Please enter the beneficiary\'s full name'); return; }
+            if (!beneficiaryId.trim()) { setError('Please enter the beneficiary\'s National ID'); return; }
+        }
 
-            // Pass booking details
+        // ---- Zimparks: Auto-fill, pass through ----
+        if (deliveryType === 'zimparks') {
             onNext({
                 ...data,
-                bookingDetails: {
-                    startDate: startDate.toISOString().split('T')[0],
-                    endDate: endDate.toISOString().split('T')[0],
-                    destination: data.destinationName
+                deliverySelection: {
+                    agent: 'Zimparks',
+                    depot: data.destinationName || '',
+                    beneficiaryType,
+                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
+                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    supplierName: 'Zimparks',
                 },
-                deliverySelection: undefined
+                bookingDetails: {
+                    startDate: data.checkInDate || data.bookingDetails?.startDate || '',
+                    endDate: data.checkOutDate || data.bookingDetails?.endDate || '',
+                    destination: data.destinationName || data.bookingDetails?.destination || '',
+                    nights: data.nights || data.bookingDetails?.nights || '',
+                }
             });
             return;
         }
 
-        // Standard Delivery Validation
-        if ((selectedAgent === 'Gain Cash & Carry' || selectedAgent === 'Metro Peech & Browne' || selectedAgent === 'Farm & City' || selectedAgent === 'PG Building Materials') && !selectedDepot) {
-            setError(`Please select a ${selectedAgent} depot for collection`);
+        // ---- Driving: use EasyGo branch ----
+        if (deliveryType === 'driving') {
+            if (!selectedDepot) { setError('Please select an Easy Go branch'); return; }
+            onNext({
+                ...data,
+                deliverySelection: {
+                    agent: 'Easy Go',
+                    depot: selectedDepot,
+                    beneficiaryType,
+                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
+                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    supplierName: 'Easy Go',
+                }
+            });
             return;
         }
 
-        if (selectedAgent === 'Zim Post Office') {
-            if (!selectedCity) {
-                setError('Please select your city or province');
-                return;
+        // ---- Training: supplier branch ----
+        if (deliveryType === 'training') {
+            if (supplierInfo && supplierInfo.branches?.length > 1 && !selectedDepot) {
+                setError('Please select a branch'); return;
             }
-            if (!selectedDepot) { // We use selectedDepot for the branch now to avoid confusion
-                setError('Please select a Zim Post Office branch');
-                return;
-            }
+            onNext({
+                ...data,
+                deliverySelection: {
+                    agent: supplierInfo?.name || 'Training Academy',
+                    depot: selectedDepot || supplierInfo?.address || '',
+                    beneficiaryType,
+                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
+                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    supplierName: supplierInfo?.name || '',
+                }
+            });
+            return;
         }
 
-        // Pass delivery selection to next step
+        // ---- Chicken lite/standard/gold ----
+        if (deliveryType === 'chicken_lite') {
+            if (!selectedDepot) { setError('Please select a collection branch'); return; }
+            onNext({
+                ...data,
+                deliverySelection: {
+                    agent: supplierInfo?.name || 'Farm & City',
+                    depot: selectedDepot,
+                    beneficiaryType,
+                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
+                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    supplierName: supplierInfo?.name || 'Farm & City',
+                }
+            });
+            return;
+        }
+
+        // ---- Chicken full house: supplier branch + zimpost ----
+        if (deliveryType === 'chicken_fullhouse') {
+            if (!selectedDepot) { setError('Please select a collection branch for inputs'); return; }
+            if (!zimpostCity) { setError('Please select your city/province for coop delivery'); return; }
+            if (!zimpostBranch) { setError('Please select a post office branch for coop delivery'); return; }
+            onNext({
+                ...data,
+                deliverySelection: {
+                    agent: supplierInfo?.name || 'Farm & City',
+                    depot: selectedDepot,
+                    zimpostCity,
+                    zimpostBranch,
+                    beneficiaryType,
+                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
+                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    supplierName: supplierInfo?.name || 'Farm & City',
+                }
+            });
+            return;
+        }
+
+        // ---- Agri / greenhouse / specialized ----
+        if (deliveryType === 'agri') {
+            if (!selectedDepot) { setError('Please select a collection branch'); return; }
+            onNext({
+                ...data,
+                deliverySelection: {
+                    agent: supplierInfo?.name || 'Farm & City',
+                    depot: selectedDepot,
+                    beneficiaryType,
+                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
+                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    supplierName: supplierInfo?.name || 'Farm & City',
+                }
+            });
+            return;
+        }
+
+        // ---- Building Materials ----
+        if (deliveryType === 'building') {
+            if (!selectedDepot) { setError('Please select a PG depot'); return; }
+            onNext({
+                ...data,
+                deliverySelection: {
+                    agent: 'PG Building Materials',
+                    depot: selectedDepot,
+                    beneficiaryType,
+                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
+                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    supplierName: 'PG Building Materials',
+                }
+            });
+            return;
+        }
+
+        // ---- Tuckshop ----
+        if (deliveryType === 'tuckshop') {
+            if (!selectedDepot) { setError(`Please select a ${tuckshopAgent} depot`); return; }
+            onNext({
+                ...data,
+                deliverySelection: {
+                    agent: tuckshopAgent,
+                    depot: selectedDepot,
+                    beneficiaryType,
+                    beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
+                    beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                    supplierName: tuckshopAgent,
+                    isAgentEditable: true,
+                }
+            });
+            return;
+        }
+
+        // ---- Default: ZimPost ----
+        if (!selectedCity) { setError('Please select your city or province'); return; }
+        if (!selectedDepot) { setError('Please select a Zim Post Office branch'); return; }
         onNext({
             ...data,
             deliverySelection: {
-                agent: selectedAgent,
-                city: selectedAgent === 'Zim Post Office' ? selectedCity : undefined,
-                depot: selectedDepot, // All agents use this now for the final specific location
-                isAgentEditable: deliveryAgentInfo.allowedAgents.length > 1
+                agent: 'Zim Post Office',
+                city: selectedCity,
+                depot: selectedDepot,
+                beneficiaryType,
+                beneficiaryName: beneficiaryType === 'other' ? beneficiaryName : '',
+                beneficiaryId: beneficiaryType === 'other' ? beneficiaryId : '',
+                supplierName: 'Zim Post Office',
             }
         });
     };
 
-    const canPerformEdit = deliveryAgentInfo.allowedAgents.length > 1;
+    // Helper: get branch list for supplier-based products
+    const getSupplierBranches = (): { name: string; address: string }[] => {
+        if (supplierInfo?.branches && supplierInfo.branches.length > 0) {
+            return supplierInfo.branches;
+        }
+        // Fallback to Farm & City depots
+        return FARM_AND_CITY_DEPOTS.map(d => ({ name: d, address: d }));
+    };
+
+    // Helper: get EasyGo locations
+    const EASYGO_LOCATIONS = [
+        'Harare CBD', 'Bulawayo', 'Mutare', 'Gweru', 'Bindura', 'Beitbridge',
+        'Chitungwiza', 'Marondera', 'Masvingo', 'Chinhoyi', 'Victoria Falls', 'Gwanda'
+    ];
+
+    // Render supplier info card
+    const renderSupplierCard = () => {
+        if (!supplierInfo) return null;
+        return (
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800 mb-4">
+                <h4 className="font-medium text-blue-900 dark:text-blue-200 mb-2 flex items-center gap-2">
+                    <Building2 className="w-4 h-4" /> Supplier Details
+                </h4>
+                <div className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
+                    <p><strong>{supplierInfo.name}</strong></p>
+                    <p className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {supplierInfo.address}, {supplierInfo.city}</p>
+                    <p className="flex items-center gap-1"><User className="w-3 h-3" /> Contact: {supplierInfo.contact_person}</p>
+                    <p className="flex items-center gap-1"><Phone className="w-3 h-3" /> {supplierInfo.phone}</p>
+                    {supplierInfo.email && <p className="flex items-center gap-1"><Mail className="w-3 h-3" /> {supplierInfo.email}</p>}
+                </div>
+            </div>
+        );
+    };
+
+    // Render branch selector (for supplier-based delivery)
+    const renderBranchSelector = (branches: { name: string; address: string }[], label: string) => (
+        <div>
+            <label htmlFor="branchSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {label} <span className="text-red-500">*</span>
+            </label>
+            <select
+                id="branchSelect"
+                value={selectedDepot}
+                onChange={(e) => setSelectedDepot(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+            >
+                <option value="">Select a location</option>
+                {branches.map((branch) => (
+                    <option key={branch.name} value={branch.name}>
+                        {branch.name}{branch.address !== branch.name ? ` — ${branch.address}` : ''}
+                    </option>
+                ))}
+            </select>
+        </div>
+    );
+
+    // Render ZimPost two-step selector
+    const renderZimpostSelector = (cityState: string, setCityState: (v: string) => void, branchState: string, setBranchState: (v: string) => void) => (
+        <div className="space-y-4">
+            <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Select City/Province <span className="text-red-500">*</span>
+                </label>
+                <select
+                    value={cityState}
+                    onChange={(e) => { setCityState(e.target.value); setBranchState(''); }}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                >
+                    <option value="">Select your city or province</option>
+                    {Object.keys(ZIMPOST_LOCATIONS).map((city) => (
+                        <option key={city} value={city}>{city}</option>
+                    ))}
+                </select>
+            </div>
+            {cityState && (
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Select Zim Post Office Branch <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                        value={branchState}
+                        onChange={(e) => setBranchState(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    >
+                        <option value="">Select a branch within {cityState}</option>
+                        {(ZIMPOST_LOCATIONS[cityState] || []).map((branch) => (
+                            <option key={branch} value={branch}>{branch}</option>
+                        ))}
+                    </select>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        You will collect your product at your nearest post office.
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+
+    // Render product-specific delivery controls
+    const renderDeliveryControls = () => {
+        switch (deliveryType) {
+            case 'zimparks':
+                return (
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-6 border border-emerald-200 dark:border-emerald-800">
+                        <h4 className="font-semibold text-emerald-900 dark:text-emerald-200 mb-4 flex items-center gap-2">
+                            <Calendar className="w-5 h-5" /> Your Holiday Details
+                        </h4>
+                        <div className="space-y-2 text-sm">
+                            <p><strong>Destination:</strong> <span className="text-emerald-600">{data.destinationName || 'Not selected'}</span></p>
+                            <p><strong>Check-in:</strong> <span className="text-emerald-600">{data.checkInDate || data.bookingDetails?.startDate || 'Not set'}</span></p>
+                            <p><strong>Check-out:</strong> <span className="text-emerald-600">{data.checkOutDate || data.bookingDetails?.endDate || 'Not set'}</span></p>
+                            {(data.nights || data.bookingDetails?.nights) && (
+                                <p><strong>Nights:</strong> <span className="text-emerald-600">{data.nights || data.bookingDetails?.nights}</span></p>
+                            )}
+                        </div>
+                    </div>
+                );
+
+            case 'driving':
+                return (
+                    <div>
+                        {renderSupplierCard()}
+                        <label htmlFor="easygo" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Select Easy Go Branch <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                            id="easygo"
+                            value={selectedDepot}
+                            onChange={(e) => setSelectedDepot(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        >
+                            <option value="">Select a branch nearest to you</option>
+                            {(supplierInfo?.branches?.length ? supplierInfo.branches.map(b => b.name) : EASYGO_LOCATIONS).map((loc) => (
+                                <option key={loc} value={loc}>{loc}</option>
+                            ))}
+                        </select>
+                    </div>
+                );
+
+            case 'training':
+                return (
+                    <div>
+                        {supplierLoading ? (
+                            <p className="text-gray-500 text-sm">Loading supplier information...</p>
+                        ) : (
+                            <>
+                                {renderSupplierCard()}
+                                {supplierInfo && supplierInfo.branches?.length > 1 && (
+                                    renderBranchSelector(supplierInfo.branches, 'Select Training Location')
+                                )}
+                                {supplierInfo && supplierInfo.branches?.length === 1 && (
+                                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200">
+                                        <p className="text-sm text-green-800 dark:text-green-300">
+                                            📍 Location: <strong>{supplierInfo.branches[0].name}</strong> — {supplierInfo.branches[0].address}
+                                        </p>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                );
+
+            case 'chicken_lite':
+            case 'agri':
+                return (
+                    <div>
+                        {supplierLoading ? (
+                            <p className="text-gray-500 text-sm">Loading supplier information...</p>
+                        ) : (
+                            <>
+                                {renderSupplierCard()}
+                                {renderBranchSelector(
+                                    getSupplierBranches(),
+                                    `Select ${supplierInfo?.name || 'Farm & City'} Branch`
+                                )}
+                            </>
+                        )}
+                    </div>
+                );
+
+            case 'chicken_fullhouse':
+                return (
+                    <div className="space-y-6">
+                        {supplierLoading ? (
+                            <p className="text-gray-500 text-sm">Loading supplier information...</p>
+                        ) : (
+                            <>
+                                {renderSupplierCard()}
+                                <div>
+                                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                                        1. Collection Branch (for feeds & inputs)
+                                    </h4>
+                                    {renderBranchSelector(
+                                        getSupplierBranches(),
+                                        `Select ${supplierInfo?.name || 'Farm & City'} Branch`
+                                    )}
+                                </div>
+                            </>
+                        )}
+                        <div>
+                            <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                                2. Zimpost Delivery (for chicken coop & housing)
+                            </h4>
+                            <p className="text-sm text-gray-500 mb-3">
+                                The chicken coop and housing materials will be delivered to your nearest post office via Zimpost Courier Connect.
+                            </p>
+                            {renderZimpostSelector(zimpostCity, setZimpostCity, zimpostBranch, setZimpostBranch)}
+                        </div>
+                    </div>
+                );
+
+            case 'building':
+                return (
+                    <div>
+                        <label htmlFor="pg_depot" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Select PG Materials Depot <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                            id="pg_depot"
+                            value={selectedDepot}
+                            onChange={(e) => setSelectedDepot(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        >
+                            <option value="">Select a depot closest to you</option>
+                            {PG_DEPOTS.map((depot) => (
+                                <option key={depot} value={depot}>{depot}</option>
+                            ))}
+                        </select>
+                    </div>
+                );
+
+            case 'tuckshop':
+                return (
+                    <div className="space-y-4">
+                        {/* Agent Toggle */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div
+                                onClick={() => { setTuckshopAgent('Gain Cash & Carry'); setSelectedDepot(''); }}
+                                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${tuckshopAgent === 'Gain Cash & Carry'
+                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                    : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
+                                    }`}
+                            >
+                                <Building2 className={`h-5 w-5 mb-1 ${tuckshopAgent === 'Gain Cash & Carry' ? 'text-emerald-600' : 'text-gray-400'}`} />
+                                <p className="font-medium text-sm text-gray-900 dark:text-white">Gain Cash & Carry</p>
+                            </div>
+                            <div
+                                onClick={() => { setTuckshopAgent('Metro Peech & Browne'); setSelectedDepot(''); }}
+                                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${tuckshopAgent === 'Metro Peech & Browne'
+                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                    : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
+                                    }`}
+                            >
+                                <Building2 className={`h-5 w-5 mb-1 ${tuckshopAgent === 'Metro Peech & Browne' ? 'text-emerald-600' : 'text-gray-400'}`} />
+                                <p className="font-medium text-sm text-gray-900 dark:text-white">Metro Peech & Browne</p>
+                            </div>
+                        </div>
+                        {/* Depot Select */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Select {tuckshopAgent} Depot <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                                value={selectedDepot}
+                                onChange={(e) => setSelectedDepot(e.target.value)}
+                                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            >
+                                <option value="">Select a depot closest to you</option>
+                                {(tuckshopAgent === 'Gain Cash & Carry' ? GAIN_DEPOTS : METRO_DEPOTS).map((depot) => (
+                                    <option key={depot} value={depot}>{depot}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                );
+
+            case 'zimpost_default':
+                return renderZimpostSelector(selectedCity, setSelectedCity, selectedDepot, setSelectedDepot);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -351,319 +721,97 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                     {/* Header */}
                     <div className="mb-6">
                         <div className="flex items-center gap-3 mb-2">
-                            {isZimparks ? (
-                                <Calendar className="h-8 w-8 text-emerald-600" />
-                            ) : (
-                                <Truck className="h-8 w-8 text-emerald-600" />
-                            )}
+                            <Truck className="h-8 w-8 text-emerald-600" />
                             <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                                {isZimparks ? 'Booking Dates' : 'Collection Depot'}
+                                Product Delivery Confirmation
                             </h2>
                         </div>
                         <p className="text-gray-600 dark:text-gray-400">
-                            {isZimparks
-                                ? 'Please select your preferred dates for your holiday package.'
-                                : selectedAgent === 'Gain Cash & Carry'
-                                    ? 'Please be advised that Grocery collections will be done through the below selected Gain Cash & Carry depot.'
-                                    : selectedAgent === 'Metro Peech & Browne'
-                                        ? 'Please be advised that Grocery collections will be done through the below selected Metro Peech & Browne depot.'
-                                        : selectedAgent === 'Farm & City'
-                                            ? 'Please be advised that for all Agricultural Inputs and Chicken Projects, that all collections will be done through the below selected Farm & City branch.'
-                                            : selectedAgent === 'PG Building Materials'
-                                                ? 'Please be advised that for all Building Material deliveries are done via our courier, PG Building Materials. You will collect your product from the PG depot nearest to you.'
-                                                : 'Please be advised that for all deliveries are done via our courier, Zimpost Courier Connect to all urban and rural destinations in Zimbabwe. You will collect your product from the Post Office nearest to you.'}
+                            {getDeliveryMessage(deliveryType, supplierInfo, data)}
                         </p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
 
-                        {isZimparks ? (
-                            /* Zimparks Date Selection */
-                            <div className="space-y-6">
-                                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                                    <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                                        Select Your Stay Dates
-                                    </h3>
-                                    <div className="flex justify-center">
-                                        <DatePicker
-                                            selected={startDate}
-                                            onChange={(dates) => {
-                                                const [start, end] = dates as [Date | null, Date | null];
-                                                setStartDate(start);
-                                                setEndDate(end);
-                                            }}
-                                            startDate={startDate}
-                                            endDate={endDate}
-                                            selectsRange
-                                            inline
-                                            monthsShown={2}
-                                            minDate={new Date()}
-                                            calendarClassName="border-0"
+                        {/* ===== Beneficiary Section ===== */}
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                <Users className="w-5 h-5 text-emerald-600" /> Who is this product for?
+                            </h3>
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setBeneficiaryType('self')}
+                                    className={`p-4 border-2 rounded-lg transition-all text-left ${beneficiaryType === 'self'
+                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${beneficiaryType === 'self' ? 'border-emerald-600' : 'border-gray-400'}`}>
+                                            {beneficiaryType === 'self' && <div className="w-2.5 h-2.5 bg-emerald-600 rounded-full" />}
+                                        </div>
+                                        <User className="w-4 h-4" />
+                                        <span className="font-medium">Self</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1 ml-7">For myself</p>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setBeneficiaryType('other')}
+                                    className={`p-4 border-2 rounded-lg transition-all text-left ${beneficiaryType === 'other'
+                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${beneficiaryType === 'other' ? 'border-emerald-600' : 'border-gray-400'}`}>
+                                            {beneficiaryType === 'other' && <div className="w-2.5 h-2.5 bg-emerald-600 rounded-full" />}
+                                        </div>
+                                        <Users className="w-4 h-4" />
+                                        <span className="font-medium">Other</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1 ml-7">For someone else</p>
+                                </button>
+                            </div>
+
+                            {beneficiaryType === 'other' && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Beneficiary Full Name <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={beneficiaryName}
+                                            onChange={(e) => setBeneficiaryName(e.target.value)}
+                                            placeholder="Enter full name"
+                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                                         />
                                     </div>
-                                    {startDate && endDate && (
-                                        <div className="mt-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                                            <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
-                                                Your Stay: {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} ({Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))} nights)
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                                <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        Selected Destination: <span className="font-medium text-emerald-600">{data.destinationName || 'Not selected'}</span>
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            /* Standard Delivery Selection */
-                            <>
-                                {/* Delivery Agent Selection */}
-                                <div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        {/* Gain Cash & Carry Option */}
-                                        {deliveryAgentInfo.allowedAgents.includes('Gain Cash & Carry') && (
-                                            <div
-                                                onClick={() => canPerformEdit && setSelectedAgent('Gain Cash & Carry')}
-                                                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedAgent === 'Gain Cash & Carry'
-                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                                    : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 hover:border-emerald-300'
-                                                    } ${!canPerformEdit && selectedAgent !== 'Gain Cash & Carry' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                            >
-                                                <Building2 className={`h-6 w-6 mb-2 ${selectedAgent === 'Gain Cash & Carry' ? 'text-emerald-600' : 'text-gray-400'
-                                                    }`} />
-                                                <p className="font-medium text-gray-900 dark:text-white">Gain Cash & Carry</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    Depot collection
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* Metro Peech & Browne Option */}
-                                        {deliveryAgentInfo.allowedAgents.includes('Metro Peech & Browne') && (
-                                            <div
-                                                onClick={() => canPerformEdit && setSelectedAgent('Metro Peech & Browne')}
-                                                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedAgent === 'Metro Peech & Browne'
-                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                                    : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 hover:border-emerald-300'
-                                                    } ${!canPerformEdit && selectedAgent !== 'Metro Peech & Browne' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                            >
-                                                <Building2 className={`h-6 w-6 mb-2 ${selectedAgent === 'Metro Peech & Browne' ? 'text-emerald-600' : 'text-gray-400'
-                                                    }`} />
-                                                <p className="font-medium text-gray-900 dark:text-white">Metro Peech & Browne</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    Depot collection
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* Farm & City Option */}
-                                        {deliveryAgentInfo.allowedAgents.includes('Farm & City') && (
-                                            <div
-                                                className={`p-4 border-2 rounded-lg ${selectedAgent === 'Farm & City'
-                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                                    : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-50'
-                                                    }`}
-                                            >
-                                                <Building2 className={`h-6 w-6 mb-2 ${selectedAgent === 'Farm & City' ? 'text-emerald-600' : 'text-gray-400'
-                                                    }`} />
-                                                <p className="font-medium text-gray-900 dark:text-white">Farm & City</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    Depot collection
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* PG Building Materials Option */}
-                                        {deliveryAgentInfo.allowedAgents.includes('PG Building Materials') && (
-                                            <div
-                                                className={`p-4 border-2 rounded-lg ${selectedAgent === 'PG Building Materials'
-                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                                    : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-50'
-                                                    }`}
-                                            >
-                                                <Building2 className={`h-6 w-6 mb-2 ${selectedAgent === 'PG Building Materials' ? 'text-emerald-600' : 'text-gray-400'
-                                                    }`} />
-                                                <p className="font-medium text-gray-900 dark:text-white">PG Building Materials</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    Depot collection
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* Post Office Option */}
-                                        {deliveryAgentInfo.allowedAgents.includes('Zim Post Office') && (
-                                            <div
-                                                className={`p-4 border-2 rounded-lg ${selectedAgent === 'Zim Post Office'
-                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                                    : 'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-50'
-                                                    }`}
-                                            >
-                                                <Building2 className={`h-6 w-6 mb-2 ${selectedAgent === 'Zim Post Office' ? 'text-emerald-600' : 'text-gray-400'
-                                                    }`} />
-                                                <p className="font-medium text-gray-900 dark:text-white">Zim Post Office</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                    Zimpost collection
-                                                </p>
-                                            </div>
-                                        )}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Beneficiary National ID <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={beneficiaryId}
+                                            onChange={(e) => setBeneficiaryId(e.target.value)}
+                                            placeholder="e.g. 63-123456-A-78"
+                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                                        />
                                     </div>
                                 </div>
+                            )}
+                        </div>
 
-                                {/* Gain Cash & Carry Depot Selection */}
-                                {selectedAgent === 'Gain Cash & Carry' && deliveryAgentInfo.allowedAgents.includes('Gain Cash & Carry') && (
-                                    <div>
-                                        <label htmlFor="depot" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Select Gain Cash & Carry Depot <span className="text-red-500">*</span>
-                                        </label>
-                                        <select
-                                            id="depot"
-                                            value={selectedDepot}
-                                            onChange={(e) => setSelectedDepot(e.target.value)}
-                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                        >
-                                            <option value="">Select a depot closest to you</option>
-                                            {GAIN_DEPOTS.map((depot) => (
-                                                <option key={depot} value={depot}>
-                                                    {depot}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                            You will collect your product from the selected Gain Cash & Carry depot.
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Metro Peech & Browne Depot Selection */}
-                                {selectedAgent === 'Metro Peech & Browne' && deliveryAgentInfo.allowedAgents.includes('Metro Peech & Browne') && (
-                                    <div>
-                                        <label htmlFor="metro_depot" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Select Metro Peech & Browne Depot <span className="text-red-500">*</span>
-                                        </label>
-                                        <select
-                                            id="metro_depot"
-                                            value={selectedDepot}
-                                            onChange={(e) => setSelectedDepot(e.target.value)}
-                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                        >
-                                            <option value="">Select a depot closest to you</option>
-                                            {METRO_DEPOTS.map((depot) => (
-                                                <option key={depot} value={depot}>
-                                                    {depot}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                            You will collect your product from the selected Metro Peech & Browne depot.
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Farm & City Depot Selection */}
-                                {selectedAgent === 'Farm & City' && deliveryAgentInfo.allowedAgents.includes('Farm & City') && (
-                                    <div>
-                                        <label htmlFor="fc_depot" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Select Farm & City Depot <span className="text-red-500">*</span>
-                                        </label>
-                                        <select
-                                            id="fc_depot"
-                                            value={selectedDepot}
-                                            onChange={(e) => setSelectedDepot(e.target.value)}
-                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                        >
-                                            <option value="">Select a depot closest to you</option>
-                                            {FARM_AND_CITY_DEPOTS.map((depot) => (
-                                                <option key={depot} value={depot}>
-                                                    {depot}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                            You will collect your product from the selected Farm & City Centre.
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* PG Building Materials Depot Selection */}
-                                {selectedAgent === 'PG Building Materials' && deliveryAgentInfo.allowedAgents.includes('PG Building Materials') && (
-                                    <div>
-                                        <label htmlFor="pg_depot" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Select PG Materials Depot <span className="text-red-500">*</span>
-                                        </label>
-                                        <select
-                                            id="pg_depot"
-                                            value={selectedDepot}
-                                            onChange={(e) => setSelectedDepot(e.target.value)}
-                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                        >
-                                            <option value="">Select a depot closest to you</option>
-                                            {PG_DEPOTS.map((depot) => (
-                                                <option key={depot} value={depot}>
-                                                    {depot}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                            You will collect your materials from the selected PG depot.
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Post Office Selection (New Two-Step) */}
-                                {selectedAgent === 'Zim Post Office' && deliveryAgentInfo.allowedAgents.includes('Zim Post Office') && (
-                                    <div className="space-y-4">
-                                        {/* Step 1: City/Province Selection */}
-                                        <div>
-                                            <label htmlFor="postOfficeCity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Select City/Province <span className="text-red-500">*</span>
-                                            </label>
-                                            <select
-                                                id="postOfficeCity"
-                                                value={selectedCity}
-                                                onChange={(e) => {
-                                                    setSelectedCity(e.target.value);
-                                                    setSelectedDepot(''); // Reset branch on city change
-                                                }}
-                                                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                            >
-                                                <option value="">Select your city or province</option>
-                                                {Object.keys(ZIMPOST_LOCATIONS).map((city) => (
-                                                    <option key={city} value={city}>
-                                                        {city}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        {/* Step 2: Branch Selection */}
-                                        {selectedCity && (
-                                            <div>
-                                                <label htmlFor="postOfficeBranch" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                    Select Zim Post Office Branch <span className="text-red-500">*</span>
-                                                </label>
-                                                <select
-                                                    id="postOfficeBranch"
-                                                    value={selectedDepot}
-                                                    onChange={(e) => setSelectedDepot(e.target.value)}
-                                                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                                                >
-                                                    <option value="">Select a branch within {selectedCity}</option>
-                                                    {(ZIMPOST_LOCATIONS[selectedCity] || []).map((branch) => (
-                                                        <option key={branch} value={branch}>
-                                                            {branch}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <p className="mt-2 text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                    You will collect at your nearest post office.
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </>
-                        )}
+                        {/* ===== Delivery Controls ===== */}
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                <MapPin className="w-5 h-5 text-emerald-600" /> Delivery / Collection Details
+                            </h3>
+                            {renderDeliveryControls()}
+                        </div>
 
                         {/* Error Message */}
                         {error && (
@@ -674,19 +822,10 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
 
                         {/* Action Buttons */}
                         <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={onBack}
-                                disabled={loading}
-                            >
+                            <Button type="button" variant="outline" onClick={onBack} disabled={loading}>
                                 Back
                             </Button>
-                            <Button
-                                type="submit"
-                                disabled={loading}
-                                className="bg-emerald-600 hover:bg-emerald-700"
-                            >
+                            <Button type="submit" disabled={loading} className="bg-emerald-600 hover:bg-emerald-700">
                                 {loading ? 'Processing...' : 'Continue'}
                             </Button>
                         </div>

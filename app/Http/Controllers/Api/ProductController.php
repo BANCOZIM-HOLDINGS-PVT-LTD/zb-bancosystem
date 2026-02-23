@@ -597,4 +597,91 @@ class ProductController extends Controller
 
         return response()->json($frontendData);
     }
+
+    /**
+     * Get supplier info for a product/subcategory.
+     * Used by the Product Delivery Confirmation page to display supplier details and branches.
+     * Accepts query params: subcategory, business, category
+     */
+    public function getSupplierInfo(Request $request): JsonResponse
+    {
+        $subcategoryName = $request->query('subcategory');
+        $businessName = $request->query('business');
+        $categoryName = $request->query('category');
+
+        // Try to find supplier via MicrobizSubcategory relationship first
+        $supplier = null;
+
+        if ($subcategoryName) {
+            $microbizSub = \App\Models\MicrobizSubcategory::where('name', $subcategoryName)
+                ->with('supplier')
+                ->first();
+
+            if ($microbizSub && $microbizSub->supplier) {
+                $supplier = $microbizSub->supplier;
+            }
+        }
+
+        // Fallback: match supplier by keyword in business/category name
+        if (!$supplier) {
+            $searchTerm = $businessName ?: $subcategoryName ?: $categoryName ?: '';
+            $searchLower = strtolower($searchTerm);
+
+            // Keyword-to-supplier mapping
+            $supplierMappings = [
+                'chicken' => 'Farm & City',
+                'broiler' => 'Farm & City',
+                'layer' => 'Farm & City',
+                'agriculture' => 'Farm & City',
+                'agri' => 'Farm & City',
+                'farming' => 'Farm & City',
+                'machinery' => 'Farm & City',
+                'greenhouse' => 'Farm & City',
+                'irrigation' => 'Farm & City',
+                'tractor' => 'Farm & City',
+                'seed' => 'Farm & City',
+                'fertilizer' => 'Farm & City',
+                'driving' => 'Easy Go',
+                'license course' => 'Easy Go',
+                'zimparks' => 'Zimparks',
+                'holiday' => 'Zimparks',
+                'vacation' => 'Zimparks',
+                'building' => 'Gain Hardware',
+                'construction' => 'Gain Hardware',
+                'hardware' => 'Gain Hardware',
+                'cement' => 'Gain Hardware',
+                'roofing' => 'Gain Hardware',
+            ];
+
+            foreach ($supplierMappings as $keyword => $supplierName) {
+                if (str_contains($searchLower, $keyword)) {
+                    $supplier = \App\Models\Supplier::where('name', $supplierName)->first();
+                    break;
+                }
+            }
+        }
+
+        // Fallback to generic response if still no supplier found
+        if (!$supplier) {
+            return response()->json([
+                'success' => true,
+                'data' => null,
+                'message' => 'No specific supplier found for this product type'
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $supplier->id,
+                'name' => $supplier->name,
+                'contact_person' => $supplier->contact_person,
+                'email' => $supplier->email,
+                'phone' => $supplier->phone,
+                'address' => $supplier->address,
+                'city' => $supplier->city,
+                'branches' => $supplier->branches ?? [],
+            ]
+        ]);
+    }
 }

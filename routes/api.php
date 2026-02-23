@@ -28,6 +28,7 @@ Route::prefix('products')->group(function () {
     Route::get('/product/{productId}', [ProductController::class, 'getProduct']);
     Route::get('/search', [ProductController::class, 'searchProducts']);
     Route::get('/statistics', [ProductController::class, 'getStatistics']);
+    Route::get('/supplier-info', [ProductController::class, 'getSupplierInfo']);
 });
 
 // Application State API routes

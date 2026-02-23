@@ -47,7 +47,6 @@ class MicrobizBusinessSeeder extends Seeder
             ]],
             ['name' => 'Chicken Projects', 'emoji' => '🐔', 'subcategories' => [
                 'Broiler Production',
-                'Egg Hatchery',
             ]],
             ['name' => 'Cleaning Services', 'emoji' => '🧹', 'subcategories' => [
                 'Laundry',

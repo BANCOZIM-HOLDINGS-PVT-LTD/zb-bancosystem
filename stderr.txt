@@ -1,0 +1,9 @@
+==> Verifying app config
+--> Verified app config
+==> Building image
+Waiting for depot builder...
+
+==> Building image
+Waiting for depot builder...
+
+Error: failed to fetch an image or build from source: error building: ensure depot builder failed, please try again (status 403): Your account has overdue invoices. Please update your payment information: https://fly.io/dashboard/victoria-mahuni/billing
