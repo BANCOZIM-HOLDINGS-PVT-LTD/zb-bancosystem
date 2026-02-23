@@ -781,13 +781,7 @@
                     <td>{{ $itemCount }}) {{ $item['name'] }} @if(!empty($item['specification'])) <br><span style="font-size: 8pt;">{{ $item['specification'] }}</span> @endif</td>
                     <td>{{ $item['code'] ?? '' }}</td>
                     <td style="text-align: center;">{{ $item['quantity'] }}</td>
-                    <td style="text-align: center;">
-                        @if($loop->last)
-                            ${{ $monthlyPayment ?? '' }}
-                        @else
-                            -
-                        @endif
-                    </td>
+                    <td style="text-align: center;">-</td>
                 </tr>
             @endforeach
         @else
@@ -795,7 +789,7 @@
                 <td>1) {{ $productDescription ?: ($productName ?? $purposeAsset ?? '') }}</td>
                 <td></td>
                 <td style="text-align: center;">1</td>
-                <td style="text-align: center;">${{ $monthlyPayment ?? '' }}</td>
+                <td style="text-align: center;">-</td>
             </tr>
             <tr>
                 <td>2)</td>
@@ -810,6 +804,12 @@
                 <td></td>
             </tr>
         @endif
+        <tr>
+            <td style="text-align: right; font-weight: bold;">Monthly Instalment:-</td>
+            <td></td>
+            <td></td>
+            <td style="text-align: center;">${{ $monthlyPayment ?? '' }}</td>
+        </tr>
         <tr>
             <td style="text-align: right; font-weight: bold;">TOTAL:-</td>
             <td></td>
