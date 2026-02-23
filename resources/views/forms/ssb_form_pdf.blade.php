@@ -651,49 +651,20 @@
     </table>
 
     <div class="section-header">FOR OFFICIAL USE ONLY</div>
-    <table>
+    <table class="main-table" style="margin-top: 10px;">
         <tr>
-            <td width="25%">Received & Checked by:</td>
-            <td width="30%">
-                @if(isset($checkType) && $checkType === 'SSB')
-                    @if(isset($checkStatus) && $checkStatus === 'S')
-                        <span style="color: green; font-weight: bold; font-family: monospace;">[SSB CHECK SUCCESSFUL]</span><br>
-                        <span style="font-size: 10px;">Ref: {{ $checkResult['ref'] ?? 'N/A' }}</span>
-                    @elseif(isset($checkStatus) && $checkStatus === 'F')
-                        <span style="color: red; font-weight: bold;">[SSB CHECK FAILED]</span>
-                    @else
-                        PENDING CHECK
-                    @endif
-                @else
-                    <span class="signature-line"></span>
-                @endif
-            </td>
-            <td width="15%">Date:</td>
-            <td width="30%">
-                @if(isset($checkType) && $checkType === 'SSB' && isset($checkResult))
-                    <span class="filled-field">{{ $checkResult['date'] ?? date('Y-m-d') }}</span>
-                @else
-                    <span class="signature-line"></span>
-                @endif
-            </td>
+            <td class="field-label" style="width: 20%;">Received & Checked by:</td>
+            <td style="width: 25%;">Name: {{ $metadata['zb_checker']['name'] ?? '' }}</td>
+            <td style="width: 25%;">Designation: {{ $metadata['zb_checker']['designation'] ?? 'Loans Officer' }}</td>
+            <td style="width: 15%;">Branch: {{ $metadata['zb_checker']['branch'] ?? $branch ?? '' }}</td>
+            <td style="width: 15%;">Date: {{ date('Y-m-d') }}</td>
         </tr>
         <tr>
-            <td>Approved by:</td>
-            <td>
-                @if(isset($checkType) && $checkType === 'SSB' && isset($checkStatus) && $checkStatus === 'S')
-                     <span style="font-weight: bold;">SYSTEM AUTO-APPROVAL</span>
-                @else
-                    <span class="signature-line"></span>
-                @endif
-            </td>
-            <td>Date:</td>
-            <td>
-                @if(isset($checkType) && $checkType === 'SSB' && isset($checkStatus) && $checkStatus === 'S')
-                    <span class="filled-field">{{ date('Y-m-d') }}</span>
-                @else
-                    <span class="signature-line"></span>
-                @endif
-            </td>
+            <td class="field-label">Approved by:</td>
+            <td>Name: {{ $metadata['zb_approver']['name'] ?? '' }}</td>
+            <td>Designation: {{ $metadata['zb_approver']['designation'] ?? 'Branch Manager' }}</td>
+            <td>Branch: {{ $metadata['zb_approver']['branch'] ?? $branch ?? '' }}</td>
+            <td>Date: {{ date('Y-m-d') }}</td>
         </tr>
     </table>
 
@@ -899,7 +870,7 @@
                     <td class="center">{{ $item['quantity'] }}</td>
                     <td><span class="filled-field">
                         @if($loop->last)
-                            ${{ $getAny(['loanAmount', 'amount', 'finalPrice']) }}
+                            ${{ $monthlyPayment ?? $formData['monthlyPayment'] ?? '' }}
                         @else
                             -
                         @endif
@@ -911,7 +882,7 @@
                 <td><span class="filled-field">{{ $productDescription ?: ($getAny(['creditFacilityType', 'business']) ?? '') }}</span></td>
                 <td>........................</td>
                 <td class="center">1</td>
-                <td><span class="filled-field">${{ $getAny(['loanAmount', 'amount', 'finalPrice']) }}</span></td>
+                <td><span class="filled-field">${{ $monthlyPayment ?? $formData['monthlyPayment'] ?? '' }}</span></td>
             </tr>
         @endif
         <tr>
@@ -1106,42 +1077,37 @@
         <table class="invoice-product-table">
             <thead>
                 <tr>
-                    <th style="width: 50%;">PRODUCT DESCRIPTION</th>
-                    <th style="width: 25%;">PRODUCT CODE</th>
-                    <th style="width: 25%;">PRICE (USD)</th>
+                    <th style="width: 20%; text-align: left;">PRODUCT CODE</th>
+                    <th style="width: 50%; text-align: left;">PRODUCT DESCRIPTION</th>
+                    <th style="width: 15%; text-align: center;">QUANTITY</th>
+                    <th style="width: 15%; text-align: right;">TOTAL</th>
                 </tr>
             </thead>
             <tbody>
                 @if(isset($lineItems) && count($lineItems) > 0)
                     @foreach($lineItems as $item)
                         <tr>
+                            <td>{{ $item['code'] ?? '' }}</td>
                             <td style="text-align: left; padding-left: 10px;">
                                 {{ $item['name'] }} @if(!empty($item['specification'])) <br><span style="font-size: 8pt; color: #555;">{{ $item['specification'] }}</span> @endif
-                                @if(isset($item['quantity']) && $item['quantity'] > 1) <br><span style="font-size: 9pt; font-style: italic;">(Qty: {{ $item['quantity'] }})</span> @endif
                             </td>
-                            <td>{{ $item['code'] ?? '' }}</td>
-                            <td>
-                                {{-- Price hidden for individual items as requested, unless it's a single item purchase --}}
-                                @if(isset($item['price']) && $item['price'] > 0 && count($lineItems) == 1)
-                                    ${{ number_format((float)$item['price'], 2) }}
-                                @else
-                                    -
-                                @endif
-                            </td>
+                            <td style="text-align: center;">{{ $item['quantity'] ?? 1 }}</td>
+                            <td style="text-align: right;">-</td>
                         </tr>
                     @endforeach
                 @else
                     <tr>
-                        <td>{{ $creditFacilityType ?? $productName ?? $business ?? $purposeAsset ?? $loanPurpose ?? $category ?? '' }}</td>
                         <td>{{ $productCode ?? '' }}</td>
-                        <td>${{ number_format((float)str_replace(',', '', $productAmount ?? $finalPrice ?? $netLoan ?? $loanAmount ?? $amount ?? $sellingPrice ?? '0'), 2) }}</td>
+                        <td style="text-align: left; padding-left: 10px;">{{ $creditFacilityType ?? $productName ?? $business ?? $purposeAsset ?? $loanPurpose ?? $category ?? '' }}</td>
+                        <td style="text-align: center;">1</td>
+                        <td style="text-align: right;">-</td>
                     </tr>
                 @endif
                 
                 {{-- Total Row --}}
                 <tr class="invoice-total-row">
-                    <td colspan="2" style="text-align: right; padding-right: 15px;">TOTAL DUE</td>
-                    <td style="background-color: #e8f5e9;">
+                    <td colspan="3" style="text-align: right; padding-right: 15px;">TOTAL DUE</td>
+                    <td style="background-color: #e8f5e9; text-align: right;">
                         ${{ number_format((float)str_replace(',', '', $productAmount ?? $finalPrice ?? $netLoan ?? $loanAmount ?? $amount ?? $sellingPrice ?? '0'), 2) }}
                     </td>
                 </tr>

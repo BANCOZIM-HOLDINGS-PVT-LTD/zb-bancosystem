@@ -1395,10 +1395,20 @@ class PDFGeneratorService implements PDFGeneratorInterface
                     
                     // Add items for table display
                     foreach ($package->items as $item) {
+                        $code = $item->item_code ?? $item->product_code ?? '';
+                        $name = strtolower($item->name);
+                        
+                        // Skip transport/courier items as per user request
+                        if (str_starts_with($code, 'TS') || str_starts_with($code, 'TC') || 
+                            str_contains($name, 'courier') || str_contains($name, 'transport') || 
+                            str_contains($name, 'delivery')) {
+                            continue;
+                        }
+
                         $lineItems[] = [
                             'name' => $item->name,
                             'quantity' => $item->pivot->quantity ?? 1,
-                            'code' => $item->item_code ?? $item->product_code ?? '',
+                            'code' => $code,
                             'specification' => $item->specification ?? '', // Add spec if available
                             'is_package' => true
                         ];

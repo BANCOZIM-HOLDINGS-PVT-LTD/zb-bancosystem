@@ -629,27 +629,17 @@
     <table class="main-table" style="margin-top: 10px;">
         <tr>
             <td class="field-label" style="width: 20%;">Received & Checked by:</td>
-            <td style="width: 20%;">Name: {{ $metadata['zb_checker']['name'] ?? '' }}</td>
-            <td style="width: 20%;">{{ $metadata['zb_checker']['designation'] ?? '' }}</td>
-            <td style="width: 15%;">Signature:</td>
-            <td style="width: 15%;">
-                @if(isset($metadata['zb_checker']))
-                    <span style="font-family: monospace; font-size: 8pt;">[DIGITALLY SIGNED]</span>
-                @endif
-            </td>
-            <td style="width: 10%;">Date: {{ isset($metadata['zb_checker']['date']) ? date('Y-m-d', strtotime($metadata['zb_checker']['date'])) : '' }}</td>
+            <td style="width: 25%;">Name: {{ $metadata['zb_checker']['name'] ?? '' }}</td>
+            <td style="width: 25%;">Designation: {{ $metadata['zb_checker']['designation'] ?? 'Loans Officer' }}</td>
+            <td style="width: 15%;">Branch: {{ $metadata['zb_checker']['branch'] ?? $branch ?? '' }}</td>
+            <td style="width: 15%;">Date: {{ date('Y-m-d') }}</td>
         </tr>
         <tr>
             <td class="field-label">Approved by:</td>
             <td>Name: {{ $metadata['zb_approver']['name'] ?? '' }}</td>
-            <td></td>
-            <td>Signature:</td>
-            <td>
-                @if(isset($metadata['zb_approver']))
-                     <span style="font-family: monospace; font-size: 8pt;">[DIGITALLY APPROVED]</span>
-                @endif
-            </td>
-            <td>Date: {{ isset($metadata['zb_approver']['date']) ? date('Y-m-d', strtotime($metadata['zb_approver']['date'])) : '' }}</td>
+            <td>Designation: {{ $metadata['zb_approver']['designation'] ?? 'Branch Manager' }}</td>
+            <td>Branch: {{ $metadata['zb_approver']['branch'] ?? $branch ?? '' }}</td>
+            <td>Date: {{ date('Y-m-d') }}</td>
         </tr>
     </table>
     
@@ -793,7 +783,7 @@
                     <td style="text-align: center;">{{ $item['quantity'] }}</td>
                     <td style="text-align: center;">
                         @if($loop->last)
-                            ${{ $loanAmount ?? $amount ?? '' }}
+                            ${{ $monthlyPayment ?? '' }}
                         @else
                             -
                         @endif
@@ -805,7 +795,7 @@
                 <td>1) {{ $productDescription ?: ($productName ?? $purposeAsset ?? '') }}</td>
                 <td></td>
                 <td style="text-align: center;">1</td>
-                <td style="text-align: center;">${{ $loanAmount ?? $amount ?? '' }}</td>
+                <td style="text-align: center;">${{ $monthlyPayment ?? '' }}</td>
             </tr>
             <tr>
                 <td>2)</td>
@@ -972,42 +962,37 @@
         <table class="invoice-product-table">
             <thead>
                 <tr>
-                    <th style="width: 50%;">PRODUCT DESCRIPTION</th>
-                    <th style="width: 25%;">PRODUCT CODE</th>
-                    <th style="width: 25%;">PRICE (USD)</th>
+                    <th style="width: 20%; text-align: left;">PRODUCT CODE</th>
+                    <th style="width: 50%; text-align: left;">PRODUCT DESCRIPTION</th>
+                    <th style="width: 15%; text-align: center;">QUANTITY</th>
+                    <th style="width: 15%; text-align: right;">TOTAL</th>
                 </tr>
             </thead>
             <tbody>
                 @if(isset($lineItems) && count($lineItems) > 0)
                     @foreach($lineItems as $item)
                         <tr>
+                            <td>{{ $item['code'] ?? '' }}</td>
                             <td style="text-align: left; padding-left: 10px;">
                                 {{ $item['name'] }} @if(!empty($item['specification'])) <br><span style="font-size: 8pt; color: #555;">{{ $item['specification'] }}</span> @endif
-                                @if(isset($item['quantity']) && $item['quantity'] > 1) <br><span style="font-size: 9pt; font-style: italic;">(Qty: {{ $item['quantity'] }})</span> @endif
                             </td>
-                            <td>{{ $item['code'] ?? '' }}</td>
-                            <td>
-                                {{-- Price hidden for individual items as requested, unless it's a single item purchase --}}
-                                @if(isset($item['price']) && $item['price'] > 0 && count($lineItems) == 1)
-                                    ${{ number_format((float)$item['price'], 2) }}
-                                @else
-                                    -
-                                @endif
-                            </td>
+                            <td style="text-align: center;">{{ $item['quantity'] ?? 1 }}</td>
+                            <td style="text-align: right;">-</td>
                         </tr>
                     @endforeach
                 @else
                     <tr>
-                        <td>{{ $creditFacilityType ?? $productName ?? $business ?? $purposeAsset ?? $loanPurpose ?? $category ?? '' }}</td>
                         <td>{{ $productCode ?? '' }}</td>
-                        <td>${{ number_format((float)str_replace(',', '', $productAmount ?? $finalPrice ?? $netLoan ?? $loanAmount ?? $amount ?? $sellingPrice ?? '0'), 2) }}</td>
+                        <td style="text-align: left; padding-left: 10px;">{{ $creditFacilityType ?? $productName ?? $business ?? $purposeAsset ?? $loanPurpose ?? $category ?? '' }}</td>
+                        <td style="text-align: center;">1</td>
+                        <td style="text-align: right;">-</td>
                     </tr>
                 @endif
                 
                 {{-- Total Row --}}
                 <tr class="invoice-total-row">
-                    <td colspan="2" style="text-align: right; padding-right: 15px;">TOTAL DUE</td>
-                    <td style="background-color: #e8f5e9;">
+                    <td colspan="3" style="text-align: right; padding-right: 15px;">TOTAL DUE</td>
+                    <td style="background-color: #e8f5e9; text-align: right;">
                         ${{ number_format((float)str_replace(',', '', $productAmount ?? $finalPrice ?? $netLoan ?? $loanAmount ?? $amount ?? $sellingPrice ?? '0'), 2) }}
                     </td>
                 </tr>
