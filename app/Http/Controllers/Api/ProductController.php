@@ -533,7 +533,7 @@ class ProductController extends Controller
                         'businesses' => [[
                             'id' => $subcategory->id,
                             'name' => $subcategory->name,
-                            'basePrice' => (float) ($subcategory->packages->sortBy('price')->first()?->price ?? 280.00),
+                            'basePrice' => (float) ($subcategory->packages->sortBy('price')->first()?->price ?? 260.00),
                             'image_url' => $subcategory->image_url,
                             'description' => $subcategory->description,
                             'scales' => $scales,

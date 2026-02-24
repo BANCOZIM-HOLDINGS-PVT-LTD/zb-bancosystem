@@ -882,6 +882,14 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                     </AlertDescription>
                                 </Alert>
                             )}
+                            {data.intent === 'personalServices' && (
+                                <Alert className="mb-4 border-blue-500 bg-blue-50 dark:bg-blue-950">
+                                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                    <AlertDescription className="text-blue-800 dark:text-blue-200">
+                                        <strong>Location Available:</strong> Harare Only
+                                    </AlertDescription>
+                                </Alert>
+                            )}
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                 {selectedBusiness.scales.map((scale, index) => {
                                     // Use custom_price if available, otherwise calculate from multiplier
@@ -914,9 +922,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             onClick={() => handleScaleSelect(scale)}
                                         >
                                             <h3 className="text-lg font-medium mb-2">{formatScaleName(scale.name)}</h3>
-                                            <div className="text-xl font-bold text-emerald-600 mb-2">
-                                                {formatCurrency(isZiG ? amount * ZIG_RATE : amount)}
-                                            </div>
                                         </Card>
                                     );
                                 })}
@@ -936,7 +941,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                 <p>{getPackageDescription(selectedBusiness.name, selectedScale.name)}</p>
                                             )}
                                         </div>
-                                        <div className="flex justify-end">
+                                        <div className="mt-4 py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700 flex items-center justify-between">
+                                            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Package Price:</span>
+                                            <span className="text-2xl font-bold text-emerald-600">{formatCurrency(finalAmount)}</span>
+                                        </div>
+                                        <div className="flex justify-end mt-4">
                                             <Button
                                                 onClick={handleProceedToTerms}
                                                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"

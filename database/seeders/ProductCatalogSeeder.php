@@ -106,7 +106,7 @@ class ProductCatalogSeeder extends Seeder
                             'product_sub_category_id' => $subcategoryId,
                             'product_code' => $productCode,
                             'name' => $businessData['name'],
-                            'base_price' => 280.00, // Base price is effectively the Lite Package price
+                            'base_price' => 260.00, // Base price is effectively the Lite Package price
                             'image_url' => 'https://via.placeholder.com/150',
                             'created_at' => now(),
                             'updated_at' => now(),
@@ -133,11 +133,12 @@ class ProductCatalogSeeder extends Seeder
                     }
 
                     // Standard scales for ALL MicroBiz products (Updated naming)
+                    // Cost prices: 200, 350, 664, 1700 | 30% markup → Selling prices: 260, 455, 864, 2210
                     $scales = [
-                        ['name' => 'Lite Package', 'custom_price' => 280.00, 'multiplier' => 1.0],
-                        ['name' => 'Standard Package', 'custom_price' => 490.00, 'multiplier' => 1.75],
-                        ['name' => 'Full House Package', 'custom_price' => 930.00, 'multiplier' => 3.32],
-                        ['name' => 'Gold Package', 'custom_price' => 1700.00, 'multiplier' => 7.14], // Updated: $1,700
+                        ['name' => 'Lite Package', 'custom_price' => 260.00, 'multiplier' => 1.0],
+                        ['name' => 'Standard Package', 'custom_price' => 455.00, 'multiplier' => 1.75],
+                        ['name' => 'Full House Package', 'custom_price' => 864.00, 'multiplier' => 3.32],
+                        ['name' => 'Gold Package', 'custom_price' => 2210.00, 'multiplier' => 8.5],
                     ];
 
                     foreach ($scales as $scaleData) {
