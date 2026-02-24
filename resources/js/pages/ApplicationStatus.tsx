@@ -133,6 +133,51 @@ export default function ApplicationStatus() {
     };
 
     const getStatusDisplay = (status: string) => {
+        // Account opening has a simplified 3-stage flow
+        if (applicationDetails?.applicationType === 'account_opening') {
+            const accountStatusConfig = {
+                'pending': {
+                    icon: Clock,
+                    color: 'text-amber-600 dark:text-amber-400',
+                    bg: 'bg-amber-50 dark:bg-amber-900/20',
+                    label: 'Pending — Visit Your Nearest Branch',
+                    description: 'Please go to your nearest ZB Bank branch and sign your account opening documents. Bring your National ID and reference number.'
+                },
+                'submitted': {
+                    icon: Clock,
+                    color: 'text-amber-600 dark:text-amber-400',
+                    bg: 'bg-amber-50 dark:bg-amber-900/20',
+                    label: 'Pending — Visit Your Nearest Branch',
+                    description: 'Please go to your nearest ZB Bank branch and sign your account opening documents. Bring your National ID and reference number.'
+                },
+                'referred': {
+                    icon: Clock,
+                    color: 'text-blue-600 dark:text-blue-400',
+                    bg: 'bg-blue-50 dark:bg-blue-900/20',
+                    label: 'Referred to Branch',
+                    description: 'Your application has been sent to your nearest ZB Bank branch. Please visit the branch to sign your documents.'
+                },
+                'rejected': {
+                    icon: XCircle,
+                    color: 'text-red-600 dark:text-red-400',
+                    bg: 'bg-red-50 dark:bg-red-900/20',
+                    label: 'Documents Not Approved',
+                    description: applicationDetails?.rejectionReason || 'Your account opening documents were not approved. Please contact your nearest ZB Bank branch for assistance.'
+                },
+                'account_opened': {
+                    icon: CheckCircle,
+                    color: 'text-green-600 dark:text-green-400',
+                    bg: 'bg-green-50 dark:bg-green-900/20',
+                    label: 'Account Opened',
+                    description: 'Your ZB Bank account has been successfully opened! You can now use your account for banking services.'
+                },
+            };
+            const config = accountStatusConfig[status as keyof typeof accountStatusConfig] || accountStatusConfig.pending;
+            const Icon = config.icon;
+            return { Icon, ...config };
+        }
+
+        // Loan application status flow (unchanged)
         const statusConfig = {
             'pending': {
                 icon: Clock,
@@ -423,9 +468,9 @@ export default function ApplicationStatus() {
 
 
 
-                            {/* Apply for Loan Section - For account opened or loan eligible */}
-                            {(applicationDetails.applicationType === 'account_opening' &&
-                                ['account_opened', 'approved', 'completed'].includes(applicationDetails.status)) && (
+                            {/* Apply for Loan Section - Only for loan-type applications that are approved */}
+                            {applicationDetails.applicationType !== 'account_opening' &&
+                                ['account_opened', 'approved', 'completed'].includes(applicationDetails.status) && (
                                     <Card className="p-8 bg-gradient-to-br from-emerald-50 to-blue-50 dark:from-emerald-900/20 dark:to-blue-900/20 border-2 border-emerald-200 dark:border-emerald-800">
                                         <div className="text-center mb-6">
                                             <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 dark:bg-emerald-900 rounded-full mb-4">

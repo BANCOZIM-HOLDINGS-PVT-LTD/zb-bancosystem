@@ -11,8 +11,10 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\BulkAction;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Collection;
 
 class AccountOpeningResource extends Resource
 {
@@ -38,16 +40,16 @@ class AccountOpeningResource extends Resource
                     Forms\Components\Select::make('status')
                         ->options([
                             'pending' => 'Pending',
+                            'referred' => 'Referred to Branch',
                             'account_opened' => 'Account Opened',
-                            'loan_eligible' => 'Loan Eligible',
                             'rejected' => 'Rejected',
                         ])
                         ->disabled(),
                     Forms\Components\TextInput::make('zb_account_number')
                         ->label('ZB Account Number')
                         ->disabled(),
-                    Forms\Components\Toggle::make('loan_eligible')
-                        ->label('Loan Eligible')
+                    Forms\Components\TextInput::make('referred_to_branch')
+                        ->label('Referred To Branch')
                         ->disabled(),
                     Forms\Components\ViewField::make('form_data')
                         ->view('filament.forms.components.application-data'),
@@ -70,6 +72,14 @@ class AccountOpeningResource extends Resource
                 Tables\Columns\TextColumn::make('user_identifier')
                     ->label('ID/Phone')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('branch')
+                    ->label('Branch')
+                    ->sortable(query: function ($query, string $direction) {
+                        return $query->orderByRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.formResponses.serviceCenter')) {$direction}");
+                    })
+                    ->searchable(query: function ($query, string $search) {
+                        return $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.formResponses.serviceCenter')) LIKE ?", ["%{$search}%"]);
+                    }),
                 Tables\Columns\TextColumn::make('zb_account_number')
                     ->label('Account #')
                     ->searchable()
@@ -77,13 +87,10 @@ class AccountOpeningResource extends Resource
                 Tables\Columns\BadgeColumn::make('status')
                     ->colors([
                         'warning' => 'pending',
+                        'info' => 'referred',
                         'success' => 'account_opened',
-                        'primary' => 'loan_eligible',
                         'danger' => 'rejected',
                     ]),
-                Tables\Columns\IconColumn::make('loan_eligible')
-                    ->label('Loan Ready')
-                    ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Applied')
                     ->dateTime('M j, Y')
@@ -93,19 +100,63 @@ class AccountOpeningResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
                         'pending' => 'Pending',
+                        'referred' => 'Referred to Branch',
                         'account_opened' => 'Account Opened',
-                        'loan_eligible' => 'Loan Eligible',
                         'rejected' => 'Rejected',
                     ]),
+                Tables\Filters\SelectFilter::make('branch')
+                    ->label('Branch')
+                    ->options(fn () => collect(config('branches.list', []))->keys()->mapWithKeys(fn ($b) => [$b => $b])->toArray())
+                    ->query(function ($query, array $data) {
+                        if (!empty($data['value'])) {
+                            $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.formResponses.serviceCenter')) = ?", [$data['value']]);
+                        }
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 
+                Action::make('refer_to_branch')
+                    ->label('Refer to Branch')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('info')
+                    ->visible(fn (Model $record) => $record->status === 'pending')
+                    ->form([
+                        Forms\Components\Select::make('branch')
+                            ->label('Branch')
+                            ->options(fn () => collect(config('branches.list', []))->keys()->mapWithKeys(fn ($b) => [$b => $b])->toArray())
+                            ->default(fn (Model $record) => $record->branch)
+                            ->required(),
+                        Forms\Components\TextInput::make('email')
+                            ->label('Branch Email')
+                            ->email()
+                            ->default(fn (Model $record) => config("branches.list.{$record->branch}.email", ''))
+                            ->required()
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                // Auto-fill email when branch changes
+                            }),
+                    ])
+                    ->action(function (Model $record, array $data) {
+                        $service = app(AccountOpeningService::class);
+                        $count = $service->referToBranch(
+                            collect([$record]),
+                            $data['branch'],
+                            $data['email']
+                        );
+
+                        Notification::make()
+                            ->title("Referred to {$data['branch']}")
+                            ->body("Application emailed to {$data['email']}")
+                            ->success()
+                            ->send();
+                    }),
+
                 Action::make('mark_opened')
                     ->label('Mark Account Opened')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn (Model $record) => $record->status === 'pending')
+                    ->visible(fn (Model $record) => in_array($record->status, ['pending', 'referred']))
                     ->form([
                         Forms\Components\TextInput::make('account_number')
                             ->label('ZB Account Number')
@@ -115,7 +166,6 @@ class AccountOpeningResource extends Resource
                     ->action(function (Model $record, array $data) {
                         $record->markAsOpened($data['account_number']);
                         
-                        // Send SMS notification
                         $service = app(AccountOpeningService::class);
                         $service->sendAccountOpenedSMS($record);
                         
@@ -125,32 +175,11 @@ class AccountOpeningResource extends Resource
                             ->send();
                     }),
 
-                Action::make('approve_loan')
-                    ->label('Approve for Loan Credibility')
-                    ->icon('heroicon-o-currency-dollar')
-                    ->color('primary')
-                    ->visible(fn (Model $record) => $record->status === 'account_opened')
-                    ->requiresConfirmation()
-                    ->modalHeading('Approve for Loan Credibility')
-                    ->modalDescription('This will notify the user that they are eligible to apply for loans.')
-                    ->action(function (Model $record) {
-                        $record->approveForLoan();
-                        
-                        // Send SMS notification
-                        $service = app(AccountOpeningService::class);
-                        $service->sendLoanEligibleSMS($record);
-                        
-                        Notification::make()
-                            ->title('Approved for Loan Credibility')
-                            ->success()
-                            ->send();
-                    }),
-
                 Action::make('reject')
                     ->label('Reject')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn (Model $record) => $record->status === 'pending')
+                    ->visible(fn (Model $record) => in_array($record->status, ['pending', 'referred']))
                     ->form([
                         Forms\Components\Textarea::make('reason')
                             ->label('Rejection Reason')
@@ -160,7 +189,6 @@ class AccountOpeningResource extends Resource
                     ->action(function (Model $record, array $data) {
                         $record->reject($data['reason']);
                         
-                        // Send SMS notification
                         $service = app(AccountOpeningService::class);
                         $service->sendRejectionSMS($record);
                         
@@ -173,7 +201,7 @@ class AccountOpeningResource extends Resource
                 Action::make('generate_pdf')
                     ->label('Generate PDF')
                     ->icon('heroicon-o-document')
-                    ->color('info')
+                    ->color('gray')
                     ->action(function (Model $record) {
                         try {
                             $service = app(AccountOpeningService::class);
@@ -194,12 +222,65 @@ class AccountOpeningResource extends Resource
                         }
                     }),
 
-                Action::make('download_pdf')
-                    ->label('Download PDF')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->color('gray')
-                    ->url(fn (Model $record) => route('account-opening.pdf.download', $record->id))
-                    ->openUrlInNewTab(),
+                Action::make('archive')
+                    ->label('Clear Record')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->visible(fn (Model $record) => in_array($record->status, ['account_opened', 'rejected']))
+                    ->requiresConfirmation()
+                    ->modalHeading('Clear Record')
+                    ->modalDescription('This will remove this account opening from the active list. The record will be archived.')
+                    ->action(function (Model $record) {
+                        $service = app(AccountOpeningService::class);
+                        $service->archiveRecord($record);
+                        
+                        Notification::make()
+                            ->title('Record Cleared')
+                            ->success()
+                            ->send();
+                    }),
+            ])
+            ->bulkActions([
+                BulkAction::make('bulk_refer')
+                    ->label('Refer Selected to Branch')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('info')
+                    ->form([
+                        Forms\Components\Select::make('branch')
+                            ->label('Branch')
+                            ->options(fn () => collect(config('branches.list', []))->keys()->mapWithKeys(fn ($b) => [$b => $b])->toArray())
+                            ->required()
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set) {
+                                $email = config("branches.list.{$state}.email", '');
+                                $set('email', $email);
+                            }),
+                        Forms\Components\TextInput::make('email')
+                            ->label('Branch Email')
+                            ->email()
+                            ->required(),
+                    ])
+                    ->action(function (Collection $records, array $data) {
+                        $pendingRecords = $records->filter(fn ($r) => $r->status === 'pending');
+                        
+                        if ($pendingRecords->isEmpty()) {
+                            Notification::make()
+                                ->title('No pending records selected')
+                                ->warning()
+                                ->send();
+                            return;
+                        }
+
+                        $service = app(AccountOpeningService::class);
+                        $count = $service->referToBranch($pendingRecords, $data['branch'], $data['email']);
+
+                        Notification::make()
+                            ->title("Referred {$count} applications to {$data['branch']}")
+                            ->body("PDFs emailed to {$data['email']}")
+                            ->success()
+                            ->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
             ])
             ->defaultSort('created_at', 'desc');
     }
@@ -217,7 +298,6 @@ class AccountOpeningResource extends Resource
         try {
             return static::getModel()::where('status', 'pending')->count();
         } catch (\Exception $e) {
-            // Table might not exist yet if migrations haven't been run
             return null;
         }
     }

@@ -191,11 +191,11 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                     </div>
                     <div className="flex-1">
                         <h3 className="font-semibold text-emerald-900 dark:text-emerald-100 mb-1">
-                            Form Type: {getFormTypeName(formId)}
+                            {data.wantsAccount ? 'New ZB Bank Account Opening' : `Form Type: ${getFormTypeName(formId)}`}
                         </h3>
                         <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                            {data.wantsAccount && 'You are opening a new ZB Bank account. This is not a product or loan application — you will complete the account opening form only.'}
                             {data.hasAccount && !data.wantsAccount && 'You will complete the Account Holder Loan Application form.'}
-                            {data.wantsAccount && 'You will complete the New Account Opening form.'}
                             {data.employer === 'government-ssb' && 'You will complete the SSB Loan Application form.'}
                             {data.employer === 'government-pensioner' && 'You will complete the Government Pensioner Loan Application form.'}
                             {data.employer === 'entrepreneur' && 'You will complete the SME Business Account Opening form.'}

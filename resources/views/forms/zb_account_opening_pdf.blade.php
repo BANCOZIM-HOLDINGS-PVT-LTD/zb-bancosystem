@@ -106,9 +106,31 @@
         return is_array($value) ? $default : (string)$value;
     };
 
+    // Helper to get spouse details from spouseDetails array
+    $getSpouse = function($key, $default = '') use ($formResponses, $formatAddress) {
+        $spouse = $formResponses['spouseDetails'][0] ?? [];
+        $value = $spouse[$key] ?? $default;
+        if (strpos($key, 'Address') !== false || strpos($key, 'address') !== false) {
+            return $formatAddress($value);
+        }
+        return is_array($value) ? $default : (string)$value;
+    };
+
     // Helper function for checkboxes
     $isChecked = function($key, $value) use ($formResponses) {
         $fieldValue = $formResponses[$key] ?? '';
+        // Handle employerType which is an object with boolean keys
+        if ($key === 'employerType' && is_array($fieldValue)) {
+            $map = [
+                'Government' => 'government',
+                'Local Company' => 'localCompany',
+                'Multinational' => 'multinational',
+                'NGO' => 'ngo',
+                'Other' => 'other',
+            ];
+            $subKey = $map[$value] ?? '';
+            return !empty($fieldValue[$subKey]);
+        }
         if (is_array($fieldValue)) {
             return in_array($value, $fieldValue);
         }
@@ -429,7 +451,7 @@
     </div>
 
     <div class="account-line">
-        <strong>Service Centre for Card Collection:</strong> _____________________________
+        <strong>Service Centre for Card Collection:</strong> {{ $get('serviceCenter') }}
     </div>
 
     <!-- Section A - Account Specifications -->
@@ -441,12 +463,12 @@
         <tr>
             <td class="form-label" style="width: 25%;">CURRENCY OF ACCOUNT:</td>
             <td class="form-value" colspan="5">
-                ZWL$ <span class="checkbox {{ $isChecked('currency', 'ZWL') ? 'checkbox-checked' : '' }}"></span>
-                USD <span class="checkbox {{ $isChecked('currency', 'USD') ? 'checkbox-checked' : '' }}"></span>
-                ZAR <span class="checkbox {{ $isChecked('currency', 'ZAR') ? 'checkbox-checked' : '' }}"></span>
-                BWP <span class="checkbox {{ $isChecked('currency', 'BWP') ? 'checkbox-checked' : '' }}"></span>
-                EURO <span class="checkbox {{ $isChecked('currency', 'EURO') ? 'checkbox-checked' : '' }}"></span>
-                OTHER <span class="checkbox"></span>
+                ZWL$ <span class="checkbox {{ $isChecked('accountCurrency', 'ZWL$') ? 'checkbox-checked' : '' }}"></span>
+                USD <span class="checkbox {{ $isChecked('accountCurrency', 'USD') ? 'checkbox-checked' : '' }}"></span>
+                ZAR <span class="checkbox {{ $isChecked('accountCurrency', 'ZAR') ? 'checkbox-checked' : '' }}"></span>
+                BWP <span class="checkbox {{ $isChecked('accountCurrency', 'BWP') ? 'checkbox-checked' : '' }}"></span>
+                EURO <span class="checkbox {{ $isChecked('accountCurrency', 'EURO') ? 'checkbox-checked' : '' }}"></span>
+                OTHER <span class="checkbox {{ $isChecked('accountCurrency', 'OTHER (Indicate)') ? 'checkbox-checked' : '' }}"></span>
             </td>
         </tr>
     </table>
@@ -521,7 +543,7 @@
         </tr>
         <tr>
             <td class="form-label" colspan="2">Highest Educational Qualification:</td>
-            <td class="form-value" colspan="2">{{ $get('educationalQualification') }}</td>
+            <td class="form-value" colspan="2">{{ $get('highestEducation') }}</td>
             <td class="form-label">Hobbies:</td>
             <td class="form-value">{{ $get('hobbies') }}</td>
         </tr>
@@ -539,7 +561,7 @@
             <td class="form-label">Telephone:</td>
             <td class="form-value">Res: {{ $get('telephoneRes') }}</td>
             <td class="form-value">Mobile: +263-{{ $get('mobile') }}</td>
-            <td class="form-value" colspan="2">Bus: {{ $get('telephoneBus') }}</td>
+            <td class="form-value" colspan="2">Bus: {{ $get('bus') }}</td>
         </tr>
         <tr>
             <td class="form-label">Email Address:</td>
@@ -591,7 +613,7 @@
             <td class="form-label">Gross Monthly Salary:</td>
             <td class="form-value">{{ $get('grossMonthlySalary') }}</td>
             <td class="form-label">Other Source(s) of Income:</td>
-            <td class="form-value">{{ $get('otherIncomeSources') }}</td>
+            <td class="form-value">{{ $get('otherIncome') }}</td>
         </tr>
     </table>
 
@@ -609,29 +631,30 @@
                 Prof <span class="checkbox {{ $isChecked('spouseTitle', 'Prof') ? 'checkbox-checked' : '' }}"></span>
             </td>
             <td class="form-label" style="width: 12%;">Full Name:</td>
-            <td class="form-value" style="width: 55%;">{{ $get('spouseFullName') }}</td>
+            <td class="form-value" style="width: 55%;">{{ $getSpouse('fullName') }}</td>
         </tr>
         <tr>
             <td class="form-label">Residential Address:</td>
-            <td class="form-value" colspan="3">{{ $get('spouseResidentialAddress') }}</td>
+            <td class="form-value" colspan="3">{{ $getSpouse('residentialAddress') }}</td>
         </tr>
         <tr>
             <td class="form-label">National ID No:</td>
-            <td class="form-value">{{ $get('spouseIdNumber') }}</td>
+            <td class="form-value">{{ $getSpouse('idNumber') }}</td>
             <td class="form-label">Contact Number:</td>
-            <td class="form-value">{{ $get('spouseContact') }}</td>
+            <td class="form-value">{{ $getSpouse('phoneNumber') }}</td>
         </tr>
         <tr>
             <td class="form-label">Nature of relationship:</td>
-            <td class="form-value">{{ $get('spouseRelationship') }}</td>
+            <td class="form-value">{{ $getSpouse('relationship') }}</td>
             <td class="form-label" colspan="2">Gender:
-                Male <span class="checkbox {{ $isChecked('spouseGender', 'Male') ? 'checkbox-checked' : '' }}"></span>
-                Female <span class="checkbox {{ $isChecked('spouseGender', 'Female') ? 'checkbox-checked' : '' }}"></span>
+                @php $spouseGender = $getSpouse('gender'); @endphp
+                Male <span class="checkbox {{ $spouseGender === 'Male' ? 'checkbox-checked' : '' }}"></span>
+                Female <span class="checkbox {{ $spouseGender === 'Female' ? 'checkbox-checked' : '' }}"></span>
             </td>
         </tr>
         <tr>
             <td class="form-label" colspan="2">Email Address:</td>
-            <td class="form-value" colspan="2">{{ $get('spouseEmail') }}</td>
+            <td class="form-value" colspan="2">{{ $getSpouse('email') }}</td>
         </tr>
     </table>
 
@@ -674,8 +697,8 @@
         <tr>
             <td class="form-label" style="width: 25%;">Mobile money e.g. Ecocash Services:</td>
             <td class="form-value" style="width: 10%;">
-                Yes <span class="checkbox {{ $isChecked('mobileMoney', true) ? 'checkbox-checked' : '' }}"></span>
-                No <span class="checkbox {{ !$isChecked('mobileMoney', true) ? 'checkbox-checked' : '' }}"></span>
+                Yes <span class="checkbox {{ $isChecked('mobileMoneyEcocash', true) ? 'checkbox-checked' : '' }}"></span>
+                No <span class="checkbox {{ !$isChecked('mobileMoneyEcocash', true) ? 'checkbox-checked' : '' }}"></span>
             </td>
             <td class="form-label" style="width: 15%;">Mobile Number:</td>
             <td class="form-value" style="width: 20%;">
@@ -750,7 +773,8 @@
             <th style="width: 18%;">Premium Per Month $</th>
         </tr>
         @php
-            $dependents = $formResponses['funeralDependents'] ?? [];
+            $funeralCover = $formResponses['funeralCover'] ?? [];
+            $dependents = $funeralCover['dependents'] ?? $formResponses['funeralDependents'] ?? [];
             if (!is_array($dependents)) $dependents = [];
             while(count($dependents) < 8) {
                 $dependents[] = ['surname' => '', 'forenames' => '', 'relationship' => '', 'dateOfBirth' => '', 'idNumber' => '', 'coverAmount' => '', 'premium' => ''];
