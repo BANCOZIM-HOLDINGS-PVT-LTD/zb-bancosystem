@@ -116,6 +116,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
         headOfInstitution: '',
         headOfInstitutionCell: '',
         currentNetSalary: '',
+        payDayRange: '',
 
         // Spouse and Next of Kin
         spouseDetails: [
@@ -288,6 +289,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
         formResponses.employeeNumber = formData.employmentNumber;
         formResponses.ministry = formData.responsibleMinistry;
         formResponses.netSalary = formData.currentNetSalary;
+        formResponses.payDayRange = formData.payDayRange;
         formResponses.responsiblePaymaster = formData.headOfInstitution;
         formResponses.responsibleMinistry = formData.responsibleMinistry;
         formResponses.loanAmount = formData.loanAmount;
@@ -669,6 +671,21 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                                     <SelectItem value="101-200">{currencySymbol}101 - {currencySymbol}200</SelectItem>
                                     <SelectItem value="201-300">{currencySymbol}201 - {currencySymbol}300</SelectItem>
                                     <SelectItem value="300+">{currencySymbol}300+</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <Label htmlFor="payDayRange">Monthly Pay Day Range *</Label>
+                            <Select value={formData.payDayRange} onValueChange={(value) => handleInputChange('payDayRange', value)} required>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select your pay day range" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="week1">I usually get paid in the first week (1st - 7th)</SelectItem>
+                                    <SelectItem value="week2">I usually get paid in the second week (8th - 15th)</SelectItem>
+                                    <SelectItem value="week3">I usually get paid in the third week (16th - 21st)</SelectItem>
+                                    <SelectItem value="week4">I usually get paid after the 22nd</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

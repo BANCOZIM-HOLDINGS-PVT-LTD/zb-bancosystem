@@ -63,3 +63,17 @@ Schedule::command('app:cleanup-delivered-applications')
     ->timezone('Africa/Harare')
     ->name('cleanup-delivered-applications')
     ->description('Cleanup applications and cash purchases delivered 90+ days ago');
+
+// Pay Day SMS Reminders - sends SMS to approved clients 4 days before their pay day
+Schedule::command('payday:send-reminders')
+    ->dailyAt('06:00')
+    ->timezone('Africa/Harare')
+    ->name('payday-send-reminders')
+    ->description('Send SMS reminders to clients before their pay day');
+
+// Loan Officer Notifications - emails loan officer list of clients for account holds
+Schedule::command('payday:notify-officers')
+    ->dailyAt('06:00')
+    ->timezone('Africa/Harare')
+    ->name('payday-notify-officers')
+    ->description('Email loan officer with clients needing account holds');

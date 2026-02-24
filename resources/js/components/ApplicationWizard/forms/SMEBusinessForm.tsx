@@ -124,6 +124,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
         // Financial Information
         estimatedAnnualSales: '',
         netProfit: '',
+        payDayRange: '',
         totalLiabilities: '',
         netCashFlow: '',
         mainProducts: '',
@@ -367,6 +368,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
             businessAnnualRevenue: formData.estimatedAnnualSales || '',
             estimatedAnnualSales: formData.estimatedAnnualSales || '',
             annualTurnover: formData.estimatedAnnualSales || '',
+            payDayRange: formData.payDayRange || '',
             contactPhone: formData.contactPhone || '',
             directorsPersonalDetails: {
                 ...directors,
@@ -712,6 +714,21 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                                     <SelectItem value="601-800">{currencySymbol}601 - {currencySymbol}800</SelectItem>
                                     <SelectItem value="801-1000">{currencySymbol}801 - {currencySymbol}1000</SelectItem>
                                     <SelectItem value="1001+">{currencySymbol}1001+</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <Label htmlFor="payDayRange">Monthly Pay Day Range *</Label>
+                            <Select value={formData.payDayRange} onValueChange={(value) => handleInputChange('payDayRange', value)} required>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select your pay day range" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="week1">I usually get paid in the first week (1st - 7th)</SelectItem>
+                                    <SelectItem value="week2">I usually get paid in the second week (8th - 15th)</SelectItem>
+                                    <SelectItem value="week3">I usually get paid in the third week (16th - 21st)</SelectItem>
+                                    <SelectItem value="week4">I usually get paid after the 22nd</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
