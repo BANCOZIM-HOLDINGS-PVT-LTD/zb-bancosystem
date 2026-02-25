@@ -171,11 +171,12 @@ class MicrobizBusinessSeeder extends Seeder
         ];
 
         // Standard tier pricing for all businesses
+        // Cost prices: 200, 350, 664, 1700 | 30% markup → Selling prices: 260, 455, 864, 2210
         $tiers = [
-            ['tier' => 'lite',       'name' => 'Lite Package',       'price' => 280.00],
-            ['tier' => 'standard',   'name' => 'Standard Package',   'price' => 490.00],
-            ['tier' => 'full_house', 'name' => 'Full House Package', 'price' => 930.00],
-            ['tier' => 'gold',       'name' => 'Gold Package',       'price' => 1700.00],
+            ['tier' => 'lite',       'name' => 'Lite Package',       'price' => 260.00],
+            ['tier' => 'standard',   'name' => 'Standard Package',   'price' => 455.00],
+            ['tier' => 'full_house', 'name' => 'Full House Package', 'price' => 864.00],
+            ['tier' => 'gold',       'name' => 'Gold Package',       'price' => 2210.00],
         ];
 
         // Special case: Company Registration only has one tier

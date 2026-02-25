@@ -3,7 +3,210 @@
 ==> Building image
 Waiting for depot builder...
 
-==> Building image
-Waiting for depot builder...
+==> Building image with Depot
+--> build:  (​)
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 3.89kB 0.2s
+#1 transferring dockerfile: 3.90kB 0.2s done
+#1 DONE 0.3s
 
-Error: failed to fetch an image or build from source: error building: ensure depot builder failed, please try again (status 403): Your account has overdue invoices. Please update your payment information: https://fly.io/dashboard/victoria-mahuni/billing
+#2 [internal] load metadata for docker.io/library/composer:2
+#2 ...
+
+#3 [internal] load metadata for docker.io/library/node:18-alpine
+#3 DONE 1.4s
+
+#4 [internal] load metadata for docker.io/library/php:8.2-fpm-alpine
+#4 DONE 1.4s
+
+#2 [internal] load metadata for docker.io/library/composer:2
+#2 DONE 1.7s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 967B 0.2s
+#5 transferring context: 967B 0.2s done
+#5 DONE 0.2s
+
+#6 [frontend-builder 1/9] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+#6 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e done
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 ...
+
+#8 FROM docker.io/library/composer:2@sha256:f0809732b2188154b3faa8e44ab900595acb0b09cd0aa6c34e798efe4ebc9021
+#8 resolve docker.io/library/composer:2@sha256:f0809732b2188154b3faa8e44ab900595acb0b09cd0aa6c34e798efe4ebc9021 done
+#8 DONE 0.0s
+
+#9 [production  1/20] FROM docker.io/library/php:8.2-fpm-alpine@sha256:6363baa3186e5bd43794c9612f8a34fb88657179de3da3ebc37b8618ba7bfffc
+#9 resolve docker.io/library/php:8.2-fpm-alpine@sha256:6363baa3186e5bd43794c9612f8a34fb88657179de3da3ebc37b8618ba7bfffc 0.4s done
+#9 DONE 0.4s
+
+#7 [internal] load build context
+#7 transferring context: 84.62kB 3.0s done
+#7 DONE 3.4s
+
+#10 [production  3/20] COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+#10 CACHED
+
+#11 [production  2/20] RUN apk add --no-cache     nginx     supervisor     curl     libpng-dev     libjpeg-turbo-dev     freetype-dev     libzip-dev     icu-dev     oniguruma-dev     postgresql-dev     mysql-client     redis     git     unzip     autoconf 		dpkg-dev dpkg 		file 		g++ 		gcc 		libc-dev 		make 		pkgconf 		re2c     && docker-php-ext-configure gd --with-freetype --with-jpeg     && docker-php-ext-install -j$(nproc)         gd         zip         intl         mbstring         pdo         pdo_mysql         pdo_pgsql         opcache         pcntl         bcmath     && pecl install redis     && docker-php-ext-enable redis     && apk del autoconf 		dpkg-dev dpkg 		file 		g++ 		gcc 		libc-dev 		make 		pkgconf 		re2c
+#11 CACHED
+
+#12 [production  5/20] WORKDIR /var/www/html
+#12 CACHED
+
+#13 [production  6/20] COPY composer.json composer.lock ./
+#13 CACHED
+
+#14 [production  4/20] RUN addgroup -g 1000 -S www &&     adduser -u 1000 -S www -G www
+#14 CACHED
+
+#15 [production  7/20] RUN composer install --no-dev --optimize-autoloader --no-scripts
+#15 CACHED
+
+#16 [frontend-builder 5/9] COPY tsconfig.json ./
+#16 CACHED
+
+#17 [frontend-builder 8/9] COPY public/ ./public/
+#17 CACHED
+
+#18 [frontend-builder 4/9] COPY vite.config.ts ./
+#18 CACHED
+
+#19 [frontend-builder 3/9] COPY package*.json ./
+#19 CACHED
+
+#20 [frontend-builder 2/9] WORKDIR /app
+#20 CACHED
+
+#21 [frontend-builder 7/9] COPY resources/ ./resources/
+#21 CACHED
+
+#22 [frontend-builder 6/9] RUN npm ci --only=production
+#22 CACHED
+
+#23 [frontend-builder 9/9] RUN npm run build
+#23 CACHED
+
+#24 [production  8/20] COPY . .
+#24 DONE 0.6s
+
+#25 [production  9/20] COPY --from=frontend-builder /app/public/build ./public/build
+#25 DONE 0.1s
+
+#26 [production 10/20] RUN rm -f public/hot
+#26 DONE 0.1s
+
+#27 [production 11/20] RUN touch .env
+#27 DONE 0.1s
+
+#28 [production 12/20] RUN mkdir -p storage/framework/{cache,sessions,views}     && mkdir -p storage/logs     && mkdir -p storage/nginx/{client_body,proxy,fastcgi,uwsgi,scgi}     && mkdir -p storage/app/public     && mkdir -p bootstrap/cache     && chown -R www:www /var/www/html     && chmod -R 775 /var/www/html/storage     && chmod -R 775 /var/www/html/bootstrap/cache
+#28 DONE 12.4s
+
+#29 [production 13/20] COPY docker/nginx.conf /etc/nginx/nginx.conf
+#29 DONE 0.2s
+
+#30 [production 14/20] COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
+#30 DONE 0.0s
+
+#31 [production 15/20] COPY docker/php-fpm-main.conf /usr/local/etc/php-fpm.conf
+#31 DONE 0.0s
+
+#32 [production 16/20] COPY docker/www.conf /usr/local/etc/php-fpm.d/www.conf
+#32 DONE 0.0s
+
+#33 [production 17/20] COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+#33 DONE 0.0s
+
+#34 [production 18/20] RUN mkdir -p /var/log/nginx     && mkdir -p /var/log/supervisor     && mkdir -p /run/nginx     && mkdir -p /var/www/html/storage/logs     && mkdir -p /var/www/html/storage/framework/cache     && mkdir -p /var/www/html/storage/framework/sessions     && mkdir -p /var/www/html/storage/framework/views     && mkdir -p /var/www/html/storage/nginx/{client_body,proxy,fastcgi,uwsgi,scgi}     && mkdir -p /var/www/html/storage/app/public     && chown -R www:www /var/www/html/storage     && chown -R www:www /var/www/html/bootstrap/cache     && chmod -R 775 /var/www/html/storage     && chmod -R 775 /var/www/html/bootstrap/cache     && chown -R www:www /run/nginx
+#34 DONE 0.1s
+
+#35 [production 19/20] COPY docker/entrypoint.sh /entrypoint.sh
+#35 DONE 0.0s
+
+#36 [production 20/20] RUN chmod +x /entrypoint.sh
+#36 DONE 0.1s
+
+#37 exporting to image
+#37 exporting layers
+#37 exporting layers 2.9s done
+#37 exporting manifest sha256:88c01f4821467cd1ff3fc2d1e333545fd04ff0baff577078e82fc259b0a95d62 done
+#37 exporting config sha256:96df1e95ddef4c14fe9b1adb537db340a4efb895c11f01b631d8b68c1ce3426d done
+#37 pushing layers for registry.fly.io/bancosystem:deployment-01KJ80VBG4ECD9623ZBY323DF0@sha256:88c01f4821467cd1ff3fc2d1e333545fd04ff0baff577078e82fc259b0a95d62
+#37 pushing layer sha256:96df1e95ddef4c14fe9b1adb537db340a4efb895c11f01b631d8b68c1ce3426d
+#37 pushing layer sha256:637e8641de0934ab504fdad9a3817ec2561c08743a0247223c35524134205cdd
+#37 pushing layer sha256:6c0eb9e259b58f24cdf8011d235f1573ba685bf631992c8753b7a5b9ebbf4093
+#37 pushing layer sha256:2c1ce468d9f3d941396801f6e3afc8921466650dd05430fe644cd3537713d27f
+#37 pushing layer sha256:628e66c9362bec577f0651514d618602cef4c49d3b350e1475b56577837cab3a
+#37 pushing layer sha256:16460a60d46bd6ffc672437925f4d4fb9b638cdabc83e3d705c0d81805a95786
+#37 pushing layer sha256:4da1385d90b45d50916d9fd6b64991ebbabb498476cede5959671279ce832ae1
+#37 pushing layer sha256:6a0fbe867ae486fb63f21c3a92906be106ef6d7dde0c423cd6a8e8a634a12463
+#37 pushing layer sha256:35cfaba848730fc93aa436f2b0b018243fda4d6cfb0cdfc62b5d975f1bf69461
+#37 pushing layer sha256:fce3e4f84ccc7c76d530e21a38d6749440f22cbf242445b58f819febf08627de
+#37 pushing layer sha256:9799565565c41285ec5dc77257e0753e4a13a04d623887bdfd0af56eda8fcfdf
+#37 pushing layer sha256:3f3a3b61fa089af4c2e617f60bccfffd0561842c618099235acbcd6c36946159
+#37 pushing layer sha256:d1ccf9bda9724b8314ef248c9f988607e5dcd30d92092cfc89ea5a286df8065f
+#37 pushing layer sha256:bc03807472ed9f19b8c5206b0508d985c02f5b549bb6802d9f5b0b4e2c2fde1d
+#37 pushing layer sha256:072d2c5e04f3a2c8f2a3fd6312e997ce7874d8e7b23c2df26a43bd2fa0266a51
+#37 pushing layer sha256:b50deec68bb69654ae34a8811997c2bc30c17d3e787ae13d85494dee503fd103
+#37 pushing layer sha256:bcb37a0cd5752aa59a952059d5f1cb69d52cf3e367d896074372ae5d9fc7f857
+#37 pushing layer sha256:139006a6dc45f4f70c412c6d9c27be4779bab2bc5c37d829cccf73e3de8968f2
+#37 pushing layer sha256:b59df2f1ee3b53568ddb4ef2d4dd1670e98484ed1b5818673c9baab39efec1b3
+#37 pushing layer sha256:f38844476d64dd67df1cdd3fecac18c5de2cb6c0c1a88dec3b48ec8d2dee5f33
+#37 pushing layer sha256:d356696c68fc3d916c38608323c18be8ab68a6403b80646fd8ce0e0a1a1bac0e
+#37 pushing layer sha256:42eba8b59818688b6c7f2a517f33262780dfe629dd1d02ed525d79c8b849f776
+#37 pushing layer sha256:a8ffff34e3d674d516d3ccd0f7238b85485abaab384c75f12ab09d1b0ef45012
+#37 pushing layer sha256:d14fae29ecd472b8fca84edf4de1a49cd36017f191c45cb9d3f237ce11ca1115
+#37 pushing layer sha256:a361b2aa21252fba29c50068f71091b4d07836af411021814d47720b640a72a8
+#37 pushing layer sha256:86ee79af7924e3e4c450d6e21da77e19e8d7eedb8f5598012af2517fed9adb4d
+#37 pushing layer sha256:70b868ee896220b0f97b0f930f392fc9792bd2eedb4a7e94c8d558becd6cfc07
+#37 pushing layer sha256:0186e04ed480c7df479315226cb08a43ef8861d19bf51336fcca7088d30e7cf4
+#37 pushing layer sha256:c2864d1f5dd2313777a9878fe112426b2b3174a055116884bf65665bd3abfda7
+#37 pushing layer sha256:6c0eb9e259b58f24cdf8011d235f1573ba685bf631992c8753b7a5b9ebbf4093 1.1s done
+#37 pushing layer sha256:9799565565c41285ec5dc77257e0753e4a13a04d623887bdfd0af56eda8fcfdf 3.7s done
+#37 pushing layer sha256:bc03807472ed9f19b8c5206b0508d985c02f5b549bb6802d9f5b0b4e2c2fde1d 13.9s done
+#37 pushing layer sha256:96df1e95ddef4c14fe9b1adb537db340a4efb895c11f01b631d8b68c1ce3426d 13.9s done
+#37 pushing layer sha256:637e8641de0934ab504fdad9a3817ec2561c08743a0247223c35524134205cdd 13.9s done
+#37 pushing layer sha256:2c1ce468d9f3d941396801f6e3afc8921466650dd05430fe644cd3537713d27f 13.9s done
+#37 pushing layer sha256:628e66c9362bec577f0651514d618602cef4c49d3b350e1475b56577837cab3a 13.9s done
+#37 pushing layer sha256:16460a60d46bd6ffc672437925f4d4fb9b638cdabc83e3d705c0d81805a95786 13.9s done
+#37 pushing layer sha256:4da1385d90b45d50916d9fd6b64991ebbabb498476cede5959671279ce832ae1 13.9s done
+#37 pushing layer sha256:35cfaba848730fc93aa436f2b0b018243fda4d6cfb0cdfc62b5d975f1bf69461 14.0s done
+#37 pushing layer sha256:fce3e4f84ccc7c76d530e21a38d6749440f22cbf242445b58f819febf08627de 13.9s done
+#37 pushing layer sha256:3f3a3b61fa089af4c2e617f60bccfffd0561842c618099235acbcd6c36946159 13.9s done
+#37 pushing layer sha256:d1ccf9bda9724b8314ef248c9f988607e5dcd30d92092cfc89ea5a286df8065f 14.0s done
+#37 pushing layer sha256:072d2c5e04f3a2c8f2a3fd6312e997ce7874d8e7b23c2df26a43bd2fa0266a51 13.9s done
+#37 pushing layer sha256:b50deec68bb69654ae34a8811997c2bc30c17d3e787ae13d85494dee503fd103 13.9s done
+#37 pushing layer sha256:bcb37a0cd5752aa59a952059d5f1cb69d52cf3e367d896074372ae5d9fc7f857 13.9s done
+#37 pushing layer sha256:139006a6dc45f4f70c412c6d9c27be4779bab2bc5c37d829cccf73e3de8968f2 14.0s done
+#37 pushing layer sha256:b59df2f1ee3b53568ddb4ef2d4dd1670e98484ed1b5818673c9baab39efec1b3 13.9s done
+#37 pushing layer sha256:f38844476d64dd67df1cdd3fecac18c5de2cb6c0c1a88dec3b48ec8d2dee5f33 13.9s done
+#37 pushing layer sha256:d356696c68fc3d916c38608323c18be8ab68a6403b80646fd8ce0e0a1a1bac0e 13.9s done
+#37 pushing layer sha256:42eba8b59818688b6c7f2a517f33262780dfe629dd1d02ed525d79c8b849f776 13.9s done
+#37 pushing layer sha256:d14fae29ecd472b8fca84edf4de1a49cd36017f191c45cb9d3f237ce11ca1115 13.9s done
+#37 pushing layer sha256:a361b2aa21252fba29c50068f71091b4d07836af411021814d47720b640a72a8 14.0s done
+#37 pushing layer sha256:86ee79af7924e3e4c450d6e21da77e19e8d7eedb8f5598012af2517fed9adb4d 13.9s done
+#37 pushing layer sha256:70b868ee896220b0f97b0f930f392fc9792bd2eedb4a7e94c8d558becd6cfc07 13.9s done
+#37 pushing layer sha256:0186e04ed480c7df479315226cb08a43ef8861d19bf51336fcca7088d30e7cf4 13.9s done
+#37 pushing layer sha256:c2864d1f5dd2313777a9878fe112426b2b3174a055116884bf65665bd3abfda7 14.0s done
+#37 pushing layer sha256:6a0fbe867ae486fb63f21c3a92906be106ef6d7dde0c423cd6a8e8a634a12463 14.2s done
+#37 pushing layers for registry.fly.io/bancosystem:deployment-01KJ80VBG4ECD9623ZBY323DF0@sha256:88c01f4821467cd1ff3fc2d1e333545fd04ff0baff577078e82fc259b0a95d62 14.3s done
+#37 pushing layer sha256:a8ffff34e3d674d516d3ccd0f7238b85485abaab384c75f12ab09d1b0ef45012 14.3s done
+#37 pushing manifest for registry.fly.io/bancosystem:deployment-01KJ80VBG4ECD9623ZBY323DF0@sha256:88c01f4821467cd1ff3fc2d1e333545fd04ff0baff577078e82fc259b0a95d62
+#37 pushing manifest for registry.fly.io/bancosystem:deployment-01KJ80VBG4ECD9623ZBY323DF0@sha256:88c01f4821467cd1ff3fc2d1e333545fd04ff0baff577078e82fc259b0a95d62 0.0s done
+#37 DONE 17.3s
+--> Build Summary:  (​)
+[38;5;252m--> Building image done[0m
+image: registry.fly.io/bancosystem:deployment-01KJ80VBG4ECD9623ZBY323DF0
+image size: 340 MB
+
+WARNING The app is not listening on the expected address and will not be reachable by fly-proxy.
+You can fix this by configuring your app to listen on the following addresses:
+  - 0.0.0.0:80
+Found these processes inside the machine with open listening sockets:
+  PROCESS        | ADDRESSES                              
+-----------------*----------------------------------------
+  /.fly/hallpass | [fdaa:34:33db:a7b:1d0:8fcb:6de0:2]:22  
+
+Checking DNS configuration for bancosystem.fly.dev
+✓ DNS configuration verified

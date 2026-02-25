@@ -1,3 +1,31 @@
 Validating C:\xampp\htdocs\zb bancosystem\fly.toml
 [33mWARN[0m Service HTTP check has a grace period greater than 1 minute (2m0s); this will be lowered to 1 minute
 [32m✓[0m Configuration is valid
+
+Watch your deployment at https://fly.io/apps/bancosystem/monitoring
+
+Updating existing machines in 'bancosystem' with rolling strategy
+> [1/2] Acquiring lease for 683d594a606e78
+> [1/2] Acquired lease for 683d594a606e78
+> [2/2] Acquiring lease for 683d597c467e68
+> [2/2] Acquired lease for 683d597c467e68
+> [2/2] Updating machine config for 683d597c467e68
+> [1/2] Updating machine config for 683d594a606e78
+> [2/2] Updating 683d597c467e68 [app]
+> [1/2] Updating 683d594a606e78 [app]
+> [2/2] Updated machine config for 683d597c467e68
+> [2/2] Waiting for machine 683d597c467e68 to reach a good state
+> [1/2] Updated machine config for 683d594a606e78
+✔ [1/2] Machine 683d594a606e78 is now in a good state
+> [2/2] Machine 683d597c467e68 reached started state
+> [2/2] Running smoke checks on machine 683d597c467e68
+> [2/2] Running machine checks on machine 683d597c467e68
+> [2/2] Checking health of machine 683d597c467e68
+✔ [2/2] Machine 683d597c467e68 is now in a good state
+> [2/2] Clearing lease for 683d597c467e68
+> [1/2] Clearing lease for 683d594a606e78
+✔ [2/2] Cleared lease for 683d597c467e68
+✔ [1/2] Cleared lease for 683d594a606e78
+
+Visit your newly deployed app at https://bancosystem.fly.dev/
+
