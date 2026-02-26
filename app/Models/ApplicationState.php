@@ -21,6 +21,8 @@ class ApplicationState extends Model
         'reference_code',
         'reference_code_expires_at',
         'agent_id',
+        'qupa_admin_id',
+        'assigned_branch_id',
         'exempt_from_auto_deletion',
         'deposit_amount',
         'deposit_paid',
@@ -58,6 +60,22 @@ class ApplicationState extends Model
     public function agent(): BelongsTo
     {
         return $this->belongsTo(Agent::class);
+    }
+
+    /**
+     * Get the Qupa Admin officer who handled this application
+     */
+    public function qupaAdmin(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'qupa_admin_id');
+    }
+
+    /**
+     * Get the branch this application is assigned to
+     */
+    public function assignedBranch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'assigned_branch_id');
     }
 
     /**

@@ -6,6 +6,8 @@ namespace App\Models;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -20,6 +22,13 @@ class User extends Authenticatable implements FilamentUser
     public const ROLE_HR = 'hr';
     public const ROLE_STORES = 'stores';
     public const ROLE_PARTNER = 'partner';
+    public const ROLE_QUPA_ADMIN = 'qupa_admin';
+
+    // Qupa Admin designations
+    public const DESIGNATION_LOAN_OFFICER = 'loan_officer';
+    public const DESIGNATION_BRANCH_MANAGER = 'branch_manager';
+    public const DESIGNATION_VLC = 'vlc';
+    public const DESIGNATION_QUPA_MANAGEMENT = 'qupa_management';
 
 
     /**
@@ -33,10 +42,13 @@ class User extends Authenticatable implements FilamentUser
         'password',
         'national_id',
         'phone',
+        'whatsapp_number',
         'phone_verified',
         'phone_verified_at',
         'otp_code',
         'otp_expires_at',
+        'designation',
+        'branch_id',
         // SECURITY: is_admin and role are NOT mass-assignable to prevent privilege escalation
         // Use setRole() and setAdmin() methods instead for controlled role assignment
     ];
@@ -129,7 +141,7 @@ class User extends Authenticatable implements FilamentUser
         }
 
         if ($panel->getId() === 'zb_admin') {
-            return $this->role === self::ROLE_ZB_ADMIN || $this->role === self::ROLE_SUPER_ADMIN;
+            return $this->role === self::ROLE_ZB_ADMIN || $this->role === self::ROLE_SUPER_ADMIN || $this->role === self::ROLE_QUPA_ADMIN;
         }
 
         if ($panel->getId() === 'accounting') {
@@ -178,6 +190,7 @@ class User extends Authenticatable implements FilamentUser
             self::ROLE_HR,
             self::ROLE_STORES,
             self::ROLE_PARTNER,
+            self::ROLE_QUPA_ADMIN,
         ];
 
         if (!in_array($role, $validRoles)) {
@@ -186,5 +199,80 @@ class User extends Authenticatable implements FilamentUser
 
         $this->role = $role;
         return $this->save();
+    }
+
+    // ===== Qupa Admin Relationships =====
+
+    /**
+     * Get the branch this user is assigned to (for Qupa Admin users)
+     */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Get the referral links for this user (for Qupa Admin users)
+     */
+    public function qupaReferralLinks(): HasMany
+    {
+        return $this->hasMany(QupaReferralLink::class);
+    }
+
+    /**
+     * Get applications assigned to this Qupa Admin user
+     */
+    public function qupaApplications(): HasMany
+    {
+        return $this->hasMany(ApplicationState::class, 'qupa_admin_id');
+    }
+
+    // ===== Qupa Admin Designation Helpers =====
+
+    public function isQupaAdmin(): bool
+    {
+        return $this->role === self::ROLE_QUPA_ADMIN;
+    }
+
+    public function isLoanOfficer(): bool
+    {
+        return $this->isQupaAdmin() && $this->designation === self::DESIGNATION_LOAN_OFFICER;
+    }
+
+    public function isBranchManager(): bool
+    {
+        return $this->isQupaAdmin() && $this->designation === self::DESIGNATION_BRANCH_MANAGER;
+    }
+
+    public function isVlc(): bool
+    {
+        return $this->isQupaAdmin() && $this->designation === self::DESIGNATION_VLC;
+    }
+
+    public function isQupaManagement(): bool
+    {
+        return $this->isQupaAdmin() && $this->designation === self::DESIGNATION_QUPA_MANAGEMENT;
+    }
+
+    /**
+     * Get the human-readable designation label
+     */
+    public function getDesignationLabelAttribute(): string
+    {
+        return match ($this->designation) {
+            self::DESIGNATION_LOAN_OFFICER => 'Loan Officer',
+            self::DESIGNATION_BRANCH_MANAGER => 'Branch Manager',
+            self::DESIGNATION_VLC => 'VLC',
+            self::DESIGNATION_QUPA_MANAGEMENT => 'Qupa Management',
+            default => $this->designation ?? '',
+        };
+    }
+
+    /**
+     * Generate a referral link for this Qupa Admin user
+     */
+    public function generateQupaReferralLink(): QupaReferralLink
+    {
+        return QupaReferralLink::generateForUser($this);
     }
 }

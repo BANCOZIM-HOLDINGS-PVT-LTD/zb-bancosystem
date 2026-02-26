@@ -1,0 +1,27 @@
+﻿=== QUPA ADMIN CREDENTIALS ===
+
+MANAGEMENT: Luckson | luckson@qupa.co.zw | Password: 9MMhojQhvpYg
+MANAGEMENT: Lorraine | lorraine@qupa.co.zw | Password: ELn6qxfXTlZ4
+
+[Harare Main] LO: lo.harare_main@qupa.co.zw | Password: gGH79YJ9eGP7
+[Harare Main] BM: bm.harare_main@qupa.co.zw | Password: 6OOI3CmKZPRv
+[Borrowdale] LO: lo.borrowdale@qupa.co.zw | Password: QIBoy5yUIEuk
+[Borrowdale] BM: bm.borrowdale@qupa.co.zw | Password: hSsUm0esKrVY
+[Eastgate] LO: lo.eastgate@qupa.co.zw | Password: UmuqPFvTWGCW
+[Eastgate] BM: bm.eastgate@qupa.co.zw | Password: XdjrvQzxC7e7
+[Kwame Nkrumah] LO: lo.kwame_nkrumah@qupa.co.zw | Password: 0EWivcdqZxjD
+[Kwame Nkrumah] BM: bm.kwame_nkrumah@qupa.co.zw | Password: pQyuGeogIFnq
+[Bulawayo] LO: lo.bulawayo@qupa.co.zw | Password: y3j3GKU793Md
+[Bulawayo] BM: bm.bulawayo@qupa.co.zw | Password: EuzkO0ZZzuMH
+[Gweru] LO: lo.gweru@qupa.co.zw | Password: 4me0NeqxD7M6
+[Gweru] BM: bm.gweru@qupa.co.zw | Password: GV9QXZQBTY24
+[Mutare] LO: lo.mutare@qupa.co.zw | Password: oER9Q8m5lNnJ
+[Mutare] BM: bm.mutare@qupa.co.zw | Password: SZp8k0sSQSN2
+[Masvingo] LO: lo.masvingo@qupa.co.zw | Password: 2JNV5qsALXrb
+[Masvingo] BM: bm.masvingo@qupa.co.zw | Password: RIwjzjNJ8Czy
+[Chinhoyi] LO: lo.chinhoyi@qupa.co.zw | Password: aFPfLV0bsPf8
+[Chinhoyi] BM: bm.chinhoyi@qupa.co.zw | Password: L1q1VpNa35jM
+[Marondera] LO: lo.marondera@qupa.co.zw | Password: T1BVXc2Y07q2
+[Marondera] BM: bm.marondera@qupa.co.zw | Password: AKG6rS5YUAJ9
+
+Total: 2 Management + 10 Loan Officers + 10 Branch Managers

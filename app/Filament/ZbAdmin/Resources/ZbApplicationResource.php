@@ -4,6 +4,8 @@ namespace App\Filament\ZbAdmin\Resources;
 
 use App\Filament\ZbAdmin\Resources\ZbApplicationResource\Pages;
 use App\Models\ApplicationState;
+use App\Models\Branch;
+use App\Models\User;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -17,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Filament\Forms;
+use Filament\Facades\Filament;
 
 class ZbApplicationResource extends Resource
 {
@@ -31,8 +34,9 @@ class ZbApplicationResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
-        
-        return parent::getEloquentQuery()
+        $user = Filament::auth()->user();
+
+        $query = parent::getEloquentQuery()
             ->where(function ($query) use ($isPgsql) {
                 // Only ZB applications (has account or wants account)
                 if ($isPgsql) {
@@ -53,6 +57,23 @@ class ZbApplicationResource extends Resource
             })
             // Exclude agent applications
             ->where('current_step', 'not like', 'agent_%');
+
+        // Branch-scoping for Qupa Admin users
+        if ($user && $user->isQupaAdmin()) {
+            if ($user->isLoanOfficer() || $user->isBranchManager()) {
+                // Loan Officers and Branch Managers: see only their branch's applications
+                $query->where(function ($q) use ($user) {
+                    $q->where('assigned_branch_id', $user->branch_id)
+                      ->orWhere('qupa_admin_id', $user->id);
+                });
+            } elseif ($user->isVlc()) {
+                // VLC doesn't see ZB applications (they handle SSB exports)
+                $query->whereRaw('1 = 0');
+            }
+            // Qupa Management sees everything — no additional filter
+        }
+
+        return $query;
     }
 
     public static function form(Form $form): Form
@@ -71,12 +92,14 @@ class ZbApplicationResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $user = Filament::auth()->user();
+
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('reference_code')->label('Ref Code')->searchable(),
                 Tables\Columns\TextColumn::make('applicant_name')
                     ->label('Applicant')
-                    ->getStateUsing(fn (Model $record) => 
+                    ->getStateUsing(fn (Model $record) =>
                         trim(($record->form_data['formResponses']['firstName'] ?? '') . ' ' . ($record->form_data['formResponses']['lastName'] ?? ''))
                     ),
                 Tables\Columns\TextColumn::make('amount')
@@ -92,29 +115,29 @@ class ZbApplicationResource extends Resource
                 Tables\Columns\BadgeColumn::make('check_status')
                     ->label('FCB Check')
                     ->colors([
-                        'success' => fn ($state): bool => in_array($state, ['S', 'A']), // Success / Approved
-                        'danger' => fn ($state): bool => in_array($state, ['F', 'B']), // Failure / Blacklisted
-                        'warning' => 'P', // Pending
+                        'success' => fn ($state): bool => in_array($state, ['S', 'A']),
+                        'danger' => fn ($state): bool => in_array($state, ['F', 'B']),
+                        'warning' => 'P',
                     ])
                     ->formatStateUsing(function ($state, Model $record) {
                         $type = $record->check_type ?? 'Check';
-                        
-                        $labels = [
-                            'S' => 'Success',
-                            'F' => 'Failure',
-                            'A' => 'Approved',
-                            'B' => 'Blacklisted',
-                            'P' => 'Pending',
-                        ];
-                        
+                        $labels = ['S' => 'Success', 'F' => 'Failure', 'A' => 'Approved', 'B' => 'Blacklisted', 'P' => 'Pending'];
                         return ($type ? "$type: " : "") . ($labels[$state] ?? $state ?? 'N/A');
                     })
                     ->sortable(),
+                Tables\Columns\TextColumn::make('assignedBranch.name')
+                    ->label('Branch')
+                    ->default('Unassigned')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('qupaAdmin.name')
+                    ->label('Officer')
+                    ->default('—')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable(),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                
+
                 Action::make('generate_pdf')
                     ->label('Generate PDF')
                     ->icon('heroicon-o-document')
@@ -134,6 +157,13 @@ class ZbApplicationResource extends Resource
                     ->label('Update Status')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
+                    // Only Branch Managers, Management, and zb_admin can update status
+                    ->visible(function () use ($user) {
+                        if (!$user) return false;
+                        if ($user->role === User::ROLE_ZB_ADMIN || $user->role === User::ROLE_SUPER_ADMIN) return true;
+                        if ($user->isBranchManager() || $user->isQupaManagement()) return true;
+                        return false;
+                    })
                     ->form([
                         Forms\Components\Select::make('zb_action')
                             ->label('Action')
@@ -167,6 +197,33 @@ class ZbApplicationResource extends Resource
                             Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
                         }
                     }),
+
+                // Assign to Branch — visible to Qupa Management only
+                Action::make('assign_to_branch')
+                    ->label('Assign Branch')
+                    ->icon('heroicon-o-building-office-2')
+                    ->color('primary')
+                    ->visible(function (Model $record) use ($user) {
+                        if (!$user) return false;
+                        return ($user->isQupaManagement() || $user->role === User::ROLE_SUPER_ADMIN)
+                            && !$record->assigned_branch_id;
+                    })
+                    ->form([
+                        Forms\Components\Select::make('branch_id')
+                            ->label('Assign to Branch')
+                            ->options(Branch::active()->pluck('name', 'id'))
+                            ->searchable()
+                            ->required(),
+                    ])
+                    ->action(function (array $data, Model $record) {
+                        $record->update(['assigned_branch_id' => $data['branch_id']]);
+                        $branch = Branch::find($data['branch_id']);
+                        Notification::make()
+                            ->title('Application Assigned')
+                            ->body("Assigned to {$branch->name}")
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -176,10 +233,8 @@ class ZbApplicationResource extends Resource
                         ->color('info')
                         ->action(function () {
                             $csvService = app(\App\Services\CsvExportService::class);
-                            
+
                             $query = ApplicationState::query()
-                                // Removed restrictive current_step filter
-                                // ->whereIn('current_step', ['approved', 'completed'])
                                 ->where(function ($query) {
                                     $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
                                     if ($isPgsql) {
@@ -203,39 +258,33 @@ class ZbApplicationResource extends Resource
                                     $formData = $application->form_data;
                                     $formResponses = $formData['formResponses'] ?? [];
 
-                                    // Helper to get address line
                                     $getAddressLine = function ($addressData) {
                                         if (empty($addressData)) return '';
                                         if (is_string($addressData) && (str_starts_with($addressData, '{') || str_starts_with($addressData, '['))) {
                                             $decoded = json_decode($addressData, true);
                                             return $decoded['addressLine'] ?? $addressData;
                                         }
-                                        if (is_array($addressData)) {
-                                            return $addressData['addressLine'] ?? '';
-                                        }
+                                        if (is_array($addressData)) return $addressData['addressLine'] ?? '';
                                         return $addressData;
                                     };
 
-                                    // Helper to get next of kin
                                     $getNextOfKin = function ($responses) {
                                         $spouseDetails = $responses['spouseDetails'] ?? [];
                                         if (empty($spouseDetails)) return $responses['nextOfKinName'] ?? '';
-                                        if (is_string($spouseDetails)) {
-                                            $spouseDetails = json_decode($spouseDetails, true) ?? [];
-                                        }
+                                        if (is_string($spouseDetails)) $spouseDetails = json_decode($spouseDetails, true) ?? [];
                                         if (is_array($spouseDetails) && !empty($spouseDetails)) {
                                             foreach ($spouseDetails as $kin) {
-                                                if (!empty($kin['fullName'])) {
-                                                    return $kin['fullName'];
-                                                }
+                                                if (!empty($kin['fullName'])) return $kin['fullName'];
                                             }
                                         }
                                         return $responses['nextOfKinName'] ?? '';
                                     };
 
+                                    $branchName = $application->assignedBranch?->name ?? 'Unassigned';
+
                                     return [
                                         $application->approved_at ? $application->approved_at->format('Y-m-d') : ($application->updated_at ? $application->updated_at->format('Y-m-d') : date('Y-m-d')),
-                                        'WESTEND',
+                                        $branchName,
                                         $formResponses['surname'] ?? $formResponses['lastName'] ?? '',
                                         $formResponses['firstName'] ?? '',
                                         $formResponses['employmentNumber'] ?? $formResponses['employeeNumber'] ?? $formResponses['ecNumber'] ?? '',
@@ -261,8 +310,6 @@ class ZbApplicationResource extends Resource
                             $csvService = app(\App\Services\CsvExportService::class);
 
                             $query = ApplicationState::query()
-                                // Removed restrictive current_step filter to allow exporting all applications
-                                // ->whereIn('current_step', ['approved', 'completed'])
                                 ->where(function ($query) {
                                     $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
                                     if ($isPgsql) {
@@ -296,39 +343,33 @@ class ZbApplicationResource extends Resource
                                     $formData = $application->form_data;
                                     $formResponses = $formData['formResponses'] ?? [];
 
-                                    // Helper to get address line
                                     $getAddressLine = function ($addressData) {
                                         if (empty($addressData)) return '';
                                         if (is_string($addressData) && (str_starts_with($addressData, '{') || str_starts_with($addressData, '['))) {
                                             $decoded = json_decode($addressData, true);
                                             return $decoded['addressLine'] ?? $addressData;
                                         }
-                                        if (is_array($addressData)) {
-                                            return $addressData['addressLine'] ?? '';
-                                        }
+                                        if (is_array($addressData)) return $addressData['addressLine'] ?? '';
                                         return $addressData;
                                     };
 
-                                    // Helper to get next of kin
                                     $getNextOfKin = function ($responses) {
                                         $spouseDetails = $responses['spouseDetails'] ?? [];
                                         if (empty($spouseDetails)) return $responses['nextOfKinName'] ?? '';
-                                        if (is_string($spouseDetails)) {
-                                            $spouseDetails = json_decode($spouseDetails, true) ?? [];
-                                        }
+                                        if (is_string($spouseDetails)) $spouseDetails = json_decode($spouseDetails, true) ?? [];
                                         if (is_array($spouseDetails) && !empty($spouseDetails)) {
                                             foreach ($spouseDetails as $kin) {
-                                                if (!empty($kin['fullName'])) {
-                                                    return $kin['fullName'];
-                                                }
+                                                if (!empty($kin['fullName'])) return $kin['fullName'];
                                             }
                                         }
                                         return $responses['nextOfKinName'] ?? '';
                                     };
 
+                                    $branchName = $application->assignedBranch?->name ?? 'Unassigned';
+
                                     return [
                                         $application->approved_at ? $application->approved_at->format('Y-m-d') : ($application->updated_at ? $application->updated_at->format('Y-m-d') : date('Y-m-d')),
-                                        'WESTEND',
+                                        $branchName,
                                         $formResponses['surname'] ?? $formResponses['lastName'] ?? '',
                                         $formResponses['firstName'] ?? '',
                                         $formResponses['employmentNumber'] ?? $formResponses['employeeNumber'] ?? $formResponses['ecNumber'] ?? '',

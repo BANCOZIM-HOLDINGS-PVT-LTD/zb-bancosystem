@@ -14,6 +14,24 @@ class ApplicationStateObserver
     private static bool $isProcessing = false;
 
     /**
+     * Handle the ApplicationState "creating" event.
+     * Automatically attaches Qupa Admin referral data from session.
+     */
+    public function creating(ApplicationState $applicationState): void
+    {
+        if (session()->has('qupa_admin_id') && !$applicationState->qupa_admin_id) {
+            $applicationState->qupa_admin_id = session('qupa_admin_id');
+            $applicationState->assigned_branch_id = session('qupa_admin_branch_id');
+
+            Log::info('ApplicationState: auto-assigned Qupa Admin from referral', [
+                'session_id' => $applicationState->session_id,
+                'qupa_admin_id' => $applicationState->qupa_admin_id,
+                'assigned_branch_id' => $applicationState->assigned_branch_id,
+            ]);
+        }
+    }
+
+    /**
      * Handle the ApplicationState "updated" event.
      * Auto-create PersonalService records when personal service loans are approved.
      */

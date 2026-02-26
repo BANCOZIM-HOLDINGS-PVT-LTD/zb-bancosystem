@@ -13,6 +13,7 @@ use Inertia\Response;
 use Illuminate\Support\Str;
 use App\Models\AccountOpening;
 use App\Models\ApplicationState;
+use App\Models\QupaReferralLink;
 
 class ApplicationWizardController extends Controller
 {
@@ -191,12 +192,13 @@ class ApplicationWizardController extends Controller
     }
 
     /**
-     * Show the application wizard with agent referral handling
+     * Show the application wizard with agent/qupa referral handling
      * Now redirects to welcome page with referral code in session
      */
     public function showWithReferral(Request $request): \Illuminate\Http\RedirectResponse
     {
         $referralCode = $request->query('ref');
+        $qupaRefCode = $request->query('qref');
 
         // Handle agent referral
         if ($referralCode) {
@@ -206,10 +208,8 @@ class ApplicationWizardController extends Controller
                 ->first();
 
             if ($referralLink) {
-                // Record the click
                 $referralLink->recordClick();
 
-                // Store referral data in session
                 session([
                     'referral_code' => $referralCode,
                     'agent_id' => $referralLink->agent_id,
@@ -217,7 +217,6 @@ class ApplicationWizardController extends Controller
                     'campaign_name' => $referralLink->campaign_name,
                 ]);
 
-                // Log the referral for analytics
                 \Log::info('Agent referral accessed', [
                     'referral_code' => $referralCode,
                     'agent_id' => $referralLink->agent_id,
@@ -227,7 +226,6 @@ class ApplicationWizardController extends Controller
                     'user_agent' => $request->userAgent(),
                 ]);
             } else {
-                // Invalid or expired referral code
                 \Log::warning('Invalid referral code accessed', [
                     'referral_code' => $referralCode,
                     'ip' => $request->ip(),
@@ -235,7 +233,38 @@ class ApplicationWizardController extends Controller
             }
         }
 
-        // Redirect to welcome page for authentication and intent selection
+        // Handle Qupa Admin referral
+        if ($qupaRefCode) {
+            $qupaLink = QupaReferralLink::where('code', $qupaRefCode)
+                ->active()
+                ->with('user')
+                ->first();
+
+            if ($qupaLink) {
+                $qupaLink->recordClick();
+
+                session([
+                    'qupa_referral_code' => $qupaRefCode,
+                    'qupa_admin_id' => $qupaLink->user_id,
+                    'qupa_admin_name' => $qupaLink->user->name,
+                    'qupa_admin_branch_id' => $qupaLink->user->branch_id,
+                ]);
+
+                \Log::info('Qupa Admin referral accessed', [
+                    'qupa_referral_code' => $qupaRefCode,
+                    'qupa_admin_id' => $qupaLink->user_id,
+                    'qupa_admin_name' => $qupaLink->user->name,
+                    'branch_id' => $qupaLink->user->branch_id,
+                    'ip' => $request->ip(),
+                ]);
+            } else {
+                \Log::warning('Invalid Qupa referral code accessed', [
+                    'qupa_referral_code' => $qupaRefCode,
+                    'ip' => $request->ip(),
+                ]);
+            }
+        }
+
         return redirect()->route('home');
     }
     

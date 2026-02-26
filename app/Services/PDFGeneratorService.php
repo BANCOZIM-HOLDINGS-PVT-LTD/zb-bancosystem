@@ -1775,7 +1775,24 @@ class PDFGeneratorService implements PDFGeneratorInterface
                 }
             }
         }
-        
+
+        // Add Qupa Admin officer data for PDF templates (checker/approver sections)
+        if ($applicationState->qupa_admin_id) {
+            $officer = $applicationState->qupaAdmin;
+            $branch = $applicationState->assignedBranch;
+
+            $data['qupaOfficer'] = [
+                'name' => $officer?->name ?? '',
+                'designation' => $officer?->designation ?? '',
+                'branch' => $branch?->name ?? '',
+            ];
+
+            // Map to template-friendly fields for "Checked by" section
+            $data['checkedByName'] = $officer?->name ?? '';
+            $data['checkedByBranch'] = $branch?->name ?? '';
+            $data['checkedByDesignation'] = $officer?->designation ?? '';
+        }
+
         return $data;
     }
     
