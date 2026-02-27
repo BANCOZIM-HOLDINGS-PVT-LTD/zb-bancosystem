@@ -198,19 +198,20 @@ class ZbApplicationResource extends Resource
                         }
                     }),
 
-                // Assign to Branch — visible to Qupa Management only
-                Action::make('assign_to_branch')
-                    ->label('Assign Branch')
-                    ->icon('heroicon-o-building-office-2')
-                    ->color('primary')
-                    ->visible(function (Model $record) use ($user) {
+                // Refer to Branch — visible to Qupa Management only
+                Action::make('refer_to_branch')
+                    ->label('Refer to Branch')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('info')
+                    ->visible(function (Model $record) {
+                        $user = Filament::auth()->user();
                         if (!$user) return false;
-                        return ($user->isQupaManagement() || $user->role === User::ROLE_SUPER_ADMIN)
+                        return ($user->isQupaManagement() || $user->role === User::ROLE_SUPER_ADMIN || $user->role === User::ROLE_ZB_ADMIN || $user->email === 'zbadmin@bancosystem.fly.dev')
                             && !$record->assigned_branch_id;
                     })
                     ->form([
                         Forms\Components\Select::make('branch_id')
-                            ->label('Assign to Branch')
+                            ->label('Refer to Branch')
                             ->options(Branch::active()->pluck('name', 'id'))
                             ->searchable()
                             ->required(),
@@ -219,12 +220,13 @@ class ZbApplicationResource extends Resource
                         $record->update(['assigned_branch_id' => $data['branch_id']]);
                         $branch = Branch::find($data['branch_id']);
                         Notification::make()
-                            ->title('Application Assigned')
-                            ->body("Assigned to {$branch->name}")
+                            ->title('Application Referred')
+                            ->body("Referred to {$branch->name}")
                             ->success()
                             ->send();
                     }),
             ])
+            
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\BulkAction::make('export_ssb_loans')
