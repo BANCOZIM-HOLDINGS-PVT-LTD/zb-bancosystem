@@ -942,6 +942,10 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             )}
                                         </div>
                                         <div className="mt-4 py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700 flex items-center justify-between">
+                                            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Package Remarks:</span>
+                                            <span className="text-2xl font-bold text-emerald-600">-----</span>
+                                        </div>
+                                        <div className="mt-4 py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700 flex items-center justify-between">
                                             <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Package Price:</span>
                                             <span className="text-2xl font-bold text-emerald-600">{formatCurrency(finalAmount)}</span>
                                         </div>
