@@ -1,7 +1,7 @@
 import { type SharedData } from '@/types';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
-import { Globe, CreditCard, Briefcase, FileText, Package, ChevronRight, User, DollarSign, ShoppingBag, Hammer, GraduationCap, Laptop, Home } from 'lucide-react';
+import { Globe, CreditCard, Briefcase, FileText, Package, ChevronRight, User, DollarSign, ShoppingBag, Hammer, GraduationCap, Laptop, Home, RotateCcw, LoaderCircle } from 'lucide-react';
 import Footer from '@/components/Footer';
 
 interface WelcomeProps {
@@ -48,6 +48,12 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
     const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
     const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
     const [lastSelectedIntent, setLastSelectedIntent] = useState<string | null>(null);
+
+    // Resume application state
+    const [showResumeInput, setShowResumeInput] = useState(false);
+    const [resumePhone, setResumePhone] = useState('+263');
+    const [resumeLoading, setResumeLoading] = useState(false);
+    const [resumeMessage, setResumeMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
     const languages = [
         { code: 'en', name: 'English', greeting: 'Welcome to Microbiz' },
@@ -110,6 +116,51 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
 
         // Credit flow only
         router.visit(route('application.wizard', params));
+    };
+
+    const handleResumeApplication = async () => {
+        const phone = resumePhone.replace(/\s+/g, '');
+        if (phone.length < 12) {
+            setResumeMessage({ type: 'error', text: 'Please enter a valid phone number.' });
+            return;
+        }
+
+        setResumeLoading(true);
+        setResumeMessage(null);
+
+        try {
+            const response = await fetch('/api/states/check-existing', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+                body: JSON.stringify({ phone }),
+            });
+
+            const result = await response.json();
+
+            if (result.has_existing_session) {
+                const step = result.current_step;
+                const isSubmitted = ['pending_review', 'approved', 'completed', 'rejected'].includes(step);
+
+                if (isSubmitted) {
+                    setResumeMessage({
+                        type: 'info',
+                        text: 'Your application has already been submitted. Please go to "Track Application" to check its status.',
+                    });
+                } else {
+                    // Redirect to resume
+                    window.location.href = `/application?session=${result.session_id}&resume=true`;
+                }
+            } else {
+                setResumeMessage({ type: 'error', text: 'No incomplete application found for this number.' });
+            }
+        } catch {
+            setResumeMessage({ type: 'error', text: 'Something went wrong. Please try again.' });
+        } finally {
+            setResumeLoading(false);
+        }
     };
 
     const selectedLang = languages.find(l => l.code === selectedLanguage);
@@ -217,6 +268,46 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                             );
                                         })}
                                     </div>
+
+                                    {/* Resume Application Link */}
+                                    <div className="text-center pt-2">
+                                        <button
+                                            onClick={() => { setShowResumeInput(!showResumeInput); setResumeMessage(null); }}
+                                            className="inline-flex items-center gap-1.5 text-sm text-[#706f6c] hover:text-emerald-600 transition-colors dark:text-[#A1A09A] dark:hover:text-emerald-400"
+                                        >
+                                            <RotateCcw className="h-3.5 w-3.5" />
+                                            Already started an application? Resume here
+                                        </button>
+
+                                        {showResumeInput && (
+                                            <div className="mt-4 max-w-sm mx-auto space-y-3">
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="tel"
+                                                        placeholder="+263771234567"
+                                                        value={resumePhone}
+                                                        onChange={(e) => setResumePhone(e.target.value)}
+                                                        className="flex-1 rounded-md border border-[#e3e3e0] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-[#3E3E3A] dark:bg-[#1b1b18] dark:text-[#EDEDEC]"
+                                                    />
+                                                    <button
+                                                        onClick={handleResumeApplication}
+                                                        disabled={resumeLoading}
+                                                        className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                                                    >
+                                                        {resumeLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : 'Find'}
+                                                    </button>
+                                                </div>
+                                                {resumeMessage && (
+                                                    <p className={`text-xs ${resumeMessage.type === 'error' ? 'text-red-600 dark:text-red-400' :
+                                                            resumeMessage.type === 'info' ? 'text-blue-600 dark:text-blue-400' :
+                                                                'text-emerald-600 dark:text-emerald-400'
+                                                        }`}>
+                                                        {resumeMessage.text}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 
@@ -284,4 +375,3 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
         </>
     );
 }
-

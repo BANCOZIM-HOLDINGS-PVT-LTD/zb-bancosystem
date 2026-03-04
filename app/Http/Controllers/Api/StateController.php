@@ -392,8 +392,14 @@ class StateController extends Controller
         $phone = preg_replace('/[^0-9]/', '', $validated['phone']);
         // Allow strictly Zimbabwe numbers or numbers with reasonable length
         if (strlen($phone) < 9) {
-             return response()->json(['has_existing_session' => false]);
+             return response()->json(['has_existing_session' => false, 'is_registered' => false]);
         }
+
+        // Check if this phone number is already registered in the users table
+        $fullPhone = '+' . $phone;
+        $isRegistered = \App\Models\User::where('phone', $fullPhone)
+            ->orWhere('phone', $validated['phone'])
+            ->exists();
 
         // Look for incomplete applications with this phone
         // We check user_identifier (often "mobile_263...") and form_data
@@ -426,10 +432,14 @@ class StateController extends Controller
                 'session_id' => $existingSession->session_id,
                 'current_step' => $existingSession->current_step,
                 'last_activity' => $existingSession->updated_at,
+                'is_registered' => $isRegistered,
             ]);
         }
         
-        return response()->json(['has_existing_session' => false]);
+        return response()->json([
+            'has_existing_session' => false,
+            'is_registered' => $isRegistered,
+        ]);
     }
 
     /**

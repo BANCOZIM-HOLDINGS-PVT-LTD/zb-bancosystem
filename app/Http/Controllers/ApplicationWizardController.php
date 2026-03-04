@@ -145,6 +145,33 @@ class ApplicationWizardController extends Controller
         $initialStep = 'product'; // Start at product step
         $agentId = null;
 
+        // Handle resume flow: load saved state from database
+        $resumeSessionId = $request->query('session');
+        $isResuming = $request->query('resume') === 'true';
+
+        if ($isResuming && $resumeSessionId) {
+            $applicationState = \App\Models\ApplicationState::where('session_id', $resumeSessionId)->first();
+
+            if ($applicationState) {
+                $initialStep = $applicationState->current_step ?? 'product';
+                $initialData = $applicationState->form_data ?? [];
+                $sessionId = $resumeSessionId;
+
+                \Log::info('Resuming application via session param', [
+                    'session_id' => $resumeSessionId,
+                    'current_step' => $initialStep,
+                ]);
+
+                return Inertia::render('ApplicationWizard', [
+                    'initialStep' => $initialStep,
+                    'initialData' => $initialData,
+                    'sessionId' => $sessionId,
+                    'agentId' => $agentId,
+                    'referralCode' => $referralCode,
+                ]);
+            }
+        }
+
         // Handle referral code if provided (from welcome page)
         if ($referralCode) {
             $referralLink = \App\Models\AgentReferralLink::where('code', $referralCode)

@@ -183,4 +183,31 @@ class ClientRegisterController extends Controller
 
         return $phone;
     }
+
+    /**
+     * Send OTP to an existing registered user (skip registration)
+     */
+    public function sendOtpExisting(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string',
+        ]);
+
+        $user = User::where('phone', $request->phone)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        $otpSent = $this->otpService->sendOtp($user);
+
+        if (!$otpSent) {
+            return response()->json(['message' => 'Failed to send OTP. Please try again.'], 500);
+        }
+
+        // Store user ID in session for OTP verification
+        session(['pending_user_id' => $user->id]);
+
+        return response()->json(['message' => 'OTP sent successfully.']);
+    }
 }

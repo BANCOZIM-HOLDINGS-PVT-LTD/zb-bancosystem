@@ -22,6 +22,10 @@ Route::middleware('guest')->group(function () {
     Route::post('client/resend-otp', [ClientRegisterController::class, 'resendOtp'])
         ->name('client.otp.resend');
 
+    // Send OTP to existing registered user (skips registration)
+    Route::post('client/send-otp-existing', [ClientRegisterController::class, 'sendOtpExisting'])
+        ->name('client.otp.sendExisting');
+
     // Client Login (National ID only)
     Route::get('client/login', [ClientLoginController::class, 'create'])
         ->name('client.login');

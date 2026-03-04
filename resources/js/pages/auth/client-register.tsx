@@ -55,8 +55,16 @@ export default function ClientRegister() {
 
             const result = await response.json();
 
+            // If phone is already registered and no incomplete session,
+            // redirect to login instead of showing "already registered" error
+            if (result.is_registered && !result.has_existing_session) {
+                setCheckingSession(false);
+                window.location.href = `/client/login`;
+                return;
+            }
+
             if (result.has_existing_session) {
-                setExistingSession(result);
+                setExistingSession({ ...result, is_registered: result.is_registered });
                 setShowRecoveryModal(true);
                 setCheckingSession(false);
                 return;
@@ -92,14 +100,40 @@ export default function ClientRegister() {
                 body: JSON.stringify({ session_id: existingSession.session_id }),
             });
 
-            // Proceed with registration after discard
+            // If the phone is already registered, send OTP to existing user
+            // instead of trying to re-register (which would fail with "phone already registered")
+            if (existingSession.is_registered) {
+                // Trigger OTP send for existing user by posting to a special endpoint
+                try {
+                    const otpResponse = await fetch('/client/send-otp-existing', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        },
+                        body: JSON.stringify({ phone: data.phone }),
+                    });
+
+                    if (otpResponse.ok) {
+                        // Redirect to OTP verification page
+                        window.location.href = '/client/verify-otp';
+                    } else {
+                        // Fallback: redirect to login
+                        window.location.href = `/client/login`;
+                    }
+                } catch {
+                    // Fallback: redirect to login
+                    window.location.href = `/client/login`;
+                }
+                return;
+            }
+
+            // Not registered - proceed with normal registration
             post(route('client.register'), {
                 onFinish: () => reset('phone'),
             });
         } catch (error) {
             console.error('Failed to discard session', error);
-            // Even if discard fails API-wise, we might want to try proceeding or show error
-            // For now, let's try to proceed
             post(route('client.register'), {
                 onFinish: () => reset('phone'),
             });

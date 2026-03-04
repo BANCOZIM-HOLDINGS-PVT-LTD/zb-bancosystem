@@ -245,7 +245,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
         declaration: {
             fullName: '',
             signature: '',
-            date: '',
+            date: currentDate,
             acknowledged: false
         }
     });

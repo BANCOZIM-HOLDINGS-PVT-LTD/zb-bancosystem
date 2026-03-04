@@ -522,6 +522,22 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
 
     // Initialize state from saved data if available
     const initializeState = () => {
+        // If the server loaded a resume state (initialStep is NOT 'product'),
+        // trust the server-provided step and data over local storage
+        const urlParams = new URLSearchParams(window.location.search);
+        const isResuming = urlParams.get('resume') === 'true';
+
+        if (isResuming && initialStep !== 'product') {
+            // Server loaded the saved ApplicationState - use it directly
+            // Also clear stale local state to avoid conflicts
+            localStateManager.clearLocalState();
+            return {
+                currentStep: initialStep,
+                wizardData: initialData,
+                sessionId: propSessionId || stateManager.generateSessionId()
+            };
+        }
+
         // If intent is provided in initialData, it means we're coming from Welcome page
         // In this case, prioritize props over saved state
         if (initialData.intent) {
@@ -536,10 +552,6 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
 
         const savedState = localStateManager.getLocalState();
         if (savedState && savedState.sessionId && savedState.currentStep && savedState.formData) {
-            // Check if we're resuming after registration (user just logged in)
-            const urlParams = new URLSearchParams(window.location.search);
-            const isResuming = urlParams.get('resume') === 'true';
-
             let resumeStep = savedState.currentStep;
             // If resuming from registration and user is authenticated, skip to employer
             if (isResuming && savedState.currentStep === 'registration') {

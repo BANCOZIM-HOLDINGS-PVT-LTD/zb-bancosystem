@@ -56,6 +56,7 @@ class WhatsAppStateMachine
             '8' => 'redirect_delivery_tracking',    // Track Delivery
             '9' => 'show_faqs',                     // FAQs
             '10' => 'customer_service_wait',        // Customer Services
+            '11' => 'resume_phone_input',           // Resume Application
         ],
         
         // Cash or Credit selection -> currency
@@ -132,6 +133,7 @@ class WhatsAppStateMachine
         'agent_whatsapp_number',
         'agent_ecocash_number',
         'agent_id_number',
+        'resume_phone_input',
     ];
     
     /**
@@ -485,6 +487,12 @@ class WhatsAppStateMachine
         $formData = $state->form_data ?? [];
         
         // Map current state to form field and next state
+        // Handle resume phone input separately
+        if ($currentStep === 'resume_phone_input') {
+            $this->handleResumePhoneInput($from, $input, $state);
+            return;
+        }
+
         $stateConfig = [
             'agent_name' => ['field' => 'first_name', 'next' => 'agent_surname'],
             'agent_surname' => ['field' => 'surname', 'next' => 'agent_gender'],
@@ -531,6 +539,91 @@ class WhatsAppStateMachine
         
         // Transition to next state
         $this->executeTransition($from, $state, $currentStep, $config['next'], $input, $formData);
+    }
+    
+    /**
+     * Handle resume phone input - look up session by phone and send resume link
+     */
+    private function handleResumePhoneInput(string $from, string $input, $state): void
+    {
+        // Clean the phone number input
+        $phone = preg_replace('/[^0-9+]/', '', $input);
+        
+        // Normalize: add +263 if they just typed 07...
+        if (str_starts_with($phone, '0') && strlen($phone) >= 9) {
+            $phone = '+263' . substr($phone, 1);
+        }
+        // Normalize: add + if they typed 263...
+        if (str_starts_with($phone, '263') && !str_starts_with($phone, '+')) {
+            $phone = '+' . $phone;
+        }
+        
+        if (strlen($phone) < 12) {
+            $this->whatsAppService->sendMessage($from, 
+                "❌ That doesn't look like a valid phone number. Please enter your full number (e.g. 0771234567 or +263771234567)."
+            );
+            return;
+        }
+        
+        // Strip the + for lookup since check-existing uses numeric matching
+        $phoneDigits = preg_replace('/[^0-9]/', '', $phone);
+        
+        // Look up existing session by phone
+        $existingSession = \App\Models\ApplicationState::query()
+            ->where('is_archived', false)
+            ->where(function ($query) use ($phoneDigits) {
+                $query->where('user_identifier', 'LIKE', "%{$phoneDigits}%");
+                
+                $isPgsql = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+                if ($isPgsql) {
+                    $query->orWhereRaw("form_data->'formResponses'->>'mobile' LIKE ?", ["%{$phoneDigits}%"])
+                          ->orWhereRaw("form_data->'formResponses'->>'phoneNumber' LIKE ?", ["%{$phoneDigits}%"]);
+                } else {
+                    $query->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.formResponses.mobile')) LIKE ?", ["%{$phoneDigits}%"])
+                          ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.formResponses.phoneNumber')) LIKE ?", ["%{$phoneDigits}%"]);
+                }
+            })
+            ->latest()
+            ->first();
+        
+        if (!$existingSession) {
+            $this->whatsAppService->sendMessage($from, 
+                "🔍 No incomplete application found for *{$phone}*.\n\n" .
+                "If you'd like to start a new application, type *hi* to go back to the menu."
+            );
+            // Go back to intent selection
+            $this->executeTransition($from, $state, 'resume_phone_input', 'intent_selection', $input);
+            return;
+        }
+        
+        $step = $existingSession->current_step;
+        $isSubmitted = in_array($step, ['pending_review', 'approved', 'completed', 'rejected']);
+        
+        if ($isSubmitted) {
+            $refCode = $existingSession->reference_code ?? 'N/A';
+            $this->whatsAppService->sendMessage($from, 
+                "✅ Your application has already been submitted!\n\n" .
+                "📋 *Reference Code:* {$refCode}\n" .
+                "📊 *Status:* " . ucfirst(str_replace('_', ' ', $step)) . "\n\n" .
+                "To check the latest status, visit:\n" .
+                "{$this->websiteUrl}/application/status\n\n" .
+                "Type *hi* to go back to the menu."
+            );
+            $this->executeTransition($from, $state, 'resume_phone_input', 'intent_selection', $input);
+            return;
+        }
+        
+        // Incomplete session found - send resume link
+        $resumeUrl = "{$this->websiteUrl}/application?session={$existingSession->session_id}&resume=true";
+        $this->whatsAppService->sendMessage($from, 
+            "✅ *Application found!*\n\n" .
+            "📊 *Last step:* " . ucfirst(str_replace('_', ' ', $step)) . "\n" .
+            "📅 *Last activity:* " . $existingSession->updated_at->format('d M Y, H:i') . "\n\n" .
+            "👉 Click the link below to resume your application:\n" .
+            $resumeUrl . "\n\n" .
+            "Type *hi* to go back to the menu."
+        );
+        $this->executeTransition($from, $state, 'resume_phone_input', 'intent_selection', $input);
     }
     
     /**
@@ -744,6 +837,15 @@ class WhatsAppStateMachine
                 $result = $this->sendIntentSelectionList($to);
                 break;
 
+            case 'resume_phone_input':
+                $result = $this->whatsAppService->sendMessage(
+                    $to,
+                    "📱 *Resume Application*\n\n" .
+                    "Please enter the phone number you used when starting your application.\n\n" .
+                    "Example: *0771234567* or *+263771234567*"
+                );
+                break;
+
             case 'browse_categories':
                 $result = $this->sendCategoryList($to, $formData);
                 break;
@@ -867,6 +969,7 @@ class WhatsAppStateMachine
             'rows' => [
                 ['id' => '9', 'title' => 'FAQs', 'description' => 'Get quick answers'],
                 ['id' => '10', 'title' => 'Customer Service', 'description' => 'Talk to a representative'],
+                ['id' => '11', 'title' => 'Resume Application', 'description' => 'Continue an incomplete application'],
             ],
         ];
         

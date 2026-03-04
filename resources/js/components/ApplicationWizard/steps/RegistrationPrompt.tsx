@@ -203,7 +203,7 @@ const RegistrationPrompt: React.FC<RegistrationPromptProps> = ({ data, onBack, s
                             className="w-full bg-emerald-600 hover:bg-emerald-700 flex items-center justify-center gap-2"
                         >
                             <UserPlus className="h-5 w-5" />
-                            Create New Account
+                            Continue
                         </Button>
 
                         <div className="relative">
