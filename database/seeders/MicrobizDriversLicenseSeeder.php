@@ -18,7 +18,7 @@ class MicrobizDriversLicenseSeeder extends Seeder
 
             $category = MicrobizCategory::firstOrCreate(
                 ['name' => 'Personal Development'],
-                ['emoji' => '📚', 'domain' => 'microbiz']
+                ['emoji' => '📚', 'domain' => 'service']
             );
 
             $subcategory = MicrobizSubcategory::firstOrCreate(

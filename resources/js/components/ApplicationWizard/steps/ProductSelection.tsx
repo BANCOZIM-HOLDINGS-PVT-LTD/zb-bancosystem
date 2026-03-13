@@ -82,7 +82,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 break;
             case 'personalServices':
                 // Services: School Fees, Drivers License, Small Business Support, Nurse Aid, Zimparks Holiday
-                intentKeywords = ['Nurse', 'License', 'Holiday', 'School', 'Fees', 'Vacation', 'Travel', 'Tourism', 'Clinic', 'Zimparks', 'Driving', 'Small Business', 'Consultancy', 'Company Reg', 'Mother', 'Expecting'];
+                intentKeywords = ['Nurse', 'License', 'Licence', 'Holiday', 'School', 'Fees', 'Vacation', 'Travel', 'Tourism', 'Clinic', 'Zimparks', 'Driving', 'Small Business', 'Consultancy', 'Company Reg', 'Mother', 'Expecting', 'Development', 'Vocational'];
                 break;
             case 'personalGadgets':
             case 'hirePurchase':

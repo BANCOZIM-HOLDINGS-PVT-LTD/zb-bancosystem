@@ -73,8 +73,8 @@ class ServicePackageSeeder extends Seeder
         // ==========================================
         // 2. DRIVERS LICENSE
         // ==========================================
-        $driversId = $this->updateOrCreateCategory('Drivers License', '🚗', 'service');
-        $licenseCoursesId = $this->updateOrCreateSubcategory($driversId, 'License Courses', 'Provisional and full driving license courses');
+        $driversId = $this->updateOrCreateCategory('Personal Development', '📚', 'service');
+        $licenseCoursesId = $this->updateOrCreateSubcategory($driversId, 'Drivers Licence', 'Provisional and full driving license courses');
 
         $licenseItems = [
             ['name' => 'Provisional License (Study Pack & Exam)', 'unit_cost' => 20.00, 'unit' => 'course'],
@@ -224,13 +224,14 @@ class ServicePackageSeeder extends Seeder
     private function updateOrCreateItem($subcategoryId, $code, $data)
     {
         DB::table('microbiz_items')->updateOrInsert(
-            ['microbiz_subcategory_id' => $subcategoryId, 'item_code' => $code],
+            ['item_code' => $code],
             [
+                'microbiz_subcategory_id' => $subcategoryId,
                 'name' => $data['name'],
                 'unit_cost' => $data['unit_cost'],
                 'unit' => $data['unit'],
                 'markup_percentage' => 0,
-                'created_at' => now(), // only used on insert, but updateOrInsert handles duplicate keys
+                'created_at' => now(), 
                 'updated_at' => now(),
             ]
         );
