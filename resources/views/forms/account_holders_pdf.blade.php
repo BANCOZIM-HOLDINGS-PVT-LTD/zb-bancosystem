@@ -408,7 +408,7 @@
             <td>Employment number:</td>
             <td colspan="2">{{ $employmentNumber ?? '' }}</td>
             <td colspan="2">Current Net Salary (USD):</td>
-            <td>${{ $currentNetSalary ?? '' }}</td>
+            <td>${{ number_format((float)str_replace(',', '', $currentNetSalary ?? '0'), 2) }}</td>
         </tr>
     </table>
     
@@ -531,7 +531,7 @@
     
     <table class="main-table">
         <tr>
-            <td style="width: 20%;">Monthly Installment: ${{ $monthlyPayment ?? '' }}</td>
+            <td style="width: 20%;">Monthly Installment: ${{ number_format((float)str_replace(',', '', $monthlyPayment ?? '0'), 2) }}</td>
             <td style="width: 13%; text-align: center;">3 months<br/>
                 <span class="checkbox {{ $loanTenure == 3 ? 'checked' : '' }}"></span>
             </td>
@@ -700,7 +700,7 @@
         <tr>
             <td colspan="2" style="padding: 10px;">
                 <strong>PART B</strong><br/><br/>
-                Monthly Repayment to be debited Amount: ${{ $monthlyPayment ?? '' }} For {{ $loanTenure ?? '' }} months (tenure)<br/><br/>
+                Monthly Repayment to be debited Amount: ${{ number_format((float)str_replace(',', '', $monthlyPayment ?? '0'), 2) }} For {{ $loanTenure ?? '' }} months (tenure)<br/><br/>
                 From ZB Account Number: {{ $accountNumber ?? '' }} Branch: {{ $branch ?? '' }}
             </td>
         </tr>
@@ -820,13 +820,13 @@
             <td style="text-align: right; font-weight: bold;">Monthly Instalment:-</td>
             <td></td>
             <td></td>
-            <td style="text-align: center;">${{ $monthlyPayment ?? '' }}</td>
+            <td style="text-align: center;">${{ number_format((float)str_replace(',', '', $monthlyPayment ?? '0'), 2) }}</td>
         </tr>
         <tr>
             <td style="text-align: right; font-weight: bold;">TOTAL:-</td>
             <td></td>
             <td>1</td>
-            <td>${{ $loanAmount ?? $amount ?? '' }}</td>
+            <td>${{ number_format((float)str_replace(',', '', $loanAmount ?? $amount ?? '0'), 2) }}</td>
         </tr>
     </table>
     

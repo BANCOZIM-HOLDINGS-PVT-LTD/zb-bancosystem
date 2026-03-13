@@ -72,8 +72,11 @@ class MicrobizBusinessSeeder extends Seeder
                 'PA system',
                 'Chairs and tables & décor',
                 'Tents',
-                'Balloon décor/room décor',
                 'Portable Toilets',
+                'Venue Set up',
+                'Photography',
+                'Videography',
+                'Catering equipment',
             ]],
             ['name' => 'Snack Production', 'emoji' => '🍿', 'subcategories' => [
                 'Freezit making',
@@ -84,10 +87,6 @@ class MicrobizBusinessSeeder extends Seeder
                 'Roasted corn',
             ]],
             ['name' => 'Entertainment', 'emoji' => '🎮', 'subcategories' => [
-                'Snooker table',
-                'Slug',
-                'Gaming (ps4, monitors)',
-                'DJ PA system',
                 'Internet Café',
                 'Movie Projectors',
                 'Musical Instruments',
@@ -98,10 +97,6 @@ class MicrobizBusinessSeeder extends Seeder
                 'Mug printing',
                 'Embroidery printing',
                 'Larger scale format printing',
-            ]],
-            ['name' => 'Digital Multimedia Production', 'emoji' => '📸', 'subcategories' => [
-                'Photography',
-                'Videography',
             ]],
             ['name' => 'Tailoring', 'emoji' => '✂️', 'subcategories' => [
                 'Jersey production',
@@ -187,8 +182,11 @@ class MicrobizBusinessSeeder extends Seeder
         foreach ($categories as $catData) {
             $category = MicrobizCategory::firstOrCreate(
                 ['name' => $catData['name']],
-                ['emoji' => $catData['emoji']]
+                ['emoji' => $catData['emoji'], 'domain' => 'microbiz']
             );
+            // Ensure domain is set on existing records too
+            $category->domain = 'microbiz';
+            $category->save();
 
             foreach ($catData['subcategories'] as $subName) {
                 $subcategory = MicrobizSubcategory::firstOrCreate(

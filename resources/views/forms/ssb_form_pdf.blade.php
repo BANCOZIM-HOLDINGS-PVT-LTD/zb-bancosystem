@@ -463,7 +463,7 @@
             <td>Contact:</td>
             <td><span class="filled-field">{{ $get('headOfInstitutionCell') }}</span></td>
             <td>Net Salary (USD):</td>
-            <td><span class="filled-field">${{ $getAny(['currentNetSalary', 'netSalary']) }}</span></td>
+            <td><span class="filled-field">${{ number_format((float)str_replace(',', '', $getAny(['currentNetSalary', 'netSalary'], '0')), 2) }}</span></td>
         </tr>
     </table>
 
@@ -546,7 +546,7 @@
     <table>
         <tr>
             <td width="25%">Applied Amount (USD):</td>
-            <td width="15%"><span class="filled-field">${{ $getAny(['loanAmount', 'amount', 'finalPrice']) }}</span></td>
+            <td width="15%"><span class="filled-field">${{ number_format((float)str_replace(',', '', $getAny(['loanAmount', 'amount', 'finalPrice'], '0')), 2) }}</span></td>
             <td width="15%">Tenure:</td>
             <td><span class="filled-field">{{ $getAny(['loanTenure', 'term'], '12') }} months</span></td>
         </tr>
@@ -740,7 +740,7 @@
         </tr>
         <tr>
             <td>Monthly Amount:</td>
-            <td><span class="filled-field">${{ $formData['monthlyPayment'] ?? '' }}</span></td>
+            <td><span class="filled-field">${{ number_format((float)str_replace(',', '', $formData['monthlyPayment'] ?? '0'), 2) }}</span></td>
             <td>From Date:</td>
             <td><span class="filled-field">{{ date('Y-m-01', strtotime('first day of next month')) }}</span></td>
             <td>To Date:</td>
@@ -893,11 +893,11 @@
         @endif
         <tr>
             <td class="right" colspan="3"><strong>Monthly Instalment:</strong></td>
-            <td><span class="filled-field">${{ $monthlyPayment ?? $formData['monthlyPayment'] ?? '' }}</span></td>
+            <td><span class="filled-field">${{ number_format((float)str_replace(',', '', $monthlyPayment ?? $formData['monthlyPayment'] ?? '0'), 2) }}</span></td>
         </tr>
         <tr>
             <td class="right" colspan="3"><strong>TOTAL:</strong></td>
-            <td><span class="filled-field">${{ $getAny(['loanAmount', 'amount', 'finalPrice']) }}</span></td>
+            <td><span class="filled-field">${{ number_format((float)str_replace(',', '', $getAny(['loanAmount', 'amount', 'finalPrice'], '0')), 2) }}</span></td>
         </tr>
     </table>
 

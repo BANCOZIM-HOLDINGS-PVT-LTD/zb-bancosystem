@@ -42,21 +42,21 @@ class WhatsAppStateMachine
             '5' => 'intent_selection',    // Chichewa -> redirect to English
         ],
         
-        // Intent selection - 10 options (Single Page)
-        // Options 1-4 → browse catalog
-        // Options 5-10 → direct handling
+        // Intent selection - 11 options (Single Page)
+        // Options 1-5 → browse catalog
+        // Options 7-12 → direct handling
         'intent_selection' => [
-            '1' => 'browse_categories',             // SME Starter Pack
-            '2' => 'browse_categories',             // Personal & Homeware
-            '3' => 'browse_categories',             // Personal Development
-            '4' => 'browse_categories',             // House Construction
-            '5' => 'redirect_zb_account',           // Apply for ZB Account
-            '6' => 'agent_age_check',               // Become Agent
-            '7' => 'redirect_application_status',   // Track Application
-            '8' => 'redirect_delivery_tracking',    // Track Delivery
-            '9' => 'show_faqs',                     // FAQs
-            '10' => 'customer_service_wait',        // Customer Services
-            '11' => 'resume_phone_input',           // Resume Application
+            '1' => 'browse_categories',             // Micro to Small Business Starter Kit
+            '2' => 'browse_categories',             // SME Business Booster Kit
+            '3' => 'browse_categories',             // Personal & Homeware
+            '4' => 'browse_categories',             // Personal Development
+            '5' => 'browse_categories',             // House Construction
+            '7' => 'agent_age_check',               // Become Agent
+            '8' => 'redirect_application_status',   // Track Application
+            '9' => 'redirect_delivery_tracking',    // Track Delivery
+            '10' => 'show_faqs',                     // FAQs
+            '11' => 'customer_service_wait',        // Customer Services
+            '12' => 'resume_phone_input',           // Resume Application
         ],
         
         // Cash or Credit selection -> currency
@@ -137,23 +137,25 @@ class WhatsAppStateMachine
     ];
     
     /**
-     * Intent mapping for URL generation (options 1-4)
+     * Intent mapping for URL generation (options 1-5)
      */
     private array $intentMap = [
-        '1' => 'microBiz',           // SME Starter Pack
-        '2' => 'personal',           // Personal & Homeware
-        '3' => 'personalServices',   // Personal Development
-        '4' => 'construction',       // House Construction
+        '1' => 'microBiz',           // Micro to Small Biz Starter Kit
+        '2' => 'smeBiz',             // SME Biz Booster Kit
+        '3' => 'personal',           // Personal & Homeware
+        '4' => 'personalServices',   // Personal Development
+        '5' => 'construction',       // House Construction
     ];
     
     /**
-     * Product names for display (options 1-4)
+     * Product names for display (options 1-5)
      */
     private array $productNames = [
-        '1' => 'Small to Medium Business Starter Pack',
-        '2' => 'Personal and Homeware Products',
-        '3' => 'Invest in Personal Development',
-        '4' => 'House Construction and Improvements',
+        '1' => 'Micro to Small Business Starter Kit',
+        '2' => 'Small and Medium Business Booster Kit',
+        '3' => 'Personal and Homeware Products',
+        '4' => 'Invest in Personal Development',
+        '5' => 'House Construction and Improvements',
     ];
     
     /**
@@ -167,14 +169,26 @@ class WhatsAppStateMachine
             ['id' => 'mb_chicken', 'name' => 'Chicken Projects', 'desc' => '🐔 Broilers & Layers'],
             ['id' => 'mb_cleaning', 'name' => 'Cleaning Services', 'desc' => '🧹 Laundry & Car wash'],
             ['id' => 'mb_beauty', 'name' => 'Beauty, Hair and Cosmetics', 'desc' => '💇 Salon & Hair Products'],
-
             ['id' => 'mb_butchery', 'name' => 'Meat Processing Equipment', 'desc' => '🥩 small scale'],
             ['id' => 'mb_events', 'name' => 'Events Management', 'desc' => '🎉 PA & Tents'],
             ['id' => 'mb_snack', 'name' => 'Snack Production', 'desc' => '🍿 Maputi & Popcorn'],
             ['id' => 'mb_printing', 'name' => 'Branding and Material Printing', 'desc' => '🖨️ Branding'],
             ['id' => 'mb_mining', 'name' => 'Small Scale Mining', 'desc' => '⛏️ Mining Equipment'],
         ],
-        // Option 2: Personal & Homeware (from HirePurchaseSeeder - 15 categories, showing first 9)
+        // Option 2: SME Booster (using same catalog as microBiz for now)
+        'smeBiz' => [
+            ['id' => 'mb_agric', 'name' => 'Agricultural Machinery', 'desc' => '🚜 Farming equipment'],
+            ['id' => 'mb_inputs', 'name' => 'Agricultural Inputs', 'desc' => '🌾 Seeds & Fertilizer'],
+            ['id' => 'mb_chicken', 'name' => 'Chicken Projects', 'desc' => '🐔 Broilers & Layers'],
+            ['id' => 'mb_cleaning', 'name' => 'Cleaning Services', 'desc' => '🧹 Laundry & Car wash'],
+            ['id' => 'mb_beauty', 'name' => 'Beauty, Hair and Cosmetics', 'desc' => '💇 Salon & Hair Products'],
+            ['id' => 'mb_butchery', 'name' => 'Meat Processing Equipment', 'desc' => '🥩 small scale'],
+            ['id' => 'mb_events', 'name' => 'Events Management', 'desc' => '🎉 PA & Tents'],
+            ['id' => 'mb_snack', 'name' => 'Snack Production', 'desc' => '🍿 Maputi & Popcorn'],
+            ['id' => 'mb_printing', 'name' => 'Branding and Material Printing', 'desc' => '🖨️ Branding'],
+            ['id' => 'mb_mining', 'name' => 'Small Scale Mining', 'desc' => '⛏️ Mining Equipment'],
+        ],
+        // Option 3: Personal & Homeware (from HirePurchaseSeeder - 15 categories, showing first 9)
         'personal' => [
             ['id' => 'hp_cell', 'name' => 'Cellphones', 'desc' => '📱 Smartphones'],
             ['id' => 'hp_laptop', 'name' => 'Laptops & Printers', 'desc' => '💻 Computers'],
@@ -339,13 +353,13 @@ class WhatsAppStateMachine
                 $formData = $state->form_data ?? [];
                 $intent = $formData['intent'] ?? 'personal';
                 
-                // Options 3 (personalServices) and 4 (construction) go directly to payment
+                // Options 4 (personalServices) and 5 (construction) go directly to payment
                 if (in_array($intent, ['personalServices', 'construction'])) {
                     $this->executeTransition($from, $state, $currentStep, 'payment_method', $input);
                     return;
                 }
                 
-                // Options 1 (microBiz) and 2 (personal) browse subcategories
+                // Options 1 (microBiz), 2 (smeBiz), and 3 (personal) browse subcategories
                 $this->executeTransition($from, $state, $currentStep, 'browse_subcategories', $input);
                 return;
             } else {
@@ -939,27 +953,27 @@ class WhatsAppStateMachine
     private function sendIntentSelectionList(string $to): bool
     {
         $bodyText = "🛒 *What would you like to do today?*\n\nTap the button below to see available options.";
-        $buttonText = "View Options (1-10)";
+        $buttonText = "View Options";
         
         $sections = [];
         
         $sections[] = [
             'title' => '💰 PURCHASE ',
             'rows' => [
-                ['id' => '1', 'title' => 'Small & Medium Business', 'description' => 'Starter pack'],
-                ['id' => '2', 'title' => 'Homeware & Electronics', 'description' => 'Gadgets, Solar Systems & Furniture'],
-                ['id' => '3', 'title' => 'Personal Development', 'description' => 'Life changing skills'],
-                ['id' => '4', 'title' => 'Building materials', 'description' => 'Home improvements'],
+                ['id' => '1', 'title' => 'Micro to Small Business', 'description' => 'Starter kit'],
+                ['id' => '2', 'title' => 'SME Business Booster', 'description' => 'Expand your business'],
+                ['id' => '3', 'title' => 'Homeware & Electronics', 'description' => 'Gadgets, Solar Systems & Furniture'],
+                ['id' => '4', 'title' => 'Personal Development', 'description' => 'Life changing skills'],
+                ['id' => '5', 'title' => 'Building materials', 'description' => 'Home improvements'],
             ],
         ];
         
         $sections[] = [
             'title' => '🤝 SERVICES ',
             'rows' => [
-                ['id' => '5', 'title' => 'Apply for a ZB Bank Acc', 'description' => 'Individual Account'],
-                ['id' => '6', 'title' => 'Apply to become an Agent', 'description' => 'Earn passive income online'],
-                ['id' => '7', 'title' => 'Track Credit Application', 'description' => 'Check status'],
-                ['id' => '8', 'title' => 'Track Product Delivery', 'description' => 'Order tracking'],
+                ['id' => '7', 'title' => 'Apply to become an Agent', 'description' => 'Earn passive income online'],
+                ['id' => '8', 'title' => 'Track Credit Application', 'description' => 'Check status'],
+                ['id' => '9', 'title' => 'Track Product Delivery', 'description' => 'Order tracking'],
             ],
         ];
 
@@ -967,9 +981,9 @@ class WhatsAppStateMachine
         $sections[] = [
             'title' => 'ℹ️ SUPPORT',
             'rows' => [
-                ['id' => '9', 'title' => 'FAQs', 'description' => 'Get quick answers'],
-                ['id' => '10', 'title' => 'Customer Service', 'description' => 'Talk to a representative'],
-                ['id' => '11', 'title' => 'Resume Application', 'description' => 'Continue an incomplete application'],
+                ['id' => '10', 'title' => 'FAQs', 'description' => 'Get quick answers'],
+                ['id' => '11', 'title' => 'Customer Service', 'description' => 'Talk to a representative'],
+                ['id' => '12', 'title' => 'Resume Application', 'description' => 'Continue an incomplete application'],
             ],
         ];
         

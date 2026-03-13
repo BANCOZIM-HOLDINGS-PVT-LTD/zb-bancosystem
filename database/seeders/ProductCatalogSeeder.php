@@ -228,7 +228,6 @@ class ProductCatalogSeeder extends Seeder
                 ['name' => 'PA system', 'businesses' => [['name' => 'PA system']]],
                 ['name' => 'Chairs and tables & décor', 'businesses' => [['name' => 'Chairs and tables & décor']]],
                 ['name' => 'Tents', 'businesses' => [['name' => 'Tents']]],
-                ['name' => 'Balloon décor/room décor', 'businesses' => [['name' => 'Balloon décor/room décor']]],
                 ['name' => 'Portable Toilets', 'businesses' => [['name' => 'Portable Toilets']]],
             ],
             // 9. Snack Production

@@ -56,19 +56,19 @@ const CreditTermSelection: React.FC<CreditTermSelectionProps> = ({ data, onNext,
             // Calculate final loan values to pass forward if needed, 
             // or just pass the term and let next steps handle it.
             // But we should probably calculate the monthly repayment for display/storage.
-            const grossLoan = finalAmount * 1.06; // Assuming standard markup
+            const grossLoan = parseFloat((finalAmount * 1.06).toFixed(2)); // Assuming standard markup
             const interestRate = 0.96; // 96% annual
             const monthlyInterestRate = interestRate / 12;
             const monthlyPayment = grossLoan > 0
-                ? (grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
-                (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
+                ? parseFloat(((grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
+                (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)).toFixed(2))
                 : 0;
 
             onNext({
                 creditTerm: selectedTermMonths,
-                monthlyPayment: parseFloat(monthlyPayment.toFixed(2)),
+                monthlyPayment: monthlyPayment,
                 loanAmount: grossLoan, // or net loan? Usually loanAmount = gross loan
-                amount: finalAmount // Base amount
+                amount: parseFloat(finalAmount.toFixed(2)) // Base amount
             });
         }
     };

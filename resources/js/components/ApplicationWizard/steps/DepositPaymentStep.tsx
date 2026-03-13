@@ -73,7 +73,7 @@ const DepositPaymentStep: React.FC<DepositPaymentStepProps> = ({ data, onNext, o
                         <div>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Deposit Amount ({depositPercentLabel})</p>
                             <p className="text-3xl font-bold text-emerald-600">
-                                ${parseFloat(depositAmount).toLocaleString()}
+                                ${parseFloat(depositAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                         </div>
                     </div>
@@ -176,7 +176,7 @@ const DepositPaymentStep: React.FC<DepositPaymentStepProps> = ({ data, onNext, o
                             Payment Successful!
                         </h3>
                         <p className="text-green-700 dark:text-green-300 mb-4">
-                            Your deposit payment of ${parseFloat(depositAmount).toLocaleString()} has been received.
+                            Your deposit payment of ${parseFloat(depositAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} has been received.
                         </p>
                         <div className="flex items-center justify-center gap-2 text-sm text-green-600">
                             <Loader2 className="h-4 w-4 animate-spin" />

@@ -225,7 +225,7 @@
             <td class="field-label">Period at Current Business Location:</td>
             <td>{{ $periodAtLocation ?? '' }}</td>
             <td class="field-label">Amount of Initial Capital:</td>
-            <td>${{ $initialCapital ?? '' }}</td>
+            <td>${{ number_format((float)str_replace(',', '', $initialCapital ?? '0'), 2) }}</td>
         </tr>
         <tr>
             <td class="field-label">Incorporation Date:</td>
@@ -260,11 +260,11 @@
     <table class="form-table">
         <tr>
             <td class="field-label" style="width: 20%;">Estimated Annual Sales:</td>
-            <td style="width: 20%;">${{ $estimatedAnnualSales ?? '' }}</td>
+            <td style="width: 20%;">${{ number_format((float)str_replace(',', '', $estimatedAnnualSales ?? '0'), 2) }}</td>
             <td class="field-label" style="width: 15%;">Net Profit:</td>
-            <td style="width: 15%;">${{ $netProfit ?? '' }}</td>
+            <td style="width: 15%;">${{ number_format((float)str_replace(',', '', $netProfit ?? '0'), 2) }}</td>
             <td class="field-label" style="width: 15%;">Total Liabilities:</td>
-            <td style="width: 15%;">${{ $totalLiabilities ?? '' }}</td>
+            <td style="width: 15%;">${{ number_format((float)str_replace(',', '', $totalLiabilities ?? '0'), 2) }}</td>
         </tr>
     </table>
 
@@ -307,7 +307,7 @@
     <table class="form-table">
         <tr>
             <td class="field-label" style="width: 20%;">Loan Amount:</td>
-            <td style="width: 30%;">${{ $loanAmount ?? '' }}</td>
+            <td style="width: 30%;">${{ number_format((float)str_replace(',', '', $loanAmount ?? '0'), 2) }}</td>
             <td class="field-label" style="width: 20%;">Repayment Period:</td>
             <td style="width: 30%;">{{ $loanTenure ?? '' }} months</td>
         </tr>
@@ -324,7 +324,7 @@
             @foreach($budgetItems as $index => $item)
                 <tr>
                     <td>{{ $index + 1 }}. {{ $item['item'] ?? '' }}</td>
-                    <td>${{ $item['cost'] ?? '' }}</td>
+                    <td>${{ number_format((float)str_replace(',', '', $item['cost'] ?? '0'), 2) }}</td>
                 </tr>
             @endforeach
         @else
@@ -388,7 +388,7 @@
                 <tr>
                     <td>{{ $index + 1 }}. {{ $asset['description'] ?? '' }}</td>
                     <td>{{ $asset['serialNumber'] ?? '' }}</td>
-                    <td>${{ $asset['estimatedValue'] ?? '' }}</td>
+                    <td>${{ number_format((float)str_replace(',', '', $asset['estimatedValue'] ?? '0'), 2) }}</td>
                 </tr>
             @endforeach
         @else
@@ -659,8 +659,8 @@
             @foreach($otherLoans as $loan)
                 <tr>
                     <td style="height: 18px;">{{ $loan['institution'] ?? '' }}</td>
-                    <td style="height: 18px;">${{ $loan['monthlyInstallment'] ?? $loan['repayment'] ?? '' }}</td>
-                    <td style="height: 18px;">${{ $loan['currentBalance'] ?? '' }}</td>
+                    <td style="height: 18px;">${{ number_format((float)str_replace(',', '', $loan['monthlyInstallment'] ?? $loan['repayment'] ?? '0'), 2) }}</td>
+                    <td style="height: 18px;">${{ number_format((float)str_replace(',', '', $loan['currentBalance'] ?? '0'), 2) }}</td>
                     <td style="height: 18px;">{{ $loan['maturityDate'] ?? '' }}</td>
                 </tr>
             @endforeach

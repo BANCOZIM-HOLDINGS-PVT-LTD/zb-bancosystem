@@ -383,11 +383,6 @@ export const validateProductStep = (data: Partial<WizardData>): ValidationResult
       }
     ];
   } else {
-    // Check if this is License Courses - amount is calculated in LicenseCoursesStep
-    const isLicenseCourses = data.subcategory === 'License Courses' ||
-      data.subcategory === 'Driving School' ||
-      data.business === 'License Courses';
-
     // Check if this is Company Registration - amount is calculated later
     const isCompanyReg = data.subcategory === 'Fees and Licensing' ||
       data.business === 'Company Registration';
@@ -420,8 +415,8 @@ export const validateProductStep = (data: Partial<WizardData>): ValidationResult
       }
     ];
 
-    // Only require scale and amount for standard products (not License Courses, Company Reg, or Zimparks)
-    if (!isLicenseCourses && !isCompanyReg && !isZimparksHoliday) {
+    // Only require scale and amount for standard products (not Company Reg or Zimparks)
+    if (!isCompanyReg && !isZimparksHoliday) {
       productFields.push({
         field: 'scale',
         rules: [

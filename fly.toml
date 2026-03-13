@@ -39,3 +39,6 @@ primary_region = "jnb" # Johannesburg, closest to Zimbabwe
 [mounts]
   source = "storage_vol"
   destination = "/var/www/html/storage/app/public"
+
+[deploy]
+  release_command = "php artisan migrate --force && php artisan db:seed --force"

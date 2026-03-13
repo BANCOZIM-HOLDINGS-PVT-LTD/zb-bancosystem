@@ -220,8 +220,8 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Application Type</p>
                             <p className="font-medium">
-                                {data.intent === 'hirePurchase' ? 'Hire Purchase Credit' :
-                                    data.intent === 'microBiz' ? 'Micro Biz Loan' : data.intent}
+                                {data.intent === 'personal' ? 'Personal & Homeware' :
+                                    (data.intent === 'microBiz' || data.intent === 'smeBiz') ? 'Micro/SME Biz Loan' : data.intent}
                             </p>
                         </div>
                     </div>
@@ -303,7 +303,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                         <div className="flex items-center mb-4">
                             <DollarSign className="h-6 w-6 text-emerald-600 mr-3" />
                             <h3 className="text-lg font-semibold">
-                                {data.intent === 'microBiz' ? 'Business Category' : 'Product Category'}
+                                {(data.intent === 'microBiz' || data.intent === 'smeBiz') ? 'Business Category' : 'Product Category'}
                             </h3>
                         </div>
                         <div className="space-y-3">
@@ -409,7 +409,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                             const meSystem = data.meSystemFee || 0;
                                             const training = data.trainingFee || 0;
                                             const base = netLoan - meSystem - training;
-                                            return base.toLocaleString();
+                                            return base.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                                         })()}
                                     </span>
                                 </div>
@@ -422,7 +422,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                             M&E System (10%)
                                         </span>
                                         <span className="font-medium text-emerald-600">
-                                            +${data.meSystemFee.toLocaleString()}
+                                            +${data.meSystemFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
                                     </div>
                                 )}
@@ -435,7 +435,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                             Training (5.5%)
                                         </span>
                                         <span className="font-medium text-purple-600">
-                                            +${data.trainingFee.toFixed(2)}
+                                            +${data.trainingFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
                                     </div>
                                 )}
@@ -446,7 +446,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                         Net Loan (selling price)
                                     </span>
                                     <span className="font-bold text-lg text-gray-900 dark:text-gray-100">
-                                        ${(data.netLoan || data.amount)?.toLocaleString()}
+                                        ${(data.netLoan || data.amount)?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                 </div>
 
@@ -455,7 +455,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-600 dark:text-gray-400">Bank Admin Fee (6%)</span>
                                         <span className="font-medium text-blue-600">
-                                            +${data.bankAdminFee.toLocaleString()}
+                                            +${data.bankAdminFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
                                     </div>
                                 )}
@@ -466,7 +466,7 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                         Gross Loan (incl. 6% bank admin fee)
                                     </span>
                                     <span className="font-bold text-xl text-emerald-600">
-                                        ${(data.grossLoan || data.loanAmount || data.amount)?.toLocaleString()}
+                                        ${(data.grossLoan || data.loanAmount || data.amount)?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                 </div>
                             </div>

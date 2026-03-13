@@ -29,7 +29,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
         let facilityType = '';
         if (intent === 'hirePurchase' && businessName) {
             facilityType = `Hire Purchase Credit - ${businessName}`;
-        } else if ((intent === 'microBiz' || intent === 'microBizLoan') && businessName) {
+        } else if ((intent === 'microBiz' || intent === 'microBizLoan' || intent === 'smeBiz') && businessName) {
             facilityType = `Micro Biz Loan - ${businessName}`;
         } else if (businessName) {
             // Fallback if intent doesn't match
@@ -54,8 +54,8 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
         const monthlyInterestRate = interestRate / 12;
         // Use user selected monthly payment if available, otherwise calculate
         const monthlyPayment = data.monthlyPayment ? parseFloat(data.monthlyPayment) : (finalPrice > 0 ?
-            (finalPrice * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenure)) /
-            (Math.pow(1 + monthlyInterestRate, tenure) - 1) : 0);
+            parseFloat(((finalPrice * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, tenure)) /
+            (Math.pow(1 + monthlyInterestRate, tenure) - 1)).toFixed(2)) : 0);
 
         // Note 7: SSB Loan starts first of next month and ends on last day of start date + loan period
         const today = new Date();

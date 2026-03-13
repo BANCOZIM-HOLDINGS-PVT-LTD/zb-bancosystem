@@ -10,7 +10,6 @@ import CreditTermSelection from './steps/CreditTermSelection';
 import ApplicationSummary from './steps/ApplicationSummary';
 import FormStep from './steps/FormStep';
 import CompanyRegistrationStep from './steps/CompanyRegistrationStep';
-import LicenseCoursesStep from './steps/LicenseCoursesStep';
 import ZimparksHolidayStep from './steps/ZimparksHolidayStep';
 import DocumentUploadStep from '../DocumentUpload/DocumentUploadStep';
 import RegistrationPrompt from './steps/RegistrationPrompt';
@@ -498,7 +497,6 @@ const allSteps = [
     'housePlanApproval', // NEW: Core House plan approval
     'constructionDetails', // NEW: Construction site details
     'companyRegistration',
-    'licenseCourses', // License/Driving school courses step
     'zimparksHoliday', // Zimparks Holiday booking step
     'creditTerm', // Duration selection
     'creditType',
@@ -592,10 +590,6 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         const isCompanyReg = wizardData.subcategory === 'Fees and Licensing' ||
             (wizardData.selectedBusiness?.name === 'Company Registration' || wizardData.business === 'Company Registration');
 
-        const isLicenseCourses = wizardData.subcategory === 'Driving School' ||
-            wizardData.subcategory === 'License Courses' ||
-            (wizardData.selectedBusiness?.name === 'License Courses' || wizardData.business === 'License Courses');
-
         const isZimparksHoliday = wizardData.category === 'Zimparks Holiday Package' ||
             wizardData.category === 'Holiday Package' ||
             wizardData.subcategory === 'Destinations' ||
@@ -609,10 +603,6 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             filteredSteps = filteredSteps.filter(step => step !== 'companyRegistration');
         }
 
-        if (!isLicenseCourses) {
-            filteredSteps = filteredSteps.filter(step => step !== 'licenseCourses');
-        }
-
         if (!isZimparksHoliday) {
             filteredSteps = filteredSteps.filter(step => step !== 'zimparksHoliday');
         }
@@ -621,14 +611,14 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             filteredSteps = filteredSteps.filter(step => step !== 'housePlanApproval' && step !== 'constructionDetails');
         }
 
-        // For Company Reg, License Courses, Zimparks, AND Core House, keep creditTerm step
+        // For Company Reg, Zimparks, AND Core House, keep creditTerm step
         // For standard products, filter out creditTerm (handled internally in ProductSelection)
-        if (!isCompanyReg && !isLicenseCourses && !isZimparksHoliday && !(isHomeConstructionHub && isCoreHouse)) {
+        if (!isCompanyReg && !isZimparksHoliday && !(isHomeConstructionHub && isCoreHouse)) {
             filteredSteps = filteredSteps.filter(step => step !== 'creditTerm');
         }
 
-        // Skip delivery step for License Courses, Zimparks Holiday, and Core House (location captured in details)
-        if (isLicenseCourses || isZimparksHoliday || (isHomeConstructionHub && isCoreHouse)) {
+        // Skip delivery step for Zimparks Holiday and Core House (location captured in details)
+        if (isZimparksHoliday || (isHomeConstructionHub && isCoreHouse)) {
             filteredSteps = filteredSteps.filter(step => step !== 'delivery');
         }
 
@@ -811,9 +801,6 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         const isCompanyRegUpdated = updatedData.subcategory === 'Fees and Licensing' ||
             (updatedData.selectedBusiness?.name === 'Company Registration' || updatedData.business === 'Company Registration');
 
-        const isLicenseCoursesUpdated = updatedData.subcategory === 'Driving School' ||
-            (updatedData.selectedBusiness?.name === 'License Courses' || updatedData.business === 'License Courses');
-
         let currentFilteredSteps = [...allSteps];
 
         const isZimparksHolidayUpdated = updatedData.category === 'Zimparks Holiday Package' ||
@@ -828,10 +815,6 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'companyRegistration');
         }
 
-        if (!isLicenseCoursesUpdated) {
-            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'licenseCourses');
-        }
-
         if (!isZimparksHolidayUpdated) {
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'zimparksHoliday');
         }
@@ -840,14 +823,14 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'housePlanApproval' && step !== 'constructionDetails');
         }
 
-        // For Company Reg, License Courses, Zimparks, AND Core House, keep creditTerm step
+        // For Company Reg, Zimparks, AND Core House, keep creditTerm step
         // For standard products, filter out creditTerm (handled internally in ProductSelection)
-        if (!isCompanyRegUpdated && !isLicenseCoursesUpdated && !isZimparksHolidayUpdated && !(isHomeConstructionHubUpdated && isCoreHouseUpdated)) {
+        if (!isCompanyRegUpdated && !isZimparksHolidayUpdated && !(isHomeConstructionHubUpdated && isCoreHouseUpdated)) {
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'creditTerm');
         }
 
-        // Skip delivery step for License Courses, Zimparks Holiday, and Core House (location captured in details)
-        if (isLicenseCoursesUpdated || isZimparksHolidayUpdated || (isHomeConstructionHubUpdated && isCoreHouseUpdated)) {
+        // Skip delivery step for Zimparks Holiday and Core House (location captured in details)
+        if (isZimparksHolidayUpdated || (isHomeConstructionHubUpdated && isCoreHouseUpdated)) {
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'delivery');
         }
 
@@ -1021,14 +1004,6 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                     <CompanyRegistrationStep
                         data={wizardData}
                         onNext={(data) => handleNext({ ...data, companyRegistrationData: data })}
-                        onBack={handleBack}
-                    />
-                );
-            case 'licenseCourses':
-                return (
-                    <LicenseCoursesStep
-                        data={wizardData}
-                        onNext={(data) => handleNext({ ...data, licenseCoursesData: data })}
                         onBack={handleBack}
                     />
                 );

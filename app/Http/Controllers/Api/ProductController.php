@@ -26,6 +26,7 @@ class ProductController extends Controller
             $typeMap = [
                 // Microbiz mappings
                 'microBiz' => 'microbiz',
+                'smeBiz'   => 'microbiz',
                 'microbiz' => 'microbiz',
                 
                 // Hire Purchase mappings (Personal, Construction, Services)
@@ -145,6 +146,7 @@ class ProductController extends Controller
             $typeMap = [
                 // Microbiz mappings
                 'microBiz' => 'microbiz',
+                'smeBiz'   => 'microbiz',
                 'microbiz' => 'microbiz',
                 
                 // Hire Purchase mappings (Personal, Construction, Services)
@@ -356,6 +358,7 @@ class ProductController extends Controller
             $typeMap = [
                 // Microbiz mappings
                 'microBiz' => 'microbiz',
+                'smeBiz'   => 'microbiz',
                 'microbiz' => 'microbiz',
                 
                 // Hire Purchase mappings (Personal, Construction, Services)
@@ -514,18 +517,41 @@ class ProductController extends Controller
                 'name' => $category->name,
                 'emoji' => $category->emoji,
                 'subcategories' => $category->subcategories->map(function ($subcategory) {
-                    $scales = $subcategory->packages
-                        ->sortBy('price')
-                        ->values()
-                        ->map(function ($package) {
-                            return [
+                    $totalItems = $subcategory->packages->sum(function($p) {
+                        return $p->items->count();
+                    });
+                    $isComingSoon = $totalItems === 0;
+
+                    // Group packages by tier to determine if we need Option 1, Option 2, etc.
+                    $groupedPackages = $subcategory->packages->groupBy('tier');
+
+                    $scales = [];
+                    foreach ($groupedPackages as $tier => $packages) {
+                        $packages = $packages->sortBy('price')->values();
+                        $hasMultiple = $packages->count() > 1;
+
+                        foreach ($packages as $index => $package) {
+                            $name = $package->name;
+                            $optionLabel = $hasMultiple ? "Option " . ($index + 1) : null;
+                            $groupName = $hasMultiple ? preg_replace('/\s\d+\/?\d*$/', '', $name) : $name; // Fallback naive grouping name if needed, or just $tier
+
+                            $scales[] = [
                                 'id' => $package->id,
-                                'name' => $package->name,
+                                'name' => $name,
+                                'group_name' => ucwords(str_replace('_', ' ', $tier)) . ' Package',
+                                'option_name' => $optionLabel,
                                 'multiplier' => 1.0,
                                 'custom_price' => (float) $package->price,
-                                'description' => $package->generated_description, // Use the accessor
+                                'description' => $package->generated_description,
+                                'remarks' => $package->description, // Admin description
                             ];
-                        })->toArray();
+                        }
+                    }
+
+                    // Sort the final flat scales array by price
+                    usort($scales, function($a, $b) {
+                        return $a['custom_price'] <=> $b['custom_price'];
+                    });
 
                     return [
                         'name' => $subcategory->name,
@@ -536,6 +562,7 @@ class ProductController extends Controller
                             'basePrice' => (float) ($subcategory->packages->sortBy('price')->first()?->price ?? 260.00),
                             'image_url' => $subcategory->image_url,
                             'description' => $subcategory->description,
+                            'is_coming_soon' => $isComingSoon,
                             'scales' => $scales,
                             'tenure' => 24,
                         ]],

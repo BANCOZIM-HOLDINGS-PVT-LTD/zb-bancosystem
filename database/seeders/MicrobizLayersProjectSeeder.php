@@ -75,7 +75,7 @@ class MicrobizLayersProjectSeeder extends Seeder
             $packages = [
                 'lite' => [
                     'name' => 'Lite Package',
-                    'price' => 280.00,
+                    'price' => 260.00,
                     'items' => [
                         'MCPL025' => 50,
                         'MCPL026' => 1,
@@ -85,7 +85,7 @@ class MicrobizLayersProjectSeeder extends Seeder
                 ],
                 'standard' => [
                     'name' => 'Standard Package',
-                    'price' => 490.00,
+                    'price' => 455.00,
                     'items' => [
                         'MCPL025' => 100,
                         'MCPL026' => 2,
@@ -95,7 +95,7 @@ class MicrobizLayersProjectSeeder extends Seeder
                 ],
                 'full_house' => [
                     'name' => 'Full House Package',
-                    'price' => 930.00,
+                    'price' => 864.00,
                     'items' => [
                         'MCPL025' => 100,
                         'MCPL026' => 2,
@@ -118,7 +118,7 @@ class MicrobizLayersProjectSeeder extends Seeder
                 ],
                 'gold' => [
                     'name' => 'Gold Package',
-                    'price' => 1700.00, // User requested override to 1700 regardless of category
+                    'price' => 2210.00,
                     'items' => [
                         'MCPL025' => 200,
                         'MCPL026' => 4,

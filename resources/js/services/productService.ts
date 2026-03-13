@@ -9,15 +9,20 @@ export interface BusinessType {
   basePrice: number;
   originalPrice?: number;
   image_url?: string;
+  description?: string;
+  is_coming_soon?: boolean; // Added coming soon flag
   scales: {
     id?: number;
     name: string;
+    group_name?: string; // Grouping identifier for multiple options in one tier
+    option_name?: string; // e.g. "Option 1"
     multiplier: number;
     custom_price?: number;
     display_name?: string;
     calculated_price?: number;
     formatted_price?: string;
     description?: string; // Added description
+    remarks?: string; // Admin description 
   }[];
   tenure?: number;
 }

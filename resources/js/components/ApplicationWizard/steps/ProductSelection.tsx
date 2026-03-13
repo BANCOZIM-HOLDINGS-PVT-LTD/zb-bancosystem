@@ -60,12 +60,12 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         const symbol = isZiG ? 'ZiG' : '$';
         // If ZiG, we assume the amount is already converted (or we convert for display if needed)
         // But for consistency, let's assume all 'amount' variables holding money are in the selected currency.
-        return `${symbol}${amount.toLocaleString()}`;
+        return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     // Determine if this is a personal products or MicroBiz application
     const isPersonalProducts = data.intent === 'hirePurchase' || data.intent === 'personalGadgets';
-    const isMicroBiz = data.intent === 'microBiz';
+    const isMicroBiz = data.intent === 'microBiz' || data.intent === 'smeBiz';
 
 
 
@@ -74,6 +74,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
         switch (data.intent) {
             case 'microBiz':
+            case 'smeBiz':
                 intentKeywords = ['Agriculture', 'Agricultural', 'Fertilizer', 'Seed', 'Chemicals', 'Broiler', 'Layers', 'Chicken', 'Poultry', 'Egg', 'Grocery', 'Tuckshop', 'Tuck shop', 'Groceries', 'Business', 'Maize', 'Irrigation', 'Water', 'Pumping', 'Planter', 'Sheller', 'Banking', 'Agency', 'POS', 'Purification', 'Refill', 'Cleaning', 'Beauty', 'Hair', 'Cosmetics', 'Food', 'Butchery', 'Events', 'Snack', 'Entertainment', 'Printing', 'Digital', 'Multimedia', 'Tailoring', 'Construction', 'Mining', 'Retailing', 'Retail', 'Retail Shops', 'Delivery', 'Vehicle', 'Photocopying', 'Small', 'Support', 'Fee', 'Licens', 'Company', 'Reg'];
                 break;
             case 'homeConstruction':
@@ -203,30 +204,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             return;
         }
 
-        // Special handling for Driving School / License Courses: Skip directly to LicenseCoursesStep
-        if (subcategory.name === 'Driving School' || subcategory.name === 'License Courses') {
-            onNext({
-                category: selectedCategory?.name || 'Drivers License',
-                subcategory: subcategory.name,
-                business: 'License Courses',
-                scale: 'Standard',
-                amount: 0, // Will be calculated in LicenseCoursesStep
-                creditTerm: null,
-                monthlyPayment: 0,
-                productId: null,
-                productName: 'License Courses',
-                categoryId: selectedCategory?.id,
-                selectedBusiness: {
-                    id: null,
-                    name: 'License Courses',
-                    basePrice: 0,
-                    salesData: []
-                },
-                selectedScale: null,
-            });
-            return;
-        }
-
         // Check if subcategory has series
         if (subcategory.series && subcategory.series.length > 0) {
             setCurrentView('series');
@@ -303,33 +280,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     color: null,
                 });
             }
-            return;
-        }
-
-        // Handle License Courses - skip to dedicated step
-        if (business.name === 'License Courses') {
-            onNext({
-                category: selectedCategory?.name || 'Small Business Support',
-                subcategory: selectedSubcategory?.name || 'Driving School',
-                business: business.name,
-                scale: 'Standard',
-                amount: 0, // Will be calculated in LicenseCoursesStep
-                creditTerm: null,
-                monthlyPayment: 0,
-                productId: business.id,
-                productName: business.name,
-                categoryId: selectedCategory?.id,
-                selectedBusiness: {
-                    id: business.id?.toString(),
-                    name: business.name,
-                    basePrice: 0,
-                    salesData: []
-                },
-                selectedScale: null,
-                color: null,
-                interiorColor: null,
-                exteriorColor: null
-            });
             return;
         }
 
@@ -416,23 +366,23 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             return;
         }
 
-        const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
-        const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
+        const meSystemFee = includesMESystem ? parseFloat((finalAmount * ME_SYSTEM_PERCENTAGE).toFixed(2)) : 0;
+        const trainingFee = includesTraining ? parseFloat((finalAmount * TRAINING_PERCENTAGE).toFixed(2)) : 0;
 
         // Net Loan = selling price + optional fees (what user sees)
-        const netLoan = finalAmount + meSystemFee + trainingFee;
+        const netLoan = parseFloat((finalAmount + meSystemFee + trainingFee).toFixed(2));
 
         // Gross Loan = Net Loan + 6% bank admin fee (used for backend calculation)
         const ADMIN_FEE_PERCENTAGE = 0.06;
-        const bankAdminFee = netLoan * ADMIN_FEE_PERCENTAGE;
-        const grossLoan = netLoan + bankAdminFee;
+        const bankAdminFee = parseFloat((netLoan * ADMIN_FEE_PERCENTAGE).toFixed(2));
+        const grossLoan = parseFloat((netLoan + bankAdminFee).toFixed(2));
 
         // Calculate monthly payment using amortization formula (based on Gross Loan)
         const interestRate = 0.96; // 96% annual interest rate
         const monthlyInterestRate = interestRate / 12;
         const monthlyPayment = grossLoan > 0
-            ? (grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
-            (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
+            ? parseFloat(((grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
+            (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)).toFixed(2))
             : 0;
 
         // Calculate first and last payment dates
@@ -450,7 +400,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             scale: selectedScale?.name,
             amount: grossLoan, // Total for backend calculation
             creditTerm: selectedTermMonths,
-            monthlyPayment: parseFloat(monthlyPayment.toFixed(2)),
+            monthlyPayment: monthlyPayment,
             // New fields with IDs for better tracking
             productId: selectedBusiness?.id,
             productName: selectedBusiness?.name === 'Zimparks Vacation Package' && selectedDestination
@@ -705,41 +655,56 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
                 {currentView === 'businesses' && selectedSubcategory && (
                     <div className="grid gap-4 sm:grid-cols-2">
-                        {(selectedSeries ? selectedSeries.products : selectedSubcategory.businesses).map((business, index) => (
-                            <Card
-                                key={index}
-                                className="cursor-pointer p-4 transition-all hover:border-emerald-600 hover:shadow-lg flex flex-row items-center gap-4"
-                                onClick={() => handleBusinessSelect(business)}
-                            >
-                                {business.image_url && (
-                                    <div className="w-24 h-24 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
-                                        <img
-                                            src={`/storage/${business.image_url}`}
-                                            alt={business.name}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                )}
-                                <div className="flex-grow">
-                                    <h3 className="text-lg font-medium mb-1">{business.name}</h3>
-                                    {business.product_code && (
-                                        <span className="inline-block text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded mb-1 mr-2">
-                                            {business.product_code}
-                                        </span>
+                        {(selectedSeries ? selectedSeries.products : selectedSubcategory.businesses).map((business, index) => {
+                            const isComingSoon = business.is_coming_soon;
+                            return (
+                                <Card
+                                    key={index}
+                                    className={`p-4 transition-all flex flex-row items-center gap-4 ${
+                                        isComingSoon 
+                                        ? 'opacity-50 cursor-not-allowed grayscale' 
+                                        : 'cursor-pointer hover:border-emerald-600 hover:shadow-lg'
+                                    }`}
+                                    onClick={() => !isComingSoon && handleBusinessSelect(business)}
+                                    title={isComingSoon ? "Coming soon" : undefined}
+                                >
+                                    {business.image_url && (
+                                        <div className="w-24 h-24 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
+                                            <img
+                                                src={`/storage/${business.image_url}`}
+                                                alt={business.name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
                                     )}
-                                    {business.specification && (
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">
-                                            {business.specification}
-                                        </p>
-                                    )}
-                                    <div className="flex items-center text-sm text-gray-500 mb-1">
-                                        <div className="font-semibold mr-1">{isZiG ? 'ZiG' : '$'}</div>
-                                        From {formatCurrency(isZiG ? business.basePrice * ZIG_RATE : business.basePrice)}
+                                    <div className="flex-grow">
+                                        <h3 className="text-lg font-medium mb-1 flex items-center gap-2">
+                                            {business.name}
+                                            {isComingSoon && (
+                                                <span className="text-[10px] uppercase tracking-wider bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">
+                                                    Coming Soon
+                                                </span>
+                                            )}
+                                        </h3>
+                                        {business.product_code && (
+                                            <span className="inline-block text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded mb-1 mr-2">
+                                                {business.product_code}
+                                            </span>
+                                        )}
+                                        {business.specification && (
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">
+                                                {business.specification}
+                                            </p>
+                                        )}
+                                        <div className="flex items-center text-sm text-gray-500 mb-1">
+                                            <div className="font-semibold mr-1">{isZiG ? 'ZiG' : '$'}</div>
+                                            From {formatCurrency(isZiG ? business.basePrice * ZIG_RATE : business.basePrice)}
+                                        </div>
                                     </div>
-                                </div>
-                                <ChevronRight className="h-5 w-5 text-gray-400" />
-                            </Card>
-                        ))}
+                                    {!isComingSoon && <ChevronRight className="h-5 w-5 text-gray-400" />}
+                                </Card>
+                            );
+                        })}
                     </div>
                 )}
 
@@ -891,40 +856,81 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 </Alert>
                             )}
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                {selectedBusiness.scales.map((scale, index) => {
-                                    // Use custom_price if available, otherwise calculate from multiplier
-                                    const amount = scale.custom_price || (selectedBusiness.basePrice * scale.multiplier);
-                                    const isSelected = selectedScale?.name === scale.name;
-                                    // Format scale name: add "Package" suffix for Lite, Standard, Full house and handle rebranding
-                                    const formatScaleName = (name: string) => {
-                                        // Normalize input
-                                        const n = name.toLowerCase();
-                                        if (n.includes('bronze') || n === 'lite' || n === 'lite package') return 'Lite Package';
-                                        if (n.includes('silver') || n === 'standard' || n === 'standard package') return 'Standard Package';
-                                        if (n.includes('full house')) return 'Full House Package';
-                                        if (n.includes('gold') || n.includes('1500') || n.includes('1,500')) return 'Gold Package';
+                                {/* Group scales by group_name */}
+                                {(() => {
+                                    const groupedScales = selectedBusiness.scales.reduce((acc, scale) => {
+                                        const group = (scale as any).group_name || scale.name;
+                                        if (!acc[group]) acc[group] = [];
+                                        acc[group].push(scale as any);
+                                        return acc;
+                                    }, {} as Record<string, any[]>);
 
-                                        return name;
-                                    };
-                                    const isGoldPackage = scale.name.includes('Gold');
-                                    return (
-                                        <Card
-                                            key={index}
-                                            className={`cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg text-center 
-                                                ${isSelected
-                                                    ? (isGoldPackage
-                                                        ? 'border-4 border-[#FFD700] bg-yellow-50/50 dark:bg-yellow-900/10 ring-2 ring-yellow-200'
-                                                        : 'border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20')
-                                                    : (isGoldPackage
-                                                        ? 'border-2 border-[#FFD700]/60 hover:border-[#FFD700] bg-yellow-50/30'
-                                                        : '')
-                                                }`}
-                                            onClick={() => handleScaleSelect(scale)}
-                                        >
-                                            <h3 className="text-lg font-medium mb-2">{formatScaleName(scale.name)}</h3>
-                                        </Card>
-                                    );
-                                })}
+                                    // Currently selected group based on selectedScale
+                                    const selectedGroup = selectedScale ? ((selectedScale as any).group_name || selectedScale.name) : null;
+
+                                    return Object.entries(groupedScales).map(([groupName, options], index) => {
+                                        // Use the first option's price if multiple
+                                        const baseScale = options[0];
+                                        const amount = baseScale.custom_price || (selectedBusiness.basePrice * baseScale.multiplier);
+                                        const isSelectedGroup = selectedGroup === groupName;
+                                        
+                                        const formatScaleName = (name: string) => {
+                                            const n = name.toLowerCase();
+                                            if (n.includes('bronze') || n === 'lite' || n === 'lite package') return 'Lite Package';
+                                            if (n.includes('silver') || n === 'standard' || n === 'standard package') return 'Standard Package';
+                                            if (n.includes('full house')) return 'Full House Package';
+                                            if (n.includes('gold') || n.includes('1500') || n.includes('1,500')) return 'Gold Package';
+                                            return name;
+                                        };
+                                        const isGoldPackage = groupName.includes('Gold');
+                                        
+                                        return (
+                                            <div key={index} className="flex flex-col gap-2">
+                                                <Card
+                                                    className={`cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg text-center h-full flex flex-col justify-center
+                                                        ${isSelectedGroup
+                                                            ? (isGoldPackage
+                                                                ? 'border-4 border-[#FFD700] bg-yellow-50/50 dark:bg-yellow-900/10 ring-2 ring-yellow-200'
+                                                                : 'border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20')
+                                                            : (isGoldPackage
+                                                                ? 'border-2 border-[#FFD700]/60 hover:border-[#FFD700] bg-yellow-50/30'
+                                                                : '')
+                                                        }`}
+                                                    onClick={() => {
+                                                        // Auto-select the first option when clicking a group
+                                                        if (!isSelectedGroup || options.length === 1) {
+                                                            handleScaleSelect(options[0]);
+                                                        }
+                                                    }}
+                                                >
+                                                    <h3 className="text-lg font-medium mb-2">{formatScaleName(groupName)}</h3>
+                                                </Card>
+
+                                                {/* Render sub-options if this group is selected and has multiple options */}
+                                                {isSelectedGroup && options.length > 1 && (
+                                                    <div className="flex flex-col gap-2 mt-2 animate-in slide-in-from-top-2 fade-in">
+                                                        {options.map((option, optIdx) => (
+                                                            <button
+                                                                key={optIdx}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleScaleSelect(option);
+                                                                }}
+                                                                className={`px-3 py-2 text-sm rounded-md transition-all border ${
+                                                                    selectedScale?.id === option.id 
+                                                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
+                                                                    : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300 hover:bg-emerald-50'
+                                                                }`}
+                                                            >
+                                                                {option.option_name || `Option ${optIdx + 1}`}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    });
+                                })()}
                             </div>
 
                             {/* Package Description Slide-in for MicroBiz and Zimparks */}
@@ -941,12 +947,15 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                 <p>{getPackageDescription(selectedBusiness.name, selectedScale.name)}</p>
                                             )}
                                         </div>
-                                        <div className="mt-4 py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700 flex items-center justify-between">
-                                            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Package Remarks:</span>
-                                            <span className="text-2xl font-bold text-emerald-600">-----</span>
+                                        <div className="mt-6 py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                                            <span className="text-sm font-medium text-gray-600 dark:text-gray-300 block mb-1">Package Remarks:</span>
+                                            <span className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line">
+                                                {(selectedScale as any).remarks || selectedBusiness.description || 'No additional remarks.'}
+                                            </span>
                                         </div>
                                         <div className="mt-4 py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700 flex items-center justify-between">
                                             <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Package Price:</span>
+
                                             <span className="text-2xl font-bold text-emerald-600">{formatCurrency(finalAmount)}</span>
                                         </div>
                                         <div className="flex justify-end mt-4">

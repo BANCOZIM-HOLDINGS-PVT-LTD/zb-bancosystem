@@ -40,7 +40,22 @@ class DatabaseSeeder extends Seeder
             
             MicrobizBusinessSeeder::class, // Detailed Microbiz businesses
             MicrobizChickenProjectSeeder::class, // Broiler Production specific
-            MicrobizLayersProjectSeeder::class, // Layers Production specific (NEW)
+            MicrobizLayersProjectSeeder::class, // Layers Production specific
+
+            // New detailed item-level seeders (from Excel)
+            MicrobizIncubatorsSeeder::class, // Agricultural Machinery > Incubators
+            MicrobizPASystemsSeeder::class, // Events Management > PA Systems
+            MicrobizBarEquipmentSeeder::class, // Entertainment > Bar Entertainment
+            MicrobizVenueSetupSeeder::class, // Events Management > Venue Setup
+            MicrobizSewingMachinesSeeder::class, // Tailoring Machinery > Sewing Machines
+            MicrobizDriversLicenseSeeder::class, // Personal Development > Drivers Licence
+            MicrobizCarWashSeeder::class, // Cleaning Services > Car Wash
+            MicrobizPersonalDevSeeder::class, // Personal Development > Vocational Courses
+            MicrobizSaloonEquipmentSeeder::class, // Beauty > Saloon Equipment
+            MicrobizBarberSeeder::class, // Beauty > Barber & Rasta
+            MicrobizBraidingWeavingSeeder::class, // Beauty > Braiding & Weaving
+            MicrobizNailsMakeupSeeder::class, // Beauty > Nails & Makeup
+            MicrobizPhotographySeeder::class, // Digital Multimedia > Photography
 
             HirePurchaseSeeder::class, // Main Hire Purchase products (Goods with Series)
             PersonalProductsSeeder::class, // Other Personal products (Services like Holiday, School Fees)

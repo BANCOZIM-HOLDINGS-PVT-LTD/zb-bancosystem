@@ -220,7 +220,7 @@
         <tr>
             <td>Industry Sector: {{ $industrySector ?? '' }}</td>
             <td>Number of Employees: {{ $numberOfEmployees ?? '' }}</td>
-            <td colspan="2">Monthly Turnover (USD): ${{ $monthlyTurnover ?? '' }}</td>
+            <td colspan="2">Monthly Turnover (USD): ${{ number_format((float)str_replace(',', '', $monthlyTurnover ?? '0'), 2) }}</td>
         </tr>
     </table>
     
@@ -259,18 +259,18 @@
         </tr>
         <tr>
             <td>Business Revenue</td>
-            <td>${{ $monthlyRevenue ?? '' }}</td>
-            <td>${{ $annualRevenue ?? '' }}</td>
+            <td>${{ number_format((float)str_replace(',', '', $monthlyRevenue ?? '0'), 2) }}</td>
+            <td>${{ number_format((float)str_replace(',', '', $annualRevenue ?? '0'), 2) }}</td>
         </tr>
         <tr>
             <td>Other Income</td>
-            <td>${{ $otherMonthlyIncome ?? '' }}</td>
-            <td>${{ $otherAnnualIncome ?? '' }}</td>
+            <td>${{ number_format((float)str_replace(',', '', $otherMonthlyIncome ?? '0'), 2) }}</td>
+            <td>${{ number_format((float)str_replace(',', '', $otherAnnualIncome ?? '0'), 2) }}</td>
         </tr>
         <tr>
             <td><strong>Total Income</strong></td>
-            <td><strong>${{ $totalMonthlyIncome ?? '' }}</strong></td>
-            <td><strong>${{ $totalAnnualIncome ?? '' }}</strong></td>
+            <td><strong>${{ number_format((float)str_replace(',', '', $totalMonthlyIncome ?? '0'), 2) }}</strong></td>
+            <td><strong>${{ number_format((float)str_replace(',', '', $totalAnnualIncome ?? '0'), 2) }}</strong></td>
         </tr>
     </table>
     
@@ -359,7 +359,7 @@
     
     <table class="main-table">
         <tr>
-            <td style="width: 50%;">Initial Deposit Amount (USD): ${{ $initialDeposit ?? '' }}</td>
+            <td style="width: 50%;">Initial Deposit Amount (USD): ${{ number_format((float)str_replace(',', '', $initialDeposit ?? '0'), 2) }}</td>
             <td style="width: 50%;">Deposit Method: {{ $depositMethod ?? 'Cash / Cheque / Transfer' }}</td>
         </tr>
     </table>

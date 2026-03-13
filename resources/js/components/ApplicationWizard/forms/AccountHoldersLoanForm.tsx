@@ -54,7 +54,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
         let facilityType = '';
         if (intent === 'hirePurchase' && businessName) {
             facilityType = `Hire Purchase Credit - ${businessName}`;
-        } else if ((intent === 'microBiz' || intent === 'microBizLoan') && businessName) {
+        } else if ((intent === 'microBiz' || intent === 'microBizLoan' || intent === 'smeBiz') && businessName) {
             facilityType = `Micro Biz Loan - ${businessName}`;
         } else if (businessName) {
             // Fallback if intent doesn't match

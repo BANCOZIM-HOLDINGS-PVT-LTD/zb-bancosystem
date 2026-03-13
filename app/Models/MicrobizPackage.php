@@ -30,8 +30,24 @@ class MicrobizPackage extends Model
         $description = "This " . ($this->tier_label ?? 'package') . " involves the following:\n";
         
         foreach ($items as $item) {
+            // Skip transport and courier items as per user request
+            $nameLower = strtolower($item->name);
+            $code = $item->item_code ?? $item->product_code; // some seeders use item_code, fallback to product_code
+            $isTransport = str_contains($nameLower, 'courier') || 
+                           str_contains($nameLower, 'transport') || 
+                           str_contains($nameLower, 'from source to');
+                           
+            if (isset($code) && (str_starts_with($code, 'TC') || str_starts_with($code, 'TS'))) {
+                $isTransport = true;
+            }
+
+            if ($isTransport) {
+                continue;
+            }
+
             $qty = $item->pivot->quantity ?? 1;
-            $description .= "-" . ($item->product_code ? "[{$item->product_code}] " : "") . "{$item->name} (x{$qty})\n";
+            $codeDisplay = $code ? "[$code] " : "";
+            $description .= "-{$codeDisplay}{$item->name} (x{$qty})\n";
         }
 
         return $description;

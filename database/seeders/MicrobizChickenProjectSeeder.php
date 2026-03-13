@@ -80,7 +80,7 @@ class MicrobizChickenProjectSeeder extends Seeder
             $packages = [
                 'lite' => [
                     'name' => 'Lite Package',
-                    'price' => 280.00,
+                    'price' => 260.00,
                     'items' => [
                         'MCPB001' => 50,
                         'MCPB002' => 1,
@@ -95,7 +95,7 @@ class MicrobizChickenProjectSeeder extends Seeder
                 ],
                 'standard' => [
                     'name' => 'Standard Package',
-                    'price' => 490.00,
+                    'price' => 455.00,
                     'items' => [
                         'MCPB001' => 100,
                         'MCPB003' => 1,
@@ -108,7 +108,7 @@ class MicrobizChickenProjectSeeder extends Seeder
                 ],
                 'full_house' => [
                     'name' => 'Full House Package',
-                    'price' => 930.00,
+                    'price' => 864.00,
                     'items' => [
                         'MCPB001' => 100,
                         'MCPB003' => 1,
@@ -132,7 +132,7 @@ class MicrobizChickenProjectSeeder extends Seeder
                 ],
                 'gold' => [
                     'name' => 'Gold Package',
-                    'price' => 1700.00,
+                    'price' => 2210.00,
                     'items' => [
                         'MCPB001' => 200,
                         'MCPB003' => 2,

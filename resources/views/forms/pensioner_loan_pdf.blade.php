@@ -546,13 +546,13 @@
     <table>
         <tr>
             <td width="25%">Applied Amount:</td>
-            <td width="15%"><span class="filled-field">{{ $getAny(['loanAmount', 'amount', 'finalPrice']) }}</span></td>
+            <td width="15%"><span class="filled-field">${{ number_format((float)str_replace(',', '', $getAny(['loanAmount', 'amount', 'finalPrice'], '0')), 2) }}</span></td>
             <td width="15%">Tenure:</td>
             <td><span class="filled-field">{{ $getAny(['loanTenure', 'term'], '12') }} months</span></td>
         </tr>
          <tr>
             <td>Monthly Payment:</td>
-            <td><span class="filled-field">{{ $formData['monthlyPayment'] ?? '' }}</span></td>
+            <td><span class="filled-field">${{ number_format((float)str_replace(',', '', $formData['monthlyPayment'] ?? '0'), 2) }}</span></td>
               <td>Start Date:</td>
              <td><span class="filled-field">{{ $get('loanStartDate') }}</span></td>
         </tr>
@@ -744,7 +744,7 @@
         </tr>
         <tr>
             <td>Monthly Amount:</td>
-            <td><span class="filled-field">${{ $formData['monthlyPayment'] ?? '' }}</span></td>
+            <td><span class="filled-field">${{ number_format((float)str_replace(',', '', $formData['monthlyPayment'] ?? '0'), 2) }}</span></td>
             <td>From Date:</td>
             <td><span class="filled-field">{{ date('Y-m-01', strtotime('first day of next month')) }}</span></td>
             <td>To Date:</td>

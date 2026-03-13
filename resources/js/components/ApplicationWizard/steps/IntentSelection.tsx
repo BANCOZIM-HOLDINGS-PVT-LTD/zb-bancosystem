@@ -13,19 +13,25 @@ interface IntentSelectionProps {
 const intents = [
     {
         id: 'hirePurchase',
-        name: 'Apply for Personal products',
+        title: 'Apply for Personal products',
         icon: CreditCard,
         description: 'Get credit for phones, furniture, appliances and more'
     },
     {
         id: 'microBiz',
-        name: 'Apply for Small Business Starter Pack (MicroBiz)',
-        icon: Briefcase,
-        description: 'A jump start into the world of entrepreneurship'
+        title: 'Micro to Small Business Starter Kit',
+        description: 'Empower yourself with income generating projects and equipment to start your business.',
+        icon: Briefcase
+    },
+    {
+        id: 'smeBiz',
+        title: 'Small and Medium Business Booster Kit',
+        description: 'Expand your existing business operations with advanced equipment and resources.',
+        icon: Briefcase
     },
     {
         id: 'checkStatus',
-        name: 'Check Application Status',
+        title: 'Check Application Status',
         icon: FileText,
         description: 'Track your existing application'
     },

@@ -12,13 +12,19 @@ interface WelcomeProps {
     agentName?: string;
 }
 
-// Define the 4 main product/service categories
+// Define the 5 main product/service categories
 const PRODUCT_INTENTS = [
     {
         id: 'microBiz',
-        name: 'Small to Medium Business Starter Pack',
+        name: 'Micro and Small Business Starter Kit',
         description: '(empower yourself for income generating projects)',
         icon: Briefcase,
+    },
+    {
+        id: 'smeBiz',
+        name: 'Small and Medium Business Booster Kit',
+        description: '(expand your existing business operations)',
+        icon: ShoppingBag,
     },
     {
         id: 'homeConstruction',
@@ -28,14 +34,14 @@ const PRODUCT_INTENTS = [
     },
     {
         id: 'personalServices',
-        name: 'Invest in Personal Development',
+        name: 'Personal Development',
         description: '(equip yourself or your loved ones with life changing skills )',
         icon: GraduationCap,
     },
     {
         id: 'personalGadgets',
         name: 'Personal and Homeware Products',
-        description: '(improve your lifestyle with the latest gadgets & furniture)',
+        description: '(improve your lifestyle with the latest gadgets & modern furniture)',
         icon: Laptop,
     }
 ];
@@ -299,8 +305,8 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                                 </div>
                                                 {resumeMessage && (
                                                     <p className={`text-xs ${resumeMessage.type === 'error' ? 'text-red-600 dark:text-red-400' :
-                                                            resumeMessage.type === 'info' ? 'text-blue-600 dark:text-blue-400' :
-                                                                'text-emerald-600 dark:text-emerald-400'
+                                                        resumeMessage.type === 'info' ? 'text-blue-600 dark:text-blue-400' :
+                                                            'text-emerald-600 dark:text-emerald-400'
                                                         }`}>
                                                         {resumeMessage.text}
                                                     </p>
