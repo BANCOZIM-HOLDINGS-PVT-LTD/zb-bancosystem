@@ -261,28 +261,39 @@ class HirePurchaseSeeder extends Seeder
             );
 
             foreach ($data['products'] as $productName) {
-                // Generate strict code: HP-{CAT_PREFIX}-{NAME_PREFIX}-{RAND}
-                $catPrefix = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $category->name), 0, 3));
-                $namePrefix = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $productName), 0, 6));
-                $productCode = "HP-{$catPrefix}-{$namePrefix}-" . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
-
                 // Use provided transport or default based on category emoji/type
                 $transport = $data['transport'] ?? 'indrive'; // Default to smaller transport
                 if ($category->name === 'Building Materials' || $category->name === 'Agricultural Equipment' || $category->name === 'Lounge Furniture') {
                     $transport = $data['transport'] ?? 'small_truck';
                 }
 
-                $product = Product::updateOrCreate(
-                    ['product_sub_category_id' => $subcategory->id, 'name' => $productName],
-                    [
+                $product = Product::where('product_sub_category_id', $subcategory->id)
+                    ->where('name', $productName)
+                    ->first();
+
+                if (!$product) {
+                    // Generate strict code: HP-{CAT_PREFIX}-{NAME_PREFIX}-{RAND}
+                    $catPrefix = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $category->name), 0, 3));
+                    $namePrefix = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $productName), 0, 6));
+                    $productCode = "HP-{$catPrefix}-{$namePrefix}-" . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+
+                    $product = Product::create([
+                        'product_sub_category_id' => $subcategory->id,
+                        'name' => $productName,
                         'product_series_id' => $series->id,
                         'product_code' => $productCode,
                         'base_price' => rand(100, 3000),
                         'specification' => $defaultSpec,
                         'transport_method' => $transport,
                         'image_url' => null,
-                    ]
-                );
+                    ]);
+                } else {
+                    $product->update([
+                        'product_series_id' => $series->id,
+                        'specification' => $defaultSpec,
+                        'transport_method' => $transport,
+                    ]);
+                }
 
                 if (isset($data['storage'])) {
                     foreach ($data['storage'] as $index => $variant) {

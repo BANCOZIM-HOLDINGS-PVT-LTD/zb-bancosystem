@@ -140,12 +140,11 @@ class AgentSeeder extends Seeder
             ];
 
             foreach ($agents as $agentData) {
-                $agent = Agent::create($agentData);
+                $agent = Agent::updateOrCreate(['email' => $agentData['email']], $agentData);
                 
-                // Generate referral links for each agent
-                $agent->generateReferralLink('Default Campaign');
-                if (rand(0, 1)) {
-                    $agent->generateReferralLink('Summer 2024 Campaign');
+                // Generate referral links for each agent if they don't exist
+                if ($agent->referralLinks()->where('campaign_name', 'Default Campaign')->doesntExist()) {
+                    $agent->generateReferralLink('Default Campaign');
                 }
             }
 
@@ -172,7 +171,7 @@ class AgentSeeder extends Seeder
             ];
 
             foreach ($teams as $teamData) {
-                Team::create($teamData);
+                Team::updateOrCreate(['name' => $teamData['name']], $teamData);
             }
 
             // Assign agents to teams
@@ -183,68 +182,79 @@ class AgentSeeder extends Seeder
             // Harare team members
             $harareAgents = Agent::whereIn('region', ['Harare'])->get();
             foreach ($harareAgents as $agent) {
-                $harareTeam->agents()->attach($agent->id, [
+                $harareTeam->agents()->syncWithoutDetaching([$agent->id => [
                     'joined_at' => $agent->hire_date,
                     'role' => $agent->email === 'john.mukamuri@bancozim.com' ? 'leader' : 'member',
                     'is_active' => true,
-                ]);
+                ]]);
             }
 
             // Set team leader
-            $harareTeam->update(['team_leader_id' => Agent::where('email', 'john.mukamuri@bancozim.com')->first()->id]);
+            $harareLeader = Agent::where('email', 'john.mukamuri@bancozim.com')->first();
+            if ($harareLeader) {
+                $harareTeam->update(['team_leader_id' => $harareLeader->id]);
+            }
 
             // Bulawayo team members
             $bulawayoAgents = Agent::whereIn('region', ['Bulawayo'])->get();
             foreach ($bulawayoAgents as $agent) {
-                $bulawayoTeam->agents()->attach($agent->id, [
+                $bulawayoTeam->agents()->syncWithoutDetaching([$agent->id => [
                     'joined_at' => $agent->hire_date,
                     'role' => 'leader',
                     'is_active' => true,
-                ]);
+                ]]);
             }
-            $bulawayoTeam->update(['team_leader_id' => Agent::where('email', 'mary.chikwanha@bancozim.com')->first()->id]);
+            $bulawayoLeader = Agent::where('email', 'mary.chikwanha@bancozim.com')->first();
+            if ($bulawayoLeader) {
+                $bulawayoTeam->update(['team_leader_id' => $bulawayoLeader->id]);
+            }
 
             // Regional team members
             $regionalAgents = Agent::whereNotIn('region', ['Harare', 'Bulawayo'])->get();
             foreach ($regionalAgents as $agent) {
-                $regionalTeam->agents()->attach($agent->id, [
+                $regionalTeam->agents()->syncWithoutDetaching([$agent->id => [
                     'joined_at' => $agent->hire_date,
                     'role' => 'member',
                     'is_active' => $agent->status === 'active',
-                ]);
+                ]]);
             }
-            $regionalTeam->update(['team_leader_id' => Agent::where('email', 'peter.moyo@bancozim.com')->first()->id]);
+            $regionalLeader = Agent::where('email', 'peter.moyo@bancozim.com')->first();
+            if ($regionalLeader) {
+                $regionalTeam->update(['team_leader_id' => $regionalLeader->id]);
+            }
 
-            // Create sample commissions
+            // Create sample commissions only if none exist for the agent
             $activeAgents = Agent::active()->get();
             foreach ($activeAgents as $agent) {
-                // Create 2-5 sample commissions per agent
-                $commissionCount = rand(2, 5);
-                for ($i = 0; $i < $commissionCount; $i++) {
-                    $baseAmount = rand(500, 2000);
-                    $commissionAmount = ($baseAmount * $agent->commission_rate) / 100;
-                    
-                    Commission::create([
-                        'agent_id' => $agent->id,
-                        'type' => 'application',
-                        'amount' => $commissionAmount,
-                        'rate' => $agent->commission_rate,
-                        'base_amount' => $baseAmount,
-                        'status' => ['pending', 'approved', 'paid'][rand(0, 2)],
-                        'earned_date' => now()->subDays(rand(1, 30)),
-                        'paid_date' => rand(0, 1) ? now()->subDays(rand(1, 15)) : null,
-                        'payment_method' => rand(0, 1) ? 'Bank Transfer' : null,
-                        'metadata' => [
-                            'loan_amount' => $baseAmount,
-                            'calculated_at' => now()->toISOString(),
-                        ],
-                    ]);
+                if ($agent->commissions()->count() === 0) {
+                    // Create 2-5 sample commissions per agent
+                    $commissionCount = rand(2, 5);
+                    for ($i = 0; $i < $commissionCount; $i++) {
+                        $baseAmount = rand(500, 2000);
+                        $commissionAmount = ($baseAmount * $agent->commission_rate) / 100;
+                        
+                        Commission::create([
+                            'agent_id' => $agent->id,
+                            'type' => 'application',
+                            'amount' => $commissionAmount,
+                            'rate' => $agent->commission_rate,
+                            'base_amount' => $baseAmount,
+                            'status' => ['pending', 'approved', 'paid'][rand(0, 2)],
+                            'earned_date' => now()->subDays(rand(1, 30)),
+                            'paid_date' => rand(0, 1) ? now()->subDays(rand(1, 15)) : null,
+                            'payment_method' => rand(0, 1) ? 'Bank Transfer' : null,
+                            'metadata' => [
+                                'loan_amount' => $baseAmount,
+                                'calculated_at' => now()->toISOString(),
+                            ],
+                        ]);
+                    }
                 }
             }
 
-            $this->command->info('Created ' . Agent::count() . ' agents');
-            $this->command->info('Created ' . Team::count() . ' teams');
-            $this->command->info('Created ' . Commission::count() . ' commissions');
+            $this->command->info('Processed agents');
+            $this->command->info('Processed teams');
+            $this->command->info('Ensured commissions exist');
         });
     }
 }
