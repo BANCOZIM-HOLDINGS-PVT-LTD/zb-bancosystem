@@ -162,7 +162,7 @@ class WhatsAppStateMachine
      * Hardcoded Categories by Intent (FROM SEEDERS - First 10 due to WhatsApp limit)
      */
     private array $hardcodedCategories = [
-        // Option 1: Microbiz (from ProductCatalogSeeder - 22 total, showing first 10)
+        // Option 1: Microbiz (from ProductCatalogSeeder - 22 total, showing first 9 to stay under 10 row limit)
         'microBiz' => [
             ['id' => 'mb_agric', 'name' => 'Agricultural Machinery', 'desc' => '🚜 Farming equipment'],
             ['id' => 'mb_inputs', 'name' => 'Agricultural Inputs', 'desc' => '🌾 Seeds & Fertilizer'],
@@ -173,7 +173,6 @@ class WhatsAppStateMachine
             ['id' => 'mb_events', 'name' => 'Events Management', 'desc' => '🎉 PA & Tents'],
             ['id' => 'mb_snack', 'name' => 'Snack Production', 'desc' => '🍿 Maputi & Popcorn'],
             ['id' => 'mb_printing', 'name' => 'Branding and Material Printing', 'desc' => '🖨️ Branding'],
-            ['id' => 'mb_mining', 'name' => 'Small Scale Mining', 'desc' => '⛏️ Mining Equipment'],
         ],
         // Option 2: SME Booster (using same catalog as microBiz for now)
         'smeBiz' => [
@@ -186,7 +185,6 @@ class WhatsAppStateMachine
             ['id' => 'mb_events', 'name' => 'Events Management', 'desc' => '🎉 PA & Tents'],
             ['id' => 'mb_snack', 'name' => 'Snack Production', 'desc' => '🍿 Maputi & Popcorn'],
             ['id' => 'mb_printing', 'name' => 'Branding and Material Printing', 'desc' => '🖨️ Branding'],
-            ['id' => 'mb_mining', 'name' => 'Small Scale Mining', 'desc' => '⛏️ Mining Equipment'],
         ],
         // Option 3: Personal & Homeware (from HirePurchaseSeeder - 15 categories, showing first 9)
         'personal' => [
@@ -962,7 +960,7 @@ class WhatsAppStateMachine
             'rows' => [
                 ['id' => '1', 'title' => 'Micro to Small Business', 'description' => 'Starter kit'],
                 ['id' => '2', 'title' => 'SME Business Booster', 'description' => 'Expand your business'],
-                ['id' => '3', 'title' => 'Homeware & Electronics', 'description' => 'Gadgets, Solar Systems & Furniture'],
+                ['id' => '3', 'title' => 'Homeware & Electronics', 'description' => 'Gadgets, Solar & Furniture'],
                 ['id' => '4', 'title' => 'Personal Development', 'description' => 'Life changing skills'],
                 ['id' => '5', 'title' => 'Building materials', 'description' => 'Home improvements'],
             ],
@@ -971,9 +969,9 @@ class WhatsAppStateMachine
         $sections[] = [
             'title' => '🤝 SERVICES ',
             'rows' => [
-                ['id' => '7', 'title' => 'Apply to become an Agent', 'description' => 'Earn passive income online'],
-                ['id' => '8', 'title' => 'Track Credit Application', 'description' => 'Check status'],
-                ['id' => '9', 'title' => 'Track Product Delivery', 'description' => 'Order tracking'],
+                ['id' => '7', 'title' => 'Become an Agent', 'description' => 'Earn passive income'],
+                ['id' => '8', 'title' => 'Track Application', 'description' => 'Check credit status'],
+                ['id' => '9', 'title' => 'Track Delivery', 'description' => 'Order tracking'],
             ],
         ];
 
@@ -983,7 +981,6 @@ class WhatsAppStateMachine
             'rows' => [
                 ['id' => '10', 'title' => 'FAQs', 'description' => 'Get quick answers'],
                 ['id' => '11', 'title' => 'Customer Service', 'description' => 'Talk to a representative'],
-                ['id' => '12', 'title' => 'Resume Application', 'description' => 'Continue an incomplete application'],
             ],
         ];
         
@@ -991,8 +988,7 @@ class WhatsAppStateMachine
             $to,
             $bodyText,
             $buttonText,
-            $sections,
-            " "
+            $sections
         );
     }
     

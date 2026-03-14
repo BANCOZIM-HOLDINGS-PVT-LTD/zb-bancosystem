@@ -483,6 +483,18 @@ class WhatsAppCloudApiService
     }
 
     /**
+     * Format phone number to WhatsApp format (with whatsapp: prefix)
+     * Used for compatibility with legacy Twilio format
+     */
+    public static function formatWhatsAppNumber(string $number): string
+    {
+        if (!str_starts_with($number, 'whatsapp:')) {
+            $number = 'whatsapp:' . $number;
+        }
+        return $number;
+    }
+
+    /**
      * Format phone number to E.164 format (without + prefix)
      * 
      * WhatsApp Cloud API requires phone numbers in format: 263771234567

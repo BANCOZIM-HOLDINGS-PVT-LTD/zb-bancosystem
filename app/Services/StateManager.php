@@ -187,6 +187,7 @@ class StateManager
             // WhatsApp Adala conversation flow
             'language_selection', 'intent_selection', 'intent_selection_page2', 'payment_method', 'main_menu', 'currency_selection',
             'browse_categories', 'browse_subcategories', 'browse_series', 'browse_products', 'browse_packages', 'product_link_sent', 'cash_payment_selection',
+            'resume_phone_input',
             
             // Website redirect states
             'redirect_to_product', 'redirect_starter_pack_credit', 'redirect_gadgets_credit',
