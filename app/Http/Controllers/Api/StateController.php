@@ -205,48 +205,22 @@ class StateController extends Controller
                 }
             }
 
-            
-            // Initialization Logic: Set Status based on application type
-            // This ensures applications appear in the correct verification lists
+            // Initialization Logic: All applications move to 'pending_review' 
+            // for Stage 1: Bancozim Admin (Document Verification)
             try {
-                $isSSB = false;
-                $employer = data_get($validated['data'], 'employer') ?? data_get($validated['data'], 'formResponses.employer');
-                $employerType = data_get($validated['data'], 'formResponses.employerType');
+                $state->current_step = 'pending_review';
+                $state->status = 'submitted';
+                $state->save();
 
-                if (($employer && stripos($employer, 'Civil Service') !== false) ||
-                    ($employer && stripos($employer, 'SSB') !== false) ||
-                    ($employer && stripos($employer, 'Government') !== false) ||
-                    (is_array($employerType) && !empty($employerType['government'])) ||
-                    ($employerType === 'government')
-                ) {
-                    $isSSB = true;
-                }
-
-                // FIX: ZB Account Holders should ALWAYS go through ZB workflow (FCB check),
-                // even if they are government employees.
-                $isAccountHolder = ($validated['data']['hasAccount'] ?? false) === true || 
-                                   ($validated['data']['formType'] ?? '') === 'account_holder_loan_application';
-
-                if ($isAccountHolder) {
-                    $isSSB = false; 
-                }
-
-                if ($isSSB) {
-                    $ssbService = app(\App\Services\SSBStatusService::class);
-                    $ssbService->initializeSSBApplication($state);
-                } else {
-                    // Default to ZB workflow for non-SSB
-                    // Only start ZB workflow if it's NOT just an account opening (e.g. Loans)
-                    // But ZBStatusService covers general "ZB Application" workflow
-                    $zbService = app(\App\Services\ZBStatusService::class);
-                    $zbService->initializeZBApplication($state);
-                }
+                \Log::info('Application initialized for manual workflow', [
+                    'id' => $state->id,
+                    'reference' => $referenceCode
+                ]);
             } catch (\Exception $e) {
-                \Log::error('Failed to initialize application status', [
+                \Log::error('Failed to initialize manual application status', [
                     'id' => $state->id,
                     'error' => $e->getMessage()
                 ]);
-                // Continue execution - failure to init status shouldn't block submission
             }
 
             // Send confirmation SMS
