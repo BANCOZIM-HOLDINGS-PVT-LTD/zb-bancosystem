@@ -34,7 +34,7 @@ class ZbAdminPanelProvider extends PanelProvider
             ])
             ->discoverResources(in: app_path('Filament/ZbAdmin/Resources'), for: 'App\\Filament\\ZbAdmin\\Resources')
             ->resources([
-                \App\Filament\Resources\ApplicantDocumentsVerificationResource::class,
+                // Redundant resource removed
             ])
             ->discoverPages(in: app_path('Filament/ZbAdmin/Pages'), for: 'App\\Filament\\ZbAdmin\\Pages')
             ->pages([
