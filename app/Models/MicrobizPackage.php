@@ -46,8 +46,7 @@ class MicrobizPackage extends Model
             }
 
             $qty = $item->pivot->quantity ?? 1;
-            $codeDisplay = $code ? "[$code] " : "";
-            $description .= "-{$codeDisplay}{$item->name} (x{$qty})\n";
+            $description .= "-{$item->name} (x{$qty})\n";
         }
 
         return $description;

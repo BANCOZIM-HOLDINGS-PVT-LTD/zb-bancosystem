@@ -686,11 +686,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                 </span>
                                             )}
                                         </h3>
-                                        {business.product_code && (
-                                            <span className="inline-block text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded mb-1 mr-2">
-                                                {business.product_code}
-                                            </span>
-                                        )}
                                         {business.specification && (
                                             <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">
                                                 {business.specification}
@@ -755,13 +750,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                         <div className="space-y-6">
                             <div>
                                 <h2 className="text-3xl font-bold text-gray-900 mb-1">{selectedBusiness.name}</h2>
-                                {selectedBusiness.product_code && (
-                                    <div className="flex flex-wrap gap-2 mb-2">
-                                        <span className="inline-block text-sm font-mono bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded">
-                                            Code: {selectedBusiness.product_code}
-                                        </span>
-                                    </div>
-                                )}
                                 {selectedBusiness.specification && (
                                     <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700 mb-4">
                                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Specification</h4>
