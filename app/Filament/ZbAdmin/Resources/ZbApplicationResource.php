@@ -45,12 +45,12 @@ class ZbApplicationResource extends Resource
                 // Management sees everything EXCEPT what's still in Stage 1
                 // They handle allocation for 'qupa_allocation_pending'
             } elseif ($user->isBranchManager()) {
-                // Branch Managers see applications for their branch that are in 'manager_approval' 
+                // Branch Managers see applications for their branch that are in 'manager_approval'
                 // OR 'officer_check' (to supervise)
+                // NEW: Also see 'qupa_allocation_pending' if it's assigned to their branch
                 $query->where('assigned_branch_id', $user->branch_id)
-                      ->whereIn('current_step', ['officer_check', 'manager_approval', 'approved', 'rejected']);
-            } elseif ($user->isLoanOfficer()) {
-                // Loan Officers see applications assigned to them OR from their referral links
+                      ->whereIn('current_step', ['qupa_allocation_pending', 'officer_check', 'manager_approval', 'approved', 'rejected']);
+            } elseif ($user->isLoanOfficer()) {                // Loan Officers see applications assigned to them OR from their referral links
                 $query->where(function($q) use ($user) {
                     $q->where('qupa_admin_id', $user->id)
                       ->orWhere('assigned_branch_id', $user->branch_id); // If branch-wide access allowed
@@ -120,13 +120,19 @@ class ZbApplicationResource extends Resource
                     ->label('Allocate')
                     ->icon('heroicon-o-user-plus')
                     ->color('warning')
-                    ->visible(fn (Model $record) => $record->current_step === 'qupa_allocation_pending' && $user->isQupaManagement())
+                    ->visible(fn (Model $record) => 
+                        $record->current_step === 'qupa_allocation_pending' && 
+                        ($user->isQupaManagement() || ($user->isBranchManager() && $record->assigned_branch_id === $user->branch_id))
+                    )
                     ->form([
                         Forms\Components\Select::make('branch_id')
                             ->label('Assign to Branch')
                             ->options(Branch::active()->pluck('name', 'id'))
                             ->required()
-                            ->reactive(),
+                            ->reactive()
+                            ->default(fn (Model $record) => $record->assigned_branch_id)
+                            ->disabled(fn () => !$user->isQupaManagement())
+                            ->dehydrated(),
                         Forms\Components\Select::make('officer_id')
                             ->label('Assign to Officer')
                             ->options(fn (Forms\Get $get) => 
@@ -154,9 +160,24 @@ class ZbApplicationResource extends Resource
                     ->form([
                         Forms\Components\Section::make('Financial Verification')
                             ->schema([
-                                Forms\Components\TextInput::make('monthly_income')->numeric()->required(),
-                                Forms\Components\TextInput::make('monthly_expenses')->numeric()->required(),
-                                Forms\Components\Textarea::make('officer_notes')->label('Assessment Notes')->required(),
+                                Forms\Components\Select::make('salary_consistency')
+                                    ->label('Salary Deposit Consistency')
+                                    ->options([
+                                        'yes' => 'Yes',
+                                        'no' => 'No',
+                                    ])
+                                    ->required(),
+                                Forms\Components\Select::make('dbr_status')
+                                    ->label('DBR 40% Status')
+                                    ->options([
+                                        'yes' => 'Yes',
+                                        'no' => 'No',
+                                        'borderline' => 'Borderline',
+                                    ])
+                                    ->required(),
+                                Forms\Components\Textarea::make('officer_notes')
+                                    ->label('Assessment Notes')
+                                    ->required(),
                             ]),
                     ])
                     ->action(function (array $data, Model $record) {
@@ -165,8 +186,8 @@ class ZbApplicationResource extends Resource
                             'name' => auth()->user()->name,
                             'designation' => 'Loan Officer',
                             'date' => now()->toIso8601String(),
-                            'income' => $data['monthly_income'],
-                            'expenses' => $data['monthly_expenses'],
+                            'salary_consistency' => $data['salary_consistency'],
+                            'dbr_status' => $data['dbr_status'],
                             'notes' => $data['officer_notes'],
                         ];
                         $record->metadata = $metadata;
@@ -184,6 +205,18 @@ class ZbApplicationResource extends Resource
                     ->visible(fn (Model $record) => $record->current_step === 'manager_approval' && ($user->isBranchManager() || $user->isQupaManagement()))
                     ->requiresConfirmation()
                     ->form([
+                        Forms\Components\Section::make('Officer Assessment Results')
+                            ->schema([
+                                Forms\Components\Placeholder::make('salary_consistency_view')
+                                    ->label('Salary Deposit Consistency')
+                                    ->content(fn (Model $record) => strtoupper($record->metadata['officer_check']['salary_consistency'] ?? 'N/A')),
+                                Forms\Components\Placeholder::make('dbr_status_view')
+                                    ->label('DBR 40% Status')
+                                    ->content(fn (Model $record) => strtoupper($record->metadata['officer_check']['dbr_status'] ?? 'N/A')),
+                                Forms\Components\Placeholder::make('officer_notes_view')
+                                    ->label('Officer Assessment Notes')
+                                    ->content(fn (Model $record) => $record->metadata['officer_check']['notes'] ?? 'N/A'),
+                            ])->columns(2),
                         Forms\Components\Textarea::make('manager_notes')->label('Manager Comments'),
                     ])
                     ->action(function (array $data, Model $record) {
