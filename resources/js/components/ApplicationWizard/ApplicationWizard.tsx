@@ -524,15 +524,22 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         // trust the server-provided step and data over local storage
         const urlParams = new URLSearchParams(window.location.search);
         const isResuming = urlParams.get('resume') === 'true';
+        const urlSessionId = urlParams.get('session') || propSessionId;
 
         if (isResuming && initialStep !== 'product') {
+            let step = initialStep;
+            // Fix for legacy stale state from server
+            if (step === 'Language_selection' || step === 'language_selection') {
+                step = 'product';
+            }
+
             // Server loaded the saved ApplicationState - use it directly
             // Also clear stale local state to avoid conflicts
             localStateManager.clearLocalState();
             return {
-                currentStep: initialStep,
+                currentStep: step,
                 wizardData: initialData,
-                sessionId: propSessionId || stateManager.generateSessionId()
+                sessionId: urlSessionId || stateManager.generateSessionId()
             };
         }
 
@@ -544,29 +551,61 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             return {
                 currentStep: initialStep,
                 wizardData: initialData,
-                sessionId: propSessionId || stateManager.generateSessionId()
+                sessionId: urlSessionId || stateManager.generateSessionId()
             };
+        }
+
+        // If we are resuming after registration, check pendingWizardState
+        if (isResuming) {
+            try {
+                const pendingStateStr = localStorage.getItem('pendingWizardState');
+                if (pendingStateStr) {
+                    const pendingState = JSON.parse(pendingStateStr);
+                    // Clear it so it's only used once
+                    localStorage.removeItem('pendingWizardState');
+
+                    if (pendingState && (pendingState.sessionId === urlSessionId || pendingState.sessionId === propSessionId)) {
+                        return {
+                            currentStep: 'employer', // Skip past registration
+                            wizardData: { ...initialData, ...pendingState.data },
+                            sessionId: urlSessionId || pendingState.sessionId
+                        };
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to parse pendingWizardState', error);
+            }
         }
 
         const savedState = localStateManager.getLocalState();
         if (savedState && savedState.sessionId && savedState.currentStep && savedState.formData) {
-            let resumeStep = savedState.currentStep;
-            // If resuming from registration and user is authenticated, skip to employer
-            if (isResuming && savedState.currentStep === 'registration') {
-                resumeStep = 'employer';
-            }
+            // Only use saved state if there's no propSessionId mismatch
+            // Or if they match perfectly (prevent loading stale session states)
+            if (!urlSessionId || savedState.sessionId === urlSessionId) {
+                let resumeStep = savedState.currentStep;
+                
+                // Fix for legacy stale state
+                if (resumeStep === 'Language_selection' || resumeStep === 'language_selection') {
+                    resumeStep = 'product';
+                }
 
-            return {
-                currentStep: resumeStep,
-                wizardData: { ...initialData, ...savedState.formData },
-                sessionId: savedState.sessionId
-            };
+                // If resuming from registration and user is authenticated, skip to employer
+                if (authenticatedUser && resumeStep === 'registration') {
+                    resumeStep = 'employer';
+                }
+
+                return {
+                    currentStep: resumeStep,
+                    wizardData: { ...initialData, ...savedState.formData },
+                    sessionId: savedState.sessionId
+                };
+            }
         }
 
         return {
             currentStep: initialStep,
             wizardData: initialData,
-            sessionId: propSessionId || stateManager.generateSessionId()
+            sessionId: urlSessionId || stateManager.generateSessionId()
         };
     };
 
@@ -646,9 +685,27 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
     useEffect(() => {
         if (currentStep === 'registration' && authenticatedUser) {
             // User is authenticated but on registration step - skip to next step
+            // First try to find it in the filtered steps
             const currentIndex = steps.findIndex(s => s === 'registration');
+            
             if (currentIndex >= 0 && currentIndex < steps.length - 1) {
                 setCurrentStep(steps[currentIndex + 1] as any);
+            } else {
+                // If not in filtered steps (expected), find where it would be in allSteps
+                // and skip to the next available step in 'steps'
+                const allStepsIndex = allSteps.indexOf('registration');
+                if (allStepsIndex >= 0) {
+                    const remainingSteps = allSteps.slice(allStepsIndex + 1);
+                    const nextStep = remainingSteps.find(s => steps.includes(s));
+                    if (nextStep) {
+                        setCurrentStep(nextStep as any);
+                    } else {
+                        // Fallback to employer
+                        setCurrentStep('employer');
+                    }
+                } else {
+                    setCurrentStep('employer');
+                }
             }
         }
     }, [currentStep, authenticatedUser, steps]);
@@ -760,7 +817,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         setWizardData(updatedData);
 
         // Save to local storage immediately
-        localStateManager.saveLocalState(sessionId, currentStep, updatedData);
+        localStateManager.saveLocalState(sessionId || '', currentStep, updatedData);
 
         // Check if we need to generate a reference code at this step
         if (currentStep === 'form' && !updatedData.referenceCode) {
@@ -845,10 +902,10 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             setLoading(true);
             try {
                 // Save locally immediately (fast)
-                localStateManager.saveLocalState(sessionId, nextStep, updatedData);
+                localStateManager.saveLocalState(sessionId || '', nextStep, updatedData);
 
                 // Save remotely with debounce to prevent duplicate API calls
-                stateManager.debouncedSaveState(sessionId, nextStep, updatedData);
+                stateManager.debouncedSaveState(sessionId || '', nextStep, updatedData);
 
                 setCurrentStep(nextStep);
             } catch (error) {
@@ -869,7 +926,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             setCurrentStep(prevStep);
 
             // Save the current step to local storage when navigating back
-            localStateManager.saveLocalState(sessionId, prevStep, wizardData);
+            localStateManager.saveLocalState(sessionId || '', prevStep, wizardData);
         }
     }, [currentStep, steps, sessionId, wizardData, localStateManager]);
 
@@ -931,7 +988,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             };
 
             // Save state as completed first
-            await stateManager.saveState(sessionId, 'completed', dataWithReference);
+            await stateManager.saveState(sessionId || '', 'completed', dataWithReference);
 
             // Submit application via API - this will also generate the reference code if needed
             const response = await fetch('/api/states/create-application', {
@@ -1050,7 +1107,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                     <RegistrationPrompt
                         data={wizardData}
                         onBack={handleBack}
-                        sessionId={sessionId}
+                        sessionId={sessionId || ''}
                     />
                 );
             case 'summary':

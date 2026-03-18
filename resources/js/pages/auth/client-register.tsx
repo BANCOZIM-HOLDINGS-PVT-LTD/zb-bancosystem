@@ -17,7 +17,7 @@ type ClientRegisterForm = {
 };
 
 export default function ClientRegister() {
-    const { data, setData, post, processing, errors, reset } = useForm<Required<ClientRegisterForm>>({
+    const { data, setData, post, processing, errors, reset, setError } = useForm<Required<ClientRegisterForm>>({
         phone: '+263', // Default country code
     });
 
@@ -72,14 +72,20 @@ export default function ClientRegister() {
                     if (otpResponse.ok) {
                         window.location.href = '/client/verify-otp';
                         return;
+                    } else {
+                        try {
+                            const errData = await otpResponse.json();
+                            setError('phone', errData.message || 'Failed to send OTP. Please try again later.');
+                        } catch (e) {
+                            setError('phone', 'Failed to send OTP. Please try again later.');
+                        }
                     }
                 } catch (error) {
                     console.error('Failed to send OTP to existing user', error);
+                    setError('phone', 'Network error. Failed to send OTP.');
                 }
                 
-                // Fallback to login if OTP sending fails
                 setCheckingSession(false);
-                window.location.href = `/client/login`;
                 return;
             }
 
@@ -138,12 +144,15 @@ export default function ClientRegister() {
                         // Redirect to OTP verification page
                         window.location.href = '/client/verify-otp';
                     } else {
-                        // Fallback: redirect to login
-                        window.location.href = `/client/login`;
+                         try {
+                             const errData = await otpResponse.json();
+                             setError('phone', errData.message || 'Failed to send OTP. Please try again later.');
+                         } catch (e) {
+                             setError('phone', 'Failed to send OTP. Please try again later.');
+                         }
                     }
                 } catch {
-                    // Fallback: redirect to login
-                    window.location.href = `/client/login`;
+                    setError('phone', 'Network error. Failed to send OTP.');
                 }
                 return;
             }

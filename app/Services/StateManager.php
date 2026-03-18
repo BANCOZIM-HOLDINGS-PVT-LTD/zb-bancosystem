@@ -184,6 +184,12 @@ class StateManager
             'summary', 'form', 'documents', 'completed', 'in_review',
             'approved', 'rejected', 'pending_documents', 'processing',
             
+            // NEW: Additional web wizard steps
+            'housePlanApproval', 'constructionDetails', 'companyRegistration',
+            'zimparksHoliday', 'creditTerm', 'creditType', 'delivery', 
+            'registration', 'depositPayment',
+            'deposit_payment', // Just in case of different casing elsewhere
+            
             // WhatsApp Adala conversation flow
             'language_selection', 'intent_selection', 'intent_selection_page2', 'payment_method', 'main_menu', 'currency_selection',
             'browse_categories', 'browse_subcategories', 'browse_series', 'browse_products', 'browse_packages', 'product_link_sent', 'cash_payment_selection',
