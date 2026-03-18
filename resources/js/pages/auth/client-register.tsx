@@ -56,8 +56,28 @@ export default function ClientRegister() {
             const result = await response.json();
 
             // If phone is already registered and no incomplete session,
-            // redirect to login instead of showing "already registered" error
+            // send OTP to verify their identity instead of redirecting to login
             if (result.is_registered && !result.has_existing_session) {
+                setCheckingSession(true);
+                try {
+                    const otpResponse = await fetch('/client/send-otp-existing', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        },
+                        body: JSON.stringify({ phone: data.phone }),
+                    });
+
+                    if (otpResponse.ok) {
+                        window.location.href = '/client/verify-otp';
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Failed to send OTP to existing user', error);
+                }
+                
+                // Fallback to login if OTP sending fails
                 setCheckingSession(false);
                 window.location.href = `/client/login`;
                 return;
