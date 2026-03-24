@@ -81,6 +81,7 @@ class ApplicationStatusController extends Controller
         return response()->json([
             'sessionId' => $application->session_id,
             'status' => $status,
+            'currentStep' => $application->current_step,
             'applicantName' => $applicantName,
             'productName' => $productName,
             'loanAmount' => $formData['finalPrice'] ?? ($formResponses['loanAmount'] ?? '0'),
@@ -88,21 +89,89 @@ class ApplicationStatusController extends Controller
             'lastUpdated' => $application->updated_at->format('F j, Y'),
             'timeline' => $timeline,
             'progressPercentage' => $this->calculateProgressPercentage($application),
-            'nextAction' => $this->getNextAction($application),
+            'nextAction' => $metadata['client_status_message'] ?? $this->getNextAction($application),
+            'unclearDocuments' => $metadata['unclear_documents'] ?? [],
         ]);
     }
+/**
+ * Handle document resubmission from client
+ */
+public function resubmit(Request $request): JsonResponse
+{
+    $request->validate([
+        'sessionId' => 'required|string',
+        'type' => 'required|in:reupload,employment_proof',
+        'documents' => 'required|array',
+    ]);
 
-    private function determineApplicationStatus(ApplicationState $application): string
-    {
-        return match($application->current_step) {
-            'pending_review' => 'document_verification',
-            'qupa_allocation_pending' => 'allocation',
-            'officer_check' => 'under_review',
-            'manager_approval' => 'final_approval',
-            'approved' => 'approved',
-            'rejected' => 'rejected',
-            default => $application->status ?: 'processing',
-        };
+    $application = ApplicationState::where('session_id', $request->sessionId)->first();
+
+    if (!$application) {
+        return response()->json(['success' => false, 'message' => 'Application not found'], 404);
+    }
+
+    $formData = $application->form_data ?? [];
+    $metadata = $application->metadata ?? [];
+    $resubmittedDocs = [];
+
+    foreach ($request->file('documents') as $key => $file) {
+        $path = $file->store('applications/resubmissions/' . $application->session_id, 'public');
+        $resubmittedDocs[$key] = [
+            'path' => $path,
+            'name' => $file->getClientOriginalName(),
+            'type' => $file->getClientMimeType(),
+            'uploaded_at' => now()->toIso8601String(),
+        ];
+
+        // Update the main form_data documents if it's a re-upload of existing type
+        if ($request->type === 'reupload') {
+            // This logic depends on how documents are structured in form_data
+            // We'll add to a resubmission log in metadata for admin visibility
+        }
+    }
+
+    $metadata['resubmissions'][] = [
+        'type' => $request->type,
+        'docs' => $resubmittedDocs,
+        'at' => now()->toIso8601String(),
+    ];
+
+    // Update application state
+    if ($request->type === 'reupload') {
+        $application->current_step = 'pending_review'; // Go back to Bancozim check
+        $application->status = 'resubmitted';
+        $metadata['client_status_message'] = "Documents resubmitted. Awaiting Bancozim Re-verification.";
+    } else {
+        // Proof of employment submitted
+        $application->current_step = 'officer_check'; // Move to Stage 2: Qupa Officer
+        $application->status = 'employment_proof_submitted';
+        $metadata['client_status_message'] = "Proof of employment submitted. Awaiting Qupa Loan Officer Checking";
+    }
+
+    $application->metadata = $metadata;
+    $application->save();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Documents submitted successfully. Your application status has been updated.',
+    ]);
+}
+
+private function determineApplicationStatus(ApplicationState $application): string
+{
+    return match($application->current_step) {
+        'pending_review' => 'document_verification',
+        'awaiting_document_reupload' => 'resubmission_required',
+        'awaiting_proof_of_employment' => 'employment_proof_required',
+        'qupa_allocation_pending' => 'allocation',
+        'officer_check' => 'under_review',
+        'manager_approval' => 'final_approval',
+        'approved' => 'approved',
+        'rejected' => 'rejected',
+        default => $application->status ?: 'processing',
+    };
+}
+
     }
 
     private function buildApplicationTimeline(ApplicationState $application, string $status): array

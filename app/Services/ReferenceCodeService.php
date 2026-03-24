@@ -87,7 +87,7 @@ class ReferenceCodeService
         // Remove any spaces or special characters
         $code = preg_replace('/[^A-Z0-9]/', '', $code);
 
-        // Check if this national ID is already used by another application
+        // Check if this reference code is already used by another application
         // Include trashed records to prevent unique constraint violations
         $existingApplication = ApplicationState::withTrashed()
             ->where('reference_code', $code)

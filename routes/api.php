@@ -250,6 +250,7 @@ Route::prefix('reference-code')->group(function () {
 // Application Status API routes
 Route::prefix('application')->group(function () {
     Route::get('/status/{reference}', [\App\Http\Controllers\ApplicationStatusController::class, 'getStatus']);
+    Route::post('/resubmit', [\App\Http\Controllers\ApplicationStatusController::class, 'resubmit']);
     Route::put('/status/{sessionId}', [\App\Http\Controllers\ApplicationStatusController::class, 'updateStatus'])->middleware('auth:sanctum');
     Route::post('/notifications/{reference}/mark-read', [\App\Http\Controllers\ApplicationStatusController::class, 'markNotificationsAsRead']);
     Route::get('/status-updates/{reference}', [\App\Http\Controllers\ApplicationStatusController::class, 'getStatusUpdates']);

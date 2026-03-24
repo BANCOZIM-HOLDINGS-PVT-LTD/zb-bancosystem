@@ -36,8 +36,8 @@ class ZbApplicationResource extends Resource
         $user = Filament::auth()->user();
         $query = parent::getEloquentQuery();
 
-        // 1. Filter out Stage 1 applications (they are in DocumentVerificationResource)
-        $query->whereNotIn('current_step', ['pending_review']);
+        // 1. Filter out Stage 1 and Waiting stages (Stage 1 is DocumentVerificationResource)
+        $query->whereNotIn('current_step', ['pending_review', 'awaiting_document_reupload', 'awaiting_proof_of_employment']);
 
         // 2. Role-based scoping
         if ($user && $user->isQupaAdmin()) {
@@ -80,7 +80,11 @@ class ZbApplicationResource extends Resource
 
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('reference_code')->label('Ref Code')->searchable(),
+                Tables\Columns\TextColumn::make('application_number')
+                    ->label('App No')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('reference_code')->label('National ID')->searchable(),
                 Tables\Columns\TextColumn::make('applicant_name')
                     ->label('Applicant')
                     ->getStateUsing(fn (Model $record) =>
@@ -157,44 +161,123 @@ class ZbApplicationResource extends Resource
                     ->icon('heroicon-o-shield-check')
                     ->color('primary')
                     ->visible(fn (Model $record) => $record->current_step === 'officer_check' && ($user->isLoanOfficer() || $user->isQupaManagement()))
-                    ->form([
-                        Forms\Components\Section::make('Financial Verification')
-                            ->schema([
-                                Forms\Components\Select::make('salary_consistency')
-                                    ->label('Salary Deposit Consistency')
-                                    ->options([
-                                        'yes' => 'Yes',
-                                        'no' => 'No',
-                                    ])
-                                    ->required(),
-                                Forms\Components\Select::make('dbr_status')
-                                    ->label('DBR 40% Status')
-                                    ->options([
-                                        'yes' => 'Yes',
-                                        'no' => 'No',
-                                        'borderline' => 'Borderline',
-                                    ])
-                                    ->required(),
-                                Forms\Components\Textarea::make('officer_notes')
-                                    ->label('Assessment Notes')
-                                    ->required(),
-                            ]),
-                    ])
+                    ->form(function (Model $record) {
+                        $isSSB = str_starts_with($record->reference_code, 'SSB');
+                        
+                        $fields = [
+                            Forms\Components\Section::make('Financial Verification')
+                                ->schema([
+                                    Forms\Components\Select::make('salary_consistency')
+                                        ->label('Salary Deposit Consistency')
+                                        ->options([
+                                            'yes' => 'Yes',
+                                            'no' => 'No',
+                                        ])
+                                        ->required(),
+                                    Forms\Components\Select::make('dbr_status')
+                                        ->label('DBR 40% Status')
+                                        ->options([
+                                            'yes' => 'Yes',
+                                            'no' => 'No',
+                                            'borderline' => 'Borderline',
+                                        ])
+                                        ->required(),
+                                    
+                                    // Predefined Assessment Notes
+                                    Forms\Components\Select::make('officer_decision')
+                                        ->label('Assessment Result')
+                                        ->options([
+                                            'recommend' => 'Recommend (Everything in order)',
+                                            'decline_salary_inconsistency' => 'Declined - due to salary inconsistency',
+                                            'decline_salary_insufficiency' => 'Declined - due to salary insufficiency',
+                                            'decline_fcb' => 'Declined - due to FCB blacklisting',
+                                        ])
+                                        ->required()
+                                        ->reactive(),
+                                    
+                                    // FCB Check for ZB
+                                    Forms\Components\Select::make('fcb_status')
+                                        ->label('FCB Check Status')
+                                        ->options([
+                                            'good' => 'Good',
+                                            'fair' => 'Fair',
+                                            'bad' => 'Bad',
+                                        ])
+                                        ->required()
+                                        ->hidden($isSSB),
+                                        
+                                    // SSB Status for SSB
+                                    Forms\Components\Select::make('ssb_status')
+                                        ->label('SSB Approval Status')
+                                        ->options([
+                                            'successful' => 'Successful',
+                                            'failed' => 'Failed',
+                                        ])
+                                        ->required()
+                                        ->visible($isSSB),
+                                    
+                                    // Report Upload (FCB or SSB proof)
+                                    Forms\Components\FileUpload::make('verification_report')
+                                        ->label($isSSB ? 'SSB Confirmation Report' : 'FCB Report')
+                                        ->disk('public')
+                                        ->directory('reports')
+                                        ->visibility('public'),
+
+                                    Forms\Components\Textarea::make('officer_notes')
+                                        ->label('Additional Officer Notes'),
+                                ]),
+                        ];
+                        
+                        return $fields;
+                    })
                     ->action(function (array $data, Model $record) {
                         $metadata = $record->metadata ?? [];
+                        $isSSB = str_starts_with($record->reference_code, 'SSB');
+                        
+                        $decisionLabels = [
+                            'recommend' => 'Recommend (Everything in order)',
+                            'decline_salary_inconsistency' => 'Declined - due to salary inconsistency',
+                            'decline_salary_insufficiency' => 'Declined - due to salary insufficiency',
+                            'decline_fcb' => 'Declined - due to FCB blacklisting',
+                        ];
+
                         $metadata['officer_check'] = [
                             'name' => auth()->user()->name,
                             'designation' => 'Loan Officer',
                             'date' => now()->toIso8601String(),
                             'salary_consistency' => $data['salary_consistency'],
                             'dbr_status' => $data['dbr_status'],
+                            'officer_decision' => $data['officer_decision'],
+                            'fcb_status' => $data['fcb_status'] ?? null,
+                            'ssb_status' => $data['ssb_status'] ?? null,
+                            'report_path' => $data['verification_report'] ?? null,
                             'notes' => $data['officer_notes'],
                         ];
+                        
+                        if ($data['officer_decision'] === 'recommend') {
+                            $record->current_step = 'manager_approval';
+                            
+                            if ($isSSB) {
+                                $metadata['client_status_message'] = "Loan officer checked, ssb status successfully approved. Awaiting Approval";
+                            } else {
+                                $metadata['client_status_message'] = "Loan officer checked and recommended. Awaiting Final Manager Approval.";
+                            }
+                        } else {
+                            $record->current_step = 'rejected';
+                            $record->status = 'rejected';
+                            $reason = $decisionLabels[$data['officer_decision']];
+                            
+                            if ($isSSB && $data['ssb_status'] === 'failed') {
+                                $metadata['client_status_message'] = "Loan officer ssb check failed because of {$reason}";
+                            } else {
+                                $metadata['client_status_message'] = "Application declined: {$reason}";
+                            }
+                        }
+
                         $record->metadata = $metadata;
-                        $record->current_step = 'manager_approval';
                         $record->save();
 
-                        Notification::make()->title('Check Complete. Sent for Manager Approval.')->success()->send();
+                        Notification::make()->title('Check Complete. Application status updated.')->success()->send();
                     }),
 
                 // MANAGER ACTION: Final Approval
@@ -213,9 +296,16 @@ class ZbApplicationResource extends Resource
                                 Forms\Components\Placeholder::make('dbr_status_view')
                                     ->label('DBR 40% Status')
                                     ->content(fn (Model $record) => strtoupper($record->metadata['officer_check']['dbr_status'] ?? 'N/A')),
+                                Forms\Components\Placeholder::make('decision_view')
+                                    ->label('Officer Decision')
+                                    ->content(fn (Model $record) => $record->metadata['officer_check']['officer_decision'] ?? 'N/A'),
+                                Forms\Components\Placeholder::make('fcb_ssb_view')
+                                    ->label('FCB/SSB Status')
+                                    ->content(fn (Model $record) => $record->metadata['officer_check']['fcb_status'] ?? $record->metadata['officer_check']['ssb_status'] ?? 'N/A'),
                                 Forms\Components\Placeholder::make('officer_notes_view')
                                     ->label('Officer Assessment Notes')
-                                    ->content(fn (Model $record) => $record->metadata['officer_check']['notes'] ?? 'N/A'),
+                                    ->content(fn (Model $record) => $record->metadata['officer_check']['notes'] ?? 'N/A')
+                                    ->columnSpanFull(),
                             ])->columns(2),
                         Forms\Components\Textarea::make('manager_notes')->label('Manager Comments'),
                     ])
@@ -227,10 +317,13 @@ class ZbApplicationResource extends Resource
                             'date' => now()->toIso8601String(),
                             'notes' => $data['manager_notes'] ?? '',
                         ];
-                        $record->metadata = $metadata;
+                        
                         $record->current_step = 'approved';
                         $record->status = 'approved';
                         $record->approved_at = now();
+                        
+                        $metadata['client_status_message'] = "Loan application approved, Delivery Process has been initiated";
+                        $record->metadata = $metadata;
                         $record->save();
 
                         // Trigger PO and Delivery
@@ -238,11 +331,24 @@ class ZbApplicationResource extends Resource
                             $poService = app(\App\Services\PurchaseOrderService::class);
                             $poService->createFromApplication($record);
                             
-                            // Initialize delivery
-                            $deliveryService = app(\App\Services\DeliveryTrackingController::class); // Assuming this is where it's handled or similar service
-                            // ... existing delivery initiation logic ...
+                            // Initialize delivery tracking
+                            $formResponses = $record->form_data['formResponses'] ?? [];
+                            $deliverySelection = $record->form_data['deliverySelection'] ?? [];
+                            $depot = $deliverySelection['depot'] ?? $deliverySelection['city'] ?? 'Default Depot';
+
+                            \App\Models\DeliveryTracking::create([
+                                'application_state_id' => $record->id,
+                                'status' => 'pending',
+                                'recipient_name' => trim(($formResponses['firstName'] ?? '') . ' ' . ($formResponses['lastName'] ?? ($formResponses['surname'] ?? ''))),
+                                'recipient_phone' => $formResponses['mobile'] ?? $formResponses['cellNumber'] ?? $record->user_identifier,
+                                'client_national_id' => $formResponses['nationalIdNumber'] ?? $record->reference_code,
+                                'product_type' => $record->form_data['productName'] ?? 'Product',
+                                'courier_type' => $deliverySelection['agent'] ?? 'Courier',
+                                'delivery_depot' => $depot,
+                                'delivery_address' => $depot,
+                            ]);
                         } catch (\Exception $e) {
-                            \Log::error("Post-approval services failed: " . $e->getMessage());
+                            Log::error("Post-approval services failed: " . $e->getMessage());
                         }
 
                         Notification::make()->title('Application Fully Approved!')->success()->send();

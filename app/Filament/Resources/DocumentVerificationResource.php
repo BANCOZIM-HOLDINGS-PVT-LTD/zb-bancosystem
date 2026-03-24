@@ -52,7 +52,11 @@ class DocumentVerificationResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('reference_code')->label('Ref Code')->searchable(),
+                Tables\Columns\TextColumn::make('application_number')
+                    ->label('App No')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('reference_code')->label('National ID')->searchable(),
                 Tables\Columns\TextColumn::make('applicant_name')
                     ->label('Applicant')
                     ->getStateUsing(fn (Model $record) => 
@@ -103,30 +107,23 @@ class DocumentVerificationResource extends Resource
                         ];
                         
                         $record->metadata = $metadata;
+                        $referenceCode = $record->reference_code;
 
-                        // Routing Logic
-                        if ($record->qupa_admin_id) {
-                            // Route A: Referral Link -> Goes to the specific Loan Officer
-                            $record->current_step = 'officer_check';
-                            $message = "Documents verified. Sent to Loan Officer: " . ($record->qupaAdmin->name ?? 'Assigned Officer');
+                        // Routing Logic & Status Message
+                        if (str_starts_with($referenceCode, 'SSB')) {
+                            $clientMessage = "Documents reviewed and accepted. Awaiting Qupa Loan Officer Checking";
+                            $record->current_step = 'officer_check'; // SSB goes straight to officer for SSB check
                         } else {
-                            // Route B: General -> Goes to Main Qupa Admin for allocation
-                            $record->current_step = 'qupa_allocation_pending';
-                            $message = "Documents verified. Sent to Qupa Management for allocation.";
+                            $clientMessage = "Documents were reviewed and accepted. Please upload your proof of employment here:";
+                            $record->current_step = 'awaiting_proof_of_employment'; // ZB needs employment letter
                         }
 
+                        $metadata['client_status_message'] = $clientMessage;
+                        $record->metadata = $metadata;
                         $record->status = 'documents_verified';
                         $record->save();
 
-                        // Notify Client (Optional Service call here)
-                        try {
-                             $notificationService = app(\App\Services\NotificationService::class);
-                             $notificationService->sendStatusUpdateNotification($record, 'pending_review', $record->current_step);
-                        } catch (\Exception $e) {
-                             \Log::error("Failed to send status update notification: " . $e->getMessage());
-                        }
-
-                        Notification::make()->title($message)->success()->send();
+                        Notification::make()->title($clientMessage)->success()->send();
                     }),
 
                 Action::make('reject_documents')
@@ -134,14 +131,41 @@ class DocumentVerificationResource extends Resource
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->form([
-                        Forms\Components\Textarea::make('rejection_reason')
-                            ->label('Reason for Rejection')
+                        Forms\Components\CheckboxList::make('unclear_docs')
+                            ->label('Unclear Documents')
+                            ->options([
+                                'id' => 'National ID Card',
+                                'payslip' => 'Latest Payslip',
+                                'photo' => 'Passport Photo / Selfie',
+                                
+                            ])
                             ->required(),
+                        Forms\Components\Textarea::make('rejection_reason')
+                            ->label('Additional Notes')
+                            ->placeholder('Any other reason for rejection...'),
                     ])
                     ->action(function (Model $record, array $data) {
-                        $record->current_step = 'rejected';
-                        $record->status = 'rejected';
                         $metadata = $record->metadata ?? [];
+                        $unclearDocs = $data['unclear_docs'];
+                        
+                        $docLabels = [
+                            'id' => 'National ID Card',
+                            'payslip' => 'Latest Payslip',
+                            'residence' => 'Proof of Residence',
+                            'photo' => 'Passport Photo / Selfie',
+                            'statement' => 'Bank Statement',
+                        ];
+
+                        $list = array_map(fn($d) => $docLabels[$d], $unclearDocs);
+                        $listStr = implode(', ', $list);
+
+                        $clientMessage = "Documents Reviewed, however the following documents were unclear {$listStr}. Please reupload these documents.";
+                        
+                        $record->current_step = 'awaiting_document_reupload';
+                        $record->status = 'resubmission_required';
+                        
+                        $metadata['client_status_message'] = $clientMessage;
+                        $metadata['unclear_documents'] = $unclearDocs;
                         $metadata['rejection_details'] = [
                             'reason' => $data['rejection_reason'],
                             'stage' => 'Bancozim Document Verification',
@@ -151,7 +175,7 @@ class DocumentVerificationResource extends Resource
                         $record->metadata = $metadata;
                         $record->save();
 
-                        Notification::make()->title('Application Rejected')->danger()->send();
+                        Notification::make()->title('Sent back for document reupload')->danger()->send();
                     }),
             ]);
     }

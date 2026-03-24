@@ -294,14 +294,22 @@ class NotificationService
 
             $referenceCode = $applicationState->reference_code ?? $applicationState->session_id;
 
-            // Check if application includes M&E or Training
-            $includesME = $formData['includesMESystem'] ?? false;
-            $includesTraining = $formData['includesTraining'] ?? false;
+            // Check for application type
+            $isZB = str_starts_with($referenceCode, 'ZBAH');
+            $isSSB = str_starts_with($referenceCode, 'SSB');
 
-            if ($includesME || $includesTraining) {
-                $message = "YOUR APPLICATION HAS BEEN Completed TOGETHER WITH THE TRAINING AND OR M&E SYSTEM";
+            if ($isZB) {
+                $message = "Your application has been received, kindly go to your HR to get your confirmation of the employment letter which you will upload when you login to track your application status";
             } else {
-                $message = "Thank you {$applicantName}! Your application ({$referenceCode}) has been received and is under review. We will notify you of any updates.";
+                // Check if application includes M&E or Training
+                $includesME = $formData['includesMESystem'] ?? false;
+                $includesTraining = $formData['includesTraining'] ?? false;
+
+                if ($includesME || $includesTraining) {
+                    $message = "YOUR APPLICATION HAS BEEN Completed TOGETHER WITH THE TRAINING AND OR M&E SYSTEM";
+                } else {
+                    $message = "Thank you {$applicantName}! Your application ({$referenceCode}) has been received and is under review. We will notify you of any updates.";
+                }
             }
             
             Log::info("Sending submission confirmation SMS to {$phone}: {$message}");

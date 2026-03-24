@@ -83,8 +83,13 @@ class SsbLoanResource extends Resource
 
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('application_number')
+                    ->label('App No')
+                    ->searchable()
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('reference_code')
-                    ->label('Reference')
+                    ->label('National ID')
                     ->searchable()
                     ->sortable(),
 

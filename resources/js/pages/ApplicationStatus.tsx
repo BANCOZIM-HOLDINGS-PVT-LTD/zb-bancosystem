@@ -14,17 +14,21 @@ import {
     Phone,
     CreditCard,
     DollarSign,
-    Package
+    Package,
+    Upload,
+    FileText
 } from 'lucide-react';
 import { Link } from '@inertiajs/react';
 import Footer from '@/components/Footer';
+import ApplicationResubmission from '@/components/ApplicationResubmission';
 
 interface ApplicationDetails {
     sessionId: string;
-    status: 'pending' | 'under_review' | 'approved' | 'rejected' | 'completed' | 'account_opened';
+    status: string;
+    currentStep?: string;
     applicationType?: 'account_opening' | 'loan';
     applicantName: string;
-    business: string;
+    productName: string;
     loanAmount: string;
     submittedAt: string;
     creditType?: string;
@@ -38,6 +42,7 @@ interface ApplicationDetails {
     loanEligibleAt?: string;
     nextAction?: string;
     rejectionReason?: string;
+    unclearDocuments?: string[];
 }
 
 export default function ApplicationStatus() {
@@ -172,12 +177,12 @@ export default function ApplicationStatus() {
                     description: 'Your ZB Bank account has been successfully opened! You can now use your account for banking services.'
                 },
             };
-            const config = accountStatusConfig[status as keyof typeof accountStatusConfig] || accountStatusConfig.pending;
+            const config = (accountStatusConfig as any)[status] || accountStatusConfig.pending;
             const Icon = config.icon;
             return { Icon, ...config };
         }
 
-        // Loan application status flow (unchanged)
+        // Loan application status flow
         const statusConfig = {
             'pending': {
                 icon: Clock,
@@ -193,82 +198,54 @@ export default function ApplicationStatus() {
                 label: 'Application Submitted',
                 description: 'Your application has been received and is pending review.'
             },
-            'pending_verification': {
+            'document_verification': {
                 icon: Clock,
                 color: 'text-amber-600 dark:text-amber-400',
                 bg: 'bg-amber-50 dark:bg-amber-900/20',
-                label: 'Document Verification',
-                description: 'We are currently verifying your submitted documents.'
+                label: 'Stage 1: Document Verification',
+                description: 'Bancozim Admin is currently verifying your submitted documents.'
             },
-            'sent_for_checks': {
+            'resubmission_required': {
                 icon: AlertCircle,
-                color: 'text-indigo-600 dark:text-indigo-400',
-                bg: 'bg-indigo-50 dark:bg-indigo-900/20',
-                label: 'Processing Checks',
-                description: 'Your application has been verified and is undergoing automated checks.'
+                color: 'text-orange-600 dark:text-orange-400',
+                bg: 'bg-orange-50 dark:bg-orange-900/20',
+                label: 'Action Required: Re-upload Documents',
+                description: 'Some of your documents were unclear. Please re-upload them below to proceed.'
             },
-            'awaiting_credit_check': {
-                icon: AlertCircle,
-                color: 'text-indigo-600 dark:text-indigo-400',
-                bg: 'bg-indigo-50 dark:bg-indigo-900/20',
-                label: 'Credit Check in Progress',
-                description: 'We are currently assessing your credit eligibility.'
-            },
-            'awaiting_ssb_approval': {
-                icon: AlertCircle,
-                color: 'text-indigo-600 dark:text-indigo-400',
-                bg: 'bg-indigo-50 dark:bg-indigo-900/20',
-                label: 'SSB Approval in Progress',
-                description: 'Your application has been sent to SSB for approval.'
+            'employment_proof_required': {
+                icon: FileText,
+                color: 'text-blue-600 dark:text-blue-400',
+                bg: 'bg-blue-50 dark:bg-blue-900/20',
+                label: 'Action Required: Proof of Employment',
+                description: 'Please upload your Confirmation of Employment letter from your HR.'
             },
             'under_review': {
                 icon: AlertCircle,
+                color: 'text-indigo-600 dark:text-indigo-400',
+                bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+                label: 'Stage 2: Loan Officer Review',
+                description: 'A Qupa Loan Officer is currently assessing your financial eligibility.'
+            },
+            'final_approval': {
+                icon: Clock,
                 color: 'text-blue-600 dark:text-blue-400',
                 bg: 'bg-blue-50 dark:bg-blue-900/20',
-                label: 'Under Review',
-                description: 'Our team is currently reviewing your application.'
+                label: 'Stage 3: Manager Approval',
+                description: 'Your application is with the Branch Manager for final sign-off.'
             },
             'approved': {
                 icon: CheckCircle,
                 color: 'text-green-600 dark:text-green-400',
                 bg: 'bg-green-50 dark:bg-green-900/20',
                 label: 'Approved',
-                description: 'Congratulations! Your application has been approved.'
-            },
-            'ssb_approved': {
-                icon: CheckCircle,
-                color: 'text-green-600 dark:text-green-400',
-                bg: 'bg-green-50 dark:bg-green-900/20',
-                label: 'Approved',
-                description: 'Congratulations! Your SSB loan application has been approved.'
-            },
-            'approved_awaiting_delivery': {
-                icon: Package,
-                color: 'text-emerald-600 dark:text-emerald-400',
-                bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-                label: 'Approved - Awaiting Delivery',
-                description: 'Your application is approved and being prepared for delivery.'
-            },
-            'credit_check_good_approved': {
-                icon: CheckCircle,
-                color: 'text-green-600 dark:text-green-400',
-                bg: 'bg-green-50 dark:bg-green-900/20',
-                label: 'Credit Check Passed',
-                description: 'Your credit check was successful. Finalizing approval.'
-            },
-            'credit_check_poor_rejected': {
-                icon: XCircle,
-                color: 'text-red-600 dark:text-red-400',
-                bg: 'bg-red-50 dark:bg-red-900/20',
-                label: 'Application Rejected',
-                description: 'We regret to inform you that your application was not successful due to credit check results.'
+                description: applicationDetails?.nextAction || 'Congratulations! Your application has been approved and delivery initiated.'
             },
             'rejected': {
                 icon: XCircle,
                 color: 'text-red-600 dark:text-red-400',
                 bg: 'bg-red-50 dark:bg-red-900/20',
                 label: 'Rejected',
-                description: 'Your application was not approved at this time.'
+                description: applicationDetails?.nextAction || 'Your application was not approved at this time.'
             },
             'completed': {
                 icon: CheckCircle,
@@ -277,16 +254,9 @@ export default function ApplicationStatus() {
                 label: 'Completed',
                 description: 'Your application has been completed successfully.'
             },
-            'account_opened': {
-                icon: CheckCircle,
-                color: 'text-green-600 dark:text-green-400',
-                bg: 'bg-green-50 dark:bg-green-900/20',
-                label: 'Account Opened',
-                description: 'Your ZB Bank account has been successfully opened.'
-            },
         };
 
-        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+        const config = (statusConfig as any)[status] || statusConfig.pending;
         const Icon = config.icon;
 
         return { Icon, ...config };
@@ -440,24 +410,42 @@ export default function ApplicationStatus() {
                                     );
                                 })()}
 
-                                <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                {/* Resubmission Forms */}
+                                {applicationDetails.currentStep === 'awaiting_document_reupload' && (
+                                    <ApplicationResubmission 
+                                        sessionId={applicationDetails.sessionId}
+                                        type="reupload"
+                                        unclearDocuments={applicationDetails.unclearDocuments}
+                                        onSuccess={(msg) => {
+                                            setSuccessMessage(msg);
+                                            handleSearchWithRef(applicationDetails.sessionId);
+                                        }}
+                                    />
+                                )}
+
+                                {applicationDetails.currentStep === 'awaiting_proof_of_employment' && (
+                                    <ApplicationResubmission 
+                                        sessionId={applicationDetails.sessionId}
+                                        type="employment_proof"
+                                        onSuccess={(msg) => {
+                                            setSuccessMessage(msg);
+                                            handleSearchWithRef(applicationDetails.sessionId);
+                                        }}
+                                    />
+                                )}
+
+                                <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">
                                     <div className="flex justify-between">
                                         <span className="text-gray-600 dark:text-gray-400">Reference Number</span>
                                         <span className="font-semibold text-gray-900 dark:text-gray-100">{applicationDetails.sessionId}</span>
                                     </div>
-                                    {applicationDetails.zbAccountNumber && (
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600 dark:text-gray-400">ZB Account Number</span>
-                                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">{applicationDetails.zbAccountNumber}</span>
-                                        </div>
-                                    )}
                                     <div className="flex justify-between">
                                         <span className="text-gray-600 dark:text-gray-400">Applicant Name</span>
                                         <span className="font-semibold text-gray-900 dark:text-gray-100">{applicationDetails.applicantName}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-600 dark:text-gray-400">Product/Business</span>
-                                        <span className="font-semibold text-gray-900 dark:text-gray-100">{applicationDetails.business}</span>
+                                        <span className="font-semibold text-gray-900 dark:text-gray-100">{applicationDetails.productName}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-gray-600 dark:text-gray-400">Submitted On</span>
@@ -465,122 +453,6 @@ export default function ApplicationStatus() {
                                     </div>
                                 </div>
                             </Card>
-
-
-
-                            {/* Apply for Loan Section - Only for loan-type applications that are approved */}
-                            {applicationDetails.applicationType !== 'account_opening' &&
-                                ['account_opened', 'approved', 'completed'].includes(applicationDetails.status) && (
-                                    <Card className="p-8 bg-gradient-to-br from-emerald-50 to-blue-50 dark:from-emerald-900/20 dark:to-blue-900/20 border-2 border-emerald-200 dark:border-emerald-800">
-                                        <div className="text-center mb-6">
-                                            <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 dark:bg-emerald-900 rounded-full mb-4">
-                                                <CreditCard className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
-                                            </div>
-                                            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                                                Apply for a Loan
-                                            </h2>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                {applicationDetails.loanEligible
-                                                    ? "You are eligible for a loan! Proceed to apply now."
-                                                    : "Your account is open. You can now apply for a loan."}
-                                            </p>
-                                        </div>
-
-                                        <Button
-                                            onClick={handleApplyForLoan}
-                                            disabled={processingLoan}
-                                            size="lg"
-                                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-lg py-6"
-                                        >
-                                            {processingLoan ? 'Processing...' : 'Apply for Loan Now'}
-                                        </Button>
-                                    </Card>
-                                )}
-
-                            {/* Deposit Payment Section - Only for approved PDC applications with unpaid deposit */}
-                            {applicationDetails.status === 'approved' &&
-                                applicationDetails.creditType === 'PDC' &&
-                                !applicationDetails.depositPaid &&
-                                applicationDetails.depositAmount &&
-                                applicationDetails.depositAmount > 0 && (
-                                    <Card className="p-8 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 border-2 border-emerald-200 dark:border-emerald-800">
-                                        <div className="text-center mb-6">
-                                            <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 dark:bg-emerald-900 rounded-full mb-4">
-                                                <DollarSign className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
-                                            </div>
-                                            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                                                Pay Your Deposit
-                                            </h2>
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                Your application has been approved! Please pay your deposit to proceed with delivery.
-                                            </p>
-                                        </div>
-
-                                        <div className="max-w-md mx-auto space-y-6">
-                                            {/* Deposit Amount */}
-                                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center">
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Deposit Amount</p>
-                                                <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-                                                    ${applicationDetails.depositAmount.toFixed(2)}
-                                                </p>
-                                            </div>
-
-                                            {/* Payment Method Selector */}
-                                            <div>
-                                                <Label className="text-base font-semibold mb-3 block">Select Payment Method</Label>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    {[
-                                                        { id: 'ecocash', label: 'EcoCash', icon: Phone },
-                                                        { id: 'smilecash', label: 'OneMoney', icon: Phone },
-                                                        { id: 'card', label: 'Debit Card', icon: CreditCard },
-                                                        { id: 'mastercard', label: 'Mastercard', icon: CreditCard },
-                                                    ].map((method) => {
-                                                        const MethodIcon = method.icon;
-                                                        const isSelected = selectedPaymentMethod === method.id;
-                                                        return (
-                                                            <button
-                                                                key={method.id}
-                                                                onClick={() => setSelectedPaymentMethod(method.id)}
-                                                                className={`p-4 rounded-lg border-2 transition-all ${isSelected
-                                                                    ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:border-emerald-500'
-                                                                    : 'border-gray-200 hover:border-emerald-300 dark:border-gray-700 dark:hover:border-emerald-700'
-                                                                    }`}
-                                                            >
-                                                                <div className="flex flex-col items-center gap-2">
-                                                                    <MethodIcon className={`h-6 w-6 ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-400'}`} />
-                                                                    <span className={`text-sm font-medium ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                                                        {method.label}
-                                                                    </span>
-                                                                </div>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            {/* Pay Now Button */}
-                                            <Button
-                                                onClick={handleDepositPayment}
-                                                disabled={processingPayment}
-                                                size="lg"
-                                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-lg py-6"
-                                            >
-                                                {processingPayment ? (
-                                                    <>Processing...</>
-                                                ) : (
-                                                    <>
-                                                        <CreditCard className="h-5 w-5 mr-2" />
-                                                        Pay ${applicationDetails.depositAmount.toFixed(2)} Now
-                                                    </>
-                                                )}
-                                            </Button>
-
-                                            <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-                                                Secure payment powered by Paynow. Your delivery will be initiated once payment is confirmed.
-                                            </p>
-                                        </div>
-                                    </Card>
-                                )}
 
                             {/* Customer Support */}
                             <Card className="p-6 bg-gradient-to-br from-emerald-50 to-blue-50 dark:from-emerald-900/20 dark:to-blue-900/20">

@@ -101,28 +101,16 @@ class ApplicationState extends Model
         $year = $this->created_at ? $this->created_at->format('Y') : date('Y');
         $id = str_pad($this->id, 6, '0', STR_PAD_LEFT);
         
-        $prefix = 'ZB';
+        $prefix = 'ZB'; // Default for account opening
         $formData = $this->form_data ?? [];
         
-        // 1. Check for SSB / Government (SSBB)
-        if ($this->isSSBApplication($formData) || ($formData['formType'] ?? '') === 'ssb') {
-            $prefix = 'SSBB';
-        }
-        // 2. Check for Account Holders (ZBAH) - Prioritize explicit form type
-        elseif (($formData['formType'] ?? '') === 'account_holder_loan_application' || $this->isAccountHolderApplication($formData)) {
+        $isSSB = $this->isSSBApplication($formData) || ($formData['formType'] ?? '') === 'ssb';
+        $isAccountHolder = ($formData['hasAccount'] ?? false) === true || ($formData['formType'] ?? '') === 'account_holder_loan_application';
+
+        if ($isSSB) {
+            $prefix = 'SSB';
+        } elseif ($isAccountHolder) {
             $prefix = 'ZBAH';
-        } 
-        // 3. Check for Government Pensioners (GOZP)
-        elseif ($this->isPensionerApplication($formData)) {
-            $prefix = 'GOZP';
-        }
-        // 4. Check for RDC (Rural District Council) (AMRC)
-        elseif ($this->isRDCApplication($formData)) {
-            $prefix = 'AMRC';
-        }
-        // 5. Check for SMEs (MASE)
-        elseif ($this->isSMEApplication($formData)) {
-            $prefix = 'MASE';
         }
         
         return "{$prefix}{$year}{$id}";
