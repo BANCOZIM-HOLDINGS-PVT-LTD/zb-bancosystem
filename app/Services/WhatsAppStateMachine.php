@@ -33,13 +33,11 @@ class WhatsAppStateMachine
      *   Options 14-18: Direct handling
      */
     private array $transitions = [
-        // Language selection (5 languages) → goes to intent_selection
+        // Language selection (3 languages) → goes to intent_selection
         'language_selection' => [
             '1' => 'intent_selection',    // English
             '2' => 'intent_selection',    // ChiShona -> redirect to English
-            '3' => 'intent_selection',    // Ndau -> redirect to English
-            '4' => 'intent_selection',    // isiNdebele -> redirect to English
-            '5' => 'intent_selection',    // Chichewa -> redirect to English
+            '3' => 'intent_selection',    // isiNdebele -> redirect to English
         ],
         
         // Intent selection - 11 options (Single Page)
@@ -689,7 +687,7 @@ class WhatsAppStateMachine
     {
         switch ($state) {
             case 'language_selection':
-                $languages = ['English', 'ChiShona', 'Ndau', 'isiNdebele', 'Chichewa'];
+                $languages = ['English', 'ChiShona', 'isiNdebele'];
                 $formData['selected_language'] = $languages[(int)$input - 1] ?? 'English';
                 $formData['language'] = 'en';
                 break;
@@ -958,7 +956,7 @@ class WhatsAppStateMachine
         $sections[] = [
             'title' => '💰 PURCHASE ',
             'rows' => [
-                ['id' => '1', 'title' => 'Micro to Small Business', 'description' => 'Starter kit'],
+                ['id' => '1', 'title' => 'Micro & Small Business', 'description' => 'Income generating projects'],
                 ['id' => '2', 'title' => 'SME Business Booster', 'description' => 'Expand your business'],
                 ['id' => '3', 'title' => 'Homeware & Electronics', 'description' => 'Gadgets, Solar & Furniture'],
                 ['id' => '4', 'title' => 'Personal Development', 'description' => 'Life changing skills'],
@@ -1221,7 +1219,7 @@ class WhatsAppStateMachine
         
         // Send welcome message with Adala persona
         $welcomeText = "Hello *{$displayName}*! 👋\n\n";
-        $welcomeText .= "Welcome to *Microbiz Zimbabwe* powered by Qupa (a division of *ZB Financial Holdings*).\n\n";
+        $welcomeText .= "Welcome to *Microbiz Zimbabwe* powered by Qupa.\n\n";
         $welcomeText .= "I am *Adala*, consider me your smart uncle and digital assistant. My mission is to ensure you get the best user experience for your intended acquisition, because we are family.\n\n";
         $welcomeText .= "🌐 Please select your preferred language:";
         
@@ -1232,9 +1230,7 @@ class WhatsAppStateMachine
                 'rows' => [
                     ['id' => '1', 'title' => '🇬🇧 English', 'description' => 'Continue in English'],
                     ['id' => '2', 'title' => '🇿🇼 ChiShona', 'description' => 'Edzai muChiShona'],
-                    ['id' => '3', 'title' => '🇿🇼 Ndau', 'description' => 'Edzai muNdau'],
-                    ['id' => '4', 'title' => '🇿🇼 isiNdebele', 'description' => 'Qhubekela ngesiNdebele'],
-                    ['id' => '5', 'title' => '🇲🇼 Chichewa', 'description' => 'Pitilizani mu Chichewa'],
+                    ['id' => '3', 'title' => '🇿🇼 isiNdebele', 'description' => 'Qhubekela ngesiNdebele'],
                 ],
             ],
         ];
