@@ -25,13 +25,23 @@ class AgentApplication extends Model
         'rejection_reason',
         'agent_code',
         'referral_link',
+        'metadata',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'metadata' => 'array',
     ];
     
+    /**
+     * Get the supervisor comment from metadata
+     */
+    public function getSupervisorCommentAttribute(): ?string
+    {
+        return $this->metadata['supervisor_comment'] ?? null;
+    }
+
     /**
      * Boot method to auto-generate application number
      */

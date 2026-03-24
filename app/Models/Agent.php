@@ -283,6 +283,14 @@ class Agent extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Get the supervisor comment from metadata
+     */
+    public function getSupervisorCommentAttribute(): ?string
+    {
+        return $this->metadata['supervisor_comment'] ?? null;
+    }
+
+    /**
      * Determine if the agent can access the Filament panel
      */
     public function canAccessPanel(Panel $panel): bool

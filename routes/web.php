@@ -165,6 +165,7 @@ Route::prefix('agent')->name('agent.')->group(function () {
     Route::post('/login', [\App\Http\Controllers\AgentPortalController::class, 'login'])->name('login.submit');
     Route::get('/dashboard', [\App\Http\Controllers\AgentPortalController::class, 'dashboard'])->name('dashboard');
     Route::get('/logout', [\App\Http\Controllers\AgentPortalController::class, 'logout'])->name('logout');
+    Route::post('/generate-product-link', [\App\Http\Controllers\AgentPortalController::class, 'generateProductLink'])->name('generate.product.link');
 });
 
 require __DIR__.'/settings.php';
