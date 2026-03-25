@@ -73,7 +73,9 @@ class ApplicationStatusController extends Controller
         $formResponses = $formData['formResponses'] ?? [];
 
         $status = $this->determineApplicationStatus($application);
-        $timeline = $this->buildApplicationTimeline($application, $status);
+        $deliveryTracking = \App\Models\DeliveryTracking::where('application_state_id', $application->id)->first();
+        
+        $timeline = $this->buildApplicationTimeline($application, $status, $deliveryTracking);
 
         $applicantName = trim(($formResponses['firstName'] ?? '') . ' ' . ($formResponses['lastName'] ?? ($formResponses['surname'] ?? ''))) ?: 'N/A';
         $productName = $formData['productName'] ?? 'ZB Product';
@@ -88,9 +90,17 @@ class ApplicationStatusController extends Controller
             'submittedAt' => $application->created_at->format('F j, Y'),
             'lastUpdated' => $application->updated_at->format('F j, Y'),
             'timeline' => $timeline,
-            'progressPercentage' => $this->calculateProgressPercentage($application),
-            'nextAction' => $metadata['client_status_message'] ?? $this->getNextAction($application),
+            'progressPercentage' => $this->calculateProgressPercentage($application, $deliveryTracking),
+            'nextAction' => $deliveryTracking ? "Your delivery status: " . $deliveryTracking->status_label : ($metadata['client_status_message'] ?? $this->getNextAction($application)),
             'unclearDocuments' => $metadata['unclear_documents'] ?? [],
+            'deliveryTracking' => $deliveryTracking ? [
+                'status' => $deliveryTracking->status,
+                'statusLabel' => $deliveryTracking->status_label,
+                'courierType' => $deliveryTracking->courier_type,
+                'depot' => $deliveryTracking->delivery_depot,
+                'dispatchedAt' => $deliveryTracking->dispatched_at ? $deliveryTracking->dispatched_at->format('M d, Y') : null,
+                'estimatedDelivery' => $deliveryTracking->estimated_delivery_date ? $deliveryTracking->estimated_delivery_date->format('M d, Y') : null,
+            ] : null,
         ]);
     }
 /**
@@ -174,7 +184,7 @@ private function determineApplicationStatus(ApplicationState $application): stri
 
     }
 
-    private function buildApplicationTimeline(ApplicationState $application, string $status): array
+private function buildApplicationTimeline(ApplicationState $application, string $status, $deliveryTracking = null): array
     {
         $timeline = [];
         $metadata = $application->metadata ?? [];
@@ -207,7 +217,7 @@ private function determineApplicationStatus(ApplicationState $application): stri
         ];
 
         // 4. Final Approval
-        $isApproved = $step === 'approved';
+        $isApproved = in_array($step, ['approved', 'completed']) || ($application->status === 'approved');
         $timeline[] = [
             'title' => 'Manager Approval',
             'description' => $isApproved ? 'Application approved by Branch Manager.' : 'Awaiting final sign-off.',
@@ -215,17 +225,40 @@ private function determineApplicationStatus(ApplicationState $application): stri
             'status' => $isApproved ? 'completed' : ($step === 'manager_approval' ? 'current' : 'pending'),
         ];
 
+        // 5. Product Delivery
+        if ($isApproved) {
+            $isDelivered = $deliveryTracking && $deliveryTracking->status === 'delivered';
+            $timeline[] = [
+                'title' => 'Product Delivery',
+                'description' => $deliveryTracking 
+                    ? "Status: " . $deliveryTracking->status_label . ($deliveryTracking->courier_type ? " via " . $deliveryTracking->courier_type : "")
+                    : 'Delivery process initiated.',
+                'timestamp' => $deliveryTracking && $deliveryTracking->delivered_at ? $deliveryTracking->delivered_at->format('M d, Y') : ($deliveryTracking ? 'In Transit' : 'Pending'),
+                'status' => $isDelivered ? 'completed' : 'current',
+            ];
+        }
+
         return $timeline;
     }
 
-    private function calculateProgressPercentage(ApplicationState $application): int
+    private function calculateProgressPercentage(ApplicationState $application, $deliveryTracking = null): int
     {
+        if ($deliveryTracking) {
+            return match($deliveryTracking->status) {
+                'pending' => 85,
+                'processing', 'dispatched' => 90,
+                'in_transit', 'out_for_delivery' => 95,
+                'delivered' => 100,
+                default => 85,
+            };
+        }
+
         return match($application->current_step) {
             'pending_review' => 20,
             'qupa_allocation_pending' => 40,
             'officer_check' => 60,
             'manager_approval' => 80,
-            'approved' => 100,
+            'approved' => 85,
             'rejected' => 0,
             default => 10,
         };

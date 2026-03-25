@@ -624,8 +624,34 @@
         </tr>
     </table>
 
-    <div class="section-header">FOR OFFICIAL USE ONLY</div>
-    
+    <div class="section-header">FOR OFFICIAL USE ONLY (OFFICER ASSESSMENT)</div>
+    @if(isset($officerCheck))
+    <table class="main-table" style="font-size: 10px; margin-top: 5px;">
+        <tr>
+            <td width="20%"><strong>Officer:</strong></td>
+            <td width="30%">{{ $officerCheck['name'] ?? 'N/A' }}</td>
+            <td width="20%"><strong>Date:</strong></td>
+            <td width="30%">{{ isset($officerCheck['date']) ? date('d/m/Y', strtotime($officerCheck['date'])) : 'N/A' }}</td>
+        </tr>
+        <tr>
+            <td><strong>Salary Consistency:</strong></td>
+            <td>{{ strtoupper($officerCheck['salary_consistency'] ?? 'N/A') }}</td>
+            <td><strong>DBR Status:</strong></td>
+            <td>{{ strtoupper($officerCheck['dbr_status'] ?? 'N/A') }}</td>
+        </tr>
+        <tr>
+            <td><strong>Decision:</strong></td>
+            <td>{{ $officerCheck['officer_decision'] ?? 'N/A' }}</td>
+            <td><strong>FCB Status:</strong></td>
+            <td>{{ strtoupper($officerCheck['fcb_status'] ?? 'N/A') }}</td>
+        </tr>
+        <tr>
+            <td colspan="4"><strong>Officer Assessment Notes:</strong><br>
+                <div style="margin-top: 5px; font-style: italic;">{{ $officerCheck['notes'] ?? 'N/A' }}</div>
+            </td>
+        </tr>
+    </table>
+    @else
     <table class="main-table" style="margin-top: 10px;">
         <tr>
             <td class="field-label" style="width: 20%;">Received & Checked by:</td>
@@ -634,14 +660,35 @@
             <td style="width: 15%;">Branch: {{ $metadata['zb_checker']['branch'] ?? $branch ?? '' }}</td>
             <td style="width: 15%;">Date: {{ date('Y-m-d') }}</td>
         </tr>
+    </table>
+    @endif
+
+    <div class="section-header" style="margin-top: 10px;">MANAGER APPROVAL</div>
+    @if(isset($managerApproval))
+    <table class="main-table" style="font-size: 10px; margin-top: 5px;">
         <tr>
-            <td class="field-label">Approved by:</td>
-            <td>Name: {{ $metadata['zb_approver']['name'] ?? '' }}</td>
-            <td>Designation: {{ $metadata['zb_approver']['designation'] ?? 'Branch Manager' }}</td>
-            <td>Branch: {{ $metadata['zb_approver']['branch'] ?? $branch ?? '' }}</td>
-            <td>Date: {{ date('Y-m-d') }}</td>
+            <td width="20%"><strong>Manager:</strong></td>
+            <td width="30%">{{ $managerApproval['name'] ?? 'N/A' }}</td>
+            <td width="20%"><strong>Date:</strong></td>
+            <td width="30%">{{ isset($managerApproval['date']) ? date('d/m/Y', strtotime($managerApproval['date'])) : 'N/A' }}</td>
+        </tr>
+        <tr>
+            <td colspan="4"><strong>Manager Comments:</strong><br>
+                <div style="margin-top: 5px; font-style: italic;">{{ $managerApproval['notes'] ?? 'N/A' }}</div>
+            </td>
         </tr>
     </table>
+    @else
+    <table class="main-table" style="margin-top: 10px;">
+        <tr>
+            <td class="field-label" style="width: 20%;">Approved by:</td>
+            <td style="width: 25%;">Name: {{ $metadata['zb_approver']['name'] ?? '' }}</td>
+            <td style="width: 25%;">Designation: {{ $metadata['zb_approver']['designation'] ?? 'Branch Manager' }}</td>
+            <td style="width: 15%;">Branch: {{ $metadata['zb_approver']['branch'] ?? $branch ?? '' }}</td>
+            <td style="width: 15%;">Date: {{ date('Y-m-d') }}</td>
+        </tr>
+    </table>
+    @endif
     
     <div class="kyc-box">
         <h4 style="margin: 0 0 10px 0;">KYC CHECKLIST</h4>

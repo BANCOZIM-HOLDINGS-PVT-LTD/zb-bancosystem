@@ -1577,6 +1577,40 @@ class PDFGeneratorService implements PDFGeneratorInterface
         
         $data['formResponses'] = $mergedResponses;
         
+        // Add officer check and manager approval metadata if present
+        $metadata = $applicationState->metadata ?? [];
+        if (isset($metadata['officer_check'])) {
+            $data['officerCheck'] = $metadata['officer_check'];
+            
+            // Add verification report to documentsByType for embedding
+            if (isset($metadata['officer_check']['report_path']) && !empty($metadata['officer_check']['report_path'])) {
+                $path = $metadata['officer_check']['report_path'];
+                
+                // Ensure documentsByType is initialized
+                if (!isset($data['documentsByType'])) {
+                    $data['documentsByType'] = [];
+                }
+                
+                // Add the report as a specific document type
+                $data['documentsByType']['verification_report'] = [[
+                    'path' => $path,
+                    'name' => 'Financial Verification Report',
+                    'type' => Storage::disk('public')->exists($path) ? Storage::disk('public')->mimeType($path) : 'application/pdf',
+                    'size' => Storage::disk('public')->exists($path) ? $this->formatFileSize(Storage::disk('public')->size($path)) : '0 KB',
+                    'uploadedAt' => $metadata['officer_check']['date'] ?? now()->toIso8601String(),
+                ]];
+                
+                Log::info("Added verification report to PDF documents", [
+                    'session_id' => $applicationState->session_id,
+                    'report_path' => $path
+                ]);
+            }
+        }
+        
+        if (isset($metadata['manager_approval'])) {
+            $data['managerApproval'] = $metadata['manager_approval'];
+        }
+
         // Format all date fields consistently
         $data = $this->formatDateFields($data);
         

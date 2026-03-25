@@ -805,7 +805,34 @@
         </tr>
     </table>
 
-    <div class="section-header">FOR OFFICIAL USE ONLY</div>
+    <div class="section-header">FOR OFFICIAL USE ONLY (OFFICER ASSESSMENT)</div>
+    @if(isset($officerCheck))
+    <table style="font-size: 10px;">
+        <tr>
+            <td width="25%"><strong>Officer:</strong></td>
+            <td width="30%"><span class="filled-field">{{ $officerCheck['name'] ?? 'N/A' }}</span></td>
+            <td width="15%"><strong>Date:</strong></td>
+            <td width="30%"><span class="filled-field">{{ isset($officerCheck['date']) ? date('d/m/Y', strtotime($officerCheck['date'])) : 'N/A' }}</span></td>
+        </tr>
+        <tr>
+            <td><strong>Salary Consistency:</strong></td>
+            <td><span class="filled-field">{{ strtoupper($officerCheck['salary_consistency'] ?? 'N/A') }}</span></td>
+            <td><strong>DBR Status:</strong></td>
+            <td><span class="filled-field">{{ strtoupper($officerCheck['dbr_status'] ?? 'N/A') }}</span></td>
+        </tr>
+        <tr>
+            <td><strong>Decision:</strong></td>
+            <td><span class="filled-field">{{ $officerCheck['officer_decision'] ?? 'N/A' }}</span></td>
+            <td><strong>FCB/SSB Status:</strong></td>
+            <td><span class="filled-field">{{ strtoupper($officerCheck['fcb_status'] ?? $officerCheck['ssb_status'] ?? 'N/A') }}</span></td>
+        </tr>
+        <tr>
+            <td colspan="4"><strong>Officer Notes:</strong><br>
+                <div class="notice-box" style="margin-top: 5px;">{{ $officerCheck['notes'] ?? 'N/A' }}</div>
+            </td>
+        </tr>
+    </table>
+    @else
     <table>
         <tr>
             <td width="25%">Authorised Signatory:</td>
@@ -813,13 +840,34 @@
             <td width="15%">Date:</td>
             <td width="30%"><span class="signature-line"></span></td>
         </tr>
+    </table>
+    @endif
+
+    <div class="section-header" style="margin-top: 15px;">MANAGER APPROVAL</div>
+    @if(isset($managerApproval))
+    <table style="font-size: 10px;">
         <tr>
-            <td>Authorised Signatory:</td>
-            <td><span class="signature-line"></span></td>
-            <td>Date:</td>
-            <td><span class="signature-line"></span></td>
+            <td width="25%"><strong>Manager:</strong></td>
+            <td width="30%"><span class="filled-field">{{ $managerApproval['name'] ?? 'N/A' }}</span></td>
+            <td width="15%"><strong>Date:</strong></td>
+            <td width="30%"><span class="filled-field">{{ isset($managerApproval['date']) ? date('d/m/Y', strtotime($managerApproval['date'])) : 'N/A' }}</span></td>
+        </tr>
+        <tr>
+            <td colspan="4"><strong>Manager Comments:</strong><br>
+                <div class="notice-box" style="margin-top: 5px;">{{ $managerApproval['notes'] ?? 'N/A' }}</div>
+            </td>
         </tr>
     </table>
+    @else
+    <table>
+        <tr>
+            <td width="25%">Final Approver:</td>
+            <td width="30%"><span class="signature-line"></span></td>
+            <td width="15%">Date:</td>
+            <td width="30%"><span class="signature-line"></span></td>
+        </tr>
+    </table>
+    @endif
 
     <div style="margin-top: 15px; text-align: right;">
         <div class="stamp-box">Qupa MFI Stamp</div>

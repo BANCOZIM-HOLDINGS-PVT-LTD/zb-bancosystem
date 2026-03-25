@@ -46,6 +46,16 @@ class AccountOpening extends Model
     const STATUS_REJECTED = 'rejected';
 
     /**
+     * Get the formatted application number
+     */
+    public function getApplicationNumberAttribute(): string
+    {
+        $year = $this->created_at ? $this->created_at->format('Y') : date('Y');
+        $id = str_pad($this->id, 6, '0', STR_PAD_LEFT);
+        return "ZB{$year}{$id}";
+    }
+
+    /**
      * Get the linked loan application (if any)
      */
     public function applicationState(): BelongsTo

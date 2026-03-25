@@ -459,12 +459,12 @@ export default function AgentDashboard({
                                 <CardHeader className="pb-3">
                                     <CardTitle className="flex items-center gap-2 text-base">
                                         <Calendar className="h-5 w-5 text-emerald-600" />
-                                        Account Info
+                                        Account Information
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
                                     <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-800">
-                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Last Commission</span>
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Last Commission Date</span>
                                         <span className="font-black text-slate-900 dark:text-white">
                                             {lastCommissionDate ? new Date(lastCommissionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'None yet'}
                                         </span>

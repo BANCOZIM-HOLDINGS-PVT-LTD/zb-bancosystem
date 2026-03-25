@@ -31,18 +31,25 @@ interface ApplicationDetails {
     productName: string;
     loanAmount: string;
     submittedAt: string;
-    creditType?: string;
-    depositAmount?: number;
-    depositPaid?: boolean;
-    depositPaidAt?: string;
-    depositTransactionId?: string;
-    depositPaymentMethod?: string;
-    zbAccountNumber?: string;
-    loanEligible?: boolean;
-    loanEligibleAt?: string;
+    lastUpdated?: string;
     nextAction?: string;
     rejectionReason?: string;
     unclearDocuments?: string[];
+    progressPercentage?: number;
+    timeline?: {
+        title: string;
+        description: string;
+        timestamp: string;
+        status: 'completed' | 'current' | 'pending';
+    }[];
+    deliveryTracking?: {
+        status: string;
+        statusLabel: string;
+        courierType?: string;
+        depot?: string;
+        dispatchedAt?: string;
+        estimatedDelivery?: string;
+    };
 }
 
 export default function ApplicationStatus() {
@@ -403,12 +410,98 @@ export default function ApplicationStatus() {
                                                 <Icon className={`h-16 w-16 ${color}`} />
                                                 <div>
                                                     <h3 className={`text-2xl font-semibold ${color} mb-2`}>{label}</h3>
-                                                    <p className="text-gray-600 dark:text-gray-400">{description}</p>
+                                                    <p className="text-gray-600 dark:text-gray-400 font-medium">{description}</p>
                                                 </div>
                                             </div>
                                         </div>
                                     );
                                 })()}
+
+                                {/* Progress Bar */}
+                                {applicationDetails.progressPercentage !== undefined && (
+                                    <div className="mb-8">
+                                        <div className="flex justify-between mb-2 text-sm font-medium">
+                                            <span>Application Progress</span>
+                                            <span>{applicationDetails.progressPercentage}%</span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2.5">
+                                            <div 
+                                                className="bg-emerald-600 h-2.5 rounded-full transition-all duration-500" 
+                                                style={{ width: `${applicationDetails.progressPercentage}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Delivery Tracking Details */}
+                                {applicationDetails.deliveryTracking && (
+                                    <div className="mb-8 p-4 border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-xl">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <Package className="h-6 w-6 text-emerald-600" />
+                                            <h3 className="text-lg font-semibold text-emerald-800 dark:text-emerald-300">Delivery Information</h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                            <div className="space-y-1">
+                                                <p className="text-gray-500">Current Status</p>
+                                                <p className="font-bold text-emerald-700 dark:text-emerald-400 text-base">{applicationDetails.deliveryTracking.statusLabel}</p>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-gray-500">Courier / Method</p>
+                                                <p className="font-semibold text-gray-800 dark:text-gray-200">{applicationDetails.deliveryTracking.courierType || 'Pending Assignment'}</p>
+                                            </div>
+                                            {applicationDetails.deliveryTracking.depot && (
+                                                <div className="space-y-1">
+                                                    <p className="text-gray-500">Collection Point / Depot</p>
+                                                    <p className="font-semibold text-gray-800 dark:text-gray-200">{applicationDetails.deliveryTracking.depot}</p>
+                                                </div>
+                                            )}
+                                            {applicationDetails.deliveryTracking.estimatedDelivery && (
+                                                <div className="space-y-1">
+                                                    <p className="text-gray-500">Estimated Delivery Date</p>
+                                                    <p className="font-semibold text-emerald-600 dark:text-emerald-400">{applicationDetails.deliveryTracking.estimatedDelivery}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Application Timeline */}
+                                {applicationDetails.timeline && applicationDetails.timeline.length > 0 && (
+                                    <div className="mb-8">
+                                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                            <Clock className="h-5 w-5 text-gray-500" />
+                                            Application Timeline
+                                        </h3>
+                                        <div className="relative space-y-6 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:via-gray-200 before:to-gray-200 dark:before:via-gray-800 dark:before:to-gray-800">
+                                            {applicationDetails.timeline.map((item, index) => (
+                                                <div key={index} className="relative flex items-start gap-6">
+                                                    <div className={`absolute left-0 mt-1.5 h-10 w-10 flex items-center justify-center rounded-full border-4 border-white dark:border-[#1a1a1a] shadow-sm z-10 
+                                                        ${item.status === 'completed' ? 'bg-emerald-500' : 
+                                                          item.status === 'current' ? 'bg-emerald-100 dark:bg-emerald-900 animate-pulse' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                                                        {item.status === 'completed' ? (
+                                                            <CheckCircle className="h-5 w-5 text-white" />
+                                                        ) : item.status === 'current' ? (
+                                                            <Clock className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                                                        ) : (
+                                                            <div className="h-2 w-2 rounded-full bg-gray-400" />
+                                                        )}
+                                                    </div>
+                                                    <div className="ml-12">
+                                                        <h4 className={`font-bold ${item.status === 'pending' ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                                            {item.title}
+                                                        </h4>
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400">{item.description}</p>
+                                                        {item.timestamp && (
+                                                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1 block">
+                                                                {item.timestamp}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Resubmission Forms */}
                                 {applicationDetails.currentStep === 'awaiting_document_reupload' && (
