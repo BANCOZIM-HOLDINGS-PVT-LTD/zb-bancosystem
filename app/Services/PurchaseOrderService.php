@@ -120,11 +120,11 @@ class PurchaseOrderService
 
                 $items[] = [
                     'product_id' => $productId,
-                    'product_code' => $product->product_code ?? ($item['product_code'] ?? null),
+                    'product_code' => $product?->product_code ?? ($item['product_code'] ?? null),
                     'name' => $item['name'] ?? 'Unknown Item',
                     'quantity' => $item['quantity'] ?? 1,
                     'price' => $item['price'] ?? 0,
-                    'supplier_id' => $product->supplier_id ?? null,
+                    'supplier_id' => $product?->supplier_id ?? null,
                 ];
             }
         }
@@ -136,11 +136,11 @@ class PurchaseOrderService
 
             $items[] = [
                 'product_id' => $productId,
-                'product_code' => $product->product_code ?? ($formData['productCode'] ?? ($selectedBusiness['product_code'] ?? null)),
+                'product_code' => $product?->product_code ?? ($formData['productCode'] ?? ($selectedBusiness['product_code'] ?? null)),
                 'name' => $selectedBusiness['name'] ?? 'Selected Product',
                 'quantity' => 1,
                 'price' => $formData['loanAmount'] ?? ($formData['grossLoan'] ?? 0),
-                'supplier_id' => $product->supplier_id ?? null,
+                'supplier_id' => $product?->supplier_id ?? null,
             ];
         }
         // Case 3: selectedProduct (legacy/SSB)
@@ -151,11 +151,11 @@ class PurchaseOrderService
 
                 $items[] = [
                     'product_id' => $productId,
-                    'product_code' => $product->product_code ?? null,
+                    'product_code' => $product?->product_code ?? null,
                     'name' => $formData['selectedProduct']['name'] ?? 'Selected Product',
                     'quantity' => 1,
                     'price' => $formData['selectedProduct']['price'] ?? ($formData['loanAmount'] ?? 0),
-                    'supplier_id' => $product->supplier_id ?? null,
+                    'supplier_id' => $product?->supplier_id ?? null,
                 ];
             }
         }

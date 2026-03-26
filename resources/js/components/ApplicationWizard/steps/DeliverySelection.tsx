@@ -52,13 +52,6 @@ const GAIN_DEPOTS = [
     'WX Gokwe - gokwe'
 ].sort();
 
-// Metro Peech & Browne Depots
-const METRO_DEPOTS = [
-    'Bindura', 'Bulawayo', 'Chegutu', 'Chinhoyi', 'Chipinge', 'Chiredzi',
-    'Chitungwiza', 'Gokwe', 'Gwanda', 'Gweru', 'Kadoma', 'Khami', 'Kwekwe',
-    'Masvingo', 'Msasa', 'Mutare', 'Rusape', 'Sakubva', 'Seke Road', 'Zvishavane'
-].sort();
-
 // Farm & City Depots
 const FARM_AND_CITY_DEPOTS = [
     'Harare', 'Bulawayo', 'Chitungwiza', 'Mutare', 'Epworth', 'Gweru',
@@ -221,10 +214,8 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
     const [zimpostCity, setZimpostCity] = useState<string>(data.deliverySelection?.zimpostCity || '');
     const [zimpostBranch, setZimpostBranch] = useState<string>(data.deliverySelection?.zimpostBranch || '');
 
-    // Tuckshop agent toggle
-    const [tuckshopAgent, setTuckshopAgent] = useState<'Gain Cash & Carry' | 'Metro Peech & Browne'>(
-        data.deliverySelection?.agent === 'Metro Peech & Browne' ? 'Metro Peech & Browne' : 'Gain Cash & Carry'
-    );
+    // Tuckshop agent is Gain Cash & Carry only
+    const [tuckshopAgent] = useState<'Gain Cash & Carry'>('Gain Cash & Carry');
 
     // Supplier info from API
     const [supplierInfo, setSupplierInfo] = useState<SupplierInfo | null>(null);
@@ -410,15 +401,15 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
 
         // ---- Tuckshop ----
         if (deliveryType === 'tuckshop') {
-            if (!selectedDepot) { setError(`Please select a ${tuckshopAgent} depot`); return; }
+            if (!selectedDepot) { setError(`Please select a Gain Cash & Carry depot`); return; }
             onNext({
                 ...data,
                 deliverySelection: {
-                    agent: tuckshopAgent,
+                    agent: 'Gain Cash & Carry',
                     depot: selectedDepot,
                     ...personFields,
-                    supplierName: tuckshopAgent,
-                    isAgentEditable: true,
+                    supplierName: 'Gain Cash & Carry',
+                    isAgentEditable: false,
                 }
             });
             return;
@@ -672,33 +663,19 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
             case 'tuckshop':
                 return (
                     <div className="space-y-4">
-                        {/* Agent Toggle */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div
-                                onClick={() => { setTuckshopAgent('Gain Cash & Carry'); setSelectedDepot(''); }}
-                                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${tuckshopAgent === 'Gain Cash & Carry'
-                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                    : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
-                                    }`}
-                            >
-                                <Building2 className={`h-5 w-5 mb-1 ${tuckshopAgent === 'Gain Cash & Carry' ? 'text-emerald-600' : 'text-gray-400'}`} />
-                                <p className="font-medium text-sm text-gray-900 dark:text-white">Gain Cash & Carry</p>
+                        {/* Agent Info */}
+                        <div className="p-4 border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Building2 className="h-5 w-5 text-emerald-600" />
+                                <p className="font-medium text-gray-900 dark:text-white">Gain Cash & Carry</p>
                             </div>
-                            <div
-                                onClick={() => { setTuckshopAgent('Metro Peech & Browne'); setSelectedDepot(''); }}
-                                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${tuckshopAgent === 'Metro Peech & Browne'
-                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                    : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
-                                    }`}
-                            >
-                                <Building2 className={`h-5 w-5 mb-1 ${tuckshopAgent === 'Metro Peech & Browne' ? 'text-emerald-600' : 'text-gray-400'}`} />
-                                <p className="font-medium text-sm text-gray-900 dark:text-white">Metro Peech & Browne</p>
-                            </div>
+                            <p className="text-xs text-gray-500">Your groceries will be ready for collection at your selected Gain depot.</p>
                         </div>
+                        
                         {/* Depot Select */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Select {tuckshopAgent} Depot <span className="text-red-500">*</span>
+                                Select Gain Depot <span className="text-red-500">*</span>
                             </label>
                             <select
                                 value={selectedDepot}
@@ -706,7 +683,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                             >
                                 <option value="">Select a depot closest to you</option>
-                                {(tuckshopAgent === 'Gain Cash & Carry' ? GAIN_DEPOTS : METRO_DEPOTS).map((depot) => (
+                                {GAIN_DEPOTS.map((depot) => (
                                     <option key={depot} value={depot}>{depot}</option>
                                 ))}
                             </select>

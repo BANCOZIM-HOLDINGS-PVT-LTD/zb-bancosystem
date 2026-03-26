@@ -35,6 +35,7 @@ class ApplicationState extends Model
         'check_status',
         'check_result',
         'status',
+        'approved_at',
     ];
 
     protected $casts = [
@@ -47,6 +48,7 @@ class ApplicationState extends Model
         'deposit_paid_at' => 'datetime',
         'last_activity' => 'datetime',
         'is_archived' => 'boolean',
+        'approved_at' => 'datetime',
     ];
 
     public function transitions(): HasMany

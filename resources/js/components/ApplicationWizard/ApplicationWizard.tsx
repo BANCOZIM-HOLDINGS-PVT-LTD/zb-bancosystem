@@ -406,7 +406,7 @@ export interface WizardData {
 
     // Delivery selection (new)
     deliverySelection?: {
-        agent: 'Swift' | 'Gain Cash & Carry' | 'Zim Post Office';
+        agent: 'Swift' | 'Gain Cash & Carry' | 'Zim Post Office' | 'PG Building Materials' | 'Easy Go' | 'Zimparks' | string;
         city?: string;  // For Swift deliveries
         depot?: string; // For Gain Outlet deliveries
         isAgentEditable: boolean;

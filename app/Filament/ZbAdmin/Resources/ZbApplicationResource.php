@@ -310,24 +310,28 @@ class ZbApplicationResource extends Resource
                         Forms\Components\Textarea::make('manager_notes')->label('Manager Comments'),
                     ])
                     ->action(function (array $data, Model $record) {
-                        $metadata = $record->metadata ?? [];
-                        $metadata['manager_approval'] = [
-                            'name' => auth()->user()->name,
-                            'designation' => 'Branch Manager',
-                            'date' => now()->toIso8601String(),
-                            'notes' => $data['manager_notes'] ?? '',
-                        ];
-                        
-                        $record->current_step = 'approved';
-                        $record->status = 'approved';
-                        $record->approved_at = now();
-                        
-                        $metadata['client_status_message'] = "Loan application approved, Delivery Process has been initiated";
-                        $record->metadata = $metadata;
-                        $record->save();
-
-                        // Trigger PO and Delivery
                         try {
+                            $metadata = $record->metadata ?? [];
+                            $metadata['manager_approval'] = [
+                                'name' => auth()->user()->name,
+                                'designation' => 'Branch Manager',
+                                'date' => now()->toIso8601String(),
+                                'notes' => $data['manager_notes'] ?? '',
+                            ];
+                            
+                            $record->current_step = 'approved';
+                            $record->status = 'approved';
+                            
+                            // Only set approved_at if the column exists (safeguard)
+                            if (\Illuminate\Support\Facades\Schema::hasColumn($record->getTable(), 'approved_at')) {
+                                $record->approved_at = now();
+                            }
+                            
+                            $metadata['client_status_message'] = "Loan application approved, Delivery Process has been initiated";
+                            $record->metadata = $metadata;
+                            $record->save();
+
+                            // Trigger PO and Delivery
                             $poService = app(\App\Services\PurchaseOrderService::class);
                             $poService->createFromApplication($record);
                             
@@ -347,11 +351,21 @@ class ZbApplicationResource extends Resource
                                 'delivery_depot' => $depot,
                                 'delivery_address' => $depot,
                             ]);
-                        } catch (\Exception $e) {
-                            Log::error("Post-approval services failed: " . $e->getMessage());
-                        }
 
-                        Notification::make()->title('Application Fully Approved!')->success()->send();
+                            Notification::make()->title('Application Fully Approved!')->success()->send();
+                        } catch (\Throwable $e) {
+                            Log::error("Manager approval failed: " . $e->getMessage(), [
+                                'exception' => $e,
+                                'application_id' => $record->id
+                            ]);
+                            
+                            Notification::make()
+                                ->title('Approval Error')
+                                ->body('The application was approved but post-approval services failed: ' . $e->getMessage())
+                                ->danger()
+                                ->persistent()
+                                ->send();
+                        }
                     }),
 
                 Action::make('generate_pdf')
