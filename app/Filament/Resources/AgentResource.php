@@ -124,6 +124,12 @@ class AgentResource extends BaseResource
 
                         Forms\Components\Textarea::make('address')
                             ->rows(3),
+
+                        Forms\Components\Textarea::make('metadata.supervisor_comment')
+                            ->label('Supervisor Comment')
+                            ->placeholder('Add a comment for the agent to see on their dashboard...')
+                            ->rows(3)
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
 

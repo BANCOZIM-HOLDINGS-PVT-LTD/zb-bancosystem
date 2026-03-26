@@ -106,6 +106,11 @@ class AgentApplicationResource extends BaseResource
                             ->label('Referral Link')
                             ->disabled()
                             ->columnSpanFull(),
+                        Forms\Components\Textarea::make('metadata.supervisor_comment')
+                            ->label('Supervisor Comment')
+                            ->placeholder('Add a comment for the agent to see on their dashboard...')
+                            ->rows(3)
+                            ->columnSpanFull(),
                     ])
                     ->visible(fn ($record) => $record?->status === 'approved'),
             ]);

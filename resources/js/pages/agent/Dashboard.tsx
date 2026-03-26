@@ -351,6 +351,22 @@ export default function AgentDashboard({
                     </Card>
                 </div>
 
+                {/* Supervisor Feedback */}
+                {supervisorComment && (
+                    <div className="mb-8 bg-amber-50 dark:bg-amber-950/20 p-6 rounded-3xl border border-amber-200 dark:border-amber-800/60 shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="h-6 w-1 bg-amber-600 rounded-full"></div>
+                            <h3 className="text-lg font-black text-amber-900 dark:text-amber-100 uppercase tracking-tight flex items-center gap-2">
+                                <MessageSquare className="h-5 w-5" /> Supervisor Feedback
+                            </h3>
+                        </div>
+                        <div className="bg-white/80 dark:bg-slate-900/80 p-5 rounded-2xl border border-amber-100 dark:border-amber-900/50">
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300 italic">"{supervisorComment}"</p>
+                            <p className="mt-3 text-[9px] font-black text-amber-600 uppercase tracking-widest">— Your Supervisor</p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Generate Referral Link Parent Container */}
                 <div className="mb-10 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800/60 shadow-sm">
                     <div className="flex items-center gap-3 mb-6">
