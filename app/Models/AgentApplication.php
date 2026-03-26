@@ -52,6 +52,22 @@ class AgentApplication extends Model
     }
 
     /**
+     * Get agent's commissions
+     */
+    public function commissions(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Commission::class, 'agent');
+    }
+
+    /**
+     * Get agent's activity logs
+     */
+    public function activityLogs(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(AgentActivityLog::class, 'agent');
+    }
+
+    /**
      * Boot method to auto-generate application number
      */
     protected static function boot()

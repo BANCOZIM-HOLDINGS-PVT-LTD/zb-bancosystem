@@ -293,6 +293,25 @@ class CommissionResource extends BaseResource
                             'payment_method' => $data['payment_method'],
                             'payment_reference' => $data['payment_reference'] ?? null,
                         ]);
+
+                        // Update agent's last commission amount
+                        $agent = $record->agent;
+                        if ($agent) {
+                            $agent->update(['last_commission_amount' => $record->amount]);
+
+                            // Log activity for the agent
+                            \App\Models\AgentActivityLog::create([
+                                'agent_id' => $agent->id,
+                                'agent_type' => $record->agent_type === 'agent_applications' ? 'agent_applications' : 'agents',
+                                'activity_type' => 'commission_paid',
+                                'description' => "Commission of $" . number_format($record->amount, 2) . " paid via " . $data['payment_method'] . ".",
+                                'metadata' => [
+                                    'commission_id' => $record->id,
+                                    'reference' => $record->reference_number,
+                                    'paid_date' => $data['paid_date'],
+                                ],
+                            ]);
+                        }
                         
                         Notification::make()
                             ->title('Commission marked as paid')

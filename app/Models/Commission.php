@@ -46,11 +46,11 @@ class Commission extends Model
     }
 
     /**
-     * Get the agent
+     * Get the parent agent model (Agent or AgentApplication).
      */
-    public function agent(): BelongsTo
+    public function agent(): \Illuminate\Database\Eloquent\Relations\MorphTo
     {
-        return $this->belongsTo(Agent::class);
+        return $this->morphTo('agent', 'agent_type', 'agent_id');
     }
 
     public function application(): BelongsTo
@@ -102,9 +102,9 @@ class Commission extends Model
     /**
      * Scope for specific agent
      */
-    public function scopeForAgent($query, int $agentId)
+    public function scopeForAgent($query, int $agentId, string $agentType = 'agents')
     {
-        return $query->where('agent_id', $agentId);
+        return $query->where('agent_id', $agentId)->where('agent_type', $agentType);
     }
 
     /**
@@ -126,20 +126,27 @@ class Commission extends Model
     /**
      * Create commission for application
      */
-    public static function createForApplication(ApplicationState $application, Agent $agent): self
+    public static function createForApplication(ApplicationState $application, $agent): self
     {
         $formData = $application->form_data ?? [];
-        $formResponses = $formData['formResponses'] ?? [];
-        $loanAmount = floatval($formResponses['loanAmount'] ?? 0);
+        $formResponses = $formData['formResponses'] ?? ($formData ?? []);
+        $loanAmount = floatval($formResponses['loanAmount'] ?? ($formResponses['loan_amount'] ?? 0));
 
-        $commissionAmount = self::calculateCommission($loanAmount, $agent->commission_rate);
+        // Tier logic: 1% for ordinary, 1.5% for higher_achiever
+        $tier = $agent->tier ?? 'ordinary';
+        $rate = $tier === 'higher_achiever' ? 1.5 : 1.0;
+        
+        $commissionAmount = self::calculateCommission($loanAmount, $rate);
+
+        $agentType = ($agent instanceof Agent) ? 'agents' : 'agent_applications';
 
         return self::create([
             'agent_id' => $agent->id,
+            'agent_type' => $agentType,
             'application_id' => $application->id,
             'type' => 'application',
             'amount' => $commissionAmount,
-            'rate' => $agent->commission_rate,
+            'rate' => $rate,
             'base_amount' => $loanAmount,
             'status' => 'pending',
             'earned_date' => now(),
@@ -147,6 +154,7 @@ class Commission extends Model
                 'application_session_id' => $application->session_id,
                 'loan_amount' => $loanAmount,
                 'calculated_at' => now()->toISOString(),
+                'agent_tier' => $tier,
             ],
         ]);
     }

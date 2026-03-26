@@ -207,7 +207,7 @@ class AgentPortalController extends Controller
 
         // Product application history with status (Showing all products applied for)
         $applicationHistory = (clone $referralQuery)
-            ->select('id', 'created_at', 'status', 'form_data')
+            ->select('id', 'created_at', 'status', 'form_data', 'reference_code')
             ->latest()
             ->limit(50)
             ->get()
@@ -217,9 +217,15 @@ class AgentPortalController extends Controller
                 $tier = $agentModel->tier ?? 'ordinary';
                 
                 if ($app->status === 'approved') {
-                    $loanAmount = floatval($formData['formResponses']['loanAmount'] ?? 0);
-                    $rate = ($tier === 'higher_achiever' ? 1.5 : 1.0) / 100;
-                    $commission = round($loanAmount * $rate, 2);
+                    // Check if there is an actual commission record
+                    $actualCommission = Commission::where('application_id', $app->id)->first();
+                    if ($actualCommission) {
+                        $commission = $actualCommission->amount;
+                    } else {
+                        $loanAmount = floatval($formData['formResponses']['loanAmount'] ?? ($formData['loanAmount'] ?? 0));
+                        $rate = ($tier === 'higher_achiever' ? 1.5 : 1.0) / 100;
+                        $commission = round($loanAmount * $rate, 2);
+                    }
                 }
                 
                 return [
@@ -227,7 +233,7 @@ class AgentPortalController extends Controller
                     'date' => $app->created_at->format('Y-m-d H:i'),
                     'product' => $formData['productName'] ?? ($formData['selectedBusiness']['name'] ?? 'General Application'),
                     'status' => $app->status,
-                    'commission' => $commission,
+                    'commission' => (float)$commission,
                     'reference' => $app->reference_code ?? ('#'.str_pad($app->id, 5, '0', STR_PAD_LEFT)),
                 ];
             });
@@ -250,19 +256,40 @@ class AgentPortalController extends Controller
         // Milestones
         $startOfWeek = now()->startOfWeek();
         $weeklyCommission = $agentId ? Commission::where('agent_id', $agentId)
-            ->whereIn('status', ['pending', 'approved', 'paid'])
             ->where('earned_date', '>=', $startOfWeek)
             ->sum('amount') : 0;
+        
+        // If they are higher achiever but didn't hit target last week, we might need logic to demote,
+        // but for now we just show current week progress.
         
         $dailyReferrals = (clone $referralQuery)
             ->where('created_at', '>=', now()->startOfDay())
             ->count();
 
+        // Check if agent is deactivated
+        $isDeactivated = (bool)($agentModel->is_deactivated ?? false);
+        
+        // Simple deactivation check: if last_activity_at > 30 days
+        if (!$isDeactivated && $agentModel->last_activity_at && $agentModel->last_activity_at->diffInDays(now()) > 30) {
+            $agentModel->update([
+                'is_deactivated' => true,
+                'deactivated_at' => now(),
+            ]);
+            $isDeactivated = true;
+
+            AgentActivityLog::create([
+                'agent_id' => $agentModel->id,
+                'agent_type' => $agentSource,
+                'activity_type' => 'deactivation',
+                'description' => 'Account automatically deactivated due to 30 days of inactivity.',
+            ]);
+        }
+
         return Inertia::render('agent/Dashboard', [
             'agent' => array_merge((array)$agentData, [
                 'tier' => $agentModel->tier ?? 'ordinary',
                 'last_commission_amount' => (float)($agentModel->last_commission_amount ?? 0),
-                'is_deactivated' => (bool)($agentModel->is_deactivated ?? false),
+                'is_deactivated' => $isDeactivated,
                 'deactivated_at' => $agentModel->deactivated_at ? $agentModel->deactivated_at->format('Y-m-d H:i') : null,
             ]),
             'stats' => [

@@ -18,4 +18,12 @@ class AgentReward extends Model
     protected $casts = [
         'sent_at' => 'datetime',
     ];
+
+    /**
+     * Get the parent agent model.
+     */
+    public function agent(): \Illuminate\Database\Eloquent\Relations\MorphTo
+    {
+        return $this->morphTo('agent', 'agent_type', 'agent_id');
+    }
 }

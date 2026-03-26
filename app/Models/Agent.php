@@ -119,9 +119,17 @@ class Agent extends Authenticatable implements FilamentUser
     /**
      * Get agent's commissions
      */
-    public function commissions(): HasMany
+    public function commissions(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
-        return $this->hasMany(Commission::class);
+        return $this->morphMany(Commission::class, 'agent');
+    }
+
+    /**
+     * Get agent's activity logs
+     */
+    public function activityLogs(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(AgentActivityLog::class, 'agent');
     }
 
     /**

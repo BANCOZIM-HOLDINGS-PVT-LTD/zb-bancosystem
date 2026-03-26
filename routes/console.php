@@ -64,6 +64,13 @@ Schedule::command('app:cleanup-delivered-applications')
     ->name('cleanup-delivered-applications')
     ->description('Cleanup applications and cash purchases delivered 90+ days ago');
 
+// Agent Activity Check - deactivates inactive agents and processes reactivation requests
+Schedule::command('agents:check-activity')
+    ->dailyAt('00:00')
+    ->timezone('Africa/Harare')
+    ->name('agents-check-activity')
+    ->description('Deactivate inactive agents (30+ days) and process reactivation requests (24 hours)');
+
 // Pay Day SMS Reminders - sends SMS to approved clients 4 days before their pay day
 Schedule::command('payday:send-reminders')
     ->dailyAt('06:00')

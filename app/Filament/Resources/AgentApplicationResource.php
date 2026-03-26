@@ -441,7 +441,10 @@ class AgentApplicationResource extends BaseResource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            AgentResource\RelationManagers\CommissionsRelationManager::class,
+            AgentResource\RelationManagers\ActivityLogsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array
