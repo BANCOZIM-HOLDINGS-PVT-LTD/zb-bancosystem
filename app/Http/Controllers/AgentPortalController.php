@@ -7,10 +7,13 @@ use App\Models\AgentApplication;
 use App\Models\Commission;
 use App\Models\ApplicationState;
 use App\Models\ProductCategory;
+use App\Models\AgentActivityLog;
+use App\Models\AgentReward;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Carbon\Carbon;
 
 class AgentPortalController extends Controller
 {
