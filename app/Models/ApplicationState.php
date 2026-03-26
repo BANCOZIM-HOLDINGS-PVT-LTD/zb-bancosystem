@@ -118,29 +118,36 @@ class ApplicationState extends Model
         return "{$prefix}{$year}{$id}";
     }
 
-    private function isSSBApplication(array $formData): bool
+    public function isSSBApplication(?array $formData = null): bool
     {
+        $formData = $formData ?? $this->form_data ?? [];
         $employer = strtolower($formData['employer'] ?? '');
         $employerType = $formData['formResponses']['employerType'] ?? '';
-        
-        if ($employer === 'government-ssb' || 
-            str_contains($employer, 'civil service') || 
-            str_contains($employer, 'ssb') ||
-            str_contains($employer, 'government')
-        ) {
+        $formType = $formData['formType'] ?? '';
+
+        // Explicit SSB markers
+        if ($employer === 'government-ssb' || $formType === 'ssb') {
             return true;
         }
-        
-        if (is_array($employerType) && isset($employerType['government'])) {
-            return true;
+
+        // Check if explicitly government but NOT non-ssb
+        if (($employer === 'government' || $employerType === 'government') && $employer !== 'government-non-ssb') {
+             // In many cases 'government' implies SSB in this system, 
+             // but we should be careful if it might be ZBAH.
+             // Usually ZBAH has 'hasAccount' set to true.
+             if ($this->isAccountHolderApplication($formData)) {
+                 return false;
+             }
+             return true;
         }
         
-        return $employerType === 'government';
+        return false;
     }
 
-    private function isAccountHolderApplication(array $formData): bool
+    public function isAccountHolderApplication(?array $formData = null): bool
     {
-        return ($formData['hasAccount'] ?? false) === true;
+        $formData = $formData ?? $this->form_data ?? [];
+        return ($formData['hasAccount'] ?? false) === true || ($formData['formType'] ?? '') === 'account_holder_loan_application';
     }
 
     private function isPensionerApplication(array $formData): bool

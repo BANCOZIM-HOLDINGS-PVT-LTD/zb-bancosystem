@@ -103,17 +103,13 @@ class DocumentVerificationResource extends Resource
                         ];
                         
                         $record->metadata = $metadata;
-                        $referenceCode = $record->reference_code;
-
+                        
                         // Routing Logic & Status Message
-                        if (str_starts_with($referenceCode, 'SSB')) {
-                            $clientMessage = "Documents reviewed and accepted. Awaiting Qupa Loan Officer Checking";
-                            $record->current_step = 'officer_check'; // SSB goes straight to officer for SSB check
-                        } elseif (str_starts_with($referenceCode, 'ZIM')) {
+                        if ($record->isAccountHolderApplication()) {
                             $clientMessage = "Documents were reviewed and accepted. Please upload your proof of employment here:";
-                            $record->current_step = 'awaiting_proof_of_employment'; // ZB needs employment letter
+                            $record->current_step = 'awaiting_proof_of_employment'; // ZB Account Holder needs employment letter
                         } else {
-                            // Default fallback for any other codes - proceed to officer check
+                            // SSB and all other applications proceed to Stage 2 & 3
                             $clientMessage = "Documents reviewed and accepted. Awaiting Qupa Loan Officer Checking";
                             $record->current_step = 'officer_check';
                         }
