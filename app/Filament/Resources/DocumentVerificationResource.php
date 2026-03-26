@@ -109,9 +109,13 @@ class DocumentVerificationResource extends Resource
                         if (str_starts_with($referenceCode, 'SSB')) {
                             $clientMessage = "Documents reviewed and accepted. Awaiting Qupa Loan Officer Checking";
                             $record->current_step = 'officer_check'; // SSB goes straight to officer for SSB check
-                        } else {
+                        } elseif (str_starts_with($referenceCode, 'ZIM')) {
                             $clientMessage = "Documents were reviewed and accepted. Please upload your proof of employment here:";
                             $record->current_step = 'awaiting_proof_of_employment'; // ZB needs employment letter
+                        } else {
+                            // Default fallback for any other codes - proceed to officer check
+                            $clientMessage = "Documents reviewed and accepted. Awaiting Qupa Loan Officer Checking";
+                            $record->current_step = 'officer_check';
                         }
 
                         $metadata['client_status_message'] = $clientMessage;
