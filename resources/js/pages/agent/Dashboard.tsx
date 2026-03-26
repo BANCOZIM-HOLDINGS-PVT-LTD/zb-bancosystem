@@ -85,6 +85,60 @@ interface AgentDashboardProps {
     };
 }
 
+const PerformanceChart = ({ data }: { data: { month: string, visits: number, referrals: number }[] }) => {
+    const maxVal = Math.max(...data.map(d => Math.max(d.visits, d.referrals)), 10);
+    
+    return (
+        <Card className="border-slate-200/60 shadow-sm bg-white dark:bg-slate-900 rounded-2xl overflow-hidden mt-6">
+            <div className="px-6 py-4 border-b border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-transparent flex items-center justify-between">
+                <div>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Performance Overview</h3>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">Last 6 Months Activity</p>
+                </div>
+                <div className="flex gap-4">
+                    <div className="flex items-center gap-1.5">
+                        <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+                        <span className="text-[9px] font-black uppercase text-slate-400">Referrals</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="h-2 w-2 rounded-full bg-slate-200 dark:bg-slate-700"></div>
+                        <span className="text-[9px] font-black uppercase text-slate-400">Visits</span>
+                    </div>
+                </div>
+            </div>
+            <div className="p-6">
+                <div className="h-48 w-full flex items-end justify-between gap-2">
+                    {data.map((d, i) => (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-2 group relative">
+                            <div className="w-full flex items-end justify-center gap-1 h-32">
+                                {/* Visits Bar */}
+                                <div 
+                                    className="w-1.5 bg-slate-100 dark:bg-slate-800 rounded-t-full transition-all duration-500 group-hover:bg-slate-200" 
+                                    style={{ height: `${(d.visits / maxVal) * 100}%` }}
+                                >
+                                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[8px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                                        {d.visits} Visits
+                                    </div>
+                                </div>
+                                {/* Referrals Bar */}
+                                <div 
+                                    className="w-3 bg-emerald-500 rounded-t-sm transition-all duration-500 group-hover:bg-emerald-400 shadow-[0_-4px_12px_rgba(16,185,129,0.1)]" 
+                                    style={{ height: `${(d.referrals / maxVal) * 100}%` }}
+                                >
+                                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[8px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                        {d.referrals} Referrals
+                                    </div>
+                                </div>
+                            </div>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{d.month.split(' ')[0]}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </Card>
+    );
+};
+
 export default function AgentDashboard({ 
     agent, 
     stats, 
@@ -425,6 +479,9 @@ export default function AgentDashboard({
                                 </table>
                             </div>
                         </Card>
+
+                        {/* Performance Chart */}
+                        <PerformanceChart data={monthlyPerformance} />
                     </div>
 
                     {/* Activity Log Feed */}
