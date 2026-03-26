@@ -26,12 +26,21 @@ class AgentApplication extends Model
         'agent_code',
         'referral_link',
         'metadata',
+        'last_activity_at',
+        'is_deactivated',
+        'deactivated_at',
+        'last_commission_amount',
+        'tier',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'metadata' => 'array',
+        'last_activity_at' => 'datetime',
+        'is_deactivated' => 'boolean',
+        'deactivated_at' => 'datetime',
+        'last_commission_amount' => 'decimal:2',
     ];
     
     /**

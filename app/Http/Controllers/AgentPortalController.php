@@ -105,6 +105,9 @@ class AgentPortalController extends Controller
             }
             $agentId = $agentModel->id;
             
+            // Update last activity
+            $agentModel->update(['last_activity_at' => now()]);
+            
             $agentData = (object) [
                 'id' => $agentModel->id,
                 'first_name' => $agentModel->first_name,
@@ -123,6 +126,10 @@ class AgentPortalController extends Controller
             if (!$agentModel) {
                 return $this->forceLogout();
             }
+            
+            // Update last activity
+            $agentModel->update(['last_activity_at' => now()]);
+
             $agentData = (object) [
                 'id' => $agentModel->id,
                 'first_name' => $agentModel->first_name,
@@ -170,18 +177,91 @@ class AgentPortalController extends Controller
         // Commission data (only if agent_id from Agent model exists)
         $lastCommission = $agentId ? Commission::where('agent_id', $agentId)->latest('earned_date')->first() : null;
         $totalEarned = $agentId ? Commission::where('agent_id', $agentId)->where('status', 'paid')->sum('amount') : 0;
-        $pendingCommission = $agentId ? Commission::where('agent_id', $agentId)->whereIn('status', ['pending', 'approved'])->sum('amount') : 0;
+        
+        // PENDING COMMISSION should be for the current month
+        $startOfMonth = now()->startOfMonth();
+        $pendingCommission = $agentId ? Commission::where('agent_id', $agentId)
+            ->whereIn('status', ['pending', 'approved'])
+            ->where('earned_date', '>=', $startOfMonth)
+            ->sum('amount') : 0;
 
         // Load product categories for link generator
         $categories = ProductCategory::with(['subCategories' => function($q) {
             $q->with('products:id,product_sub_category_id,name,image_url');
         }])->get();
 
+        // General Links with Posters (5 distinct ones)
+        $generalLinks = [
+            ['id' => 1, 'name' => 'General Campaign', 'poster' => '/assets/images/bancozim.png', 'description' => 'Promote all our products with this general link.'],
+            ['id' => 2, 'name' => 'Home & Living', 'poster' => 'https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=2069&auto=format&fit=crop', 'description' => 'Focus on furniture and home appliances.'],
+            ['id' => 3, 'name' => 'Tech & Gadgets', 'poster' => 'https://images.unsplash.com/photo-1498049794561-7780e7231661?q=80&w=2070&auto=format&fit=crop', 'description' => 'Promote our latest technology and smartphones.'],
+            ['id' => 4, 'name' => 'Solar Solutions', 'poster' => 'https://images.unsplash.com/photo-1509391366360-2e959784a276?q=80&w=2072&auto=format&fit=crop', 'description' => 'Go green with our solar energy packages.'],
+            ['id' => 5, 'name' => 'Financial Services', 'poster' => 'https://images.unsplash.com/photo-1550565118-3d1428df4a7f?q=80&w=2070&auto=format&fit=crop', 'description' => 'Refer clients for account opening and cash loans.'],
+        ];
+
         // Aggregate monthly performance (last 6 months)
         $monthlyPerformance = $this->getMonthlyPerformance($agentCode, $agentId);
 
+        // Product application history with status (Showing all products applied for)
+        $applicationHistory = (clone $referralQuery)
+            ->select('id', 'created_at', 'status', 'form_data')
+            ->latest()
+            ->limit(50)
+            ->get()
+            ->map(function($app) use ($agentModel) {
+                $formData = $app->form_data ?? [];
+                $commission = 0;
+                $tier = $agentModel->tier ?? 'ordinary';
+                
+                if ($app->status === 'approved') {
+                    $loanAmount = floatval($formData['formResponses']['loanAmount'] ?? 0);
+                    $rate = ($tier === 'higher_achiever' ? 1.5 : 1.0) / 100;
+                    $commission = round($loanAmount * $rate, 2);
+                }
+                
+                return [
+                    'id' => $app->id,
+                    'date' => $app->created_at->format('Y-m-d H:i'),
+                    'product' => $formData['productName'] ?? ($formData['selectedBusiness']['name'] ?? 'General Application'),
+                    'status' => $app->status,
+                    'commission' => $commission,
+                    'reference' => $app->reference_code ?? ('#'.str_pad($app->id, 5, '0', STR_PAD_LEFT)),
+                ];
+            });
+
+        // Activity Log
+        $activityLogs = AgentActivityLog::where('agent_id', $agentId ?: $agentModel->id)
+            ->where('agent_type', $agentSource === 'agents' ? 'agents' : 'agent_applications')
+            ->latest()
+            ->limit(30)
+            ->get()
+            ->map(function($log) {
+                return [
+                    'id' => $log->id,
+                    'type' => $log->activity_type,
+                    'description' => $log->description,
+                    'timestamp' => $log->created_at->format('M d, H:i'),
+                ];
+            });
+
+        // Milestones
+        $startOfWeek = now()->startOfWeek();
+        $weeklyCommission = $agentId ? Commission::where('agent_id', $agentId)
+            ->whereIn('status', ['pending', 'approved', 'paid'])
+            ->where('earned_date', '>=', $startOfWeek)
+            ->sum('amount') : 0;
+        
+        $dailyReferrals = (clone $referralQuery)
+            ->where('created_at', '>=', now()->startOfDay())
+            ->count();
+
         return Inertia::render('agent/Dashboard', [
-            'agent' => $agentData,
+            'agent' => array_merge((array)$agentData, [
+                'tier' => $agentModel->tier ?? 'ordinary',
+                'last_commission_amount' => (float)($agentModel->last_commission_amount ?? 0),
+                'is_deactivated' => (bool)($agentModel->is_deactivated ?? false),
+                'deactivated_at' => $agentModel->deactivated_at ? $agentModel->deactivated_at->format('Y-m-d H:i') : null,
+            ]),
             'stats' => [
                 'total_referrals' => $referralQuery->count(),
                 'successful_referrals' => $successfulReferrals,
@@ -193,7 +273,16 @@ class AgentPortalController extends Controller
             'creditReferrals' => $creditReferrals,
             'supervisorComment' => $agentData->supervisor_comment,
             'productCategories' => $categories,
+            'generalLinks' => $generalLinks,
             'monthlyPerformance' => $monthlyPerformance,
+            'applicationHistory' => $applicationHistory,
+            'activityLogs' => $activityLogs,
+            'milestones' => [
+                'weekly_commission' => (float)$weeklyCommission,
+                'weekly_target' => 150.0,
+                'daily_referrals' => $dailyReferrals,
+                'daily_target' => 20,
+            ]
         ]);
     }
 
@@ -207,11 +296,62 @@ class AgentPortalController extends Controller
         ]);
 
         $agentCode = Session::get('agent_code');
+        $agentSource = Session::get('agent_source');
+        $agentId = Session::get('agent_id');
+
         $referralLink = config('app.url') . '/apply?ref=' . $agentCode . '&product_id=' . $request->product_id;
+
+        // Log Activity
+        AgentActivityLog::create([
+            'agent_id' => $agentId,
+            'agent_type' => $agentSource,
+            'activity_type' => 'link_generation',
+            'description' => 'Generated a product referral link for product ID: ' . $request->product_id,
+        ]);
+
+        // Update last activity on agent model
+        if ($agentSource === 'agents') {
+            Agent::where('id', $agentId)->update(['last_activity_at' => now()]);
+        } else {
+            AgentApplication::where('id', $agentId)->update(['last_activity_at' => now()]);
+        }
 
         return response()->json([
             'link' => $referralLink,
         ]);
+    }
+
+    /**
+     * Log an activity from the frontend (e.g. copying a link)
+     */
+    public function logActivity(Request $request)
+    {
+        $request->validate([
+            'type' => 'required|string',
+            'description' => 'required|string',
+        ]);
+
+        $agentCode = Session::get('agent_code');
+        $agentSource = Session::get('agent_source');
+        $agentId = Session::get('agent_id');
+
+        if (!$agentCode) return response()->json(['error' => 'Not authenticated'], 401);
+
+        AgentActivityLog::create([
+            'agent_id' => $agentId,
+            'agent_type' => $agentSource,
+            'activity_type' => $request->type,
+            'description' => $request->description,
+        ]);
+
+        // Update last activity
+        if ($agentSource === 'agents') {
+            Agent::where('id', $agentId)->update(['last_activity_at' => now()]);
+        } else {
+            AgentApplication::where('id', $agentId)->update(['last_activity_at' => now()]);
+        }
+
+        return response()->json(['success' => true]);
     }
 
     /**
@@ -264,6 +404,40 @@ class AgentPortalController extends Controller
     {
         Session::forget(['agent_code', 'agent_id', 'agent_name', 'agent_type', 'agent_source']);
         return redirect()->route('agent.login')->with('success', 'You have been logged out successfully.');
+    }
+
+    /**
+     * Reactivate agent account
+     */
+    public function reactivate(Request $request)
+    {
+        $agentCode = Session::get('agent_code');
+        if (!$agentCode) return back();
+
+        $agentSource = Session::get('agent_source');
+        $agent = $agentSource === 'agents' 
+            ? Agent::where('agent_code', $agentCode)->first()
+            : AgentApplication::where('agent_code', $agentCode)->first();
+
+        if ($agent && $agent->is_deactivated) {
+            // Logic: reactivation happens after 24 hours (simulated or scheduled)
+            // For now, we'll mark it as pending reactivation in metadata
+            $metadata = $agent->metadata ?? [];
+            $metadata['reactivation_requested_at'] = now()->toISOString();
+            $agent->metadata = $metadata;
+            $agent->save();
+
+            AgentActivityLog::create([
+                'agent_id' => $agent->id,
+                'agent_type' => $agentSource,
+                'activity_type' => 'reactivation_requested',
+                'description' => 'Agent requested account reactivation.',
+            ]);
+
+            return back()->with('success', 'Reactivation requested. Your account will be active within 24 hours.');
+        }
+
+        return back();
     }
     
     /**

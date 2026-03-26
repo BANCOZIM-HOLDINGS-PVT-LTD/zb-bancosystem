@@ -32,6 +32,11 @@ class Agent extends Authenticatable implements FilamentUser
         'bank_name',
         'commission_rate',
         'metadata',
+        'last_activity_at',
+        'is_deactivated',
+        'deactivated_at',
+        'last_commission_amount',
+        'tier',
     ];
 
     protected $casts = [
@@ -39,6 +44,10 @@ class Agent extends Authenticatable implements FilamentUser
         'date_of_birth' => 'date',
         'hire_date' => 'date',
         'commission_rate' => 'decimal:2',
+        'last_activity_at' => 'datetime',
+        'is_deactivated' => 'boolean',
+        'deactivated_at' => 'datetime',
+        'last_commission_amount' => 'decimal:2',
     ];
 
     protected $hidden = [
