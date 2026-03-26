@@ -83,9 +83,7 @@ class DocumentVerificationResource extends Resource
                             ->schema([
                                 Forms\Components\Checkbox::make('doc_id')->label('National ID Card'),
                                 Forms\Components\Checkbox::make('doc_payslip')->label('Latest Payslip'),
-                                Forms\Components\Checkbox::make('doc_residence')->label('Proof of Residence'),
                                 Forms\Components\Checkbox::make('doc_photo')->label('Passport Photo / Selfie'),
-                                Forms\Components\Checkbox::make('doc_statement')->label('Bank Statement (if applicable)'),
                             ]),
                         Forms\Components\Textarea::make('bancozim_notes')
                             ->label('Bancozim Admin Notes')
@@ -99,9 +97,7 @@ class DocumentVerificationResource extends Resource
                             'docs' => [
                                 'id' => $data['doc_id'],
                                 'payslip' => $data['doc_payslip'],
-                                'residence' => $data['doc_residence'],
                                 'photo' => $data['doc_photo'],
-                                'statement' => $data['doc_statement'],
                             ],
                             'notes' => $data['bancozim_notes'] ?? '',
                         ];
@@ -151,9 +147,7 @@ class DocumentVerificationResource extends Resource
                         $docLabels = [
                             'id' => 'National ID Card',
                             'payslip' => 'Latest Payslip',
-                            'residence' => 'Proof of Residence',
                             'photo' => 'Passport Photo / Selfie',
-                            'statement' => 'Bank Statement',
                         ];
 
                         $list = array_map(fn($d) => $docLabels[$d], $unclearDocs);
