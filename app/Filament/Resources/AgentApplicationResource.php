@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\AgentResource;
 use App\Filament\Resources\AgentApplicationResource\Pages;
 use App\Models\AgentApplication;
 use App\Models\Agent;
