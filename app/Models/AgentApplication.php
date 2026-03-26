@@ -91,6 +91,14 @@ class AgentApplication extends Model
     }
 
     /**
+     * Get the display name with code
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->full_name . ' (' . $this->agent_code . ')';
+    }
+
+    /**
      * Get the application status badge color
      */
     public function getStatusColorAttribute(): string

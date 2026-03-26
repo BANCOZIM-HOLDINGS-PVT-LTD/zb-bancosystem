@@ -10,6 +10,7 @@ class Commission extends Model
 {
     protected $fillable = [
         'agent_id',
+        'agent_type',
         'application_id',
         'reference_number',
         'type',

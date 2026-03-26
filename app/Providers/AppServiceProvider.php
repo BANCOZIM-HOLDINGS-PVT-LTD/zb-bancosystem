@@ -9,6 +9,7 @@ use App\Contracts\PDFGeneratorInterface;
 use App\Contracts\ApplicationStateRepositoryInterface;
 use App\Services\PDFGeneratorService;
 use App\Repositories\ApplicationStateRepository;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,6 +31,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Define polymorphic mapping for agents
+        Relation::morphMap([
+            'agents' => \App\Models\Agent::class,
+            'agent_applications' => \App\Models\AgentApplication::class,
+        ]);
+
         // Register observers
         \App\Models\ApplicationState::observe(\App\Observers\ApplicationStateObserver::class);
 

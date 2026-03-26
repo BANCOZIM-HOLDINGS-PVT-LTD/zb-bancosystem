@@ -518,6 +518,12 @@ export default function AgentDashboard({
                                         <span className="text-slate-500 uppercase">Last Commission</span>
                                         <span className="text-emerald-400">${agent.last_commission_amount.toFixed(2)}</span>
                                     </div>
+                                    {lastCommissionDate && (
+                                        <div className="flex items-center justify-between text-[10px] font-bold -mt-1">
+                                            <span className="text-slate-500 uppercase">Date Received</span>
+                                            <span className="text-slate-300">{new Date(lastCommissionDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                        </div>
+                                    )}
                                     <div className="flex items-center gap-2 text-[10px] font-bold text-slate-300"><Phone className="h-3 w-3 text-emerald-500" /> {agent.whatsapp_contact}</div>
                                     <div className="flex items-center gap-2 text-[10px] font-bold text-slate-300"><CreditCard className="h-3 w-3 text-emerald-500" /> {agent.ecocash_number}</div>
                                 </div>

@@ -35,9 +35,18 @@ class CommissionResource extends BaseResource
                     ->schema([
                         Forms\Components\Select::make('agent_id')
                             ->label('Agent')
-                            ->relationship('agent', 'first_name')
-                            ->getOptionLabelFromRecordUsing(fn ($record) => $record->display_name)
-                            ->searchable(['first_name', 'last_name', 'agent_code'])
+                            ->options(function () {
+                                return \App\Models\Agent::all()->pluck('display_name', 'id')
+                                    ->merge(\App\Models\AgentApplication::where('status', 'approved')->get()->mapWithKeys(function ($item) {
+                                        return [$item->id => $item->first_name . ' ' . $item->surname . ' (' . $item->agent_code . ')'];
+                                    }))->toArray();
+                            })
+                            ->searchable()
+                            ->disabled()
+                            ->dehydrated(false),
+
+                        Forms\Components\TextInput::make('agent_type')
+                            ->label('Agent Type')
                             ->disabled()
                             ->dehydrated(false),
 
@@ -135,10 +144,28 @@ class CommissionResource extends BaseResource
                     ->searchable()
                     ->copyable(),
 
-                Tables\Columns\TextColumn::make('agent.display_name')
+                Tables\Columns\TextColumn::make('agent_name')
                     ->label('Agent')
-                    ->searchable(['agent.first_name', 'agent.last_name', 'agent.agent_code'])
-                    ->sortable(),
+                    ->getStateUsing(function ($record) {
+                        if (!$record->agent) return 'N/A';
+                        if ($record->agent_type === 'agents') {
+                            return $record->agent->display_name;
+                        }
+                        return $record->agent->first_name . ' ' . $record->agent->surname . ' (' . $record->agent->agent_code . ')';
+                    })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHasMorph('agent', [\App\Models\Agent::class, \App\Models\AgentApplication::class], function (Builder $query) use ($search) {
+                            $query->where('first_name', 'like', "%{$search}%")
+                                ->orWhere('agent_code', 'like', "%{$search}%");
+                        });
+                    }),
+
+                Tables\Columns\BadgeColumn::make('agent_type')
+                    ->label('Agent Category')
+                    ->colors([
+                        'info' => 'agent_applications',
+                        'success' => 'agents',
+                    ]),
 
                 Tables\Columns\TextColumn::make('application.session_id')
                     ->label('Application')
@@ -195,10 +222,12 @@ class CommissionResource extends BaseResource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('agent')
-                    ->relationship('agent', 'first_name')
-                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->display_name)
-                    ->searchable(),
+                SelectFilter::make('agent_type')
+                    ->label('Agent Category')
+                    ->options([
+                        'agents' => 'Physical Agent',
+                        'agent_applications' => 'Online Agent',
+                    ]),
 
                 SelectFilter::make('type')
                     ->options([
