@@ -104,14 +104,22 @@ class DocumentVerificationResource extends Resource
                         
                         $record->metadata = $metadata;
                         
-                        // Routing Logic & Status Message
-                        if ($record->isAccountHolderApplication()) {
-                            $clientMessage = "Documents were reviewed and accepted. Please upload your proof of employment here:";
-                            $record->current_step = 'awaiting_proof_of_employment'; // ZB Account Holder needs employment letter
-                        } else {
-                            // SSB and all other applications proceed to Stage 2 & 3
-                            $clientMessage = "Documents reviewed and accepted. Awaiting Qupa Loan Officer Checking";
-                            $record->current_step = 'officer_check';
+                        // Routing Logic: route by application type after Stage 1
+                        $appType = $record->getApplicationType();
+
+                        switch ($appType) {
+                            case 'account_holder':
+                                $record->current_step = 'awaiting_proof_of_employment';
+                                $clientMessage = "Documents verified. Please upload your Confirmation of Employment letter.";
+                                break;
+                            case 'zb_account_opening':
+                                $record->current_step = 'awaiting_deposit_payment';
+                                $clientMessage = "Documents verified. Please upload your proof of deposit payment.";
+                                break;
+                            default: // ssb, pensioner, rdc, sme
+                                $record->current_step = 'qupa_allocation_pending';
+                                $clientMessage = "Documents verified. Your application is being allocated for review.";
+                                break;
                         }
 
                         $metadata['client_status_message'] = $clientMessage;
