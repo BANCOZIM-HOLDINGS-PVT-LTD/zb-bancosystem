@@ -11,6 +11,11 @@ use App\Services\AutomatedCheckService;
 use App\Services\SMSService;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * @deprecated This page used the now-disabled AutomatedCheckService for SSB/FCB API checks.
+ * It is not registered as a route in DocumentVerificationResource and is unreachable.
+ * Manual workflow uses DocumentVerificationResource table actions and ProofVerificationResource instead.
+ */
 class ProcessApplication extends Page
 {
     protected static string $resource = DocumentVerificationResource::class;

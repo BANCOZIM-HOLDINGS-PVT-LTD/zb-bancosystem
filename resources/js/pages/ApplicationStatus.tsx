@@ -226,6 +226,20 @@ export default function ApplicationStatus() {
                 label: 'Action Required: Proof of Employment',
                 description: 'Please upload your Confirmation of Employment letter from your HR.'
             },
+            'deposit_payment_required': {
+                icon: DollarSign,
+                color: 'text-blue-600 dark:text-blue-400',
+                bg: 'bg-blue-50 dark:bg-blue-900/20',
+                label: 'Action Required: Deposit Payment',
+                description: 'Please upload your proof of deposit payment below.'
+            },
+            'allocation': {
+                icon: Clock,
+                color: 'text-purple-600 dark:text-purple-400',
+                bg: 'bg-purple-50 dark:bg-purple-900/20',
+                label: 'Being Allocated',
+                description: 'Your application is being assigned to a branch for review.'
+            },
             'under_review': {
                 icon: AlertCircle,
                 color: 'text-indigo-600 dark:text-indigo-400',
@@ -517,9 +531,20 @@ export default function ApplicationStatus() {
                                 )}
 
                                 {applicationDetails.currentStep === 'awaiting_proof_of_employment' && (
-                                    <ApplicationResubmission 
+                                    <ApplicationResubmission
                                         sessionId={applicationDetails.sessionId}
                                         type="employment_proof"
+                                        onSuccess={(msg) => {
+                                            setSuccessMessage(msg);
+                                            handleSearchWithRef(applicationDetails.sessionId);
+                                        }}
+                                    />
+                                )}
+
+                                {applicationDetails.currentStep === 'awaiting_deposit_payment' && (
+                                    <ApplicationResubmission
+                                        sessionId={applicationDetails.sessionId}
+                                        type="deposit_payment"
                                         onSuccess={(msg) => {
                                             setSuccessMessage(msg);
                                             handleSearchWithRef(applicationDetails.sessionId);

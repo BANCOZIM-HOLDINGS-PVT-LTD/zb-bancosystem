@@ -102,19 +102,16 @@ class ApplicationState extends Model
     {
         $year = $this->created_at ? $this->created_at->format('Y') : date('Y');
         $id = str_pad($this->id, 6, '0', STR_PAD_LEFT);
-        
-        $prefix = 'ZB'; // Default for account opening
-        $formData = $this->form_data ?? [];
-        
-        $isSSB = $this->isSSBApplication($formData) || ($formData['formType'] ?? '') === 'ssb';
-        $isAccountHolder = ($formData['hasAccount'] ?? false) === true || ($formData['formType'] ?? '') === 'account_holder_loan_application';
 
-        if ($isSSB) {
-            $prefix = 'SSB';
-        } elseif ($isAccountHolder) {
-            $prefix = 'ZBAH';
-        }
-        
+        $type = $this->getApplicationType();
+        $prefix = match ($type) {
+            'ssb' => 'SSB',
+            'account_holder' => 'ZBAH',
+            'pensioner' => 'PEN',
+            'rdc' => 'RDC',
+            default => 'ZB',
+        };
+
         return "{$prefix}{$year}{$id}";
     }
 
@@ -150,23 +147,56 @@ class ApplicationState extends Model
         return ($formData['hasAccount'] ?? false) === true || ($formData['formType'] ?? '') === 'account_holder_loan_application';
     }
 
-    private function isPensionerApplication(array $formData): bool
+    public function isPensionerApplication(array $formData = null): bool
     {
+        $formData = $formData ?? $this->form_data ?? [];
         $employmentStatus = $formData['formResponses']['employmentStatus'] ?? '';
         $employer = strtolower($formData['employer'] ?? '');
-        
+
         return $employmentStatus === 'pensioner' || str_contains($employer, 'pension');
     }
 
-    private function isRDCApplication(array $formData): bool
+    public function isRDCApplication(array $formData = null): bool
     {
+        $formData = $formData ?? $this->form_data ?? [];
         $employer = strtolower($formData['employer'] ?? '');
         return str_contains($employer, 'rdc') || str_contains($employer, 'rural district council');
     }
 
-    private function isSMEApplication(array $formData): bool
+    public function isSMEApplication(array $formData = null): bool
     {
+        $formData = $formData ?? $this->form_data ?? [];
         $formId = $formData['formId'] ?? '';
         return str_contains($formId, 'sme') || str_contains($formId, 'business');
+    }
+
+    /**
+     * Get the canonical application type string.
+     * Uses form_data['formType'] as primary discriminator with heuristic fallback.
+     */
+    public function getApplicationType(): string
+    {
+        $formData = $this->form_data ?? [];
+        $formType = $formData['formType'] ?? '';
+
+        return match ($formType) {
+            'ssb' => 'ssb',
+            'account_holder_loan_application' => 'account_holder',
+            'zb_account_opening' => 'zb_account_opening',
+            'pensioner' => 'pensioner',
+            'rdc' => 'rdc',
+            'sme_business' => 'sme',
+            default => $this->detectApplicationTypeFallback($formData),
+        };
+    }
+
+    private function detectApplicationTypeFallback(array $formData): string
+    {
+        if ($this->isSSBApplication($formData)) return 'ssb';
+        if ($this->isAccountHolderApplication($formData)) return 'account_holder';
+        if ($this->isPensionerApplication($formData)) return 'pensioner';
+        if ($this->isRDCApplication($formData)) return 'rdc';
+        if ($this->isSMEApplication($formData)) return 'sme';
+        return 'zb_account_opening';
     }
 }
