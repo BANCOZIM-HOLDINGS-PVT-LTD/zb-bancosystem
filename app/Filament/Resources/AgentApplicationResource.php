@@ -205,18 +205,22 @@ class AgentApplicationResource extends BaseResource
                                 'agent_code' => $record->agent_code,
                                 'first_name' => $record->first_name,
                                 'last_name' => $record->surname,
+                                'email' => strtolower($record->agent_code) . '@bancozim.com', // Unique email based on agent code
                                 'phone' => $record->voice_number,
                                 'national_id' => $record->id_number,
                                 'status' => 'active',
-                                'type' => 'online', // Online agents from WhatsApp applications
+                                'type' => 'individual',
+                                'agent_type' => 'online', // Online agents from WhatsApp applications
                                 'region' => $record->province,
                                 'hire_date' => now(),
-                                'commission_rate' => 5.00, // Default commission rate
+                                'commission_rate' => 0.3, // Standard online agent commission
+                                'password' => bcrypt($record->agent_code), // Default password is agent code
                                 'metadata' => [
                                     'application_id' => $record->id,
                                     'whatsapp_number' => $record->whatsapp_contact,
                                     'ecocash_number' => $record->ecocash_number,
                                     'source' => 'whatsapp_application',
+                                    'supervisor_comment' => $record->metadata['supervisor_comment'] ?? null,
                                 ],
                             ]);
                             
@@ -227,6 +231,11 @@ class AgentApplicationResource extends BaseResource
                             ]);
                         } catch (\Exception $e) {
                             Log::error('Failed to create agent record: ' . $e->getMessage());
+                            Notification::make()
+                                ->title('Agent Record Failed')
+                                ->body('Application approved but could not create Agent record: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
                         }
                         
                         // Send WhatsApp notification
@@ -366,13 +375,40 @@ class AgentApplicationResource extends BaseResource
                             foreach ($records as $record) {
                                 if ($record->status === 'pending') {
                                     $record->approve();
-                                    $count++;
+                                    
+                                    // Create Agent record
+                                    try {
+                                        Agent::create([
+                                            'agent_code' => $record->agent_code,
+                                            'first_name' => $record->first_name,
+                                            'last_name' => $record->surname,
+                                            'email' => strtolower($record->agent_code) . '@bancozim.com',
+                                            'phone' => $record->voice_number,
+                                            'national_id' => $record->id_number,
+                                            'status' => 'active',
+                                            'type' => 'individual',
+                                            'agent_type' => 'online',
+                                            'region' => $record->province,
+                                            'hire_date' => now(),
+                                            'commission_rate' => 0.3,
+                                            'password' => bcrypt($record->agent_code),
+                                            'metadata' => [
+                                                'application_id' => $record->id,
+                                                'whatsapp_number' => $record->whatsapp_contact,
+                                                'ecocash_number' => $record->ecocash_number,
+                                                'source' => 'whatsapp_application_bulk',
+                                            ],
+                                        ]);
+                                        $count++;
+                                    } catch (\Exception $e) {
+                                        Log::error('Failed to create bulk agent record: ' . $e->getMessage());
+                                    }
                                 }
                             }
                             
                             Notification::make()
                                 ->title('Bulk Approval Complete')
-                                ->body("{$count} applications approved")
+                                ->body("{$count} applications approved and online agents created.")
                                 ->success()
                                 ->send();
                         }),
