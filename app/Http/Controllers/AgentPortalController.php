@@ -196,7 +196,7 @@ class AgentPortalController extends Controller
         // General Links with Posters (5 distinct ones)
         $defaultPoster = '/Product-Image-Coming-Soon.png';
         $generalLinks = [
-            ['id' => 1, 'name' => 'General Campaign', 'poster' => '/assets/images/bancozim.png', 'description' => 'Promote all our products with this general link.'],
+            ['id' => 1, 'name' => 'General Campaign', 'poster' => $defaultPoster, 'description' => 'Promote all our products with this general link.'],
             ['id' => 2, 'name' => 'Home & Living', 'poster' => $defaultPoster, 'description' => 'Focus on furniture and home appliances.'],
             ['id' => 3, 'name' => 'Tech & Gadgets', 'poster' => $defaultPoster, 'description' => 'Promote our latest technology and smartphones.'],
             ['id' => 4, 'name' => 'Solar Solutions', 'poster' => $defaultPoster, 'description' => 'Go green with our solar energy packages.'],
