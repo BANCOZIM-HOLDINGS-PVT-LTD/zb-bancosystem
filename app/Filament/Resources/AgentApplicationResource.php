@@ -213,6 +213,7 @@ class AgentApplicationResource extends BaseResource
                                 'agent_type' => 'online', // Online agents from WhatsApp applications
                                 'region' => $record->province,
                                 'hire_date' => now(),
+                                'ecocash_number' => $record->ecocash_number,
                                 'commission_rate' => 0.3, // Standard online agent commission
                                 'password' => bcrypt($record->agent_code), // Default password is agent code
                                 'metadata' => [
@@ -390,6 +391,7 @@ class AgentApplicationResource extends BaseResource
                                             'agent_type' => 'online',
                                             'region' => $record->province,
                                             'hire_date' => now(),
+                                            'ecocash_number' => $record->ecocash_number,
                                             'commission_rate' => 0.3,
                                             'password' => bcrypt($record->agent_code),
                                             'metadata' => [
