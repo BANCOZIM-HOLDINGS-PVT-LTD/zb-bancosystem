@@ -25,6 +25,8 @@ interface ProductSelectionProps {
 
 type ViewMode = 'categories' | 'subcategories' | 'series' | 'businesses' | 'product_detail' | 'zimparks_destinations' | 'scales' | 'terms';
 
+const DEFAULT_IMAGE = '/Product-Image-Coming-Soon.png';
+
 const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBack, loading }) => {
     const [currentView, setCurrentView] = useState<ViewMode>('categories');
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -629,17 +631,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 onClick={() => handleSeriesSelect(series)}
                             >
                                 <div className="aspect-video w-full bg-gray-100 relative overflow-hidden">
-                                    {series.image_url ? (
-                                        <img
-                                            src={`/storage/${series.image_url}`}
-                                            alt={series.name}
-                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                        />
-                                    ) : (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
-                                            <span className="text-4xl">📦</span>
-                                        </div>
-                                    )}
+                                    <img
+                                        src={series.image_url ? `/storage/${series.image_url}` : DEFAULT_IMAGE}
+                                        alt={series.name}
+                                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                    />
                                 </div>
                                 <div className="p-4 text-center">
                                     <h3 className="text-lg font-medium mb-1">{series.name}</h3>
@@ -668,15 +664,13 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                     onClick={() => !isComingSoon && handleBusinessSelect(business)}
                                     title={isComingSoon ? "Coming soon" : undefined}
                                 >
-                                    {business.image_url && (
-                                        <div className="w-24 h-24 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
-                                            <img
-                                                src={`/storage/${business.image_url}`}
-                                                alt={business.name}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        </div>
-                                    )}
+                                    <div className="w-24 h-24 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
+                                        <img
+                                            src={business.image_url ? `/storage/${business.image_url}` : DEFAULT_IMAGE}
+                                            alt={business.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
                                     <div className="flex-grow">
                                         <h3 className="text-lg font-medium mb-1 flex items-center gap-2">
                                             {business.name}
@@ -731,19 +725,12 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 {currentView === 'product_detail' && selectedBusiness && (
                     <div className="grid md:grid-cols-2 gap-8">
                         {/* Product Image */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center min-h-[300px]">
-                            {selectedBusiness.image_url ? (
-                                <img
-                                    src={`/storage/${selectedBusiness.image_url}`}
-                                    alt={selectedBusiness.name}
-                                    className="max-w-full max-h-[400px] object-contain"
-                                />
-                            ) : (
-                                <div className="text-center text-gray-400">
-                                    <div className="text-6xl mb-4">📱</div>
-                                    <p>No image available</p>
-                                </div>
-                            )}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center min-h-[300px] overflow-hidden">
+                            <img
+                                src={selectedBusiness.image_url ? `/storage/${selectedBusiness.image_url}` : DEFAULT_IMAGE}
+                                alt={selectedBusiness.name}
+                                className="max-w-full max-h-[400px] object-contain"
+                            />
                         </div>
 
                         {/* Product Details */}

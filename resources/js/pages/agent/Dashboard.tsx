@@ -139,6 +139,8 @@ const PerformanceChart = ({ data }: { data: { month: string, visits: number, ref
     );
 };
 
+const DEFAULT_IMAGE = '/Product-Image-Coming-Soon.png';
+
 export default function AgentDashboard({ 
     agent, 
     stats, 
@@ -378,7 +380,7 @@ export default function AgentDashboard({
                         {/* Posters & General Link */}
                         <div className="lg:col-span-5 space-y-6">
                             <div className="relative aspect-[4/5] rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm group">
-                                <img src={selectedPosterLink.poster} className="w-full h-full object-cover" />
+                                <img src={selectedPosterLink.poster || DEFAULT_IMAGE} className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-5 flex flex-col justify-end">
                                     <p className="text-sm font-black text-white">{selectedPosterLink.name}</p>
                                     <p className="text-[10px] font-medium text-slate-300 line-clamp-1">{selectedPosterLink.description}</p>
@@ -387,7 +389,7 @@ export default function AgentDashboard({
                             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                                 {generalLinks.map((link) => (
                                     <button key={link.id} onClick={() => setSelectedPosterLink(link)} className={`h-12 w-10 shrink-0 rounded-lg border-2 transition-all ${selectedPosterLink.id === link.id ? 'border-emerald-500 scale-105' : 'border-transparent opacity-40'}`}>
-                                        <img src={link.poster} className="h-full w-full object-cover rounded-md" />
+                                        <img src={link.poster || DEFAULT_IMAGE} className="h-full w-full object-cover rounded-md" />
                                     </button>
                                 ))}
                             </div>
@@ -439,8 +441,8 @@ export default function AgentDashboard({
                                 <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-4 bg-white/50 dark:bg-slate-900/50">
                                     {generatedLink ? (
                                         <div className="w-full text-center space-y-4 animate-in zoom-in duration-300">
-                                            <div className="h-24 w-24 bg-white dark:bg-slate-900 rounded-2xl mx-auto p-2 shadow-sm flex items-center justify-center border border-slate-100 dark:border-slate-800">
-                                                {selectedProduct?.image_url ? <img src={selectedProduct.image_url} className="max-h-full max-w-full object-contain" /> : <ShoppingBag className="h-8 w-8 text-slate-200" />}
+                                            <div className="h-24 w-24 bg-white dark:bg-slate-900 rounded-2xl mx-auto p-2 shadow-sm flex items-center justify-center border border-slate-100 dark:border-slate-800 overflow-hidden">
+                                                <img src={selectedProduct?.image_url || DEFAULT_IMAGE} className="max-h-full max-w-full object-contain" />
                                             </div>
                                             <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Link Ready</p>
                                             <div className="flex gap-2 p-1 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200">

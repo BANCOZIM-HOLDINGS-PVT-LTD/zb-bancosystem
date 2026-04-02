@@ -194,12 +194,13 @@ class AgentPortalController extends Controller
         }])->get();
 
         // General Links with Posters (5 distinct ones)
+        $defaultPoster = '/Product-Image-Coming-Soon.png';
         $generalLinks = [
             ['id' => 1, 'name' => 'General Campaign', 'poster' => '/assets/images/bancozim.png', 'description' => 'Promote all our products with this general link.'],
-            ['id' => 2, 'name' => 'Home & Living', 'poster' => 'https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=2069&auto=format&fit=crop', 'description' => 'Focus on furniture and home appliances.'],
-            ['id' => 3, 'name' => 'Tech & Gadgets', 'poster' => 'https://images.unsplash.com/photo-1498049794561-7780e7231661?q=80&w=2070&auto=format&fit=crop', 'description' => 'Promote our latest technology and smartphones.'],
-            ['id' => 4, 'name' => 'Solar Solutions', 'poster' => 'https://images.unsplash.com/photo-1509391366360-2e959784a276?q=80&w=2072&auto=format&fit=crop', 'description' => 'Go green with our solar energy packages.'],
-            ['id' => 5, 'name' => 'Financial Services', 'poster' => 'https://images.unsplash.com/photo-1550565118-3d1428df4a7f?q=80&w=2070&auto=format&fit=crop', 'description' => 'Refer clients for account opening and cash loans.'],
+            ['id' => 2, 'name' => 'Home & Living', 'poster' => $defaultPoster, 'description' => 'Focus on furniture and home appliances.'],
+            ['id' => 3, 'name' => 'Tech & Gadgets', 'poster' => $defaultPoster, 'description' => 'Promote our latest technology and smartphones.'],
+            ['id' => 4, 'name' => 'Solar Solutions', 'poster' => $defaultPoster, 'description' => 'Go green with our solar energy packages.'],
+            ['id' => 5, 'name' => 'Financial Services', 'poster' => $defaultPoster, 'description' => 'Refer clients for account opening and cash loans.'],
         ];
 
         // Aggregate monthly performance (last 6 months)
