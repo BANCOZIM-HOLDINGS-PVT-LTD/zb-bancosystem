@@ -6,7 +6,7 @@ import { useDropzone } from 'react-dropzone';
 
 interface ApplicationResubmissionProps {
     sessionId: string;
-    type: 'reupload' | 'employment_proof';
+    type: 'reupload' | 'employment_proof' | 'deposit_payment';
     unclearDocuments?: string[];
     onSuccess: (message: string) => void;
 }
@@ -25,11 +25,14 @@ const ApplicationResubmission: React.FC<ApplicationResubmissionProps> = ({
         'id': 'National ID Card',
         'payslip': 'Latest Payslip',
         'photo': 'Passport Photo / Selfie',
-        'employment_proof': 'Confirmation of Employment Letter'
+        'employment_proof': 'Confirmation of Employment Letter',
+        'deposit_receipt': 'Proof of Deposit Payment (Receipt / Screenshot)'
     };
 
     const handleUpload = async () => {
-        const requiredDocs = type === 'employment_proof' ? ['employment_proof'] : unclearDocuments;
+        const requiredDocs = type === 'employment_proof' ? ['employment_proof']
+            : type === 'deposit_payment' ? ['deposit_receipt']
+            : unclearDocuments;
         
         const missing = requiredDocs.filter(d => !files[d]);
         if (missing.length > 0) {
@@ -123,12 +126,16 @@ const ApplicationResubmission: React.FC<ApplicationResubmissionProps> = ({
             <div className="flex items-center gap-2 mb-4 text-blue-700 dark:text-blue-400">
                 <FileText className="h-5 w-5" />
                 <h3 className="font-bold">
-                    {type === 'employment_proof' ? 'Upload Confirmation of Employment' : 'Re-upload Unclear Documents'}
+                    {type === 'employment_proof' ? 'Upload Confirmation of Employment'
+                     : type === 'deposit_payment' ? 'Upload Proof of Deposit Payment'
+                     : 'Re-upload Unclear Documents'}
                 </h3>
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2">
-                {type === 'employment_proof' ? renderDropzone('employment_proof') : unclearDocuments.map(renderDropzone)}
+                {type === 'employment_proof' ? renderDropzone('employment_proof')
+                 : type === 'deposit_payment' ? renderDropzone('deposit_receipt')
+                 : unclearDocuments.map(renderDropzone)}
             </div>
 
             {error && (

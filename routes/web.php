@@ -70,6 +70,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             if ($user->role === \App\Models\User::ROLE_ZB_ADMIN) {
                 return redirect()->intended('/zb-admin');
             }
+            if ($user->role === \App\Models\User::ROLE_QUPA_ADMIN) {
+                return redirect()->intended('/zb-admin');
+            }
             if ($user->role === \App\Models\User::ROLE_ACCOUNTING) {
                 return redirect()->intended('/accounting');
             }

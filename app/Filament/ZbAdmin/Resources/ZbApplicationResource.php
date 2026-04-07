@@ -37,7 +37,7 @@ class ZbApplicationResource extends Resource
         $query = parent::getEloquentQuery();
 
         // 1. Filter out Stage 1 and Waiting stages (Stage 1 is DocumentVerificationResource)
-        $query->whereNotIn('current_step', ['pending_review', 'awaiting_document_reupload', 'awaiting_proof_of_employment']);
+        $query->whereNotIn('current_step', ['pending_review', 'awaiting_document_reupload', 'awaiting_proof_of_employment', 'awaiting_deposit_payment']);
 
         // 2. Role-based scoping
         if ($user && $user->isQupaAdmin()) {

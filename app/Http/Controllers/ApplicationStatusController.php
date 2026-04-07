@@ -110,7 +110,7 @@ public function resubmit(Request $request): JsonResponse
 {
     $request->validate([
         'sessionId' => 'required|string',
-        'type' => 'required|in:reupload,employment_proof',
+        'type' => 'required|in:reupload,employment_proof,deposit_payment',
         'documents' => 'required|array',
     ]);
 
@@ -151,11 +151,14 @@ public function resubmit(Request $request): JsonResponse
         $application->current_step = 'pending_review'; // Go back to Bancozim check
         $application->status = 'resubmitted';
         $metadata['client_status_message'] = "Documents resubmitted. Awaiting Bancozim Re-verification.";
-    } else {
-        // Proof of employment submitted
-        $application->current_step = 'officer_check'; // Move to Stage 2: Qupa Officer
+    } elseif ($request->type === 'employment_proof') {
+        // Keep current_step — admin verifies via ProofVerificationResource
         $application->status = 'employment_proof_submitted';
-        $metadata['client_status_message'] = "Proof of employment submitted. Awaiting Qupa Loan Officer Checking";
+        $metadata['client_status_message'] = "Proof of employment submitted. Awaiting verification.";
+    } elseif ($request->type === 'deposit_payment') {
+        // Keep current_step at awaiting_deposit_payment — admin verifies
+        $application->status = 'deposit_proof_submitted';
+        $metadata['client_status_message'] = "Proof of deposit payment submitted. Awaiting verification.";
     }
 
     $application->metadata = $metadata;
@@ -167,24 +170,23 @@ public function resubmit(Request $request): JsonResponse
     ]);
 }
 
-private function determineApplicationStatus(ApplicationState $application): string
-{
-    return match($application->current_step) {
-        'pending_review' => 'document_verification',
-        'awaiting_document_reupload' => 'resubmission_required',
-        'awaiting_proof_of_employment' => 'employment_proof_required',
-        'qupa_allocation_pending' => 'allocation',
-        'officer_check' => 'under_review',
-        'manager_approval' => 'final_approval',
-        'approved' => 'approved',
-        'rejected' => 'rejected',
-        default => $application->status ?: 'processing',
-    };
-}
-
+    private function determineApplicationStatus(ApplicationState $application): string
+    {
+        return match($application->current_step) {
+            'pending_review' => 'document_verification',
+            'awaiting_document_reupload' => 'resubmission_required',
+            'awaiting_proof_of_employment' => 'employment_proof_required',
+            'awaiting_deposit_payment' => 'deposit_payment_required',
+            'qupa_allocation_pending' => 'allocation',
+            'officer_check' => 'under_review',
+            'manager_approval' => 'final_approval',
+            'approved' => 'approved',
+            'rejected' => 'rejected',
+            default => $application->status ?: 'processing',
+        };
     }
 
-private function buildApplicationTimeline(ApplicationState $application, string $status, $deliveryTracking = null): array
+    private function buildApplicationTimeline(ApplicationState $application, string $status, $deliveryTracking = null): array
     {
         $timeline = [];
         $metadata = $application->metadata ?? [];
@@ -199,13 +201,34 @@ private function buildApplicationTimeline(ApplicationState $application, string 
         ];
 
         // 2. Doc Verification
-        $isDocDone = isset($metadata['bancozim_verification']) || in_array($step, ['qupa_allocation_pending', 'officer_check', 'manager_approval', 'approved']);
+        $isDocDone = isset($metadata['bancozim_verification']) || in_array($step, [
+            'awaiting_deposit_payment', 'awaiting_proof_of_employment',
+            'qupa_allocation_pending', 'officer_check', 'manager_approval', 'approved',
+        ]);
         $timeline[] = [
             'title' => 'Document Verification',
             'description' => $isDocDone ? 'Documents verified by Bancozim Admin.' : 'Documents are being checked for clarity.',
             'timestamp' => isset($metadata['bancozim_verification']['verified_at']) ? Carbon::parse($metadata['bancozim_verification']['verified_at'])->format('M d, Y') : ($step === 'pending_review' ? 'In Progress' : ''),
             'status' => $isDocDone ? 'completed' : ($step === 'pending_review' ? 'current' : 'pending'),
         ];
+
+        // 2B. Intermediate Proof Stage (ZB Account Opening or Account Holder only)
+        $appType = $application->getApplicationType();
+        if (in_array($appType, ['zb_account_opening', 'account_holder'])) {
+            $proofTitle = $appType === 'zb_account_opening' ? 'Deposit Payment Verification' : 'Employment Proof Verification';
+            $proofDesc = $appType === 'zb_account_opening' ? 'deposit payment' : 'employment proof';
+            $proofStep = $appType === 'zb_account_opening' ? 'awaiting_deposit_payment' : 'awaiting_proof_of_employment';
+
+            $isProofDone = isset($metadata['proof_verified']) || in_array($step, ['qupa_allocation_pending', 'officer_check', 'manager_approval', 'approved']);
+            $timeline[] = [
+                'title' => $proofTitle,
+                'description' => $isProofDone ? ucfirst($proofDesc) . ' verified.' : 'Awaiting ' . $proofDesc . '.',
+                'timestamp' => isset($metadata['proof_verified']['verified_at'])
+                    ? Carbon::parse($metadata['proof_verified']['verified_at'])->format('M d, Y')
+                    : ($step === $proofStep ? 'In Progress' : ''),
+                'status' => $isProofDone ? 'completed' : ($step === $proofStep ? 'current' : 'pending'),
+            ];
+        }
 
         // 3. Officer Review
         $isOfficerDone = isset($metadata['officer_check']) || in_array($step, ['manager_approval', 'approved']);
@@ -255,6 +278,9 @@ private function buildApplicationTimeline(ApplicationState $application, string 
 
         return match($application->current_step) {
             'pending_review' => 20,
+            'awaiting_document_reupload' => 15,
+            'awaiting_deposit_payment' => 30,
+            'awaiting_proof_of_employment' => 30,
             'qupa_allocation_pending' => 40,
             'officer_check' => 60,
             'manager_approval' => 80,
@@ -268,6 +294,9 @@ private function buildApplicationTimeline(ApplicationState $application, string 
     {
         return match($application->current_step) {
             'pending_review' => 'Bancozim Admin is currently verifying your uploaded documents.',
+            'awaiting_document_reupload' => 'Please re-upload the requested documents using the form below.',
+            'awaiting_deposit_payment' => 'Please upload your proof of deposit payment using the form below.',
+            'awaiting_proof_of_employment' => 'Please upload your Confirmation of Employment letter using the form below.',
             'qupa_allocation_pending' => 'Your application is being allocated to a specific branch.',
             'officer_check' => 'A Loan Officer is performing a financial assessment.',
             'manager_approval' => 'Application is with the Branch Manager for final approval.',

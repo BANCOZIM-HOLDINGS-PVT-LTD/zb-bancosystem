@@ -183,6 +183,11 @@ class StateManager
             'language', 'intent', 'employer', 'product', 'account',
             'summary', 'form', 'documents', 'completed', 'in_review',
             'approved', 'rejected', 'pending_documents', 'processing',
+
+            // Manual workflow stages
+            'pending_review', 'awaiting_document_reupload', 'awaiting_proof_of_employment',
+            'awaiting_deposit_payment', 'qupa_allocation_pending', 'officer_check',
+            'manager_approval',
             
             // NEW: Additional web wizard steps
             'housePlanApproval', 'constructionDetails', 'companyRegistration',
@@ -228,7 +233,7 @@ class StateManager
         }
         
         // Check for known prefixes
-        $validPrefixes = ['agent_', 'redirect_', 'microbiz_', 'employment_', 'customer_', 'show_'];
+        $validPrefixes = ['agent_', 'redirect_', 'microbiz_', 'employment_', 'customer_', 'show_', 'pending_', 'awaiting_', 'manager_', 'qupa_'];
         foreach ($validPrefixes as $prefix) {
             if (str_starts_with($step, $prefix)) {
                 return $step;
