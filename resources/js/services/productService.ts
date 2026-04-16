@@ -55,6 +55,7 @@ export interface CreditTermOption {
 class ProductService {
   private baseUrl = '/api/products';
   private cache: Map<string, { data: Category[], timestamp: number }> = new Map();
+  private loanSettingsCache: { data: { interestRate: number; adminFeePercentage: number }, timestamp: number } | null = null;
   private cacheExpiry = 5 * 60 * 1000; // 5 minutes
 
   /**
@@ -190,12 +191,41 @@ class ProductService {
   }
 
   /**
+   * Get global loan settings
+   */
+  async getLoanSettings(): Promise<{ interestRate: number; adminFeePercentage: number }> {
+    try {
+      if (this.loanSettingsCache && Date.now() - this.loanSettingsCache.timestamp < this.cacheExpiry) {
+        return this.loanSettingsCache.data;
+      }
+
+      const response = await axios.get('/api/products/loan-settings');
+      
+      const settings = {
+        // Convert integer percentage from db (84.00, 6.00) to decimal format used in UI (0.84, 0.06)
+        interestRate: response.data.data.interest_rate / 100,
+        adminFeePercentage: response.data.data.admin_fee_percentage / 100,
+      };
+
+      this.loanSettingsCache = {
+        data: settings,
+        timestamp: Date.now()
+      };
+      
+      return settings;
+
+    } catch (error) {
+      console.error('Failed to fetch loan settings, dropping to defaults:', error);
+      return { interestRate: 0.84, adminFeePercentage: 0.06 };
+    }
+  }
+
+  /**
    * Calculate credit term options
    */
-  getCreditTermOptions(amount: number): CreditTermOption[] {
+  getCreditTermOptions(amount: number, interestRate: number = 0.84): CreditTermOption[] {
     // Generate terms from 3 to 18 months
     const terms = Array.from({ length: 16 }, (_, i) => i + 3); // [3, 4, 5, ..., 18]
-    const interestRate = 0.96; // 96% annual interest rate
 
     return terms.map(months => {
       // Calculate monthly payment using amortization formula
@@ -217,6 +247,7 @@ class ProductService {
    */
   clearCache(): void {
     this.cache.clear();
+    this.loanSettingsCache = null;
   }
 
   /**

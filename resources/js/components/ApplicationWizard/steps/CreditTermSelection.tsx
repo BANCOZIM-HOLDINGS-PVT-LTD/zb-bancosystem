@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { productService } from '../../../services/productService';
 
 interface CreditTermSelectionProps {
     data: any;
@@ -12,6 +13,7 @@ interface CreditTermSelectionProps {
 const CreditTermSelection: React.FC<CreditTermSelectionProps> = ({ data, onNext, onBack }) => {
     const [selectedTermMonths, setSelectedTermMonths] = useState<number | null>(data.creditTerm || null);
     const [finalAmount, setFinalAmount] = useState<number>(0);
+    const [loanSettings, setLoanSettings] = useState<{ interestRate: number; adminFeePercentage: number }>({ interestRate: 0.84, adminFeePercentage: 0.06 });
 
     const isZiG = data.currency === 'ZiG';
     const currencySymbol = isZiG ? 'ZiG' : '$';
@@ -23,6 +25,14 @@ const CreditTermSelection: React.FC<CreditTermSelectionProps> = ({ data, onNext,
 
     // Generate months from 3 to 24
     const creditTerms = Array.from({ length: 22 }, (_, i) => ({ months: i + 3 }));
+
+    useEffect(() => {
+        const loadSettings = async () => {
+            const settings = await productService.getLoanSettings();
+            setLoanSettings(settings);
+        };
+        loadSettings();
+    }, []);
 
     useEffect(() => {
         // Calculate base amount from selected product/scale
@@ -56,13 +66,19 @@ const CreditTermSelection: React.FC<CreditTermSelectionProps> = ({ data, onNext,
             // Calculate final loan values to pass forward if needed, 
             // or just pass the term and let next steps handle it.
             // But we should probably calculate the monthly repayment for display/storage.
-            const grossLoan = parseFloat((finalAmount * 1.06).toFixed(2)); // Assuming standard markup
-            const interestRate = 0.96; // 96% annual
-            const monthlyInterestRate = interestRate / 12;
-            const monthlyPayment = grossLoan > 0
-                ? parseFloat(((grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
-                (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)).toFixed(2))
-                : 0;
+            const grossLoan = parseFloat((finalAmount * (1 + loanSettings.adminFeePercentage)).toFixed(2));
+            let monthlyPayment = 0;
+            if (data.intent === 'smeBiz') {
+                const FLAT_MONTHLY_RATE = 0.09;
+                monthlyPayment = parseFloat(((grossLoan / selectedTermMonths) + (grossLoan * FLAT_MONTHLY_RATE)).toFixed(2));
+            } else {
+                const interestRate = loanSettings.interestRate;
+                const monthlyInterestRate = interestRate / 12;
+                monthlyPayment = grossLoan > 0
+                    ? parseFloat(((grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
+                    (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)).toFixed(2))
+                    : 0;
+            }
 
             onNext({
                 creditTerm: selectedTermMonths,
@@ -123,13 +139,19 @@ const CreditTermSelection: React.FC<CreditTermSelectionProps> = ({ data, onNext,
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Monthly Installment</p>
                                 <p className="text-2xl font-bold text-blue-600">
                                     {(() => {
-                                        const grossLoan = finalAmount * 1.06;
-                                        const interestRate = 0.96;
-                                        const monthlyInterestRate = interestRate / 12;
-                                        const monthlyPayment = grossLoan > 0
-                                            ? (grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
-                                            (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
-                                            : 0;
+                                        const grossLoan = finalAmount * (1 + loanSettings.adminFeePercentage);
+                                        let monthlyPayment = 0;
+                                        if (data.intent === 'smeBiz') {
+                                            const FLAT_MONTHLY_RATE = 0.09;
+                                            monthlyPayment = (grossLoan / selectedTermMonths) + (grossLoan * FLAT_MONTHLY_RATE);
+                                        } else {
+                                            const interestRate = loanSettings.interestRate;
+                                            const monthlyInterestRate = interestRate / 12;
+                                            monthlyPayment = grossLoan > 0
+                                                ? (grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
+                                                (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
+                                                : 0;
+                                        }
                                         return formatCurrency(monthlyPayment);
                                     })()}
                                 </p>

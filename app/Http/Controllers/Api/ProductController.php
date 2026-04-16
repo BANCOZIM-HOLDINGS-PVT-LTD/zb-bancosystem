@@ -467,6 +467,29 @@ class ProductController extends Controller
     }
 
     /**
+     * Get global active loan settings (Interest Rate & Admin Fee)
+     * Provides the single source of truth for the application wizard calculations.
+     */
+    public function getGlobalLoanSettings(): JsonResponse
+    {
+        $globalTerm = \App\Models\LoanTerm::whereNull('product_id')
+            ->where('is_active', true)
+            ->first();
+
+        // Fallbacks in case the term doesn't exist
+        $interestRate = $globalTerm ? (float) $globalTerm->interest_rate : 84.00; // 84% annual = 7% monthly
+        $adminFee = $globalTerm ? (float) $globalTerm->processing_fee : 6.00;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'interest_rate' => $interestRate,
+                'admin_fee_percentage' => $adminFee,
+            ]
+        ]);
+    }
+
+    /**
      * Get product statistics
      */
     public function getStatistics(): JsonResponse

@@ -106,151 +106,57 @@ class LoanTerm extends Model
     // }
 
     /**
-     * Calculate monthly payment amount
+     * Calculate monthly payment strictly using the amortization formula on Gross Loan.
      */
-    public function calculateMonthlyPayment(float $loanAmount): float
+    public function calculateMonthlyPayment(float $loanAmount, ?int $durationMonths = null): float
     {
-        switch ($this->calculation_method) {
-            case self::CALC_CUSTOM_FORMULA:
-                return $this->calculateCustomFormula($loanAmount);
-            case self::CALC_TIERED:
-                return $this->calculateTieredPayment($loanAmount);
-            case self::CALC_PERCENTAGE_OF_INCOME:
-                return $this->calculateIncomeBasedPayment($loanAmount);
-            default:
-                return $this->calculateStandardPayment($loanAmount);
-        }
+        $costData = $this->calculateTotalCost($loanAmount, $durationMonths);
+        return $costData['monthly_payment'];
     }
 
     /**
-     * Calculate standard payment using interest rate and duration
+     * Calculate total loan cost using the unified standard formula:
+     * Gross Loan = Net Loan + (Net Loan * Admin Fee %)
+     * Monthly Payment = Amortized payment on Gross Loan
      */
-    private function calculateStandardPayment(float $loanAmount): float
+    public function calculateTotalCost(float $loanAmount, ?int $durationMonths = null): array
     {
-        if ($this->interest_rate <= 0 || $this->duration_months <= 0) {
-            return $loanAmount / $this->duration_months;
-        }
-
-        $monthlyRate = $this->interest_rate / 100 / 12;
-        $numPayments = $this->duration_months;
-
-        switch ($this->interest_type) {
-            case self::INTEREST_SIMPLE:
-                $totalInterest = $loanAmount * ($this->interest_rate / 100) * ($this->duration_months / 12);
-                return ($loanAmount + $totalInterest) / $this->duration_months;
-
-            case self::INTEREST_FLAT:
-                $monthlyInterest = $loanAmount * ($this->interest_rate / 100) / 12;
-                return ($loanAmount / $this->duration_months) + $monthlyInterest;
-
-            case self::INTEREST_REDUCING:
-            case self::INTEREST_COMPOUND:
-                // Standard amortization formula
-                if ($monthlyRate == 0) {
-                    return $loanAmount / $numPayments;
-                }
-                return $loanAmount * ($monthlyRate * pow(1 + $monthlyRate, $numPayments)) / 
-                       (pow(1 + $monthlyRate, $numPayments) - 1);
-
-            default:
-                return $loanAmount / $this->duration_months;
-        }
-    }
-
-    /**
-     * Calculate payment using custom formula
-     */
-    private function calculateCustomFormula(float $loanAmount): float
-    {
-        if (empty($this->custom_formula)) {
-            return $this->calculateStandardPayment($loanAmount);
-        }
-
-        // Parse and evaluate custom formula
-        // Variables available: amount, rate, months, processing_fee
-        $formula = $this->custom_formula;
-        $variables = [
-            'amount' => $loanAmount,
-            'rate' => $this->interest_rate,
-            'months' => $this->duration_months,
-            'processing_fee' => $this->processing_fee,
-        ];
-
-        // Simple variable replacement (in production, use a proper expression evaluator)
-        foreach ($variables as $var => $value) {
-            $formula = str_replace('{' . $var . '}', $value, $formula);
-        }
-
-        // For safety, only allow basic math operations
-        if (preg_match('/^[\d\+\-\*\/\(\)\.\s]+$/', $formula)) {
-            try {
-                return eval("return $formula;");
-            } catch (Exception $e) {
-                return $this->calculateStandardPayment($loanAmount);
-            }
-        }
-
-        return $this->calculateStandardPayment($loanAmount);
-    }
-
-    /**
-     * Calculate tiered payment based on loan amount ranges
-     */
-    private function calculateTieredPayment(float $loanAmount): float
-    {
-        $tiers = $this->metadata['tiers'] ?? [];
+        $duration = $durationMonths ?? $this->duration_months;
         
-        foreach ($tiers as $tier) {
-            if ($loanAmount >= $tier['min_amount'] && $loanAmount <= $tier['max_amount']) {
-                $tierRate = $tier['interest_rate'] ?? $this->interest_rate;
-                $tempTerm = clone $this;
-                $tempTerm->interest_rate = $tierRate;
-                return $tempTerm->calculateStandardPayment($loanAmount);
-            }
+        // Processing Fee acts as the Bank Admin Fee
+        $processingFeeRate = $this->processing_fee;
+        if ($this->processing_fee_type === self::FEE_FIXED) {
+            $adminFee = $this->processing_fee;
+        } else {
+            $adminFee = round(($loanAmount * $processingFeeRate) / 100, 2);
         }
 
-        return $this->calculateStandardPayment($loanAmount);
-    }
+        // Gross Loan
+        $grossLoan = round($loanAmount + $adminFee, 2);
 
-    /**
-     * Calculate income-based payment
-     */
-    private function calculateIncomeBasedPayment(float $loanAmount): float
-    {
-        $incomePercentage = $this->metadata['income_percentage'] ?? 30;
-        $estimatedIncome = $this->metadata['estimated_monthly_income'] ?? 1000;
-        
-        return ($estimatedIncome * $incomePercentage) / 100;
-    }
+        // Amortization (interest_rate is ANNUAL percentage)
+        $annualInterestRate = $this->interest_rate;
+        $monthlyInterestRate = $annualInterestRate / 100 / 12;
 
-    /**
-     * Calculate total loan cost
-     */
-    public function calculateTotalCost(float $loanAmount): array
-    {
-        $monthlyPayment = $this->calculateMonthlyPayment($loanAmount);
-        $totalPayments = $monthlyPayment * $this->duration_months;
-        
-        $processingFee = $this->processing_fee_type === self::FEE_PERCENTAGE 
-            ? ($loanAmount * $this->processing_fee / 100)
-            : $this->processing_fee;
-        
-        $insuranceCost = $this->insurance_required 
-            ? ($loanAmount * $this->insurance_rate / 100)
-            : 0;
+        if ($monthlyInterestRate <= 0 || $duration <= 0) {
+            $monthlyPayment = $duration > 0 ? round($grossLoan / $duration, 2) : $grossLoan;
+        } else {
+            $monthlyPayment = round(($grossLoan * $monthlyInterestRate * pow(1 + $monthlyInterestRate, $duration)) / 
+                              (pow(1 + $monthlyInterestRate, $duration) - 1), 2);
+        }
 
-        $totalCost = $totalPayments + $processingFee + $insuranceCost;
-        $totalInterest = $totalCost - $loanAmount - $processingFee - $insuranceCost;
+        $totalPayments = round($monthlyPayment * $duration, 2);
+        $totalInterest = round($totalPayments - $grossLoan, 2);
 
         return [
-            'loan_amount' => $loanAmount,
+            'net_loan' => $loanAmount,
+            'admin_fee' => round($adminFee, 2),
+            'gross_loan' => round($grossLoan, 2),
             'monthly_payment' => round($monthlyPayment, 2),
             'total_payments' => round($totalPayments, 2),
-            'processing_fee' => round($processingFee, 2),
-            'insurance_cost' => round($insuranceCost, 2),
             'total_interest' => round($totalInterest, 2),
-            'total_cost' => round($totalCost, 2),
-            'duration_months' => $this->duration_months,
+            'duration_months' => $duration,
+            'annual_interest_rate' => $annualInterestRate,
         ];
     }
 

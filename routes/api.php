@@ -23,6 +23,7 @@ Route::prefix('whatsapp')->group(function () {
 Route::prefix('products')->group(function () {
     Route::get('/', [ProductController::class, 'index']); // Legacy endpoint
     Route::get('/frontend-catalog', [ProductController::class, 'getFrontendCatalog']); // Frontend-compatible format
+    Route::get('/loan-settings', [ProductController::class, 'getGlobalLoanSettings']); // Global Loan Parameters
     Route::get('/categories', [ProductController::class, 'getCategories']);
     Route::get('/category/{categoryId}', [ProductController::class, 'getProductsByCategory']);
     Route::get('/product/{productId}', [ProductController::class, 'getProduct']);

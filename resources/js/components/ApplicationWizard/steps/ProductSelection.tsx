@@ -41,6 +41,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [productCategories, setProductCategories] = useState<Category[]>([]);
     const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [loanSettings, setLoanSettings] = useState<{ interestRate: number; adminFeePercentage: number }>({ interestRate: 0.84, adminFeePercentage: 0.06 });
     const [selectedTermMonths, setSelectedTermMonths] = useState<number | null>(null);
     const [validationError, setValidationError] = useState<string>('');
     const [showZBBankingNotification, setShowZBBankingNotification] = useState<boolean>(false);
@@ -143,7 +144,13 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             try {
                 setIsLoadingProducts(true);
                 setError(null);
-                const categories = await productService.getProductCategories(data.intent);
+                
+                const [categories, settings] = await Promise.all([
+                    productService.getProductCategories(data.intent),
+                    productService.getLoanSettings()
+                ]);
+                
+                setLoanSettings(settings);
 
                 // Apply intent and currency filtering
                 const filteredCategories = filterProducts(categories);
@@ -374,18 +381,29 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         // Net Loan = selling price + optional fees (what user sees)
         const netLoan = parseFloat((finalAmount + meSystemFee + trainingFee).toFixed(2));
 
-        // Gross Loan = Net Loan + 6% bank admin fee (used for backend calculation)
-        const ADMIN_FEE_PERCENTAGE = 0.06;
+        // Gross Loan = Net Loan + bank admin fee (used for backend calculation)
+        const ADMIN_FEE_PERCENTAGE = loanSettings.adminFeePercentage;
         const bankAdminFee = parseFloat((netLoan * ADMIN_FEE_PERCENTAGE).toFixed(2));
         const grossLoan = parseFloat((netLoan + bankAdminFee).toFixed(2));
 
-        // Calculate monthly payment using amortization formula (based on Gross Loan)
-        const interestRate = 0.96; // 96% annual interest rate
-        const monthlyInterestRate = interestRate / 12;
-        const monthlyPayment = grossLoan > 0
-            ? parseFloat(((grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
-            (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)).toFixed(2))
-            : 0;
+        // Calculate monthly payment
+        let monthlyPayment = 0;
+        let finalAnnualInterestRate = loanSettings.interestRate;
+
+        if (data.intent === 'smeBiz') {
+            // Business Booster Kit uses a 9% monthly straight line (flat rate)
+            const FLAT_MONTHLY_RATE = 0.09;
+            finalAnnualInterestRate = FLAT_MONTHLY_RATE * 12; // 108% logically
+            // Monthly Payment = (Principal / Months) + (Principal * Flat Rate)
+            monthlyPayment = parseFloat(((grossLoan / selectedTermMonths) + (grossLoan * FLAT_MONTHLY_RATE)).toFixed(2));
+        } else {
+            // Standard Amortization formula (based on Gross Loan)
+            const monthlyInterestRate = finalAnnualInterestRate / 12;
+            monthlyPayment = grossLoan > 0
+                ? parseFloat(((grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
+                (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)).toFixed(2))
+                : 0;
+        }
 
         // Calculate first and last payment dates
         const today = new Date();
@@ -416,7 +434,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             loanAmount: grossLoan,
             netLoan: netLoan,
             grossLoan: grossLoan,
-            interestRate: '96%',
+            interestRate: `${(finalAnnualInterestRate * 100).toFixed(2)}%`,
             firstPaymentDate: firstPaymentDate.toISOString().split('T')[0],
             lastPaymentDate: lastPaymentDate.toISOString().split('T')[0],
             // Additional details
@@ -1009,9 +1027,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
                             {/* Total Amount Display */}
                             <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Gross Loan inclusive of 6% admin charges</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Gross Loan inclusive of {loanSettings.adminFeePercentage * 100}% admin charges</p>
                                 <p className="text-3xl font-bold text-emerald-600">
-                                    {formatCurrency((finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)) * 1.06)}
+                                    {formatCurrency((finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)) * (1 + loanSettings.adminFeePercentage))}
                                 </p>
                                 {(includesMESystem || includesTraining) && (
                                     <p className="text-sm text-gray-500 mt-1">
@@ -1076,7 +1094,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                         const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
                                                         const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
                                                         const netLoan = finalAmount + meSystemFee + trainingFee;
-                                                        const grossLoan = netLoan * 1.06;
+                                                        const grossLoan = netLoan * (1 + loanSettings.adminFeePercentage);
                                                         return formatCurrency(grossLoan);
                                                     })()}
                                                 </p>
@@ -1090,13 +1108,21 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                         const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
                                                         const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
                                                         const netLoan = finalAmount + meSystemFee + trainingFee;
-                                                        const grossLoan = netLoan * 1.06;
-                                                        const interestRate = 0.96; // 96% annual
-                                                        const monthlyInterestRate = interestRate / 12;
-                                                        const monthlyPayment = grossLoan > 0
-                                                            ? (grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
-                                                            (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
-                                                            : 0;
+                                                        const grossLoan = netLoan * (1 + loanSettings.adminFeePercentage);
+                                                        
+                                                        let monthlyPayment = 0;
+                                                        if (data.intent === 'smeBiz') {
+                                                            const FLAT_MONTHLY_RATE = 0.09;
+                                                            monthlyPayment = (grossLoan / selectedTermMonths) + (grossLoan * FLAT_MONTHLY_RATE);
+                                                        } else {
+                                                            const interestRate = loanSettings.interestRate;
+                                                            const monthlyInterestRate = interestRate / 12;
+                                                            monthlyPayment = grossLoan > 0
+                                                                ? (grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
+                                                                (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
+                                                                : 0;
+                                                        }
+                                                        
                                                         return formatCurrency(monthlyPayment);
                                                     })()}
                                                 </p>

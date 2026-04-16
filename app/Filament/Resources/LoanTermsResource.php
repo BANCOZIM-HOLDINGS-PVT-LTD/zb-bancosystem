@@ -32,11 +32,10 @@ class LoanTermsResource extends BaseResource
                 Forms\Components\Section::make('Basic Information')
                     ->schema([
                         Forms\Components\Select::make('product_id')
-                            ->label('Product')
+                            ->label('Product (Leave empty for Global settings)')
                             ->relationship('product', 'name')
                             ->searchable()
-                            ->preload()
-                            ->required(),
+                            ->preload(),
                         Forms\Components\TextInput::make('name')
                             ->required()
                             ->maxLength(255)
@@ -75,34 +74,7 @@ class LoanTermsResource extends BaseResource
                                     ->default('monthly')
                                     ->required(),
                             ]),
-                        Forms\Components\Grid::make(2)
-                            ->schema([
-                                Forms\Components\Select::make('interest_type')
-                                    ->label('Interest Type')
-                                    ->options([
-                                        'simple' => 'Simple Interest',
-                                        'compound' => 'Compound Interest',
-                                        'flat' => 'Flat Rate',
-                                        'reducing' => 'Reducing Balance',
-                                        'custom' => 'Custom Formula',
-                                    ])
-                                    ->default('reducing')
-                                    ->required()
-                                    ->reactive(),
-                                Forms\Components\Select::make('calculation_method')
-                                    ->label('Calculation Method')
-                                    ->options([
-                                        'standard' => 'Standard Calculation',
-                                        'custom_formula' => 'Custom Formula',
-                                        'tiered' => 'Tiered Rates',
-                                        'percentage_of_income' => 'Percentage of Income',
-                                    ])
-                                    ->default('standard')
-                                    ->required()
-                                    ->reactive(),
-                            ]),
-                    ])
-                    ->columns(1),
+                    ])->columns(1),
 
                 Forms\Components\Section::make('Amount Limits')
                     ->schema([
@@ -127,17 +99,17 @@ class LoanTermsResource extends BaseResource
                         Forms\Components\Grid::make(3)
                             ->schema([
                                 Forms\Components\TextInput::make('processing_fee')
-                                    ->label('Processing Fee')
+                                    ->label('Bank Admin Fee')
                                     ->numeric()
                                     ->step(0.01)
-                                    ->default(0),
+                                    ->default(6),
                                 Forms\Components\Select::make('processing_fee_type')
                                     ->label('Fee Type')
                                     ->options([
                                         'fixed' => 'Fixed Amount ($)',
                                         'percentage' => 'Percentage (%)',
                                     ])
-                                    ->default('fixed')
+                                    ->default('percentage')
                                     ->required(),
                                 Forms\Components\TextInput::make('insurance_rate')
                                     ->label('Insurance Rate (%)')
@@ -170,18 +142,6 @@ class LoanTermsResource extends BaseResource
                             ->minValue(0),
                     ])
                     ->columns(1),
-
-                Forms\Components\Section::make('Custom Formula')
-                    ->schema([
-                        Forms\Components\Textarea::make('custom_formula')
-                            ->label('Custom Calculation Formula')
-                            ->placeholder('e.g., ({amount} * {rate} / 100 / 12) + {processing_fee}')
-                            ->helperText('Available variables: {amount}, {rate}, {months}, {processing_fee}')
-                            ->rows(3)
-                            ->visible(fn (Forms\Get $get) => $get('calculation_method') === 'custom_formula'),
-                    ])
-                    ->columns(1)
-                    ->visible(fn (Forms\Get $get) => $get('calculation_method') === 'custom_formula'),
 
                 Forms\Components\Section::make('Status & Availability')
                     ->schema([
@@ -235,17 +195,6 @@ class LoanTermsResource extends BaseResource
                     ->label('Interest Rate')
                     ->suffix('%')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('interest_type')
-                    ->label('Type')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'simple' => 'gray',
-                        'compound' => 'warning',
-                        'flat' => 'info',
-                        'reducing' => 'success',
-                        'custom' => 'danger',
-                        default => 'gray',
-                    }),
                 Tables\Columns\TextColumn::make('payment_frequency')
                     ->label('Frequency')
                     ->badge(),
@@ -268,21 +217,6 @@ class LoanTermsResource extends BaseResource
                 SelectFilter::make('product_id')
                     ->label('Product')
                     ->relationship('product', 'name'),
-                SelectFilter::make('interest_type')
-                    ->options([
-                        'simple' => 'Simple Interest',
-                        'compound' => 'Compound Interest',
-                        'flat' => 'Flat Rate',
-                        'reducing' => 'Reducing Balance',
-                        'custom' => 'Custom Formula',
-                    ]),
-                SelectFilter::make('calculation_method')
-                    ->options([
-                        'standard' => 'Standard Calculation',
-                        'custom_formula' => 'Custom Formula',
-                        'tiered' => 'Tiered Rates',
-                        'percentage_of_income' => 'Percentage of Income',
-                    ]),
                 Tables\Filters\TernaryFilter::make('is_active')
                     ->label('Active Status'),
                 Tables\Filters\TernaryFilter::make('is_default')
@@ -298,21 +232,28 @@ class LoanTermsResource extends BaseResource
                     ->color('info')
                     ->form([
                         Forms\Components\TextInput::make('loan_amount')
-                            ->label('Loan Amount')
+                            ->label('Net Loan Amount')
                             ->numeric()
                             ->prefix('$')
                             ->required()
-                            ->default(10000),
+                            ->default(1000),
+                        Forms\Components\TextInput::make('duration_months')
+                            ->label('Duration (Months)')
+                            ->numeric()
+                            ->required()
+                            ->default(12),
                     ])
                     ->action(function ($record, array $data): void {
                         $loanAmount = $data['loan_amount'];
-                        $calculation = $record->calculateTotalCost($loanAmount);
+                        $duration = $data['duration_months'];
+                        $calculation = $record->calculateTotalCost($loanAmount, $duration);
                         
-                        $details = "Loan Amount: $" . number_format($calculation['loan_amount'], 2) . "\n";
-                        $details .= "Monthly Payment: $" . number_format($calculation['monthly_payment'], 2) . "\n";
-                        $details .= "Total Interest: $" . number_format($calculation['total_interest'], 2) . "\n";
-                        $details .= "Processing Fee: $" . number_format($calculation['processing_fee'], 2) . "\n";
-                        $details .= "Total Cost: $" . number_format($calculation['total_cost'], 2);
+                        $details = "Net Loan Amount: $" . number_format($calculation['net_loan'], 2) . " \n";
+                        $details .= "Bank Admin Fee: $" . number_format($calculation['admin_fee'], 2) . " \n";
+                        $details .= "Gross Loan: $" . number_format($calculation['gross_loan'], 2) . " \n";
+                        $details .= "Total Interest expected: $" . number_format($calculation['total_interest'], 2) . " \n";
+                        $details .= "Annual Rate Used: " . number_format($calculation['annual_interest_rate'], 2) . "% \n";
+                        $details .= "MONTHLY PAYMENT: $" . number_format($calculation['monthly_payment'], 2);
                         
                         Notification::make()
                             ->title('Payment Calculation')
