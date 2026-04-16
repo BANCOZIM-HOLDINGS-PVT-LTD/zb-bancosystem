@@ -187,34 +187,44 @@ class PurchaseOrderService
 
             // Check if this product has a MicroBiz package
             if ($product) {
-                $package = MicrobizPackage::whereHas('products', function ($q) use ($product) {
-                    $q->where('products.id', $product->id);
-                })->first();
+                // Find package by subcategory matching the product name or subcategory name
+                $package = MicrobizPackage::where('name', 'like', '%' . $product->name . '%')
+                    ->where('tier', 'like', '%' . $this->extractTierName($item['name'] ?? $product->name) . '%')
+                    ->first();
 
-                // Alternative: check by name pattern (Lite Package, Standard Package, etc.)
+                // Alternative: check by tier matching the product name pattern if not found
                 if (!$package) {
-                    $package = MicrobizPackage::where('name', 'like', '%' . $this->extractTierName($product->name) . '%')->first();
+                    $tierName = $this->extractTierName($item['name'] ?? $product->name);
+                    $package = MicrobizPackage::whereHas('subcategory', function($q) use ($product) {
+                        $q->where('name', $product->name);
+                    })->where('tier', 'like', '%' . $tierName . '%')->first();
                 }
 
-                if ($package && $package->packageProducts->count() > 0) {
+                if ($package && $package->tierItems->count() > 0) {
                     // Expand: replace the package with its constituent products
-                    foreach ($package->packageProducts as $pp) {
-                        $componentProduct = $pp->product;
-                        if ($componentProduct) {
+                    foreach ($package->tierItems as $ti) {
+                        $microbizItem = $ti->item;
+                        if ($microbizItem) {
+                            // Try to find a Product with the same code or name
+                            $componentProduct = Product::where('product_code', $microbizItem->item_code)
+                                ->orWhere('name', $microbizItem->name)
+                                ->first();
+
                             $expanded[] = [
-                                'product_id' => $componentProduct->id,
-                                'product_code' => $componentProduct->product_code,
-                                'name' => $componentProduct->name,
-                                'quantity' => $pp->quantity * $item['quantity'],
-                                'price' => $pp->unit_cost ?? $componentProduct->unit_price,
-                                'supplier_id' => $componentProduct->supplier_id,
+                                'product_id' => $componentProduct ? $componentProduct->id : $product->id, // Fallback to main product if component product not found
+                                'product_code' => $componentProduct ? $componentProduct->product_code : $microbizItem->item_code,
+                                'name' => $microbizItem->name,
+                                'quantity' => $ti->quantity * $item['quantity'],
+                                'price' => $microbizItem->unit_cost,
+                                'supplier_id' => $product->supplier_id, // Inherit from main product or subcategory
                             ];
                         }
                     }
 
                     Log::info('Expanded MicroBiz package', [
                         'package' => $package->name,
-                        'components' => $package->packageProducts->count(),
+                        'components' => $package->tierItems->count(),
+                        'application_product' => $product->name
                     ]);
 
                     continue; // Skip adding the package itself
