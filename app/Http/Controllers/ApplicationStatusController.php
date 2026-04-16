@@ -177,7 +177,10 @@ public function resubmit(Request $request): JsonResponse
             'awaiting_document_reupload' => 'resubmission_required',
             'awaiting_proof_of_employment' => 'employment_proof_required',
             'awaiting_deposit_payment' => 'deposit_payment_required',
+            'vlc_allocation_pending' => 'vlc_allocation',
             'qupa_allocation_pending' => 'allocation',
+            'awaiting_ssb_csv_export' => 'ssb_batching',
+            'awaiting_ssb_approval' => 'ssb_verification',
             'officer_check' => 'under_review',
             'manager_approval' => 'final_approval',
             'approved' => 'approved',
@@ -191,6 +194,7 @@ public function resubmit(Request $request): JsonResponse
         $timeline = [];
         $metadata = $application->metadata ?? [];
         $step = $application->current_step;
+        $appType = $application->getApplicationType();
 
         // 1. Submission
         $timeline[] = [
@@ -203,7 +207,8 @@ public function resubmit(Request $request): JsonResponse
         // 2. Doc Verification
         $isDocDone = isset($metadata['bancozim_verification']) || in_array($step, [
             'awaiting_deposit_payment', 'awaiting_proof_of_employment',
-            'qupa_allocation_pending', 'officer_check', 'manager_approval', 'approved',
+            'vlc_allocation_pending', 'qupa_allocation_pending', 'awaiting_ssb_csv_export', 
+            'awaiting_ssb_approval', 'officer_check', 'manager_approval', 'approved',
         ]);
         $timeline[] = [
             'title' => 'Document Verification',
@@ -212,44 +217,64 @@ public function resubmit(Request $request): JsonResponse
             'status' => $isDocDone ? 'completed' : ($step === 'pending_review' ? 'current' : 'pending'),
         ];
 
-        // 2B. Intermediate Proof Stage (ZB Account Opening or Account Holder only)
-        $appType = $application->getApplicationType();
-        if (in_array($appType, ['zb_account_opening', 'account_holder'])) {
-            $proofTitle = $appType === 'zb_account_opening' ? 'Deposit Payment Verification' : 'Employment Proof Verification';
-            $proofDesc = $appType === 'zb_account_opening' ? 'deposit payment' : 'employment proof';
-            $proofStep = $appType === 'zb_account_opening' ? 'awaiting_deposit_payment' : 'awaiting_proof_of_employment';
-
-            $isProofDone = isset($metadata['proof_verified']) || in_array($step, ['qupa_allocation_pending', 'officer_check', 'manager_approval', 'approved']);
+        // 3. Allocation / Review Stage
+        if ($appType === 'ssb') {
+            // SSB Path
+            $isAllocated = isset($record->qupa_admin_id) || in_array($step, ['awaiting_ssb_csv_export', 'awaiting_ssb_approval', 'approved']);
             $timeline[] = [
-                'title' => $proofTitle,
-                'description' => $isProofDone ? ucfirst($proofDesc) . ' verified.' : 'Awaiting ' . $proofDesc . '.',
-                'timestamp' => isset($metadata['proof_verified']['verified_at'])
-                    ? Carbon::parse($metadata['proof_verified']['verified_at'])->format('M d, Y')
-                    : ($step === $proofStep ? 'In Progress' : ''),
-                'status' => $isProofDone ? 'completed' : ($step === $proofStep ? 'current' : 'pending'),
+                'title' => 'VLC Allocation',
+                'description' => $isAllocated ? 'Application allocated to branch and officer.' : 'VLC is allocating your application to a review officer.',
+                'timestamp' => $isAllocated ? 'Done' : ($step === 'vlc_allocation_pending' ? 'In Progress' : ''),
+                'status' => $isAllocated ? 'completed' : ($step === 'vlc_allocation_pending' ? 'current' : 'pending'),
+            ];
+
+            $isSSBDone = in_array($step, ['approved', 'completed']) || ($application->status === 'approved');
+            $timeline[] = [
+                'title' => 'SSB Verification',
+                'description' => $isSSBDone ? 'SSB approval received.' : 'Your application is being verified with the Salary Service Bureau.',
+                'timestamp' => isset($metadata['ssb_status_updated_at']) ? Carbon::parse($metadata['ssb_status_updated_at'])->format('M d, Y') : (in_array($step, ['awaiting_ssb_csv_export', 'awaiting_ssb_approval']) ? 'In Progress' : ''),
+                'status' => $isSSBDone ? 'completed' : (in_array($step, ['awaiting_ssb_csv_export', 'awaiting_ssb_approval']) ? 'current' : 'pending'),
+            ];
+        } else {
+            // Standard Path
+            if (in_array($appType, ['zb_account_opening', 'account_holder'])) {
+                $proofTitle = $appType === 'zb_account_opening' ? 'Deposit Payment Verification' : 'Employment Proof Verification';
+                $proofDesc = $appType === 'zb_account_opening' ? 'deposit payment' : 'employment proof';
+                $proofStep = $appType === 'zb_account_opening' ? 'awaiting_deposit_payment' : 'awaiting_proof_of_employment';
+
+                $isProofDone = isset($metadata['proof_verified']) || in_array($step, ['qupa_allocation_pending', 'officer_check', 'manager_approval', 'approved']);
+                $timeline[] = [
+                    'title' => $proofTitle,
+                    'description' => $isProofDone ? ucfirst($proofDesc) . ' verified.' : 'Awaiting ' . $proofDesc . '.',
+                    'timestamp' => isset($metadata['proof_verified']['verified_at'])
+                        ? Carbon::parse($metadata['proof_verified']['verified_at'])->format('M d, Y')
+                        : ($step === $proofStep ? 'In Progress' : ''),
+                    'status' => $isProofDone ? 'completed' : ($step === $proofStep ? 'current' : 'pending'),
+                ];
+            }
+
+            // 3. Officer Review
+            $isOfficerDone = isset($metadata['officer_check']) || in_array($step, ['manager_approval', 'approved']);
+            $timeline[] = [
+                'title' => 'Loan Officer Assessment',
+                'description' => $isOfficerDone ? 'Financial assessment completed.' : 'An officer is reviewing your financial eligibility.',
+                'timestamp' => isset($metadata['officer_check']['date']) ? Carbon::parse($metadata['officer_check']['date'])->format('M d, Y') : ($step === 'officer_check' ? 'In Progress' : ''),
+                'status' => $isOfficerDone ? 'completed' : ($step === 'officer_check' ? 'current' : 'pending'),
+            ];
+
+            // 4. Final Approval
+            $isApproved = in_array($step, ['approved', 'completed']) || ($application->status === 'approved');
+            $timeline[] = [
+                'title' => 'Manager Approval',
+                'description' => $isApproved ? 'Application approved by Branch Manager.' : 'Awaiting final sign-off.',
+                'timestamp' => $application->approved_at ? $application->approved_at->format('M d, Y') : ($step === 'manager_approval' ? 'In Progress' : ''),
+                'status' => $isApproved ? 'completed' : ($step === 'manager_approval' ? 'current' : 'pending'),
             ];
         }
 
-        // 3. Officer Review
-        $isOfficerDone = isset($metadata['officer_check']) || in_array($step, ['manager_approval', 'approved']);
-        $timeline[] = [
-            'title' => 'Loan Officer Assessment',
-            'description' => $isOfficerDone ? 'Financial assessment completed.' : 'An officer is reviewing your financial eligibility.',
-            'timestamp' => isset($metadata['officer_check']['date']) ? Carbon::parse($metadata['officer_check']['date'])->format('M d, Y') : ($step === 'officer_check' ? 'In Progress' : ''),
-            'status' => $isOfficerDone ? 'completed' : ($step === 'officer_check' ? 'current' : 'pending'),
-        ];
-
-        // 4. Final Approval
-        $isApproved = in_array($step, ['approved', 'completed']) || ($application->status === 'approved');
-        $timeline[] = [
-            'title' => 'Manager Approval',
-            'description' => $isApproved ? 'Application approved by Branch Manager.' : 'Awaiting final sign-off.',
-            'timestamp' => $application->approved_at ? $application->approved_at->format('M d, Y') : ($step === 'manager_approval' ? 'In Progress' : ''),
-            'status' => $isApproved ? 'completed' : ($step === 'manager_approval' ? 'current' : 'pending'),
-        ];
-
-        // 5. Product Delivery
-        if ($isApproved) {
+        // Final. Product Delivery
+        $isFinalApproved = in_array($step, ['approved', 'completed']) || ($application->status === 'approved');
+        if ($isFinalApproved) {
             $isDelivered = $deliveryTracking && $deliveryTracking->status === 'delivered';
             $timeline[] = [
                 'title' => 'Product Delivery',
@@ -281,7 +306,10 @@ public function resubmit(Request $request): JsonResponse
             'awaiting_document_reupload' => 15,
             'awaiting_deposit_payment' => 30,
             'awaiting_proof_of_employment' => 30,
+            'vlc_allocation_pending' => 35,
             'qupa_allocation_pending' => 40,
+            'awaiting_ssb_csv_export' => 50,
+            'awaiting_ssb_approval' => 70,
             'officer_check' => 60,
             'manager_approval' => 80,
             'approved' => 85,
@@ -297,7 +325,10 @@ public function resubmit(Request $request): JsonResponse
             'awaiting_document_reupload' => 'Please re-upload the requested documents using the form below.',
             'awaiting_deposit_payment' => 'Please upload your proof of deposit payment using the form below.',
             'awaiting_proof_of_employment' => 'Please upload your Confirmation of Employment letter using the form below.',
+            'vlc_allocation_pending' => 'VLC Manager is allocating your application for processing.',
             'qupa_allocation_pending' => 'Your application is being allocated to a specific branch.',
+            'awaiting_ssb_csv_export' => 'Your application is ready and waiting for the next SSB batch export.',
+            'awaiting_ssb_approval' => 'Your application has been sent to SSB for final verification.',
             'officer_check' => 'A Loan Officer is performing a financial assessment.',
             'manager_approval' => 'Application is with the Branch Manager for final approval.',
             'approved' => 'Application Approved! You will receive delivery updates shortly.',

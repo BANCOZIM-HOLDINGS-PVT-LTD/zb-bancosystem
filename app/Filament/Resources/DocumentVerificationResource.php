@@ -116,7 +116,18 @@ class DocumentVerificationResource extends Resource
                                 $record->current_step = 'awaiting_deposit_payment';
                                 $clientMessage = "Documents verified. Please upload your proof of deposit payment.";
                                 break;
-                            default: // ssb, pensioner, rdc, sme
+                            case 'ssb':
+                                $record->current_step = 'vlc_allocation_pending';
+                                $clientMessage = "Documents verified. Your application is being allocated by VLC.";
+                                
+                                // Update status enum for SSB
+                                app(\App\Services\SSBStatusService::class)->updateStatus(
+                                    $record, 
+                                    \App\Enums\SSBLoanStatus::VLC_ALLOCATION_PENDING,
+                                    "Documents verified by Bancozim"
+                                );
+                                break;
+                            default: // pensioner, rdc, sme
                                 $record->current_step = 'qupa_allocation_pending';
                                 $clientMessage = "Documents verified. Your application is being allocated for review.";
                                 break;

@@ -28,14 +28,15 @@ class SSBStatusService
             'Application submitted to SSB loan workflow'
         );
 
-        // Automatically move to awaiting approval
+        // Move to VLC Allocation stage
+        $application->current_step = 'vlc_allocation_pending';
+        $application->save();
+
         $this->updateStatus(
             $application,
-            SSBLoanStatus::AWAITING_SSB_APPROVAL,
-            'Application received, awaiting SSB approval check'
+            SSBLoanStatus::VLC_ALLOCATION_PENDING,
+            'Application received, awaiting allocation by VLC Manager'
         );
-
-        // $this->sendStatusNotification($application);
     }
 
     /**
@@ -172,30 +173,55 @@ class SSBStatusService
             ['approved_at' => now()->toISOString()]
         );
 
-        // Create Delivery Tracking Record
-        $formData = $application->form_data ?? [];
-        $formResponses = $formData['formResponses'] ?? [];
-        $deliverySelection = $formData['deliverySelection'] ?? [];
+        // Auto-approve and move to approved state
+        $application->current_step = 'approved';
+        $application->status = 'approved';
+        $application->approved_at = now();
+        $application->save();
 
-        // Determine depot
-        $depot = '';
-        if (!empty($deliverySelection['city'])) {
-            $depot = $deliverySelection['city'] . ' (' . ($deliverySelection['agent'] ?? 'Zim Post Office') . ')';
-        } elseif (!empty($deliverySelection['depot'])) {
-            $depot = $deliverySelection['depot'];
+        $this->updateStatus(
+            $application,
+            SSBLoanStatus::APPROVED,
+            'Loan application fully approved and delivery process initiated'
+        );
+
+        // Trigger PO and Delivery
+        try {
+            $poService = app(\App\Services\PurchaseOrderService::class);
+            $poService->createFromApplication($application);
+            
+            // Create Delivery Tracking Record
+            $formData = $application->form_data ?? [];
+            $formResponses = $formData['formResponses'] ?? [];
+            $deliverySelection = $formData['deliverySelection'] ?? [];
+
+            // Determine depot
+            $depot = '';
+            if (!empty($deliverySelection['city'])) {
+                $depot = $deliverySelection['city'] . ' (' . ($deliverySelection['agent'] ?? 'Zim Post Office') . ')';
+            } elseif (!empty($deliverySelection['depot'])) {
+                $depot = $deliverySelection['depot'];
+            }
+
+            \App\Models\DeliveryTracking::create([
+                'application_state_id' => $application->id,
+                'status' => 'pending',
+                'recipient_name' => trim(($formResponses['firstName'] ?? '') . ' ' . ($formResponses['lastName'] ?? ($formResponses['surname'] ?? ''))),
+                'recipient_phone' => $formResponses['mobile'] ?? $formResponses['cellNumber'] ?? $application->user_identifier,
+                'client_national_id' => $formResponses['nationalIdNumber'] ?? $application->reference_code,
+                'product_type' => $application->form_data['productName'] ?? 'SSB Loan Product',
+                'courier_type' => $deliverySelection['agent'] ?? 'Zim Post Office',
+                'delivery_depot' => $depot,
+                'delivery_address' => $depot,
+            ]);
+            
+            Log::info("SSB Auto-approval: PO and Delivery initiated", ['application_id' => $application->id]);
+        } catch (\Exception $e) {
+            Log::error("SSB Auto-approval post-processing failed: " . $e->getMessage(), [
+                'application_id' => $application->id,
+                'error' => $e
+            ]);
         }
-
-        \App\Models\DeliveryTracking::create([
-            'application_state_id' => $application->id,
-            'status' => 'pending',
-            'recipient_name' => trim(($formResponses['firstName'] ?? '') . ' ' . ($formResponses['surname'] ?? '')),
-            'recipient_phone' => $formResponses['mobile'] ?? $formResponses['cellNumber'] ?? null,
-            'client_national_id' => $formResponses['idNumber'] ?? $formResponses['nationalIdNumber'] ?? null,
-            'product_type' => $formData['business'] ?? $formData['category'] ?? 'SSB Loan Product',
-            'courier_type' => $deliverySelection['agent'] ?? 'Zim Post Office',
-            'delivery_depot' => $depot,
-            'delivery_address' => $depot,
-        ]);
     }
 
     /**
@@ -322,7 +348,10 @@ class SSBStatusService
         $formResponses['loanPeriod'] = $newPeriod;
         $formData['formResponses'] = $formResponses;
 
-        $application->update(['form_data' => $formData]);
+        $application->update([
+            'form_data' => $formData,
+            'current_step' => 'awaiting_ssb_csv_export'
+        ]);
 
         // Update status based on adjustment type
         $newStatus = match($adjustmentType) {
@@ -342,6 +371,9 @@ class SSBStatusService
                 'resubmitted_at' => now()->toISOString(),
             ]
         );
+
+        // Transition to next stage for batching
+        $this->updateStatus($application, SSBLoanStatus::AWAITING_SSB_CSV_EXPORT, 'Ready for next SSB CSV batch');
 
         $this->sendStatusNotification($application);
 
@@ -369,7 +401,10 @@ class SSBStatusService
         $formResponses['idNumber'] = $newIDNumber;
         $formData['formResponses'] = $formResponses;
 
-        $application->update(['form_data' => $formData]);
+        $application->update([
+            'form_data' => $formData,
+            'current_step' => 'awaiting_ssb_csv_export'
+        ]);
 
         $this->updateStatus(
             $application,
@@ -380,6 +415,9 @@ class SSBStatusService
                 'resubmitted_at' => now()->toISOString(),
             ]
         );
+
+        // Transition to next stage for batching
+        $this->updateStatus($application, SSBLoanStatus::AWAITING_SSB_CSV_EXPORT, 'Ready for next SSB CSV batch');
 
         $this->sendStatusNotification($application);
 
@@ -401,6 +439,21 @@ class SSBStatusService
         $this->sendStatusNotification($application);
 
         return true;
+    }
+
+    /**
+     * Mark application as exported in CSV batch
+     */
+    public function markAsExported(ApplicationState $application): bool
+    {
+        $application->current_step = 'awaiting_ssb_approval';
+        $application->save();
+
+        return $this->updateStatus(
+            $application,
+            SSBLoanStatus::AWAITING_SSB_APPROVAL,
+            'Application exported in CSV batch and sent to SSB'
+        );
     }
 
     /**

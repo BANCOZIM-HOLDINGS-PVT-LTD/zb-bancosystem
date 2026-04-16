@@ -43,18 +43,31 @@ class ZbApplicationResource extends Resource
         if ($user && $user->isQupaAdmin()) {
             if ($user->isQupaManagement()) {
                 // Management sees everything EXCEPT what's still in Stage 1
-                // They handle allocation for 'qupa_allocation_pending'
             } elseif ($user->isBranchManager()) {
-                // Branch Managers see applications for their branch that are in 'manager_approval'
-                // OR 'officer_check' (to supervise)
-                // NEW: Also see 'qupa_allocation_pending' if it's assigned to their branch
+                // Branch Managers see applications for their branch
                 $query->where('assigned_branch_id', $user->branch_id)
-                      ->whereIn('current_step', ['qupa_allocation_pending', 'officer_check', 'manager_approval', 'approved', 'rejected']);
-            } elseif ($user->isLoanOfficer()) {                // Loan Officers see applications assigned to them OR from their referral links
+                      ->whereIn('current_step', [
+                          'vlc_allocation_pending', 
+                          'awaiting_ssb_csv_export',
+                          'awaiting_ssb_approval',
+                          'qupa_allocation_pending', 
+                          'officer_check', 
+                          'manager_approval', 
+                          'approved', 
+                          'rejected'
+                      ]);
+            } elseif ($user->isLoanOfficer()) {
                 $query->where(function($q) use ($user) {
                     $q->where('qupa_admin_id', $user->id)
-                      ->orWhere('assigned_branch_id', $user->branch_id); // If branch-wide access allowed
-                })->whereIn('current_step', ['officer_check', 'manager_approval', 'approved', 'rejected']);
+                      ->orWhere('assigned_branch_id', $user->branch_id);
+                })->whereIn('current_step', [
+                    'awaiting_ssb_csv_export',
+                    'awaiting_ssb_approval',
+                    'officer_check', 
+                    'manager_approval', 
+                    'approved', 
+                    'rejected'
+                ]);
             }
         }
 
@@ -93,19 +106,22 @@ class ZbApplicationResource extends Resource
                 Tables\Columns\BadgeColumn::make('current_step')
                     ->label('Workflow Stage')
                     ->colors([
-                        'warning' => 'qupa_allocation_pending',
-                        'primary' => 'officer_check',
-                        'info' => 'manager_approval',
+                        'warning' => fn ($state) => in_array($state, ['qupa_allocation_pending', 'vlc_allocation_pending']),
+                        'primary' => fn ($state) => in_array($state, ['officer_check', 'awaiting_ssb_csv_export']),
+                        'info' => fn ($state) => in_array($state, ['manager_approval', 'awaiting_ssb_approval']),
                         'success' => 'approved',
                         'danger' => 'rejected',
                     ])
                     ->formatStateUsing(fn ($state) => match($state) {
+                        'vlc_allocation_pending' => 'VLC Allocation',
+                        'awaiting_ssb_csv_export' => 'Awaiting SSB Batch',
+                        'awaiting_ssb_approval' => 'Sent to SSB',
                         'qupa_allocation_pending' => 'Awaiting Allocation',
                         'officer_check' => 'Officer Review',
                         'manager_approval' => 'Manager Approval',
                         'approved' => 'Approved',
                         'rejected' => 'Rejected',
-                        default => $state,
+                        default => ucwords(str_replace('_', ' ', $state)),
                     }),
                 Tables\Columns\TextColumn::make('assignedBranch.name')
                     ->label('Branch')
@@ -118,6 +134,48 @@ class ZbApplicationResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+
+                // VLC ALLOCATION ACTION
+                Action::make('vlc_allocate')
+                    ->label('VLC Allocate')
+                    ->icon('heroicon-o-building-office')
+                    ->color('warning')
+                    ->visible(fn (Model $record) => 
+                        $record->current_step === 'vlc_allocation_pending' && 
+                        ($user->isQupaManagement() || ($user->isBranchManager() && $record->assigned_branch_id === $user->branch_id))
+                    )
+                    ->form([
+                        Forms\Components\Select::make('branch_id')
+                            ->label('Assign to Branch')
+                            ->options(Branch::active()->pluck('name', 'id'))
+                            ->required()
+                            ->reactive()
+                            ->default(fn (Model $record) => $record->assigned_branch_id)
+                            ->dehydrated(),
+                        Forms\Components\Select::make('officer_id')
+                            ->label('Assign to Officer')
+                            ->options(fn (Forms\Get $get) => 
+                                User::where('branch_id', $get('branch_id'))
+                                    ->where('designation', User::DESIGNATION_LOAN_OFFICER)
+                                    ->pluck('name', 'id')
+                            )
+                            ->required(),
+                    ])
+                    ->action(function (array $data, Model $record) {
+                        $record->update([
+                            'assigned_branch_id' => $data['branch_id'],
+                            'qupa_admin_id' => $data['officer_id'],
+                            'current_step' => 'awaiting_ssb_csv_export',
+                        ]);
+                        
+                        app(\App\Services\SSBStatusService::class)->updateStatus(
+                            $record, 
+                            \App\Enums\SSBLoanStatus::AWAITING_SSB_CSV_EXPORT,
+                            "Allocated to branch {$record->assignedBranch->name} and officer {$record->qupaAdmin->name}"
+                        );
+
+                        Notification::make()->title('VLC Allocation Successful')->success()->send();
+                    }),
 
                 // MANAGEMENT ACTION: Allocate to Branch & Officer
                 Action::make('allocate')
@@ -374,6 +432,67 @@ class ZbApplicationResource extends Resource
                     ->action(function (Model $record) {
                         return redirect()->route('application.pdf.view', $record->session_id);
                     }),
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('import_ssb_responses')
+                    ->label('Import SSB Responses')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->color('primary')
+                    ->form([
+                        Forms\Components\FileUpload::make('ssb_csv')
+                            ->label('SSB CSV File')
+                            ->required()
+                            ->disk('local')
+                            ->directory('temp_ssb_imports'),
+                    ])
+                    ->action(function (array $data) {
+                        $filePath = Storage::disk('local')->path($data['ssb_csv']);
+                        $ssbService = app(\App\Services\SSBStatusService::class);
+                        
+                        $results = $ssbService->parseAndProcessSSBCSV($filePath);
+                        
+                        Notification::make()
+                            ->title('SSB Import Complete')
+                            ->body("Processed: {$results['processed']}, Failed: {$results['failed']}")
+                            ->success()
+                            ->send();
+                        
+                        // Delete temp file (cleanup)
+                        try {
+                            Storage::disk('local')->delete($data['ssb_csv']);
+                        } catch (\Exception $e) {
+                            Log::warning("Failed to delete temporary SSB import file: " . $e->getMessage());
+                        }
+                    }),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                    
+                    Tables\Actions\BulkAction::make('mark_as_ssb_sent')
+                        ->label('Export to SSB (Mark as Sent)')
+                        ->icon('heroicon-o-paper-airplane')
+                        ->color('info')
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (\Illuminate\Support\Collection $records) {
+                            $ssbService = app(\App\Services\SSBStatusService::class);
+                            $count = 0;
+                            
+                            foreach ($records as $record) {
+                                if ($record->current_step === 'awaiting_ssb_csv_export') {
+                                    $ssbService->markAsExported($record);
+                                    $count++;
+                                }
+                            }
+                            
+                            Notification::make()
+                                ->title("Batch Exported")
+                                ->body("{$count} applications marked as 'Sent to SSB'.")
+                                ->success()
+                                ->send();
+                        })
+                        ->requiresConfirmation(),
+                ]),
             ]);
     }
 
