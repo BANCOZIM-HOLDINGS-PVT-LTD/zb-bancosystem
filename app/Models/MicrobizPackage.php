@@ -14,6 +14,7 @@ class MicrobizPackage extends Model
         'tier',
         'name',
         'description',
+        'image_url',
         'price',
         'transport_method',
         'courier',

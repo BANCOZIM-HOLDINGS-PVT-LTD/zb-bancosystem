@@ -166,12 +166,13 @@ export interface BusinessProduct {
 }
 
 export interface BusinessScale {
-    id: string;
+    id: string | number;
     name: string;
     description: string;
     multiplier: number;
     minAmount: number;
     maxAmount: number;
+    image_url?: string;
 }
 
 // Document Types

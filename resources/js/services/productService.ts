@@ -23,6 +23,7 @@ export interface BusinessType {
     formatted_price?: string;
     description?: string; // Added description
     remarks?: string; // Admin description 
+    image_url?: string;
   }[];
   tenure?: number;
 }

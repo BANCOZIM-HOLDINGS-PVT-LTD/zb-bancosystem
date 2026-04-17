@@ -933,6 +933,17 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                         <h3 className="text-lg font-semibold text-emerald-800 dark:text-emerald-400 mb-2">
                                             Package Details
                                         </h3>
+                                        
+                                        {(selectedScale as any).image_url && (
+                                            <div className="mb-4 rounded-lg overflow-hidden border border-emerald-100 shadow-sm">
+                                                <img 
+                                                    src={(selectedScale as any).image_url} 
+                                                    alt={selectedScale.name}
+                                                    className="w-full h-48 object-cover"
+                                                />
+                                            </div>
+                                        )}
+
                                         <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                                             {selectedScale.description ? (
                                                 <p className="whitespace-pre-line">{selectedScale.description}</p>

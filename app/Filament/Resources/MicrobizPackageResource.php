@@ -94,6 +94,12 @@ class MicrobizPackageResource extends BaseResource
                             ->rows(3)
                             ->placeholder('Describe what\'s included in this package...')
                             ->helperText('This description will be visible to applicants'),
+                        Forms\Components\FileUpload::make('image_url')
+                            ->label('Tier Image')
+                            ->image()
+                            ->directory('tier-images')
+                            ->visibility('public')
+                            ->helperText('Image representing this business tier'),
                     ]),
 
                 Forms\Components\Section::make('Transport')
@@ -189,6 +195,9 @@ class MicrobizPackageResource extends BaseResource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('image_url')
+                    ->label('Image')
+                    ->square(),
                 Tables\Columns\TextColumn::make('subcategory.category.name')
                     ->label('Category')
                     ->sortable()
