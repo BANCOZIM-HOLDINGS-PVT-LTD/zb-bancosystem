@@ -24,6 +24,7 @@ if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
 fi
 
 # Migrate environment caches at runtime (after secrets are present)
+php artisan storage:link --force || true
 php artisan config:clear || true
 php artisan route:clear || true
 php artisan view:clear || true

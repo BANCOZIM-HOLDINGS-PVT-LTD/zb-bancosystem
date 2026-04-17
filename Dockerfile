@@ -79,11 +79,18 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts
 # Copy application code
 COPY . .
 
+# Pre-create storage link and directory
+RUN mkdir -p storage/app/public/tier-images && \
+    cp -r "tier images/"* storage/app/public/tier-images/ 2>/dev/null || true
+
 # Copy built frontend assets from frontend-builder stage
 COPY --from=frontend-builder /app/public/build ./public/build
 
 # Remove Vite hot file if it exists (tells Laravel to use dev server instead of built assets)
 RUN rm -f public/hot
+
+# Create storage link during build
+RUN php artisan storage:link || true
 
 # Create a minimal .env file for Laravel (actual config comes from Fly.io environment variables)
 # We only set non-critical defaults here - Fly.io secrets will override these

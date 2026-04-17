@@ -935,11 +935,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                         </h3>
                                         
                                         {(selectedScale as any).image_url && (
-                                            <div className="mb-4 rounded-lg overflow-hidden border border-emerald-100 shadow-sm">
+                                            <div className="mb-4 rounded-lg overflow-hidden border border-emerald-100 shadow-sm bg-white">
                                                 <img 
                                                     src={(selectedScale as any).image_url} 
                                                     alt={selectedScale.name}
-                                                    className="w-full h-48 object-cover"
+                                                    className="w-full h-64 md:h-80 object-contain p-2"
                                                 />
                                             </div>
                                         )}
