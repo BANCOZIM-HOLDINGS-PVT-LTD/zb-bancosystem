@@ -4,38 +4,38 @@ Validating C:\xampp\htdocs\zb bancosystem\fly.toml
 
 Watch your deployment at https://fly.io/apps/bancosystem/monitoring
 
-> Created release_command machine d891362f5de968
-> Waiting for d891362f5de968 to have state: stopped
-> Machine d891362f5de968 has state: stopped
-> Waiting for d891362f5de968 to have state: started
-> Waiting for d891362f5de968 to have state: started
-> Machine d891362f5de968 has state: started
-> Waiting for d891362f5de968 to have state: destroyed
-> Machine d891362f5de968 has state: destroyed
-> Waiting for d891362f5de968 to get exit event
-✔ release_command d891362f5de968 completed successfully
+> Created release_command machine 1857495b6e75e8
+> Waiting for 1857495b6e75e8 to have state: stopped
+> Machine 1857495b6e75e8 has state: stopped
+> Waiting for 1857495b6e75e8 to have state: started
+> Waiting for 1857495b6e75e8 to have state: started
+> Machine 1857495b6e75e8 has state: started
+> Waiting for 1857495b6e75e8 to have state: destroyed
+> Machine 1857495b6e75e8 has state: destroyed
+> Waiting for 1857495b6e75e8 to get exit event
+✔ release_command 1857495b6e75e8 completed successfully
 Updating existing machines in 'bancosystem' with rolling strategy
-> [1/2] Acquiring lease for 683d597c467e68
-> [1/2] Acquired lease for 683d597c467e68
-> [2/2] Acquiring lease for 683d594a606e78
-> [2/2] Acquired lease for 683d594a606e78
-> [1/2] Updating machine config for 683d597c467e68
-> [2/2] Updating machine config for 683d594a606e78
-> [2/2] Updating 683d594a606e78 [app]
-> [1/2] Updating 683d597c467e68 [app]
-> [1/2] Updated machine config for 683d597c467e68
-> [1/2] Waiting for machine 683d597c467e68 to reach a good state
-> [2/2] Updated machine config for 683d594a606e78
-✔ [2/2] Machine 683d594a606e78 is now in a good state
-> [1/2] Machine 683d597c467e68 reached started state
-> [1/2] Running smoke checks on machine 683d597c467e68
-> [1/2] Running machine checks on machine 683d597c467e68
-> [1/2] Checking health of machine 683d597c467e68
-✔ [1/2] Machine 683d597c467e68 is now in a good state
-> [2/2] Clearing lease for 683d594a606e78
-> [1/2] Clearing lease for 683d597c467e68
-✔ [2/2] Cleared lease for 683d594a606e78
-✔ [1/2] Cleared lease for 683d597c467e68
+> [1/2] Acquiring lease for 683d594a606e78
+> [1/2] Acquired lease for 683d594a606e78
+> [2/2] Acquiring lease for 683d597c467e68
+> [2/2] Acquired lease for 683d597c467e68
+> [2/2] Updating machine config for 683d597c467e68
+> [1/2] Updating machine config for 683d594a606e78
+> [2/2] Updating 683d597c467e68 [app]
+> [1/2] Updating 683d594a606e78 [app]
+> [2/2] Updated machine config for 683d597c467e68
+> [2/2] Waiting for machine 683d597c467e68 to reach a good state
+> [1/2] Updated machine config for 683d594a606e78
+✔ [1/2] Machine 683d594a606e78 is now in a good state
+> [2/2] Machine 683d597c467e68 reached started state
+> [2/2] Running smoke checks on machine 683d597c467e68
+> [2/2] Running machine checks on machine 683d597c467e68
+> [2/2] Checking health of machine 683d597c467e68
+✔ [2/2] Machine 683d597c467e68 is now in a good state
+> [2/2] Clearing lease for 683d597c467e68
+> [1/2] Clearing lease for 683d594a606e78
+✔ [2/2] Cleared lease for 683d597c467e68
+✔ [1/2] Cleared lease for 683d594a606e78
 
 Visit your newly deployed app at https://bancosystem.fly.dev/
 

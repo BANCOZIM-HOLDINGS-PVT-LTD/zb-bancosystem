@@ -22,6 +22,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // Trust all proxies (required for Fly.io)
         $middleware->trustProxies(at: '*');
 
+        $middleware->validateCsrfTokens(except: [
+            'deposit/callback',
+            'api/paynow/webhook',
+        ]);
+
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
