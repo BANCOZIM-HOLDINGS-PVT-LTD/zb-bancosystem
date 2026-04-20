@@ -175,7 +175,19 @@ class DepositPaymentController extends Controller
                 'transaction_id' => $paynowReference,
             ]);
 
-            // Create Delivery Tracking record
+            // 1. Create Purchase Order(s)
+            try {
+                $poService = app(\App\Services\PurchaseOrderService::class);
+                $poService->createFromApplication($application);
+                Log::info("Created Purchase Orders for paid application", ['reference' => $referenceCode]);
+            } catch (\Exception $e) {
+                Log::error("Failed to create Purchase Orders for paid application", [
+                    'reference' => $referenceCode,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            // 2. Create Delivery Tracking record
             try {
                 // Parse form data to extract delivery details
                 $formData = is_array($application->form_data) ? $application->form_data : json_decode($application->form_data, true);
@@ -225,8 +237,6 @@ class DepositPaymentController extends Controller
                 Log::info("Created DeliveryTracking record", ['tracking_id' => $tracking->id, 'reference' => $referenceCode]);
 
                 // Send Confirmation SMS
-                // The DeliveryTracking model doesn't send SMS for 'processing', only 'dispatched' and 'delivered'
-                // So we send a specific 'Deposit Received' SMS here
                 try {
                      $smsService = app(\App\Services\SMSService::class);
                      $phone = $tracking->recipient_phone;
@@ -242,9 +252,7 @@ class DepositPaymentController extends Controller
                 Log::error("Failed to initiate delivery for paid application", [
                     'reference' => $referenceCode,
                     'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
                 ]);
-                // We don't fail the response because payment was successful
             }
 
             return response('OK', 200);

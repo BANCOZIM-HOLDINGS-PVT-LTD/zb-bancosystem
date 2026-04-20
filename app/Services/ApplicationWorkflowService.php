@@ -33,19 +33,29 @@ class ApplicationWorkflowService
         return DB::transaction(function () use ($application, $options) {
             $oldStatus = $application->current_step;
             
+            // Check if this is a Paid Deposit Credit (PDC) application
+            $formData = $application->form_data ?? [];
+            $creditType = $formData['creditType'] ?? null;
+            $isPDC = ($creditType && (str_starts_with($creditType, 'PDC') || $creditType === 'PDC'));
+
+            // If it's PDC, Stage 3 approval leads to Stage 4 (Awaiting Deposit)
+            // Otherwise, it goes to 'approved'
+            $newStatus = $isPDC ? 'awaiting_deposit_payment' : 'approved';
+
             // Update application status
             $application->update([
-                'current_step' => 'approved',
+                'current_step' => $newStatus,
                 'status_updated_at' => now(),
                 'status_updated_by' => auth()->id(),
             ]);
 
             // Create state transition record
-            $this->createStateTransition($application, $oldStatus, 'approved', [
+            $this->createStateTransition($application, $oldStatus, $newStatus, [
                 'admin_id' => auth()->id(),
                 'admin_name' => auth()->user()->name ?? 'System',
                 'approval_notes' => $options['notes'] ?? null,
                 'auto_approved' => $options['auto_approved'] ?? false,
+                'is_pdc' => $isPDC
             ]);
 
             // Generate PDF if not already generated
@@ -56,18 +66,37 @@ class ApplicationWorkflowService
             // Calculate and create commission for referring agent
             $this->processAgentCommission($application);
 
-            // Create delivery tracking record
-            $this->createDeliveryTracking($application);
+            // Create delivery tracking record (Only for non-PDC)
+            if (!$isPDC) {
+                $this->createDeliveryTracking($application);
+            } else {
+                Log::info('Routing PDC application to Stage 4 - waiting for deposit', [
+                    'reference' => $application->reference_code
+                ]);
+
+                // Send specific SMS for PDC Deposit Payment
+                try {
+                    $smsService = app(\App\Services\SMSService::class);
+                    $formResponses = $formData['formResponses'] ?? [];
+                    $phone = $formResponses['mobile'] ?? $formResponses['phoneNumber'] ?? null;
+                    if ($phone) {
+                        $depositAmount = number_format($application->deposit_amount, 2);
+                        $msg = "Great news! Your BancoZim application ({$application->reference_code}) has reached final approval. Please pay your deposit of ${$depositAmount} at " . url('/application/status') . " to initiate delivery.";
+                        $smsService->sendSMS($phone, $msg);
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Failed to send PDC Stage 4 SMS: " . $e->getMessage());
+                }
+            }
 
             // Send notifications
-            $this->notificationService->sendStatusUpdateNotification($application, $oldStatus, 'approved');
+            $this->notificationService->sendStatusUpdateNotification($application, $oldStatus, $newStatus);
 
             // Log the approval
-            Log::info('Application approved', [
+            Log::info("Application processed (New Status: {$newStatus})", [
                 'session_id' => $application->session_id,
                 'reference_code' => $application->reference_code,
                 'admin_id' => auth()->id(),
-                'auto_approved' => $options['auto_approved'] ?? false,
             ]);
 
             return true;

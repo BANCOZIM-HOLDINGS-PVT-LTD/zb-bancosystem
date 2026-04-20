@@ -376,41 +376,31 @@ class ZbApplicationResource extends Resource
                                 'date' => now()->toIso8601String(),
                                 'notes' => $data['manager_notes'] ?? '',
                             ];
-                            
-                            $record->current_step = 'approved';
-                            $record->status = 'approved';
-                            
-                            // Only set approved_at if the column exists (safeguard)
-                            if (\Illuminate\Support\Facades\Schema::hasColumn($record->getTable(), 'approved_at')) {
-                                $record->approved_at = now();
-                            }
-                            
-                            $metadata['client_status_message'] = "Loan application approved, Delivery Process has been initiated";
                             $record->metadata = $metadata;
                             $record->save();
 
-                            // Trigger PO and Delivery
-                            $poService = app(\App\Services\PurchaseOrderService::class);
-                            $poService->createFromApplication($record);
+                            $workflowService = app(\App\Services\ApplicationWorkflowService::class);
+                            $success = $workflowService->approveApplication($record, ['notes' => $data['manager_notes'] ?? null]);
                             
-                            // Initialize delivery tracking
-                            $formResponses = $record->form_data['formResponses'] ?? [];
-                            $deliverySelection = $record->form_data['deliverySelection'] ?? [];
-                            $depot = $deliverySelection['depot'] ?? $deliverySelection['city'] ?? 'Default Depot';
-
-                            \App\Models\DeliveryTracking::create([
-                                'application_state_id' => $record->id,
-                                'status' => 'pending',
-                                'recipient_name' => trim(($formResponses['firstName'] ?? '') . ' ' . ($formResponses['lastName'] ?? ($formResponses['surname'] ?? ''))),
-                                'recipient_phone' => $formResponses['mobile'] ?? $formResponses['cellNumber'] ?? $record->user_identifier,
-                                'client_national_id' => $formResponses['nationalIdNumber'] ?? $record->reference_code,
-                                'product_type' => $record->form_data['productName'] ?? 'Product',
-                                'courier_type' => $deliverySelection['agent'] ?? 'Courier',
-                                'delivery_depot' => $depot,
-                                'delivery_address' => $depot,
-                            ]);
-
-                            Notification::make()->title('Application Fully Approved!')->success()->send();
+                            if ($success) {
+                                $formData = $record->form_data ?? [];
+                                $creditType = $formData['creditType'] ?? '';
+                                $isPDC = str_starts_with($creditType, 'PDC');
+                                
+                                $message = $isPDC 
+                                    ? 'Application approved and moved to Stage 4 (Awaiting Deposit).' 
+                                    : 'Application fully approved! Delivery initiated.';
+                                    
+                                Notification::make()
+                                    ->title($message)
+                                    ->success()
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->title('Approval Failed')
+                                    ->danger()
+                                    ->send();
+                            }
                         } catch (\Throwable $e) {
                             Log::error("Manager approval failed: " . $e->getMessage(), [
                                 'exception' => $e,
@@ -419,7 +409,7 @@ class ZbApplicationResource extends Resource
                             
                             Notification::make()
                                 ->title('Approval Error')
-                                ->body('The application was approved but post-approval services failed: ' . $e->getMessage())
+                                ->body($e->getMessage())
                                 ->danger()
                                 ->persistent()
                                 ->send();

@@ -320,10 +320,16 @@ public function resubmit(Request $request): JsonResponse
 
     private function getNextAction(ApplicationState $application): string
     {
+        $formData = $application->form_data ?? [];
+        $creditType = $formData['creditType'] ?? '';
+        $isPDC = str_starts_with($creditType, 'PDC');
+
         return match($application->current_step) {
             'pending_review' => 'Bancozim Admin is currently verifying your uploaded documents.',
             'awaiting_document_reupload' => 'Please re-upload the requested documents using the form below.',
-            'awaiting_deposit_payment' => 'Please upload your proof of deposit payment using the form below.',
+            'awaiting_deposit_payment' => $isPDC 
+                ? 'Your application has been approved! Please pay the required deposit below to initiate delivery.'
+                : 'Please upload your proof of deposit payment using the form below.',
             'awaiting_proof_of_employment' => 'Please upload your Confirmation of Employment letter using the form below.',
             'vlc_allocation_pending' => 'VLC Manager is allocating your application for processing.',
             'qupa_allocation_pending' => 'Your application is being allocated to a specific branch.',

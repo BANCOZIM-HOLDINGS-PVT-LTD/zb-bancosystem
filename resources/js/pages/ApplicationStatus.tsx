@@ -230,8 +230,8 @@ export default function ApplicationStatus() {
                 icon: DollarSign,
                 color: 'text-blue-600 dark:text-blue-400',
                 bg: 'bg-blue-50 dark:bg-blue-900/20',
-                label: 'Action Required: Deposit Payment',
-                description: 'Please upload your proof of deposit payment below.'
+                label: 'Stage 4: Deposit Payment',
+                description: 'Your application has been approved! Please pay the required deposit to initiate delivery.'
             },
             'allocation': {
                 icon: Clock,
@@ -542,14 +542,55 @@ export default function ApplicationStatus() {
                                 )}
 
                                 {applicationDetails.currentStep === 'awaiting_deposit_payment' && (
-                                    <ApplicationResubmission
-                                        sessionId={applicationDetails.sessionId}
-                                        type="deposit_payment"
-                                        onSuccess={(msg) => {
-                                            setSuccessMessage(msg);
-                                            handleSearchWithRef(applicationDetails.sessionId);
-                                        }}
-                                    />
+                                    <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl">
+                                        <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-4 flex items-center gap-2">
+                                            <DollarSign className="h-5 w-5" />
+                                            Pay Your Deposit
+                                        </h3>
+                                        <p className="text-blue-800 dark:text-blue-200 mb-6">
+                                            Please select your preferred payment method below and click "Pay Now" to complete your deposit payment.
+                                        </p>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                            {[
+                                                { id: 'ecocash', name: 'EcoCash', icon: '📱' },
+                                                { id: 'smilecash', name: 'OneMoney', icon: '💰' },
+                                                { id: 'card', name: 'Card / Visa', icon: '💳' },
+                                            ].map((method) => (
+                                                <div
+                                                    key={method.id}
+                                                    onClick={() => setSelectedPaymentMethod(method.id)}
+                                                    className={`cursor-pointer p-4 rounded-lg border-2 transition-all text-center ${
+                                                        selectedPaymentMethod === method.id
+                                                            ? 'border-blue-600 bg-blue-100 dark:bg-blue-900/30'
+                                                            : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900'
+                                                    }`}
+                                                >
+                                                    <span className="text-2xl mb-2 block">{method.icon}</span>
+                                                    <span className="font-medium">{method.name}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <Button
+                                            onClick={handleDepositPayment}
+                                            disabled={processingPayment}
+                                            className="w-full h-12 text-lg bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                                        >
+                                            {processingPayment ? (
+                                                <>
+                                                    <Clock className="animate-spin h-5 w-5 mr-2" />
+                                                    Processing...
+                                                </>
+                                            ) : (
+                                                `Pay Deposit Now`
+                                            )}
+                                        </Button>
+                                        
+                                        <p className="mt-4 text-xs text-center text-blue-600 dark:text-blue-400">
+                                            Secured by Paynow. For mobile money, follow the prompt on your phone.
+                                        </p>
+                                    </div>
                                 )}
 
                                 <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">

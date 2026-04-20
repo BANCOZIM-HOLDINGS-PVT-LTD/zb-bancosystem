@@ -165,6 +165,45 @@ class SsbLoanResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
 
+                // Approve Application Action
+                Action::make('approve')
+                    ->label('Approve Application')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(function (Model $record) {
+                        return in_array($record->current_step, ['awaiting_ssb_approval', 'in_review', 'pending']);
+                    })
+                    ->requiresConfirmation()
+                    ->form([
+                        Forms\Components\Textarea::make('notes')
+                            ->label('Approval Notes')
+                            ->placeholder('Optional notes regarding the approval...'),
+                    ])
+                    ->action(function (Model $record, array $data) {
+                        $workflowService = app(\App\Services\ApplicationWorkflowService::class);
+                        $success = $workflowService->approveApplication($record, ['notes' => $data['notes'] ?? null]);
+                        
+                        if ($success) {
+                            $formData = $record->form_data ?? [];
+                            $creditType = $formData['creditType'] ?? '';
+                            $isPDC = str_starts_with($creditType, 'PDC');
+                            
+                            $message = $isPDC 
+                                ? 'Application approved and moved to Stage 4 (Awaiting Deposit).' 
+                                : 'Application approved successfully.';
+                                
+                            Notification::make()
+                                ->title($message)
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Approval Failed')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
                 // Refer to Branch — visible to Qupa Management only
                 Action::make('refer_to_branch')
                     ->label('Refer to Branch')

@@ -1,0 +1,353 @@
+==> Verifying app config
+--> Verified app config
+==> Building image
+Waiting for depot builder...
+
+==> Building image with Depot
+--> build:  (​)
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile:
+#1 transferring dockerfile: 4.14kB 0.8s done
+#1 DONE 0.8s
+
+#2 [internal] load metadata for docker.io/library/composer:2
+#2 ...
+
+#3 [internal] load metadata for docker.io/library/node:18-alpine
+#3 DONE 0.9s
+
+#4 [internal] load metadata for docker.io/library/php:8.2-fpm-alpine
+#4 DONE 1.5s
+
+#2 [internal] load metadata for docker.io/library/composer:2
+#2 DONE 1.5s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 33B 0.2s
+#5 transferring context: 967B 0.5s done
+#5 DONE 0.5s
+
+#6 FROM docker.io/library/composer:2@sha256:dc292c5c0f95f526b051d4c341bf08e7e2b18504c74625e3203d7f123050e318
+#6 resolve docker.io/library/composer:2@sha256:dc292c5c0f95f526b051d4c341bf08e7e2b18504c74625e3203d7f123050e318 done
+#6 CACHED
+
+#7 [frontend-builder 1/9] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+#7 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e done
+#7 DONE 0.0s
+
+#8 [production  1/22] FROM docker.io/library/php:8.2-fpm-alpine@sha256:07c16a3949c2102a1351bb3fab79aa36e97f36301ddd60c275a9d004ef68e43e
+#8 resolve docker.io/library/php:8.2-fpm-alpine@sha256:07c16a3949c2102a1351bb3fab79aa36e97f36301ddd60c275a9d004ef68e43e done
+#8 DONE 0.0s
+
+#9 [internal] load build context
+#9 transferring context: 226.87kB 5.7s
+#9 transferring context: 358.54kB 10.0s done
+#9 ...
+
+#10 [production  3/22] COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+#10 CACHED
+
+#11 [production  4/22] RUN addgroup -g 1000 -S www &&     adduser -u 1000 -S www -G www
+#11 CACHED
+
+#12 [production  5/22] WORKDIR /var/www/html
+#12 CACHED
+
+#13 [production  6/22] COPY composer.json composer.lock ./
+#13 CACHED
+
+#14 [production  2/22] RUN apk add --no-cache     nginx     supervisor     curl     libpng-dev     libjpeg-turbo-dev     freetype-dev     libzip-dev     icu-dev     oniguruma-dev     postgresql-dev     mysql-client     redis     git     unzip     autoconf 		dpkg-dev dpkg 		file 		g++ 		gcc 		libc-dev 		make 		pkgconf 		re2c     && docker-php-ext-configure gd --with-freetype --with-jpeg     && docker-php-ext-install -j$(nproc)         gd         zip         intl         mbstring         pdo         pdo_mysql         pdo_pgsql         opcache         pcntl         bcmath     && pecl install redis     && docker-php-ext-enable redis     && apk del autoconf 		dpkg-dev dpkg 		file 		g++ 		gcc 		libc-dev 		make 		pkgconf 		re2c
+#14 CACHED
+
+#15 [production  7/22] RUN composer install --no-dev --optimize-autoloader --no-scripts
+#15 CACHED
+
+#16 [frontend-builder 2/9] WORKDIR /app
+#16 CACHED
+
+#17 [frontend-builder 3/9] COPY package*.json ./
+#17 CACHED
+
+#18 [frontend-builder 4/9] COPY vite.config.ts ./
+#18 CACHED
+
+#19 [frontend-builder 5/9] COPY tsconfig.json ./
+#19 CACHED
+
+#20 [frontend-builder 6/9] RUN npm ci --only=production
+#20 CACHED
+
+#21 [frontend-builder 7/9] COPY resources/ ./resources/
+#21 DONE 0.2s
+
+#22 [frontend-builder 8/9] COPY public/ ./public/
+#22 DONE 0.5s
+
+#23 [production  8/22] COPY . .
+#23 DONE 1.3s
+
+#24 [frontend-builder 9/9] RUN npm run build
+#24 ...
+
+#25 [production  9/22] RUN mkdir -p storage/app/public/tier-images &&     cp -r "tier images/"* storage/app/public/tier-images/ 2>/dev/null || true
+#25 DONE 0.3s
+
+#24 [frontend-builder 9/9] RUN npm run build
+#24 2.122 
+#24 2.122 > build
+#24 2.122 > vite build
+#24 2.122 
+#24 3.780 vite v6.2.0 building for production...
+#24 3.879 transforming...
+#24 24.91 [plugin vite:esbuild] resources/js/components/ApplicationWizard/steps/ApplicationSummary.tsx: This case clause will never be evaluated because it duplicates an earlier case clause
+#24 24.91 65 |          case 'government-ssb':
+#24 24.91 66 |          // SSB employers always use SSB form
+#24 24.91 67 |          case 'government-ssb':
+#24 24.91    |               ^
+#24 24.91 68 |              // SSB employers always use SSB form
+#24 24.91 69 |              return 'ssb_account_opening_form.json';
+#24 24.91 
+#24 28.71 ✓ 2099 modules transformed.
+#24 29.14 rendering chunks...
+#24 29.18 warnings when minifying css:
+#24 29.18 ▲ [WARNING] Comments in CSS use "/* ... */" instead of "//" [js-comment-in-css]
+#24 29.18 
+#24 29.18     <stdin>:2:91831:
+#24 29.18       2 │ .../cs6210-f09\/lec18\.pdf\]{http://www.cs.cornell.edu/~bindel/clas...
+#24 29.18         ╵                                   ~~
+#24 29.18 
+#24 29.18 
+#24 29.39 computing gzip size...
+#24 29.43 public/build/manifest.json                                    26.14 kB │ gzip:   2.79 kB
+#24 29.43 public/build/assets/filament-admin-BejA3y2y.css                0.17 kB │ gzip:   0.12 kB
+#24 29.43 public/build/assets/app-CLtERuWq.css                         162.74 kB │ gzip:  25.75 kB
+#24 29.43 public/build/assets/index-Dsd-NYr2.js                          0.23 kB │ gzip:   0.17 kB
+#24 29.43 public/build/assets/input-error-42szl2So.js                    0.24 kB │ gzip:   0.20 kB
+#24 29.43 public/build/assets/card-CNC1n-qF.js                           0.27 kB │ gzip:   0.22 kB
+#24 29.43 public/build/assets/check-CgMYajR8.js                          0.30 kB │ gzip:   0.25 kB
+#24 29.43 public/build/assets/chevron-down-ClcpP-rM.js                   0.31 kB │ gzip:   0.25 kB
+#24 29.43 public/build/assets/chevron-right-al-Zv0tP.js                  0.31 kB │ gzip:   0.25 kB
+#24 29.43 public/build/assets/loader-circle-Br92-Mx_.js                  0.33 kB │ gzip:   0.27 kB
+#24 29.43 public/build/assets/arrow-left-CroTCqMp.js                     0.35 kB │ gzip:   0.27 kB
+#24 29.43 public/build/assets/search-CraMoDNA.js                         0.35 kB │ gzip:   0.28 kB
+#24 29.43 public/build/assets/text-link-DqFFBOBI.js                      0.36 kB │ gzip:   0.25 kB
+#24 29.43 public/build/assets/clock-CRyxaucg.js                          0.36 kB │ gzip:   0.28 kB
+#24 29.43 public/build/assets/circle-check-big-0mMfx1JK.js               0.37 kB │ gzip:   0.29 kB
+#24 29.43 public/build/assets/rotate-ccw-YiN9uC5U.js                     0.38 kB │ gzip:   0.29 kB
+#24 29.43 public/build/assets/circle-x-CFR7G2rY.js                       0.39 kB │ gzip:   0.29 kB
+#24 29.43 public/build/assets/dollar-sign-BFFqvc-D.js                    0.40 kB │ gzip:   0.30 kB
+#24 29.43 public/build/assets/circle-alert-YT65NB66.js                   0.43 kB │ gzip:   0.30 kB
+#24 29.43 public/build/assets/shopping-bag-yKLAdk6q.js                   0.43 kB │ gzip:   0.31 kB
+#24 29.43 public/build/assets/eye-C-UCvZur.js                            0.44 kB │ gzip:   0.31 kB
+#24 29.43 public/build/assets/log-out-BDWKHK97.js                        0.44 kB │ gzip:   0.33 kB
+#24 29.43 public/build/assets/graduation-cap-Bm537kZe.js                 0.52 kB │ gzip:   0.36 kB
+#24 29.43 public/build/assets/file-text-DSKtViAO.js                      0.52 kB │ gzip:   0.33 kB
+#24 29.43 public/build/assets/trash-2-DUCtAef8.js                        0.54 kB │ gzip:   0.36 kB
+#24 29.43 public/build/assets/index-m2otEdhA.js                          0.54 kB │ gzip:   0.39 kB
+#24 29.43 public/build/assets/index-CqKpASMN.js                          0.54 kB │ gzip:   0.35 kB
+#24 29.43 public/build/assets/filament-sidebar-DeP4DTaz.js               0.55 kB │ gzip:   0.25 kB
+#24 29.43 public/build/assets/package-5n_DzMl9.js                        0.56 kB │ gzip:   0.37 kB
+#24 29.43 public/build/assets/phone-BP37Hi-D.js                          0.58 kB │ gzip:   0.37 kB
+#24 29.43 public/build/assets/truck-BgvrjeWw.js                          0.59 kB │ gzip:   0.38 kB
+#24 29.43 public/build/assets/moon-DlwZIzZc.js                           0.71 kB │ gzip:   0.37 kB
+#24 29.43 public/build/assets/user-C6DI4hh4.js                           0.76 kB │ gzip:   0.39 kB
+#24 29.43 public/build/assets/auth-layout-DOHkHqC_.js                    1.05 kB │ gzip:   0.44 kB
+#24 29.43 public/build/assets/tslib.es6-BUas5LQb.js                      1.08 kB │ gzip:   0.54 kB
+#24 29.44 public/build/assets/label-DvUaFYRH.js                          1.41 kB │ gzip:   0.71 kB
+#24 29.44 public/build/assets/createLucideIcon-C6auBE7P.js               1.57 kB │ gzip:   0.66 kB
+#24 29.44 public/build/assets/forgot-password-CaU4JXSv.js                1.62 kB │ gzip:   0.83 kB
+#24 29.44 public/build/assets/client-login-BnGwMvFI.js                   2.00 kB │ gzip:   0.97 kB
+#24 29.44 public/build/assets/reset-password-ChH-XZJS.js                 2.12 kB │ gzip:   0.82 kB
+#24 29.44 public/build/assets/index-BhJMG8xk.js                          2.15 kB │ gzip:   0.95 kB
+#24 29.44 public/build/assets/dashboard-CmZKvqoe.js                      2.22 kB │ gzip:   0.80 kB
+#24 29.44 public/build/assets/index-Dd6IbUu0.js                          2.22 kB │ gzip:   0.99 kB
+#24 29.44 public/build/assets/layout-D4QzCOwE.js                         2.31 kB │ gzip:   0.99 kB
+#24 29.44 public/build/assets/appearance-DaTyogYl.js                     2.34 kB │ gzip:   1.13 kB
+#24 29.44 public/build/assets/dialog-BDwLJ2MQ.js                         2.34 kB │ gzip:   0.87 kB
+#24 29.44 public/build/assets/login-C5uBCJGO.js                          2.38 kB │ gzip:   1.07 kB
+#24 29.44 public/build/assets/verify-otp-B8jUGQYe.js                     2.83 kB │ gzip:   1.42 kB
+#24 29.44 public/build/assets/password-CdrY5ik2.js                       3.06 kB │ gzip:   1.17 kB
+#24 29.44 public/build/assets/checkbox-DnVUqCG9.js                       3.18 kB │ gzip:   1.51 kB
+#24 29.44 public/build/assets/Footer-DDuK7YAq.js                         3.26 kB │ gzip:   1.19 kB
+#24 29.44 public/build/assets/button-CdiVaffC.js                         3.86 kB │ gzip:   1.68 kB
+#24 29.44 public/build/assets/Login-tt5evYpT.js                          4.29 kB │ gzip:   1.71 kB
+#24 29.44 public/build/assets/profile-p6QpuD-E.js                        4.98 kB │ gzip:   1.94 kB
+#24 29.44 public/build/assets/ReferenceCodeLookup-BP7Kyb9R.js            5.21 kB │ gzip:   2.12 kB
+#24 29.44 public/build/assets/transition-CStJ-bES.js                     5.35 kB │ gzip:   2.25 kB
+#24 29.44 public/build/assets/index-FqhppbI_.js                          5.67 kB │ gzip:   2.23 kB
+#24 29.44 public/build/assets/index-D9i4BKu-.js                          6.28 kB │ gzip:   2.82 kB
+#24 29.44 public/build/assets/TermsAndConditions-Dm4kzMwz.js             7.25 kB │ gzip:   2.29 kB
+#24 29.44 public/build/assets/Dashboard-CawEWLwq.js                      7.76 kB │ gzip:   2.05 kB
+#24 29.44 public/build/assets/ApplicationSuccess-CSaog6Ft.js             8.26 kB │ gzip:   2.74 kB
+#24 29.44 public/build/assets/use-server-handoff-complete-Bd0e4xQL.js    9.69 kB │ gzip:   4.00 kB
+#24 29.44 public/build/assets/DeliveryTracking-DqKOpV69.js              10.02 kB │ gzip:   2.54 kB
+#24 29.44 public/build/assets/welcome-CQdzM07x.js                       11.69 kB │ gzip:   4.06 kB
+#24 29.44 public/build/assets/ApplicationStatus-Brg172dG.js             17.76 kB │ gzip:   5.26 kB
+#24 29.44 public/build/assets/utils-jAU0Cazi.js                         21.90 kB │ gzip:   7.35 kB
+#24 29.44 public/build/assets/select-Bj4UIXDF.js                        22.21 kB │ gzip:   7.77 kB
+#24 29.44 public/build/assets/Dashboard-BaVN6ya7.js                     26.56 kB │ gzip:   5.99 kB
+#24 29.44 public/build/assets/floating-ui.react-dom-BpuMRUTV.js         42.61 kB │ gzip:  15.53 kB
+#24 29.44 public/build/assets/app-layout-DaUbZ82d.js                    52.84 kB │ gzip:  15.31 kB
+#24 29.44 public/build/assets/index-7kLFVoL2.js                         60.83 kB │ gzip:  17.35 kB
+#24 29.44 public/build/assets/client-register-CI5EKajo.js               93.41 kB │ gzip:  30.01 kB
+#24 29.44 public/build/assets/app-BBRro__A.js                          327.44 kB │ gzip: 107.81 kB
+#24 29.44 public/build/assets/ApplicationWizard-BCjIqkOU.js            445.57 kB │ gzip:  95.26 kB
+#24 29.44 ✓ built in 25.58s
+#24 29.55 npm notice
+#24 29.55 npm notice New major version of npm available! 10.8.2 -> 11.12.1
+#24 29.55 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.12.1
+#24 29.55 npm notice To update run: npm install -g npm@11.12.1
+#24 29.55 npm notice
+#24 DONE 29.7s
+
+#9 [internal] load build context
+#9 ...
+
+#26 [production 10/22] COPY --from=frontend-builder /app/public/build ./public/build
+#26 DONE 0.0s
+
+#27 [production 11/22] RUN rm -f public/hot
+#27 DONE 0.1s
+
+#28 [production 12/22] RUN php artisan storage:link || true
+#28 1.523 
+#28 1.537 In PackageManifest.php line 179:
+#28 1.537                                                                              
+#28 1.537   The /var/www/html/bootstrap/cache directory must be present and writable.  
+#28 1.537                                                                              
+#28 1.537 
+#28 DONE 1.6s
+
+#29 [production 13/22] RUN touch .env
+#29 DONE 0.1s
+
+#9 [internal] load build context
+#9 ...
+
+#30 [production 14/22] RUN mkdir -p storage/framework/{cache,sessions,views}     && mkdir -p storage/logs     && mkdir -p storage/nginx/{client_body,proxy,fastcgi,uwsgi,scgi}     && mkdir -p storage/app/public     && mkdir -p bootstrap/cache     && chown -R www:www /var/www/html     && chmod -R 775 /var/www/html/storage     && chmod -R 775 /var/www/html/bootstrap/cache
+#30 DONE 14.4s
+
+#9 [internal] load build context
+#9 ...
+
+#31 [production 15/22] COPY docker/nginx.conf /etc/nginx/nginx.conf
+#31 DONE 0.3s
+
+#9 [internal] load build context
+#9 ...
+
+#32 [production 16/22] COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
+#32 DONE 0.0s
+
+#33 [production 17/22] COPY docker/php-fpm-main.conf /usr/local/etc/php-fpm.conf
+#33 DONE 0.0s
+
+#34 [production 18/22] COPY docker/www.conf /usr/local/etc/php-fpm.d/www.conf
+#34 DONE 0.0s
+
+#35 [production 19/22] COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+#35 DONE 0.0s
+
+#36 [production 20/22] RUN mkdir -p /var/log/nginx     && mkdir -p /var/log/supervisor     && mkdir -p /run/nginx     && mkdir -p /var/www/html/storage/logs     && mkdir -p /var/www/html/storage/framework/cache     && mkdir -p /var/www/html/storage/framework/sessions     && mkdir -p /var/www/html/storage/framework/views     && mkdir -p /var/www/html/storage/nginx/{client_body,proxy,fastcgi,uwsgi,scgi}     && mkdir -p /var/www/html/storage/app/public     && chown -R www:www /var/www/html/storage     && chown -R www:www /var/www/html/bootstrap/cache     && chmod -R 775 /var/www/html/storage     && chmod -R 775 /var/www/html/bootstrap/cache     && chown -R www:www /run/nginx
+#36 DONE 0.2s
+
+#9 [internal] load build context
+#9 ...
+
+#37 [production 21/22] COPY docker/entrypoint.sh /entrypoint.sh
+#37 DONE 0.0s
+
+#38 [production 22/22] RUN chmod +x /entrypoint.sh
+#38 DONE 0.1s
+
+#39 exporting to image
+#39 exporting layers
+#39 exporting layers 3.3s done
+#39 exporting manifest sha256:964990b73af053190cf40e957e885b1ae261581156e1af7de0e7a9eea847f869 done
+#39 exporting config sha256:20e8c748fd697d8ad40331a2c2ade72838305b27c16cd68fc3ff97e3aec16213 done
+#39 pushing layers for registry.fly.io/bancosystem:deployment-01KPN9RGQ0DGTS1NAQ0W83DM7C@sha256:964990b73af053190cf40e957e885b1ae261581156e1af7de0e7a9eea847f869
+#39 pushing layer sha256:20e8c748fd697d8ad40331a2c2ade72838305b27c16cd68fc3ff97e3aec16213
+#39 pushing layer sha256:b0b841a861c3a13fb58509817eaa1d8e02f8006f8aec3ecd813243803d79ff9d
+#39 pushing layer sha256:638d6f89f8c7a5d35241da9d8a97282d4559dc297e158056e27cdc3856d48e3d
+#39 pushing layer sha256:4b0509c947003be1323a5a38977845d73b4980e37144df3290035d51059ccb48
+#39 pushing layer sha256:b8abd284327bccf54ae1e3b5b5d7eb7f89f23f57356c7026700d8ca4aa12a5b4
+#39 pushing layer sha256:3eda6298fa312a57faad4a9773657c8184dce81b04be2c4207d888b0b992d827
+#39 pushing layer sha256:1f5e49c555a06eb8086ec2db05af57bde2fd6e5b4da3b725924be3cec43cbc38
+#39 pushing layer sha256:7b3c2e9ca672dc37f967d088e0115f9cb1321e6769b522ba9b2ac47afa43cb88
+#39 pushing layer sha256:2c1ce468d9f3d941396801f6e3afc8921466650dd05430fe644cd3537713d27f
+#39 pushing layer sha256:972c082f62e4bdb6136919f5c338ca1741cb29e788564948a1a106e678c717a1
+#39 pushing layer sha256:51b73058977e19d1a9abb9c74940899af2356dc7982bfe0d7732cc73cd8dce77
+#39 pushing layer sha256:3611bcdd43f595e157729b8072769024b39b68b32fc07dcf8a3194ba0f7250f1
+#39 pushing layer sha256:48a186133ad9c3898154b57327fed36c138600242b44e5597e412f7f2467112b
+#39 pushing layer sha256:1a35d1e9b33bd39cc580452d73ed7bda7d075e8767db0da6b1e1cde60e621d7c
+#39 pushing layer sha256:928592d3e4c987c424cb6469506775dee3828f3007289ca87f0218eff366f498
+#39 pushing layer sha256:537222894e2d70e944c38df0cefd6214cbb3f69898c15589e9306e8b9401e33f
+#39 pushing layer sha256:032cc1b19c3330367247a8375f8891aad9ebd8de227211b34080abc8a1eb069b
+#39 pushing layer sha256:59178eac7714521b27967f7e260d089f6ed578bae3d83d77016bf0de7d19569a
+#39 pushing layer sha256:f26ada1fa47daf9cc664f0ea7d5d08af331a00c59c83817ca4bb9bd344b6cc61
+#39 pushing layer sha256:116ab79576cb3fd5abcc62788168deb5bf670e3a92d66716189c4f8cd82a6ae0
+#39 pushing layer sha256:3e2cf8c86c847943646fd14002db47cc9c7892ef856839e30fcedbe8ec61a37f
+#39 pushing layer sha256:7293db16fa784a01f244f108c96648421cad96dc766137dba5d8f11c065679ca
+#39 pushing layer sha256:93637196046fc027b78371c712d9e27263d2baace30b5c1093095e43b3d1d334
+#39 pushing layer sha256:d6440e1e92f0569630098d6ab1f615b9123ced1cd0d5800e86f3155ee612c383
+#39 pushing layer sha256:c004bd2a154449d7c90e210d2e2cba45984f401411e6fc632e20f66aaf03c7e8
+#39 pushing layer sha256:9264c964fc0e21ab69f9df7fd9738f114ef037846a751ccf0ba11ca6475339a4
+#39 pushing layer sha256:eaafde0eb8efccc96eec96f26999fb2ac968bc39da734cc34f9c8d0abb44ac06
+#39 pushing layer sha256:87f4e2b50ba6006646e0bf3e34c4a7f8f3c6e6a17f03f26e8494314bb416dd91
+#39 pushing layer sha256:d564bcdbc1a85d3ea518e37b690910203f6017539648d4152c3be9804e7ef84f
+#39 pushing layer sha256:5c3136eecf5a4e18b23ef1452a5e13bc256b26c3eb7818ce3b5a5d99c8187feb
+#39 pushing layer sha256:3a80014524454909c8dbf498fc856ed359943cc34ea70bcccbb3999876f5251c
+#39 pushing layer sha256:1f5e49c555a06eb8086ec2db05af57bde2fd6e5b4da3b725924be3cec43cbc38 0.5s done
+#39 pushing layer sha256:3eda6298fa312a57faad4a9773657c8184dce81b04be2c4207d888b0b992d827 0.9s done
+#39 pushing layer sha256:b0b841a861c3a13fb58509817eaa1d8e02f8006f8aec3ecd813243803d79ff9d 0.9s done
+#39 pushing layer sha256:638d6f89f8c7a5d35241da9d8a97282d4559dc297e158056e27cdc3856d48e3d 0.9s done
+#39 pushing layer sha256:4b0509c947003be1323a5a38977845d73b4980e37144df3290035d51059ccb48 0.9s done
+#39 pushing layer sha256:b8abd284327bccf54ae1e3b5b5d7eb7f89f23f57356c7026700d8ca4aa12a5b4 1.1s done
+#39 pushing layer sha256:2c1ce468d9f3d941396801f6e3afc8921466650dd05430fe644cd3537713d27f 0.9s done
+#39 pushing layer sha256:972c082f62e4bdb6136919f5c338ca1741cb29e788564948a1a106e678c717a1 0.9s done
+#39 pushing layer sha256:51b73058977e19d1a9abb9c74940899af2356dc7982bfe0d7732cc73cd8dce77 0.9s done
+#39 pushing layer sha256:3611bcdd43f595e157729b8072769024b39b68b32fc07dcf8a3194ba0f7250f1 0.9s done
+#39 pushing layer sha256:59178eac7714521b27967f7e260d089f6ed578bae3d83d77016bf0de7d19569a 0.9s done
+#39 pushing layer sha256:f26ada1fa47daf9cc664f0ea7d5d08af331a00c59c83817ca4bb9bd344b6cc61 0.9s done
+#39 pushing layer sha256:116ab79576cb3fd5abcc62788168deb5bf670e3a92d66716189c4f8cd82a6ae0 0.9s done
+#39 pushing layer sha256:3e2cf8c86c847943646fd14002db47cc9c7892ef856839e30fcedbe8ec61a37f 0.9s done
+#39 pushing layer sha256:7293db16fa784a01f244f108c96648421cad96dc766137dba5d8f11c065679ca 0.9s done
+#39 pushing layer sha256:93637196046fc027b78371c712d9e27263d2baace30b5c1093095e43b3d1d334 0.9s done
+#39 pushing layer sha256:d6440e1e92f0569630098d6ab1f615b9123ced1cd0d5800e86f3155ee612c383 0.9s done
+#39 pushing layer sha256:87f4e2b50ba6006646e0bf3e34c4a7f8f3c6e6a17f03f26e8494314bb416dd91 0.9s done
+#39 pushing layer sha256:5c3136eecf5a4e18b23ef1452a5e13bc256b26c3eb7818ce3b5a5d99c8187feb 0.9s done
+#39 pushing layer sha256:20e8c748fd697d8ad40331a2c2ade72838305b27c16cd68fc3ff97e3aec16213 1.1s done
+#39 pushing layer sha256:7b3c2e9ca672dc37f967d088e0115f9cb1321e6769b522ba9b2ac47afa43cb88 1.1s done
+#39 pushing layer sha256:48a186133ad9c3898154b57327fed36c138600242b44e5597e412f7f2467112b 1.1s done
+#39 pushing layer sha256:1a35d1e9b33bd39cc580452d73ed7bda7d075e8767db0da6b1e1cde60e621d7c 1.1s done
+#39 pushing layer sha256:537222894e2d70e944c38df0cefd6214cbb3f69898c15589e9306e8b9401e33f 1.1s done
+#39 pushing layer sha256:032cc1b19c3330367247a8375f8891aad9ebd8de227211b34080abc8a1eb069b 1.1s done
+#39 pushing layer sha256:9264c964fc0e21ab69f9df7fd9738f114ef037846a751ccf0ba11ca6475339a4 1.1s done
+#39 pushing layer sha256:eaafde0eb8efccc96eec96f26999fb2ac968bc39da734cc34f9c8d0abb44ac06 1.1s done
+#39 pushing layer sha256:d564bcdbc1a85d3ea518e37b690910203f6017539648d4152c3be9804e7ef84f 1.1s done
+#39 pushing layer sha256:3a80014524454909c8dbf498fc856ed359943cc34ea70bcccbb3999876f5251c 1.1s done
+#39 pushing layer sha256:c004bd2a154449d7c90e210d2e2cba45984f401411e6fc632e20f66aaf03c7e8 1.4s done
+#39 pushing layers for registry.fly.io/bancosystem:deployment-01KPN9RGQ0DGTS1NAQ0W83DM7C@sha256:964990b73af053190cf40e957e885b1ae261581156e1af7de0e7a9eea847f869 1.5s done
+#39 pushing layer sha256:928592d3e4c987c424cb6469506775dee3828f3007289ca87f0218eff366f498 1.5s done
+#39 pushing manifest for registry.fly.io/bancosystem:deployment-01KPN9RGQ0DGTS1NAQ0W83DM7C@sha256:964990b73af053190cf40e957e885b1ae261581156e1af7de0e7a9eea847f869 0.0s done
+#39 DONE 4.9s
+
+#9 [internal] load build context
+--> Build Summary:  (​)
+[38;5;252m--> Building image done[0m
+image: registry.fly.io/bancosystem:deployment-01KPN9RGQ0DGTS1NAQ0W83DM7C
+image size: 342 MB
+Running bancosystem release_command: php artisan migrate --force
+Starting machine
+
+WARNING The app is not listening on the expected address and will not be reachable by fly-proxy.
+You can fix this by configuring your app to listen on the following addresses:
+  - 0.0.0.0:80
+Found these processes inside the machine with open listening sockets:
+  PROCESS        | ADDRESSES                              
+-----------------*----------------------------------------
+  /.fly/hallpass | [fdaa:34:33db:a7b:1d0:8fcb:6de0:2]:22  
+
+Checking DNS configuration for bancosystem.fly.dev
+WARNING: DNS verification failed: read udp 192.168.1.104:64212->8.8.8.8:53: i/o timeout
+Your app is deployed but DNS may take a few minutes to propagate globally

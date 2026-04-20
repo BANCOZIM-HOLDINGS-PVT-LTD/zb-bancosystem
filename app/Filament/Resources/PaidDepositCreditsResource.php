@@ -44,7 +44,7 @@ class PaidDepositCreditsResource extends Resource
         }
         
         // Also ensure they are at least approved or in a relevant state
-        return $query->whereIn('current_step', ['approved', 'processing', 'completed', 'account_opened']);
+        return $query->whereIn('current_step', ['awaiting_deposit_payment', 'approved', 'processing', 'completed', 'account_opened']);
     }
 
     public static function form(Form $form): Form
@@ -169,14 +169,28 @@ class PaidDepositCreditsResource extends Resource
                         
                         Notification::make()->title('Deposit Marked as Paid')->success()->send();
                         
-                        // Trigger delivery creation if not exists
-                        // We can call the ApplicationWorkflowService or just create it here
-                        // Let's use the DepositPaymentController logic or Workflow logic
-                        // Reusing code from DepositPaymentController logic would be best but it's in a controller.
-                        // We'll duplicate the simple creation logic here or call a service.
-                        // Let's use the loop from workflow service manually
-                        
+                        // 1. Create Purchase Order(s)
+                        try {
+                            $poService = app(\App\Services\PurchaseOrderService::class);
+                            $poService->createFromApplication($record);
+                        } catch (\Exception $e) {
+                            Notification::make()->title('PO Creation Failed')->body($e->getMessage())->danger()->send();
+                        }
+
+                        // 2. Trigger delivery creation if not exists
                         self::createDeliveryTracking($record);
+
+                         // 3. Send Confirmation SMS
+                        try {
+                             $smsService = app(\App\Services\SMSService::class);
+                             $phone = $record->form_data['formResponses']['mobile'] ?? $record->form_data['formResponses']['phoneNumber'] ?? null;
+                             if ($phone) {
+                                 $msg = "Payment Received! Your BancoZim order ({$record->reference_code}) is now being processed. You will be notified when it is dispatched.";
+                                 $smsService->sendSMS($phone, $msg);
+                             }
+                        } catch (\Exception $e) {
+                             // Silently log or notify admin
+                        }
                     }),
                     
                 // Action to initiate delivery if paid but missing
