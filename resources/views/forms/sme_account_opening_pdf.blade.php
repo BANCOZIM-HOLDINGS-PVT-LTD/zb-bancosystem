@@ -166,6 +166,90 @@
             padding: 2px;
             background: white;
         }
+
+        /* Invoice Styles */
+        .invoice-container {
+            padding: 50px 35px;
+            font-family: Arial, Helvetica, sans-serif;
+            min-height: 275mm;
+            position: relative;
+        }
+        .invoice-logo-header {
+            text-align: right;
+            margin-bottom: 25px;
+        }
+        .invoice-logo-header img {
+            max-width: 130px;
+            height: auto;
+        }
+        .invoice-logo-text {
+            color: #e63946;
+            font-size: 32px;
+            font-weight: bold;
+            font-style: italic;
+            font-family: 'Times New Roman', serif;
+        }
+        .invoice-title-main {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 25px 0 35px 0;
+        }
+        .invoice-info-table {
+            width: 75%;
+            margin: 0 auto 35px auto;
+            border-collapse: collapse;
+        }
+        .invoice-info-table td {
+            padding: 8px 12px;
+            border: 1px solid #000;
+            font-size: 14px;
+        }
+        .invoice-info-table td:first-child {
+            width: 130px;
+            font-weight: bold;
+        }
+        .invoice-product-table {
+            width: 70%;
+            margin: 35px auto;
+            border-collapse: collapse;
+        }
+        .invoice-product-table th,
+        .invoice-product-table td {
+            padding: 12px;
+            border: 1px solid #000;
+            text-align: center;
+            font-size: 14px;
+        }
+        .invoice-product-table th {
+            font-weight: bold;
+            background-color: #f5f5f5;
+            font-size: 13px;
+        }
+        .invoice-product-table td {
+            height: 45px;
+        }
+        .invoice-total-row td {
+            font-weight: bold;
+            font-size: 15px;
+        }
+        .invoice-payment-section {
+            margin-top: 45px;
+            font-size: 14px;
+        }
+        .invoice-payment-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+        .invoice-payment-details {
+            margin-left: 25px;
+        }
+        .invoice-payment-details p {
+            margin: 6px 0;
+        }
     </style>
 </head>
 <body>
@@ -807,6 +891,97 @@
     
     {{-- Include Document Attachments --}}
     @include('forms.partials.pdf_attachments')
+</div>
+
+<!-- PAGE 4: INVOICE -->
+<div class="page">
+    <div class="invoice-container">
+        {{-- Logo Header --}}
+        <div class="invoice-logo-header">
+            @if(file_exists(public_path('assets/images/bancozim.png')))
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="Bancozim Logo">
+            @else
+                <div class="invoice-logo-text">BancoZim</div>
+            @endif
+        </div>
+
+        {{-- Invoice Title --}}
+        <div class="invoice-title-main">INVOICE</div>
+
+        {{-- Invoice Info Table --}}
+        <table class="invoice-info-table">
+            <tr>
+                <td>DATE</td>
+                <td>{{ date('d/m/Y') }}</td>
+            </tr>
+            <tr>
+                <td>TO</td>
+                <td>QUPA MICROFINANCE</td>
+            </tr>
+            <tr>
+                <td>On Behalf Of</td>
+                <td>{{ $registeredName ?? $tradingName ?? $firstName ?? '' }}</td>
+            </tr>
+            <tr>
+                <td>INVOICE NO</td>
+                <td>{{ $incorporationNumber ?? $nationalIdNumber ?? $idNumber ?? '' }}</td>
+            </tr>
+        </table>
+
+        {{-- Product Table --}}
+        <table class="invoice-product-table">
+            <thead>
+                <tr>
+                    <th style="width: 20%; text-align: left;">PRODUCT CODE</th>
+                    <th style="width: 50%; text-align: left;">PRODUCT DESCRIPTION</th>
+                    <th style="width: 15%; text-align: center;">QUANTITY</th>
+                    <th style="width: 15%; text-align: right;">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if(isset($lineItems) && count($lineItems) > 0)
+                    @foreach($lineItems as $item)
+                        <tr>
+                            <td>{{ $item['code'] ?? '' }}</td>
+                            <td style="text-align: left; padding-left: 10px;">
+                                {{ $item['name'] }} @if(!empty($item['specification'])) <br><span style="font-size: 8pt; color: #555;">{{ $item['specification'] }}</span> @endif
+                            </td>
+                            <td style="text-align: center;">{{ $item['quantity'] ?? 1 }}</td>
+                            <td style="text-align: right;">
+                                {{ isset($item['unit_price']) ? number_format($item['unit_price'] * ($item['quantity'] ?? 1), 2) : '-' }}
+                            </td>
+                        </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td>{{ $productCode ?? '' }}</td>
+                        <td style="text-align: left; padding-left: 10px;">{{ $creditFacilityType ?? $productName ?? $business ?? $purposeAsset ?? $loanPurpose ?? $category ?? '' }}</td>
+                        <td style="text-align: center;">1</td>
+                        <td style="text-align: right;">-</td>
+                    </tr>
+                @endif
+                
+                {{-- Total Row --}}
+                <tr class="invoice-total-row">
+                    <td colspan="3" style="text-align: right; padding-right: 15px;">TOTAL DUE</td>
+                    <td style="background-color: #e8f5e9; text-align: right;">
+                        ${{ number_format((float)str_replace(',', '', $productAmount ?? $finalPrice ?? $netLoan ?? $loanAmount ?? $amount ?? $sellingPrice ?? '0'), 2) }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        {{-- Method of Payment Section --}}
+        <div class="invoice-payment-section">
+            <div class="invoice-payment-title">METHOD OF PAYMENT :</div>
+            <div class="invoice-payment-details">
+                <p>Please remit amount to the following bank account</p>
+                <p><strong>Account Name</strong> : BancoZim Holdings (Pvt) Ltd</p>
+                <p><strong>Bank & Branch</strong> : Z.B-Westend</p>
+                <p><strong>Account No</strong> : 4151092423405</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 </body>

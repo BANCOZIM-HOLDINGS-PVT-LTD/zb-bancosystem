@@ -1036,7 +1036,9 @@
                                 {{ $item['name'] }} @if(!empty($item['specification'])) <br><span style="font-size: 8pt; color: #555;">{{ $item['specification'] }}</span> @endif
                             </td>
                             <td style="text-align: center;">{{ $item['quantity'] ?? 1 }}</td>
-                            <td style="text-align: right;">-</td>
+                            <td style="text-align: right;">
+                                {{ isset($item['unit_price']) ? number_format($item['unit_price'] * ($item['quantity'] ?? 1), 2) : '-' }}
+                            </td>
                         </tr>
                     @endforeach
                 @else

@@ -1382,13 +1382,15 @@ class PDFGeneratorService implements PDFGeneratorInterface
             // Log logic for strict debugging
             $intent = $formData['intent'] ?? $applicationState->channel ?? '';
             
+            // NEW: Enhanced Package Detection (Works for WhatsApp where intent might be 'whatsapp')
+            // Prioritize MicrobizPackage if we have a packageId/scaleId
+            $packageId = $formData['selectedScale']['id'] ?? $formData['scaleId'] ?? null;
+            $package = $packageId ? MicrobizPackage::with(['items', 'subcategory'])->find($packageId) : null;
+
             // MicroBiz or Service Logic
-            if ($intent === 'microBiz' || 
+            if ($package || $intent === 'microBiz' || 
                 in_array($formData['subcategory'] ?? '', ['License Courses', 'Driving School', 'Zimparks', 'School Fees']) ||
                 str_contains(strtolower($intent), 'service')) {
-                
-                $packageId = $formData['selectedScale']['id'] ?? $formData['scaleId'] ?? null;
-                $package = MicrobizPackage::with(['items', 'subcategory'])->find($packageId);
                 
                 if ($package) {
                     $productDescription = $package->generated_description;
@@ -1409,7 +1411,8 @@ class PDFGeneratorService implements PDFGeneratorInterface
                             'name' => $item->name,
                             'quantity' => $item->pivot->quantity ?? 1,
                             'code' => $code,
-                            'specification' => $item->specification ?? '', // Add spec if available
+                            'specification' => $item->specification ?? '',
+                            'unit_price' => $item->selling_price ?? 0, // NEW: Include individual item price
                             'is_package' => true
                         ];
                     }
@@ -1431,6 +1434,7 @@ class PDFGeneratorService implements PDFGeneratorInterface
                         'quantity' => 1, // Usually 1 for single selection
                         'code' => $product->product_code ?? '',
                         'specification' => $product->specification ?? '',
+                        'unit_price' => $product->base_price ?? 0, // NEW: Include product price
                         'is_package' => false
                     ];
                 } else {
