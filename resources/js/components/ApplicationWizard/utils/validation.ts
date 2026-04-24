@@ -1238,6 +1238,10 @@ export const validateStep = (step: string, data: Partial<WizardData>): Validatio
       // Summary step doesn't need validation as it's just displaying information
       validationResult = { isValid: true, errors: [] };
       break;
+    case 'payment':
+      // Payment step is handled by Paynow, validation occurs on callback
+      validationResult = { isValid: true, errors: [] };
+      break;
     default:
       validationResult = { isValid: true, errors: [] };
   }

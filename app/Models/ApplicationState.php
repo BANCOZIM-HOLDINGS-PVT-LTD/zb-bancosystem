@@ -36,6 +36,7 @@ class ApplicationState extends Model
         'check_result',
         'status',
         'approved_at',
+        'payment_type',
     ];
 
     protected $casts = [
@@ -103,6 +104,10 @@ class ApplicationState extends Model
         $year = $this->created_at ? $this->created_at->format('Y') : date('Y');
         $id = str_pad($this->id, 6, '0', STR_PAD_LEFT);
 
+        if ($this->isCashOrder()) {
+            return "CASH{$year}{$id}";
+        }
+
         $type = $this->getApplicationType();
         $prefix = match ($type) {
             'ssb' => 'SSB',
@@ -113,6 +118,11 @@ class ApplicationState extends Model
         };
 
         return "{$prefix}{$year}{$id}";
+    }
+
+    public function isCashOrder(): bool
+    {
+        return $this->payment_type === 'cash';
     }
 
     public function isSSBApplication(?array $formData = null): bool

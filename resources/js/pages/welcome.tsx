@@ -49,10 +49,11 @@ const PRODUCT_INTENTS = [
 export default function Welcome({ hasApplications, hasCompletedApplications, referralCode, agentId, agentName }: WelcomeProps) {
     const { auth } = usePage<SharedData>().props;
 
-    // Steps: language -> intent -> currency (credit-only flow)
-    const [currentStep, setCurrentStep] = useState<'language' | 'intent' | 'currency'>('language');
+    // Steps: language -> paymentMethod -> intent -> currency
+    const [currentStep, setCurrentStep] = useState<'language' | 'paymentMethod' | 'intent' | 'currency'>('language');
     const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
     const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'credit' | 'cash'>('credit');
     const [lastSelectedIntent, setLastSelectedIntent] = useState<string | null>(null);
 
     // Resume application state
@@ -87,7 +88,11 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
 
     const handleLanguageSelect = (language: string) => {
         setSelectedLanguage(language);
-        // Go directly to intent selection (credit-only flow)
+        setCurrentStep('paymentMethod');
+    };
+
+    const handlePaymentMethodSelect = (method: 'credit' | 'cash') => {
+        setSelectedPaymentMethod(method);
         setCurrentStep('intent');
     };
 
@@ -109,18 +114,18 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
         setSelectedCurrency(currency);
         if (!lastSelectedIntent) return;
 
-        // Build route params for credit flow
+        // Build route params
         const params: Record<string, string> = {
             language: selectedLanguage,
             currency: currency,
-            intent: lastSelectedIntent
+            intent: lastSelectedIntent,
+            paymentType: selectedPaymentMethod
         };
 
         if (referralCode) {
             params.ref = referralCode;
         }
 
-        // Credit flow only
         router.visit(route('application.wizard', params));
     };
 
@@ -232,6 +237,67 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                 </div>
                             )}
 
+                            {currentStep === 'paymentMethod' && (
+                                <div className="space-y-8">
+                                    <div className="text-center">
+                                        <h1 className="text-3xl font-bold mb-4">
+                                            How would you like to pay?
+                                        </h1>
+                                        <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
+                                            Select your preferred payment facility
+                                        </p>
+                                        <button
+                                            onClick={() => setCurrentStep('language')}
+                                            className="mt-4 text-sm text-emerald-600 hover:text-emerald-700"
+                                        >
+                                            ← Back
+                                        </button>
+                                    </div>
+
+                                    <div className="grid gap-4 sm:grid-cols-2 max-w-2xl mx-auto">
+                                        <button
+                                            onClick={() => handlePaymentMethodSelect('credit')}
+                                            className="group p-6 text-left rounded-lg border border-[#e3e3e0] transition-all hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-lg dark:border-[#3E3E3A] dark:hover:border-emerald-500 dark:hover:bg-emerald-950/20"
+                                        >
+                                            <div className="flex items-start space-x-4">
+                                                <div className="p-3 bg-emerald-100 dark:bg-emerald-900 rounded-full flex-shrink-0">
+                                                    <CreditCard className="h-6 w-6 text-emerald-600" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h3 className="text-lg font-semibold mb-2 group-hover:text-emerald-600">
+                                                        Buy Now Pay Later
+                                                    </h3>
+                                                    <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                                        Get products on credit and pay in installments.
+                                                    </p>
+                                                </div>
+                                                <ChevronRight className="h-5 w-5 text-gray-400 flex-shrink-0 group-hover:text-emerald-600" />
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            onClick={() => handlePaymentMethodSelect('cash')}
+                                            className="group p-6 text-left rounded-lg border border-[#e3e3e0] transition-all hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-lg dark:border-[#3E3E3A] dark:hover:border-emerald-500 dark:hover:bg-emerald-950/20"
+                                        >
+                                            <div className="flex items-start space-x-4">
+                                                <div className="p-3 bg-emerald-100 dark:bg-emerald-900 rounded-full flex-shrink-0">
+                                                    <DollarSign className="h-6 w-6 text-emerald-600" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h3 className="text-lg font-semibold mb-2 group-hover:text-emerald-600">
+                                                        Full Cash Payment
+                                                    </h3>
+                                                    <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
+                                                        Pay in full now and get faster delivery.
+                                                    </p>
+                                                </div>
+                                                <ChevronRight className="h-5 w-5 text-gray-400 flex-shrink-0 group-hover:text-emerald-600" />
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                             {currentStep === 'intent' && (
                                 <div className="space-y-8">
                                     <div className="text-center">
@@ -242,7 +308,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                             Choose the category that best fits your needs
                                         </p>
                                         <button
-                                            onClick={() => setCurrentStep('language')}
+                                            onClick={() => setCurrentStep('paymentMethod')}
                                             className="mt-4 text-sm text-emerald-600 hover:text-emerald-700"
                                         >
                                             ← Back

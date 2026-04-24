@@ -69,6 +69,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     // Determine if this is a personal products or MicroBiz application
     const isPersonalProducts = data.intent === 'hirePurchase' || data.intent === 'personalGadgets';
     const isMicroBiz = data.intent === 'microBiz' || data.intent === 'smeBiz';
+    const isCash = data.paymentType === 'cash';
 
 
 
@@ -209,6 +210,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     salesData: []
                 },
                 selectedScale: null,
+                paymentType: isCash ? 'cash' : 'credit'
             });
             return;
         }
@@ -259,7 +261,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     subcategory: selectedSubcategory?.name || 'Fees and Licensing',
                     business: business.name,
                     scale: scale.name,
-                    amount: grossLoan,
+                    amount: isCash ? amount : grossLoan,
                     creditTerm: null, // Will be selected in CreditTermSelection step
                     monthlyPayment: 0, // Will be calculated later
                     // New fields with IDs for better tracking
@@ -268,10 +270,10 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     scaleId: scale.id,
                     categoryId: selectedCategory?.id,
                     // Loan fields
-                    loanAmount: grossLoan,
+                    loanAmount: isCash ? amount : grossLoan,
                     netLoan: amount,
-                    grossLoan: grossLoan,
-                    interestRate: '96%',
+                    grossLoan: isCash ? amount : grossLoan,
+                    interestRate: isCash ? '0%' : '96%',
                     firstPaymentDate: null,
                     lastPaymentDate: null,
                     // Product details
@@ -287,6 +289,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                         custom_price: scale.custom_price
                     },
                     color: null,
+                    paymentType: isCash ? 'cash' : 'credit'
                 });
             }
             return;
@@ -322,6 +325,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         setSelectedTermMonths(null); // Reset term selection
         setValidationError(''); // Clear validation error
 
+        if (isCash) {
+            handleCashComplete(amount, scale);
+            return;
+        }
+
         // For Zimparks and MicroBiz, stay on scales view to show description
         const isZimparks = selectedBusiness?.name === 'Zimparks Vacation Package';
 
@@ -334,7 +342,36 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         }
     };
 
+    const handleCashComplete = (amount: number, scale?: any) => {
+        const meSystemFee = includesMESystem ? parseFloat((amount * ME_SYSTEM_PERCENTAGE).toFixed(2)) : 0;
+        const trainingFee = includesTraining ? parseFloat((amount * TRAINING_PERCENTAGE).toFixed(2)) : 0;
+        const finalPrice = amount + meSystemFee + trainingFee;
+
+        onNext({
+            category: selectedCategory?.name,
+            subcategory: selectedSubcategory?.name,
+            business: selectedBusiness?.name,
+            scale: scale?.name || selectedScale?.name,
+            amount: finalPrice,
+            finalPrice: finalPrice,
+            productId: selectedBusiness?.id,
+            productName: selectedBusiness?.name,
+            scaleId: scale?.id || (selectedScale as any)?.id,
+            categoryId: selectedCategory?.id,
+            includesMESystem,
+            meSystemFee,
+            includesTraining,
+            trainingFee,
+            productCode: selectedBusiness?.product_code,
+            paymentType: 'cash'
+        });
+    };
+
     const handleProceedToTerms = () => {
+        if (isCash) {
+            handleCashComplete(finalAmount);
+            return;
+        }
         setCurrentView('terms');
     };
 
@@ -454,6 +491,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 id: selectedScale.id?.toString(),
                 name: selectedScale.name
             } : undefined,
+            paymentType: 'credit'
         });
     };
 
@@ -529,6 +567,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         // For MicroBiz/Zimparks, validation happens before this step or logic is different, 
         // but generally we proceed to terms or show package details.
         // The buttons handling this call ensure we have selections.
+
+        if (isCash) {
+            handleCashComplete(finalAmount);
+            return;
+        }
 
         setCurrentView('terms');
     };
@@ -806,14 +849,14 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                     }
                                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg"
                                 >
-                                    Continue to Payment Terms
+                                    {isCash ? 'Proceed to Delivery' : 'Continue to Payment Terms'}
                                     <ChevronRight className="ml-2 h-5 w-5" />
                                 </Button>
 
                                 <p className="text-xs text-gray-500 text-center mt-3">
                                     {!selectedScale && selectedBusiness.scales && selectedBusiness.scales.length > 0
                                         ? "Please select an option to continue"
-                                        : "Next: Choose your repayment plan"
+                                        : (isCash ? "Next: Provide your delivery address" : "Next: Choose your repayment plan")
                                     }
                                 </p>
                             </div>
@@ -967,7 +1010,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                 onClick={handleProceedToTerms}
                                                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
                                             >
-                                                Agree & Continue
+                                                {isCash ? 'Proceed to Delivery' : 'Agree & Continue'}
                                                 <ChevronRight className="ml-2 h-4 w-4" />
                                             </Button>
                                         </div>

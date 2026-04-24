@@ -38,53 +38,81 @@ class DepositPaymentController extends Controller
         $referenceCode = $request->reference_code;
         $paymentMethod = $request->payment_method;
 
-        // Find the application
+        // Get application
         $application = ApplicationState::where('reference_code', $referenceCode)->first();
 
         if (!$application) {
             return response()->json([
                 'success' => false,
-                'message' => 'Application not found',
+                'message' => "Application with reference {$referenceCode} not found",
             ], 404);
         }
 
-        // Check if application is approved and PDC
+        // Determine payment type with better priority
         $formData = is_array($application->form_data) ? $application->form_data : json_decode($application->form_data, true);
+
+        // Priority: 1. URL/Request param, 2. Database column, 3. Form Data, 4. Default 'credit'
+        $paymentType = $request->input('payment_type') 
+            ?? $application->payment_type 
+            ?? $formData['paymentType'] 
+            ?? 'credit';
+
         $creditType = $formData['creditType'] ?? null;
 
-        if (!$creditType || (!str_starts_with($creditType, 'PDC') && $creditType !== 'PDC')) {
+        // Log for debugging
+        Log::info('Payment initiation check', [
+            'ref' => $referenceCode,
+            'detected_type' => $paymentType,
+            'db_type' => $application->payment_type,
+            'form_type' => $formData['paymentType'] ?? 'not set'
+        ]);
+
+        if ($paymentType !== 'cash' && (!$creditType || (!str_starts_with($creditType, 'PDC') && $creditType !== 'PDC'))) {
             return response()->json([
                 'success' => false,
-                'message' => 'This application does not require a deposit payment (Credit Type: ' . ($creditType ?? 'None') . ')',
+                'message' => "This application does not require a payment at this stage (Detected Type: {$paymentType})",
             ], 400);
         }
 
-        // Check if deposit is already paid
+        // Check if payment is already paid
         if ($application->deposit_paid) {
             return response()->json([
                 'success' => false,
-                'message' => 'Deposit has already been paid for this application',
+                'message' => 'Payment has already been received for this application',
             ], 400);
         }
 
-        // Get deposit amount (assuming it's stored in metadata or calculate it)
-        $depositAmount = $application->deposit_amount;
+        // Get amount (deposit for credit, total for cash)
+        $amount = 0;
+        if ($paymentType === 'cash') {
+            $amount = $formData['finalPrice'] ?? $formData['amount'] ?? 0;
+            // Update the model if it wasn't set
+            if (!$application->deposit_amount || $application->deposit_amount <= 0) {
+                $application->deposit_amount = $amount;
+                $application->payment_type = 'cash';
+                $application->save();
+            }
+        } else {
+            $amount = $application->deposit_amount;
+        }
 
-        if (!$depositAmount || $depositAmount <= 0) {
+        if (!$amount || $amount <= 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'Deposit amount not found or invalid',
+                'message' => 'Payment amount not found or invalid',
             ], 400);
         }
 
         try {
             // Create Paynow payment
-            $email = $formData['formResponses']['email'] ?? 'no-email@example.com';
-            $description = "Deposit Payment for Application {$referenceCode}";
+            $email = $formData['formResponses']['email'] ?? $formData['formResponses']['emailAddress'] ?? 'no-email@example.com';
+            $description = $paymentType === 'cash' 
+                ? "Full Payment for Order {$referenceCode}"
+                : "Deposit Payment for Application {$referenceCode}";
 
             $paynowResult = $this->paynowService->createPayment(
                 $referenceCode,
-                $depositAmount,
+                $amount,
                 $email,
                 $description
             );
@@ -94,9 +122,9 @@ class DepositPaymentController extends Controller
                 $application->deposit_payment_method = $paymentMethod;
                 $application->save();
 
-                Log::info('Deposit payment initiated', [
+                Log::info('Payment initiated', [
                     'reference_code' => $referenceCode,
-                    'amount' => $depositAmount,
+                    'amount' => $amount,
                     'method' => $paymentMethod,
                 ]);
 
@@ -162,17 +190,22 @@ class DepositPaymentController extends Controller
         }
 
         if ($status === 'paid' || $status === 'delivered') {
-            // Mark deposit as paid
+            $paymentType = $application->payment_type;
+            $nextStatus = $paymentType === 'cash' ? 'paid' : 'processing';
+
+            // Mark as paid
             $application->update([
                 'deposit_paid' => true,
                 'deposit_paid_at' => now(),
                 'deposit_transaction_id' => $paynowReference,
-                'current_step' => 'processing', // Move to processing
+                'status' => $nextStatus,
+                'current_step' => 'processing',
             ]);
 
-            Log::info('Deposit payment successful', [
+            Log::info('Payment successful', [
                 'reference_code' => $referenceCode,
                 'transaction_id' => $paynowReference,
+                'payment_type' => $paymentType
             ]);
 
             // 1. Create Purchase Order(s)
@@ -202,8 +235,8 @@ class DepositPaymentController extends Controller
                 }
 
                 // Determine address
-                $address = $responses['residentialAddress'] ?? $responses['businessAddress'] ?? 'Address requires update';
-                $city = $responses['city'] ?? $responses['town'] ?? '';
+                $address = $responses['residentialAddress'] ?? $responses['businessAddress'] ?? $formData['deliveryDetails']['deliveryAddress'] ?? 'Address requires update';
+                $city = $responses['city'] ?? $responses['town'] ?? $formData['deliveryDetails']['city'] ?? '';
                 if ($city) {
                     $address .= ", $city";
                 }
@@ -224,11 +257,12 @@ class DepositPaymentController extends Controller
                     'status_history' => [
                         [
                             'status' => 'processing',
-                            'notes' => 'Deposit payment confirmed. Order processing started.',
+                            'notes' => $paymentType === 'cash' ? 'Full cash payment confirmed. Order processing started.' : 'Deposit payment confirmed. Order processing started.',
                             'updated_at' => now()->toISOString(),
                             'metadata' => [
                                 'payment_ref' => $paynowReference,
-                                'amount' => $application->deposit_amount
+                                'amount' => $application->deposit_amount,
+                                'payment_type' => $paymentType
                             ]
                         ]
                     ]
@@ -268,6 +302,14 @@ class DepositPaymentController extends Controller
         }
 
         return response('OK', 200);
+    }
+
+    /**
+     * Get deposit payment status for an application
+     */
+    public function checkStatus(string $referenceCode)
+    {
+        return $this->getPaymentStatus($referenceCode);
     }
 
     /**

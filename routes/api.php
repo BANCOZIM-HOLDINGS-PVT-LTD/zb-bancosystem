@@ -398,6 +398,12 @@ Route::post('/paynow/webhook', function (Request $request) {
     }
 })->name('paynow.webhook');
 
+// Deposit & Full Payment API routes
+Route::prefix('deposit')->group(function () {
+    Route::post('/initiate', [\App\Http\Controllers\DepositPaymentController::class, 'initiatePayment']);
+    Route::get('/status/{referenceCode}', [\App\Http\Controllers\DepositPaymentController::class, 'checkStatus']);
+});
+
 // Paynow Routes
 Route::post('/paynow/mobile-initiate', [App\Http\Controllers\PaynowController::class, 'initiateMobile']);
 Route::post('/paynow/status', [App\Http\Controllers\PaynowController::class, 'checkStatus']);

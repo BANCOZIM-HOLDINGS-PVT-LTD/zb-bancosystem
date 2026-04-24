@@ -45,6 +45,8 @@ interface ApplicationData {
     destinationName?: string;
     // For SMS notification
     currency?: string;
+    paymentType?: 'credit' | 'cash';
+    finalPrice?: number;
     formResponses?: {
         nationalIdNumber?: string;
         mobile?: string;
@@ -115,23 +117,18 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
     });
 
     const handleSubmit = async () => {
-        /* 
-        // SMS Notification Logic Removed
-        // The backend now handles all SMS notifications upon final submission to prevent duplicates.
-        // Previously, this triggered a "You are about to apply..." message which users found confusing
-        // when followed immediately by the "Thank you for applying" message.
-        */
-
         // Generate invoice number from national ID (remove dashes) - Needed for submission data
         const nationalId = data.formResponses?.nationalIdNumber || data.idNumber || '';
         const invoiceNumber = nationalId.replace(/-/g, '');
 
         const submissionData = {
-            formId,
-            proceedToForm: true,
+            formId: data.paymentType === 'cash' ? 'cash_order' : formId,
+            proceedToForm: data.paymentType !== 'cash',
             hasAccount: data.hasAccount,
             wantsAccount: data.wantsAccount,
             accountType: data.accountType,
+            paymentType: data.paymentType,
+            payment_type: data.paymentType, // Explicitly include both for backend flexibility
             invoiceNumber // Include invoice number in submission
         };
 
@@ -378,37 +375,40 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                     </Card>
                 )}
 
-                {(data.amount || data.totalLoanAmount) && (
+                {(data.amount || data.totalLoanAmount || data.paymentType === 'cash') && (
                     <Card className="p-6">
                         <div className="flex items-center mb-4">
                             <CreditCard className="h-6 w-6 text-emerald-600 mr-3" />
-                            <h3 className="text-lg font-semibold">Credit Terms</h3>
+                            <h3 className="text-lg font-semibold">
+                                {data.paymentType === 'cash' ? 'Payment Details' : 'Credit Terms'}
+                            </h3>
                         </div>
                         <div className="space-y-3">
-                            {data.creditType && (
-                                <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Credit Type</p>
-                                    <p className="font-medium">
-                                        {data.creditType === 'ZDC' ? 'Zero Deposit Credit' :
+                            <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Payment Method</p>
+                                <p className="font-medium">
+                                    {data.paymentType === 'cash' ? 'Full Cash Payment' :
+                                        data.creditType === 'ZDC' ? 'Zero Deposit Credit' :
                                             data.creditType === 'PDC' ? 'Paid Deposit Credit' :
                                                 data.creditType}
-                                    </p>
-                                </div>
-                            )}
+                                </p>
+                            </div>
 
-                            {/* Loan Amount Breakdown */}
+                            {/* Amount Breakdown */}
                             <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Loan Amount Breakdown:</p>
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {data.paymentType === 'cash' ? 'Total Amount Breakdown:' : 'Loan Amount Breakdown:'}
+                                </p>
 
                                 {/* Base Product Amount */}
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600 dark:text-gray-400">Product/Business</span>
                                     <span className="font-medium">
                                         ${(() => {
-                                            const netLoan = data.netLoan || data.amount || 0;
+                                            const total = data.finalPrice || data.netLoan || data.amount || 0;
                                             const meSystem = data.meSystemFee || 0;
                                             const training = data.trainingFee || 0;
-                                            const base = netLoan - meSystem - training;
+                                            const base = total - meSystem - training;
                                             return base.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                                         })()}
                                     </span>
@@ -440,18 +440,18 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                     </div>
                                 )}
 
-                                {/* Net Loan Line */}
+                                {/* Final Total for Cash OR Net Loan for Credit */}
                                 <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
                                     <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                        Net Loan (selling price)
+                                        {data.paymentType === 'cash' ? 'Total Price' : 'Net Loan (selling price)'}
                                     </span>
-                                    <span className="font-bold text-lg text-gray-900 dark:text-gray-100">
-                                        ${(data.netLoan || data.amount)?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    <span className={`font-bold text-lg ${data.paymentType === 'cash' ? 'text-emerald-600 text-xl' : 'text-gray-900 dark:text-gray-100'}`}>
+                                        ${(data.finalPrice || data.netLoan || data.amount)?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                 </div>
 
-                                {/* Bank Admin Fee */}
-                                {data.bankAdminFee && (
+                                {/* Bank Admin Fee - Credit Only */}
+                                {data.paymentType !== 'cash' && data.bankAdminFee && (
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-600 dark:text-gray-400">Bank Admin Fee (6%)</span>
                                         <span className="font-medium text-blue-600">
@@ -460,18 +460,20 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                     </div>
                                 )}
 
-                                {/* Gross Loan Line */}
-                                <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-                                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                        Gross Loan (incl. 6% bank admin fee)
-                                    </span>
-                                    <span className="font-bold text-xl text-emerald-600">
-                                        ${(data.grossLoan || data.loanAmount || data.amount)?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                </div>
+                                {/* Gross Loan - Credit Only */}
+                                {data.paymentType !== 'cash' && (
+                                    <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                            Gross Loan (incl. 6% bank admin fee)
+                                        </span>
+                                        <span className="font-bold text-xl text-emerald-600">
+                                            ${(data.grossLoan || data.loanAmount || data.amount)?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
 
-                            {data.creditTerm && data.monthlyPayment && (
+                            {data.paymentType !== 'cash' && data.creditTerm && data.monthlyPayment && (
                                 <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-200 dark:border-gray-700">
                                     <div>
                                         <p className="text-sm text-gray-500 dark:text-gray-400">Term</p>
@@ -506,12 +508,12 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                         disabled={loading}
                         className="bg-emerald-600 hover:bg-emerald-700 px-8"
                     >
-                        {loading ? 'Loading...' : 'Proceed to Form'}
+                        {loading ? 'Loading...' : (data.paymentType === 'cash' ? 'Proceed to Payment' : 'Proceed to Form')}
                     </Button>
                 </div>
 
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                    By clicking the "Proceed to Form" button, you agree to our{' '}
+                    By clicking the "{data.paymentType === 'cash' ? 'Proceed to Payment' : 'Proceed to Form'}" button, you agree to our{' '}
                     <a
                         href="/terms-and-conditions"
                         target="_blank"

@@ -138,12 +138,18 @@ class ApplicationWizardController extends Controller
         $intent = $request->query('intent');
         $language = $request->query('language', 'en');
         $currency = $request->query('currency', 'USD');
+        $paymentType = $request->query('paymentType', 'credit');
         $sessionId = $request->query('session_id');
         $referralCode = $request->query('ref');
 
         $initialData = [];
         $initialStep = 'product'; // Start at product step
         $agentId = null;
+
+        // If paymentType is provided, add it to initial data
+        if ($paymentType) {
+            $initialData['paymentType'] = $paymentType;
+        }
 
         // Handle resume flow: load saved state from database
         $resumeSessionId = $request->query('session');

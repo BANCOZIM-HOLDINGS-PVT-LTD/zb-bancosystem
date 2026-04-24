@@ -97,6 +97,7 @@ class StateManager
                             'current_step' => $step,
                             'form_data' => $data,
                             'metadata' => $metadata,
+                            'payment_type' => $data['paymentType'] ?? $data['payment_type'] ?? $existingState->payment_type ?? 'credit',
                             'expires_at' => $this->getExpirationTime($channel),
                             'last_activity' => now(),
                         ]);
@@ -112,6 +113,7 @@ class StateManager
                         'current_step' => $step,
                         'form_data' => $data,
                         'metadata' => $metadata,
+                        'payment_type' => $data['paymentType'] ?? $data['payment_type'] ?? 'credit',
                         'expires_at' => $this->getExpirationTime($channel),
                         'last_activity' => now(),
                     ]);

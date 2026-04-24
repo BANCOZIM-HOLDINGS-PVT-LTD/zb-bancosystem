@@ -15,6 +15,7 @@ import DocumentUploadStep from '../DocumentUpload/DocumentUploadStep';
 import RegistrationPrompt from './steps/RegistrationPrompt';
 import HousePlanApprovalStep from './steps/HousePlanApprovalStep';
 import ConstructionDetailsStep from './steps/ConstructionDetailsStep';
+import PaymentStep from './steps/PaymentStep';
 import { StateManager } from './services/StateManager';
 import { LocalStateManager } from './services/LocalStateManager';
 import { validateStep, ValidationResult, ValidationError, formatFieldName } from './utils/validation';
@@ -481,7 +482,10 @@ export interface WizardData {
     approvalDate?: string;
     approvedBy?: string;
     rejectionReason?: string;
-    // Flag to explicitly track Core House flow
+    // Payment type (credit or cash)
+    paymentType?: 'credit' | 'cash';
+
+    // Core House flow flag
     isCoreHouseFlow?: boolean;
 }
 
@@ -505,6 +509,7 @@ const allSteps = [
     'employer', // MOVED: Now after registration
     'account', // MOVED: Now after employer
     'summary',
+    'payment', // NEW: Full cash payment step
     'form',
     'documents'
 ];
@@ -538,7 +543,10 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             localStateManager.clearLocalState();
             return {
                 currentStep: step,
-                wizardData: initialData,
+                wizardData: {
+                    ...initialData,
+                    paymentType: (urlParams.get('paymentType') as 'credit' | 'cash') || initialData.paymentType || 'credit'
+                },
                 sessionId: urlSessionId || stateManager.generateSessionId()
             };
         }
@@ -550,7 +558,10 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             localStateManager.clearLocalState();
             return {
                 currentStep: initialStep,
-                wizardData: initialData,
+                wizardData: {
+                    ...initialData,
+                    paymentType: (urlParams.get('paymentType') as 'credit' | 'cash') || initialData.paymentType || 'credit'
+                },
                 sessionId: urlSessionId || stateManager.generateSessionId()
             };
         }
@@ -622,8 +633,33 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
     const authenticatedUser = props.auth?.user;
 
     // Create filtered steps based on conditions
-    // Filter out depositPayment if credit type is not PDC
     const steps = React.useMemo(() => {
+        const isCashFlow = wizardData.paymentType === 'cash';
+
+        if (isCashFlow) {
+            // "Express" flow: Product -> Delivery -> Summary -> Payment
+            let cashSteps = ['product', 'delivery', 'summary', 'payment'];
+
+            const isCompanyReg = wizardData.subcategory === 'Fees and Licensing' ||
+                (wizardData.selectedBusiness?.name === 'Company Registration' || wizardData.business === 'Company Registration');
+
+            const isZimparksHoliday = wizardData.category === 'Zimparks Holiday Package' ||
+                wizardData.category === 'Holiday Package' ||
+                wizardData.subcategory === 'Destinations' ||
+                (wizardData.selectedBusiness?.name === 'Zimparks Vacation Package' || wizardData.business === 'Zimparks Vacation Package');
+
+            if (isCompanyReg) {
+                cashSteps.splice(1, 0, 'companyRegistration');
+            }
+            if (isZimparksHoliday) {
+                cashSteps.splice(1, 0, 'zimparksHoliday');
+                cashSteps = cashSteps.filter(s => s !== 'delivery');
+            }
+
+            return cashSteps;
+        }
+
+        // Credit Flow
         let filteredSteps = [...allSteps];
 
         const isCompanyReg = wizardData.subcategory === 'Fees and Licensing' ||
@@ -636,6 +672,9 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
 
         const isHomeConstructionHub = wizardData.intent === 'homeConstruction';
         const isCoreHouse = wizardData.subcategory === 'Core House' || wizardData.isCoreHouseFlow || (wizardData.cart || []).some(item => item.name.toLowerCase().includes('core house'));
+
+        // Credit flow - filter out full payment step
+        filteredSteps = filteredSteps.filter(step => step !== 'payment');
 
         // Filter out steps based on product type
         if (!isCompanyReg) {
@@ -651,14 +690,8 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         }
 
         // For Company Reg, Zimparks, AND Core House, keep creditTerm step
-        // For standard products, filter out creditTerm (handled internally in ProductSelection)
         if (!isCompanyReg && !isZimparksHoliday && !(isHomeConstructionHub && isCoreHouse)) {
             filteredSteps = filteredSteps.filter(step => step !== 'creditTerm');
-        }
-
-        // Skip delivery step for Zimparks Holiday and Core House (location captured in details)
-        if (isZimparksHoliday || (isHomeConstructionHub && isCoreHouse)) {
-            filteredSteps = filteredSteps.filter(step => step !== 'delivery');
         }
 
         // Skip registration step if user is already authenticated
@@ -666,8 +699,13 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             filteredSteps = filteredSteps.filter(step => step !== 'registration');
         }
 
+        // Common filtering (applies to credit conditions)
+        if (isZimparksHoliday || (isHomeConstructionHub && isCoreHouse)) {
+            filteredSteps = filteredSteps.filter(step => step !== 'delivery');
+        }
+
         return filteredSteps;
-    }, [wizardData.creditType, wizardData.subcategory, wizardData.selectedBusiness, wizardData.business, wizardData.category, authenticatedUser, wizardData.cart, wizardData.intent, wizardData.isCoreHouseFlow]);
+    }, [wizardData.paymentType, wizardData.creditType, wizardData.subcategory, wizardData.selectedBusiness, wizardData.business, wizardData.category, authenticatedUser, wizardData.cart, wizardData.intent, wizardData.isCoreHouseFlow]);
 
     // Effect to save state whenever it changes
     useEffect(() => {
@@ -820,8 +858,19 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         localStateManager.saveLocalState(sessionId || '', currentStep, updatedData);
 
         // Check if we need to generate a reference code at this step
-        if (currentStep === 'form' && !updatedData.referenceCode) {
-            // Generate reference code when the form step is completed
+        // For cash flow, we generate it after summary to show it in the payment step
+        // For credit flow, we generate it after the form step
+        const isCashFlow = updatedData.paymentType === 'cash';
+        const shouldGenerateCode = (isCashFlow && currentStep === 'summary') || (!isCashFlow && currentStep === 'form');
+
+        if (shouldGenerateCode && !updatedData.referenceCode) {
+            // For cash flow, save the state FIRST to ensure the record exists in the DB
+            // before the reference code service tries to look it up.
+            if (isCashFlow) {
+                await stateManager.saveState(sessionId || '', currentStep, updatedData);
+            }
+
+            // Generate reference code
             try {
                 // Get the national ID from form responses to pass to the API
                 const nationalId = updatedData.formResponses?.nationalIdNumber ||
@@ -845,6 +894,13 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                     if (result.success) {
                         updatedData.referenceCode = result.reference_code;
                         updatedData.referenceCodeGeneratedAt = new Date().toISOString();
+                        
+                        // Also update the local state immediately
+                        setWizardData(prev => ({
+                            ...prev,
+                            referenceCode: result.reference_code,
+                            referenceCodeGeneratedAt: new Date().toISOString()
+                        }));
                     }
                 } else {
                     console.error('Failed to generate reference code');
@@ -860,39 +916,67 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
 
         let currentFilteredSteps = [...allSteps];
 
-        const isZimparksHolidayUpdated = updatedData.category === 'Zimparks Holiday Package' ||
-            updatedData.category === 'Holiday Package' ||
-            updatedData.subcategory === 'Destinations' ||
-            (updatedData.selectedBusiness?.name === 'Zimparks Vacation Package' || updatedData.business === 'Zimparks Vacation Package');
+        const isCashFlowUpdated = updatedData.paymentType === 'cash';
 
-        const isHomeConstructionHubUpdated = updatedData.intent === 'homeConstruction';
-        const isCoreHouseUpdated = updatedData.subcategory === 'Core House' || updatedData.isCoreHouseFlow || (updatedData.cart || []).some(item => item.name.toLowerCase().includes('core house'));
+        if (isCashFlowUpdated) {
+            // Match the useMemo logic for "Express" flow
+            currentFilteredSteps = ['product', 'delivery', 'summary', 'payment'];
 
-        if (!isCompanyRegUpdated) {
-            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'companyRegistration');
-        }
+            const isCompanyRegUpdated = updatedData.subcategory === 'Fees and Licensing' ||
+                (updatedData.selectedBusiness?.name === 'Company Registration' || updatedData.business === 'Company Registration');
 
-        if (!isZimparksHolidayUpdated) {
-            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'zimparksHoliday');
-        }
+            const isZimparksHolidayUpdated = updatedData.category === 'Zimparks Holiday Package' ||
+                updatedData.category === 'Holiday Package' ||
+                updatedData.subcategory === 'Destinations' ||
+                (updatedData.selectedBusiness?.name === 'Zimparks Vacation Package' || updatedData.business === 'Zimparks Vacation Package');
 
-        if (!isHomeConstructionHubUpdated || !isCoreHouseUpdated) {
-            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'housePlanApproval' && step !== 'constructionDetails');
-        }
+            if (isCompanyRegUpdated) {
+                currentFilteredSteps.splice(1, 0, 'companyRegistration');
+            }
+            if (isZimparksHolidayUpdated) {
+                currentFilteredSteps.splice(1, 0, 'zimparksHoliday');
+                currentFilteredSteps = currentFilteredSteps.filter(s => s !== 'delivery');
+            }
+        } else {
+            const isCompanyRegUpdated = updatedData.subcategory === 'Fees and Licensing' ||
+                (updatedData.selectedBusiness?.name === 'Company Registration' || updatedData.business === 'Company Registration');
 
-        // For Company Reg, Zimparks, AND Core House, keep creditTerm step
-        // For standard products, filter out creditTerm (handled internally in ProductSelection)
-        if (!isCompanyRegUpdated && !isZimparksHolidayUpdated && !(isHomeConstructionHubUpdated && isCoreHouseUpdated)) {
-            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'creditTerm');
-        }
+            const isZimparksHolidayUpdated = updatedData.category === 'Zimparks Holiday Package' ||
+                updatedData.category === 'Holiday Package' ||
+                updatedData.subcategory === 'Destinations' ||
+                (updatedData.selectedBusiness?.name === 'Zimparks Vacation Package' || updatedData.business === 'Zimparks Vacation Package');
 
-        // Skip delivery step for Zimparks Holiday and Core House (location captured in details)
-        if (isZimparksHolidayUpdated || (isHomeConstructionHubUpdated && isCoreHouseUpdated)) {
-            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'delivery');
-        }
+            const isHomeConstructionHubUpdated = updatedData.intent === 'homeConstruction';
+            const isCoreHouseUpdated = updatedData.subcategory === 'Core House' || updatedData.isCoreHouseFlow || (updatedData.cart || []).some(item => item.name.toLowerCase().includes('core house'));
 
-        if (updatedData.creditType !== 'PDC') {
-            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'depositPayment');
+            currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'payment');
+            
+            if (!isCompanyRegUpdated) {
+                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'companyRegistration');
+            }
+
+            if (!isZimparksHolidayUpdated) {
+                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'zimparksHoliday');
+            }
+
+            if (!isHomeConstructionHubUpdated || !isCoreHouseUpdated) {
+                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'housePlanApproval' && step !== 'constructionDetails');
+            }
+
+            // For Company Reg, Zimparks, AND Core House, keep creditTerm step
+            // For standard products, filter out creditTerm (handled internally in ProductSelection)
+            if (!isCompanyRegUpdated && !isZimparksHolidayUpdated && !(isHomeConstructionHubUpdated && isCoreHouseUpdated)) {
+                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'creditTerm');
+            }
+
+            // Common filtering for credit flow
+            if (isZimparksHolidayUpdated || (isHomeConstructionHubUpdated && isCoreHouseUpdated)) {
+                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'delivery');
+            }
+
+            if (updatedData.creditType !== 'PDC' && updatedData.creditType !== 'PDC30' && updatedData.creditType !== 'PDC50') {
+                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'depositPayment');
+            }
         }
 
         const currentIndex = currentFilteredSteps.indexOf(currentStep);
@@ -970,27 +1054,28 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             }
 
             // Prepare the final data with timestamp and status
+            const isCash = finalData.paymentType === 'cash';
             const dataWithReference = {
                 ...finalData,
                 referenceCode,
                 referenceCodeGeneratedAt: new Date().toISOString(),
-                status: 'submitted',
+                status: isCash ? 'paid' : 'submitted',
                 statusUpdatedAt: new Date().toISOString(),
                 statusHistory: [
                     ...(finalData.statusHistory || []),
                     {
-                        status: 'submitted',
+                        status: isCash ? 'paid' : 'submitted',
                         timestamp: new Date().toISOString(),
-                        notes: 'Application submitted via web interface'
+                        notes: isCash ? 'Order completed and paid via web interface' : 'Application submitted via web interface'
                     }
                 ],
-                completedSteps: allSteps
+                completedSteps: steps // Use the actual steps for this flow
             };
 
             // Save state as completed first
             await stateManager.saveState(sessionId || '', 'completed', dataWithReference);
 
-            // Submit application via API - this will also generate the reference code if needed
+            // Submit application via API
             const response = await fetch('/api/states/create-application', {
                 method: 'POST',
                 headers: {
@@ -1008,8 +1093,13 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                 const result = await response.json();
                 // Clear local storage since application is complete
                 localStateManager.clearLocalState();
-                // Redirect to thank you page with reference code (from response or original)
-                router.visit(`/application/success?ref=${result.reference_code || referenceCode || 'submitted'}`);
+                
+                // Redirect: Cash flows go to tracking, credit goes to success page
+                if (isCash) {
+                    router.visit(`/delivery/tracking?ref=${result.reference_code || referenceCode}`);
+                } else {
+                    router.visit(`/application/success?ref=${result.reference_code || referenceCode || 'submitted'}`);
+                }
             } else {
                 const error = await response.json();
                 console.error('Application submission failed:', error);
@@ -1121,6 +1211,8 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                         }}
                     />
                 );
+            case 'payment':
+                return <PaymentStep {...commonProps} />;
             case 'account':
                 return <AccountVerification {...commonProps} />;
             case 'form':

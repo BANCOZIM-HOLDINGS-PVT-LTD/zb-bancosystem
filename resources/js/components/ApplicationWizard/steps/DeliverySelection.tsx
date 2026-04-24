@@ -223,6 +223,11 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
 
     const [error, setError] = useState<string>('');
 
+    // Cash-specific fields
+    const [cashName, setCashName] = useState<string>(data.formResponses?.name || '');
+    const [cashPhone, setCashPhone] = useState<string>(data.formResponses?.mobile || '+263');
+    const [cashId, setCashId] = useState<string>(data.formResponses?.nationalIdNumber || '');
+
     // Fetch supplier info when component mounts
     useEffect(() => {
         const fetchSupplierInfo = async () => {
@@ -261,6 +266,13 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
         e.preventDefault();
         setError('');
 
+        // Validate cash fields if applicable
+        if (data.paymentType === 'cash') {
+            if (!cashName.trim()) { setError('Please enter your full name'); return; }
+            if (!cashPhone.trim() || cashPhone.length < 10) { setError('Please enter a valid mobile number'); return; }
+            if (!cashId.trim()) { setError('Please enter your National ID'); return; }
+        }
+
         // Validate beneficiary
         if (beneficiaryType === 'other') {
             if (!beneficiaryName.trim()) { setError('Please enter the beneficiary\'s full name'); return; }
@@ -283,10 +295,22 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
             collectorId: collectorType === 'other' ? collectorId : '',
         };
 
+        // Common response structure for cash flow compatibility
+        const cashResponses = data.paymentType === 'cash' ? {
+            formResponses: {
+                ...data.formResponses,
+                name: cashName,
+                mobile: cashPhone,
+                nationalIdNumber: cashId,
+            },
+            user_identifier: cashPhone.replace(/[\s\+]/g, '')
+        } : {};
+
         // ---- Zimparks: Auto-fill, pass through ----
         if (deliveryType === 'zimparks') {
             onNext({
                 ...data,
+                ...cashResponses,
                 deliverySelection: {
                     agent: 'Zimparks',
                     depot: data.destinationName || '',
@@ -308,6 +332,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
             if (!selectedDepot) { setError('Please select an Easy Go branch'); return; }
             onNext({
                 ...data,
+                ...cashResponses,
                 deliverySelection: {
                     agent: 'Easy Go',
                     depot: selectedDepot,
@@ -325,6 +350,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
             }
             onNext({
                 ...data,
+                ...cashResponses,
                 deliverySelection: {
                     agent: supplierInfo?.name || 'Training Academy',
                     depot: selectedDepot || supplierInfo?.address || '',
@@ -340,6 +366,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
             if (!selectedDepot) { setError('Please select a collection branch'); return; }
             onNext({
                 ...data,
+                ...cashResponses,
                 deliverySelection: {
                     agent: supplierInfo?.name || 'Farm & City',
                     depot: selectedDepot,
@@ -357,6 +384,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
             if (!zimpostBranch) { setError('Please select a post office branch for coop delivery'); return; }
             onNext({
                 ...data,
+                ...cashResponses,
                 deliverySelection: {
                     agent: supplierInfo?.name || 'Farm & City',
                     depot: selectedDepot,
@@ -374,6 +402,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
             if (!selectedDepot) { setError('Please select a collection branch'); return; }
             onNext({
                 ...data,
+                ...cashResponses,
                 deliverySelection: {
                     agent: supplierInfo?.name || 'Farm & City',
                     depot: selectedDepot,
@@ -389,6 +418,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
             if (!selectedDepot) { setError('Please select a PG depot'); return; }
             onNext({
                 ...data,
+                ...cashResponses,
                 deliverySelection: {
                     agent: 'PG Building Materials',
                     depot: selectedDepot,
@@ -404,6 +434,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
             if (!selectedDepot) { setError(`Please select a Gain Cash & Carry depot`); return; }
             onNext({
                 ...data,
+                ...cashResponses,
                 deliverySelection: {
                     agent: 'Gain Cash & Carry',
                     depot: selectedDepot,
@@ -420,6 +451,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
         if (!selectedDepot) { setError('Please select a Zim Post Office branch'); return; }
         onNext({
             ...data,
+            ...cashResponses,
             deliverySelection: {
                 agent: 'Zim Post Office',
                 city: selectedCity,
@@ -714,6 +746,59 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
+
+                        {/* ===== Order Information (Cash Flow Only) ===== */}
+                        {data.paymentType === 'cash' && (
+                            <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-lg p-5 border border-emerald-200 dark:border-emerald-800 space-y-4">
+                                <h3 className="text-lg font-semibold text-emerald-900 dark:text-emerald-100 flex items-center gap-2">
+                                    <User className="w-5 h-5" /> Your Personal Details
+                                </h3>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="sm:col-span-2">
+                                        <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-100 mb-1">
+                                            Full Name <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={cashName}
+                                            onChange={(e) => setCashName(e.target.value)}
+                                            placeholder="Enter your full name"
+                                            className="w-full px-4 py-3 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-100 mb-1">
+                                            Mobile Number <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            value={cashPhone}
+                                            onChange={(e) => setCashPhone(e.target.value)}
+                                            placeholder="+2637XXXXXXXX"
+                                            className="w-full px-4 py-3 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-emerald-900 dark:text-emerald-100 mb-1">
+                                            National ID <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={cashId}
+                                            onChange={(e) => setCashId(e.target.value)}
+                                            placeholder="e.g. 63-123456-A-78"
+                                            className="w-full px-4 py-3 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                                    This information is required for order tracking and delivery identification.
+                                </p>
+                            </div>
+                        )}
 
                         {/* ===== Beneficiary Section ===== */}
                         <div className="bg-white dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
