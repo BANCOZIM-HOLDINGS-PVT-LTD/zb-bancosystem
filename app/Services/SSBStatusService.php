@@ -532,6 +532,29 @@ class SSBStatusService
     }
 
     /**
+     * Process status from SSB API
+     */
+    public function processSSBApiStatus(ApplicationState $application, string $apiStatus): bool
+    {
+        $statusMap = [
+            'APPROVED' => 'approved',
+            'REJECTED' => 'rejected',
+            'PENDING' => 'pending',
+        ];
+
+        $responseType = $statusMap[strtoupper($apiStatus)] ?? 'pending';
+
+        if ($responseType === 'pending') {
+            return true; // No status change
+        }
+
+        return $this->processSSBResponse($application, [
+            'response_type' => $responseType,
+            'reason' => 'Updated via Salary Deductions Gateway API'
+        ]);
+    }
+
+    /**
      * Parse SSB CSV file and update applications
      */
     public function parseAndProcessSSBCSV(string $filePath): array

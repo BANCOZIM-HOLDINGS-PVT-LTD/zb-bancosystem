@@ -200,7 +200,8 @@ class IncompleteRegistrations extends Page implements HasTable
                                 continue;
                             }
 
-                            $message = "Dear {$firstName}, you started a ZB BancoSystem loan application but haven't completed it yet. Log in to finish your application or call us for help. Thank you!";
+                            $resumeLink = url("/application/resume/{$record->session_id}");
+                            $message = "Dear {$firstName}, you started a ZB BancoSystem loan application but haven't completed it yet. Log in here to finish: {$resumeLink} or call us for help. Thank you!";
 
                             try {
                                 SendSmsJob::dispatch($phone, $message, $record->reference_code);

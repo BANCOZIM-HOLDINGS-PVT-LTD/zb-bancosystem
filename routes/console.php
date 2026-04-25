@@ -84,3 +84,10 @@ Schedule::command('payday:notify-officers')
     ->timezone('Africa/Harare')
     ->name('payday-notify-officers')
     ->description('Email loan officer with clients needing account holds');
+
+// Payment Reminders - sends SMS to clients awaiting deposit for 3, 7, 14 days
+Schedule::job(new \App\Jobs\SendPaymentReminderJob())
+    ->dailyAt('08:00')
+    ->timezone('Africa/Harare')
+    ->name('send-payment-reminders')
+    ->description('Send SMS reminders to clients awaiting deposit for 3, 7, or 14 days');

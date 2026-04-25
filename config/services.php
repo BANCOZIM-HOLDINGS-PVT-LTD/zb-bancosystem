@@ -89,4 +89,15 @@ return [
         'sender_id' => env('CODEL_SENDER_ID', 'MicroBiz'),
     ],
 
+    'ssb' => [
+        'api_url' => env('SSB_API_URL', 'http://147.93.87.208:5555'),
+        'client_id' => env('SSB_CLIENT_ID', 'UNIPAY_App'),
+        'username' => env('SSB_USERNAME', 'tester'),
+        'password' => env('SSB_PASSWORD', 'KeepOut#123'),
+        'employer_tin' => env('SSB_EMPLOYER_TIN', '12341'),
+        'service_provider_number' => env('SSB_PROVIDER_NUMBER', '35242'),
+        'service_provider_tin' => env('SSB_PROVIDER_TIN', '77777'),
+        'service_provider_name' => env('SSB_PROVIDER_NAME', 'MICROBIZ ZIMBABWE (PVT) LTD'),
+    ],
+
 ];

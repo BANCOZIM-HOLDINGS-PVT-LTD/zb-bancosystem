@@ -165,6 +165,39 @@ class SsbLoanResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
 
+                // Submit to SSB Action
+                Action::make('submit_to_ssb')
+                    ->label('Submit to SSB')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('info')
+                    ->visible(function (Model $record) {
+                        return in_array($record->current_step, ['awaiting_ssb_approval', 'in_review', 'pending']);
+                    })
+                    ->requiresConfirmation()
+                    ->action(function (Model $record) {
+                        $apiService = app(\App\Services\SSBApiService::class);
+                        $statusService = app(\App\Services\SSBStatusService::class);
+                        
+                        $result = $apiService->submitLoan($record);
+                        
+                        if ($result['success']) {
+                            // Update status to awaiting approval
+                            $statusService->markAsExported($record);
+
+                            Notification::make()
+                                ->title('Submitted to SSB')
+                                ->body($result['message'] ?? 'Deduction instruction sent successfully.')
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('SSB Submission Failed')
+                                ->body($result['message'] ?? 'Failed to communicate with SSB API.')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
                 // Approve Application Action
                 Action::make('approve')
                     ->label('Approve Application')

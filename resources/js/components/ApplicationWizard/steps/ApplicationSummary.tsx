@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ChevronLeft, CheckCircle, User, Building, DollarSign, CreditCard, MapPin, Package, Monitor, GraduationCap } from 'lucide-react';
+import { ChevronLeft, CheckCircle, User, Building, DollarSign, CreditCard, MapPin, Package, Monitor, GraduationCap, Briefcase } from 'lucide-react';
 
 interface ApplicationData {
     language?: string;
@@ -52,6 +52,17 @@ interface ApplicationData {
         mobile?: string;
         [key: string]: any;
     };
+    // SME-specific fields
+    companyType?: string;
+    companyTypeName?: string;
+    formType?: string;
+    // Building Materials Cart
+    buildingMaterialsCart?: Array<{
+        product: { name: string };
+        quantity: number;
+        subtotal: number;
+    }>;
+    buildingMaterialsTotal?: number;
 }
 
 interface ApplicationSummaryProps {
@@ -62,7 +73,12 @@ interface ApplicationSummaryProps {
     hasAccount?: boolean;
 }
 
-const getFormIdByEmployer = (employerId: string, hasAccount: boolean, wantsAccount: boolean) => {
+const getFormIdByEmployer = (employerId: string, hasAccount: boolean, wantsAccount: boolean, intent?: string) => {
+    // SME Business Booster always uses the SME form
+    if (intent === 'smeBiz' || employerId === 'sme-business') {
+        return 'smes_business_account_opening.json';
+    }
+
     switch (employerId) {
         case 'government-ssb':
         // SSB employers always use SSB form
@@ -105,7 +121,8 @@ const getFormIdByEmployer = (employerId: string, hasAccount: boolean, wantsAccou
 };
 
 const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, onBack, loading }) => {
-    const formId = getFormIdByEmployer(data.employer || '', data.hasAccount, data.wantsAccount);
+    const isSME = data.intent === 'smeBiz';
+    const formId = getFormIdByEmployer(data.employer || '', data.hasAccount, data.wantsAccount, data.intent);
 
     // Debug logging to help trace any issues
     console.log('[ApplicationSummary] Form routing data:', {
@@ -129,7 +146,8 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
             accountType: data.accountType,
             paymentType: data.paymentType,
             payment_type: data.paymentType, // Explicitly include both for backend flexibility
-            invoiceNumber // Include invoice number in submission
+            invoiceNumber, // Include invoice number in submission
+            formType: isSME ? 'sme_business' : undefined, // Explicit SME marker for backend
         };
 
         console.log('[ApplicationSummary] Submitting with data:', submissionData);
@@ -188,14 +206,16 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                     </div>
                     <div className="flex-1">
                         <h3 className="font-semibold text-emerald-900 dark:text-emerald-100 mb-1">
-                            {data.wantsAccount ? 'New ZB Bank Account Opening' : `Form Type: ${getFormTypeName(formId)}`}
+                            {isSME ? 'SME Business Booster Application' :
+                                data.wantsAccount ? 'New ZB Bank Account Opening' : `Form Type: ${getFormTypeName(formId)}`}
                         </h3>
                         <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                            {data.wantsAccount && 'You are opening a new ZB Bank account. This is not a product or loan application — you will complete the account opening form only.'}
-                            {data.hasAccount && !data.wantsAccount && 'You will complete the Account Holder Loan Application form.'}
-                            {data.employer === 'government-ssb' && 'You will complete the SSB Loan Application form.'}
-                            {data.employer === 'government-pensioner' && 'You will complete the Government Pensioner Loan Application form.'}
-                            {data.employer === 'entrepreneur' && 'You will complete the SME Business Account Opening form.'}
+                            {isSME && 'You will complete the SME Business Account Opening form for your Booster Kit application.'}
+                            {!isSME && data.wantsAccount && 'You are opening a new ZB Bank account. This is not a product or loan application — you will complete the account opening form only.'}
+                            {!isSME && data.hasAccount && !data.wantsAccount && 'You will complete the Account Holder Loan Application form.'}
+                            {!isSME && data.employer === 'government-ssb' && 'You will complete the SSB Loan Application form.'}
+                            {!isSME && data.employer === 'government-pensioner' && 'You will complete the Government Pensioner Loan Application form.'}
+                            {!isSME && data.employer === 'entrepreneur' && 'You will complete the SME Business Account Opening form.'}
                         </p>
                     </div>
                 </div>
@@ -224,24 +244,44 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                     </div>
                 </Card>
 
-                <Card className="p-6">
-                    <div className="flex items-center mb-4">
-                        <Building className="h-6 w-6 text-emerald-600 mr-3" />
-                        <h3 className="text-lg font-semibold">Employment</h3>
-                    </div>
-                    <div className="space-y-3">
-                        <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Employer</p>
-                            <p className="font-medium">{getEmployerName(data.employer || '')}</p>
+                {/* Employment / Company Type Card */}
+                {isSME ? (
+                    <Card className="p-6">
+                        <div className="flex items-center mb-4">
+                            <Briefcase className="h-6 w-6 text-emerald-600 mr-3" />
+                            <h3 className="text-lg font-semibold">Business Type</h3>
                         </div>
-                        {data.specificEmployer && (
+                        <div className="space-y-3">
                             <div>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Organization</p>
-                                <p className="font-medium">{data.specificEmployer}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Company Structure</p>
+                                <p className="font-medium">{data.companyTypeName || data.employerName || 'SME Business'}</p>
                             </div>
-                        )}
-                    </div>
-                </Card>
+                            <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Application Pathway</p>
+                                <p className="font-medium text-emerald-600">SME Business Booster</p>
+                            </div>
+                        </div>
+                    </Card>
+                ) : (
+                    <Card className="p-6">
+                        <div className="flex items-center mb-4">
+                            <Building className="h-6 w-6 text-emerald-600 mr-3" />
+                            <h3 className="text-lg font-semibold">Employment</h3>
+                        </div>
+                        <div className="space-y-3">
+                            <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Employer</p>
+                                <p className="font-medium">{getEmployerName(data.employer || '')}</p>
+                            </div>
+                            {data.specificEmployer && (
+                                <div>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Organization</p>
+                                    <p className="font-medium">{data.specificEmployer}</p>
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+                )}
 
                 {/* Construction Details for Core House */}
                 {data.formResponses?.constructionSetting && (
@@ -460,7 +500,33 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                     </div>
                                 )}
 
-                                {/* Gross Loan - Credit Only */}
+                                {/* Building Materials Cart Items (If applicable) */}
+                                {data.buildingMaterialsCart && data.buildingMaterialsCart.length > 0 && (
+                                    <div className="pt-4 border-t border-gray-100">
+                                        <h4 className="font-medium text-emerald-800 mb-3 flex items-center">
+                                            <Package className="w-4 h-4 mr-2" />
+                                            Selected Materials
+                                        </h4>
+                                        <div className="space-y-2 mb-3 max-h-[200px] overflow-y-auto pr-2">
+                                            {data.buildingMaterialsCart.map((item, idx) => (
+                                                <div key={idx} className="flex justify-between text-sm py-1 border-b border-gray-50 last:border-0">
+                                                    <div className="flex-1 pr-4">
+                                                        <span className="text-gray-700">{item.quantity}x {item.product.name}</span>
+                                                    </div>
+                                                    <div className="font-medium text-gray-900 whitespace-nowrap">
+                                                        ${parseFloat(item.subtotal.toString()).toFixed(2)}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="flex justify-between font-medium text-sm pt-2 bg-emerald-50 px-3 py-2 rounded">
+                                            <span className="text-emerald-800">Materials Total</span>
+                                            <span className="text-emerald-800">${parseFloat((data.buildingMaterialsTotal || 0).toString()).toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Additional Loan Components (M&E, Training) */}
                                 {data.paymentType !== 'cash' && (
                                     <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
                                         <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">

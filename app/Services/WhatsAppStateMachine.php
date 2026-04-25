@@ -1477,6 +1477,7 @@ class WhatsAppStateMachine
         // Map intent to type parameter for cash purchase
         $typeMap = [
             'microBiz' => 'microBiz',
+            'smeBiz' => 'smeBiz',
             'personal' => 'personalGadgets',
             'personalServices' => 'personalServices',
             'construction' => 'construction',

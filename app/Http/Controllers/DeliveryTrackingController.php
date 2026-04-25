@@ -103,7 +103,8 @@ class DeliveryTrackingController extends Controller
             "estimatedDelivery" => $estimatedDelivery,
             "trackingNumber" => $trackingNumber,
             "trackingType" => $trackingType,
-            "purchaseType" => "loan",
+            "purchaseType" => $application->payment_type ?? "loan",
+            "paymentPaid" => (bool) $application->deposit_paid,
             "deliveredAt" => $deliveryTracking ? $deliveryTracking->delivered_at : null,
         ]);
     }

@@ -223,6 +223,30 @@ class StateController extends Controller
                 ]);
             }
 
+            // SME Application Initialization
+            // Detect and initialize SME applications with specific workflow metadata
+            try {
+                $intent = $formData['intent'] ?? '';
+                $formType = $formData['formType'] ?? '';
+                
+                if ($intent === 'smeBiz' || $formType === 'sme_business') {
+                    $smeWorkflowService = app(\App\Services\SMEApplicationWorkflowService::class);
+                    $smeWorkflowService->initializeSMEApplication($state);
+                    
+                    \Log::info('SME application initialized', [
+                        'id' => $state->id,
+                        'reference' => $referenceCode,
+                        'company_type' => $formData['companyType'] ?? 'unknown'
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to initialize SME application workflow', [
+                    'id' => $state->id,
+                    'error' => $e->getMessage()
+                ]);
+                // Don't fail the submission - the base workflow was already initialized
+            }
+
             // Send confirmation SMS
             try {
                 // We use the app() helper to resolve the service since it might not be injected in the method

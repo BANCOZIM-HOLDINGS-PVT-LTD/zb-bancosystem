@@ -37,6 +37,7 @@ class ApplicationState extends Model
         'status',
         'approved_at',
         'payment_type',
+        'application_type',
     ];
 
     protected $casts = [
@@ -114,6 +115,7 @@ class ApplicationState extends Model
             'account_holder' => 'ZBAH',
             'pensioner' => 'PEN',
             'rdc' => 'RDC',
+            'sme' => 'SME',
             default => 'ZB',
         };
 
@@ -177,7 +179,30 @@ class ApplicationState extends Model
     {
         $formData = $formData ?? $this->form_data ?? [];
         $formId = $formData['formId'] ?? '';
-        return str_contains($formId, 'sme') || str_contains($formId, 'business');
+        $intent = $formData['intent'] ?? '';
+        $formType = $formData['formType'] ?? '';
+        $companyType = $formData['companyType'] ?? '';
+
+        // Check intent (primary SME marker from welcome page)
+        if ($intent === 'smeBiz') {
+            return true;
+        }
+
+        // Check formType (set by ApplicationSummary)
+        if ($formType === 'sme_business') {
+            return true;
+        }
+
+        // Check if company type was selected (from CompanyTypeSelection step)
+        if (!empty($companyType)) {
+            return true;
+        }
+
+        // Fallback: legacy formId/employer checks
+        $employer = strtolower($formData['employer'] ?? '');
+        return $employer === 'sme-business'
+            || str_contains($formId, 'sme')
+            || str_contains($formId, 'business');
     }
 
     /**

@@ -578,7 +578,13 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
 
 
-    const creditTerms = selectedBusiness ? getCreditTermOptions(finalAmount) : [];
+    const creditTerms = selectedBusiness 
+        ? getCreditTermOptions(
+            finalAmount, 
+            data.intent === 'smeBiz' ? 1.08 : loanSettings.interestRate, 
+            data.intent === 'smeBiz' ? 'flat' : 'amortization'
+          ) 
+        : [];
 
     if (isLoadingProducts) {
         return (

@@ -73,9 +73,14 @@ class ProductService {
     }
 
     try {
-      const url = intent
-        ? `${this.baseUrl}/frontend-catalog?intent=${intent}`
-        : `${this.baseUrl}/frontend-catalog`;
+      let url = `${this.baseUrl}/frontend-catalog`;
+      
+      if (intent === 'smeBiz') {
+        url = '/api/boosters/frontend-catalog';
+      } else if (intent) {
+        url = `${this.baseUrl}/frontend-catalog?intent=${intent}`;
+      }
+
       const response = await axios.get<Category[]>(url);
       const categories = response.data ?? [];
 
@@ -224,17 +229,26 @@ class ProductService {
   /**
    * Calculate credit term options
    */
-  getCreditTermOptions(amount: number, interestRate: number = 0.84): CreditTermOption[] {
-    // Generate terms from 3 to 18 months
-    const terms = Array.from({ length: 16 }, (_, i) => i + 3); // [3, 4, 5, ..., 18]
+  getCreditTermOptions(amount: number, interestRate: number = 0.84, interestType: string = 'amortization'): CreditTermOption[] {
+    // Generate terms from 3 to 24 months for general use
+    const terms = Array.from({ length: 22 }, (_, i) => i + 3); // [3, 4, 5, ..., 24]
 
     return terms.map(months => {
-      // Calculate monthly payment using amortization formula
-      const monthlyInterestRate = interestRate / 12;
-      const monthlyPayment = amount > 0
-        ? (amount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) /
-        (Math.pow(1 + monthlyInterestRate, months) - 1)
-        : 0;
+      let monthlyPayment = 0;
+      if (interestType === 'flat') {
+        // Flat rate calculation
+        const monthlyInterestRate = interestRate / 12;
+        const totalInterest = amount * monthlyInterestRate * months;
+        const totalPayment = amount + totalInterest;
+        monthlyPayment = totalPayment / months;
+      } else {
+        // Standard amortization
+        const monthlyInterestRate = interestRate / 12;
+        monthlyPayment = amount > 0
+          ? (amount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, months)) /
+          (Math.pow(1 + monthlyInterestRate, months) - 1)
+          : 0;
+      }
 
       return {
         months,
@@ -534,6 +548,6 @@ class ProductService {
 export const productService = new ProductService();
 
 // Export the getCreditTermOptions function for backward compatibility
-export const getCreditTermOptions = (amount: number) => {
-  return productService.getCreditTermOptions(amount);
+export const getCreditTermOptions = (amount: number, interestRate: number = 0.84, interestType: string = 'amortization') => {
+  return productService.getCreditTermOptions(amount, interestRate, interestType);
 };

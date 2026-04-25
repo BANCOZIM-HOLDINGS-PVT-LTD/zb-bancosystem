@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import EmployerSelection from './steps/EmployerSelection';
 import ProductSelection from './steps/ProductSelection';
+import BuildingMaterialsCart from './steps/BuildingMaterialsCart';
 import CreditTypeSelection from './steps/CreditTypeSelection';
 import DeliverySelection from './steps/DeliverySelection';
 import DepositPaymentStep from './steps/DepositPaymentStep';
@@ -10,6 +11,7 @@ import CreditTermSelection from './steps/CreditTermSelection';
 import ApplicationSummary from './steps/ApplicationSummary';
 import FormStep from './steps/FormStep';
 import CompanyRegistrationStep from './steps/CompanyRegistrationStep';
+import CompanyTypeSelection from './steps/CompanyTypeSelection';
 import ZimparksHolidayStep from './steps/ZimparksHolidayStep';
 import DocumentUploadStep from '../DocumentUpload/DocumentUploadStep';
 import RegistrationPrompt from './steps/RegistrationPrompt';
@@ -498,6 +500,7 @@ interface ApplicationWizardProps {
 
 const allSteps = [
     'product',
+    'buildingMaterialsCart', // NEW: Building Materials Cart
     'housePlanApproval', // NEW: Core House plan approval
     'constructionDetails', // NEW: Construction site details
     'companyRegistration',
@@ -506,6 +509,7 @@ const allSteps = [
     'creditType',
     'delivery',
     'registration', // NEW: Registration prompt after delivery
+    'companyType', // SME: Company type selection (replaces employer for smeBiz)
     'employer', // MOVED: Now after registration
     'account', // MOVED: Now after employer
     'summary',
@@ -635,6 +639,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
     // Create filtered steps based on conditions
     const steps = React.useMemo(() => {
         const isCashFlow = wizardData.paymentType === 'cash';
+        const isSME = wizardData.intent === 'smeBiz';
 
         if (isCashFlow) {
             // "Express" flow: Product -> Delivery -> Summary -> Payment
@@ -676,6 +681,14 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         // Credit flow - filter out full payment step
         filteredSteps = filteredSteps.filter(step => step !== 'payment');
 
+        // SME Flow: Use companyType instead of employer, skip account step
+        if (isSME) {
+            filteredSteps = filteredSteps.filter(step => step !== 'employer');
+        } else {
+            // Non-SME: Remove the companyType step (only for SME)
+            filteredSteps = filteredSteps.filter(step => step !== 'companyType');
+        }
+
         // Filter out steps based on product type
         if (!isCompanyReg) {
             filteredSteps = filteredSteps.filter(step => step !== 'companyRegistration');
@@ -687,6 +700,11 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
 
         if (!isHomeConstructionHub || !isCoreHouse) {
             filteredSteps = filteredSteps.filter(step => step !== 'housePlanApproval' && step !== 'constructionDetails');
+        }
+
+        // Only show Building Materials Cart for Home Construction that is NOT a Core House
+        if (!isHomeConstructionHub || isCoreHouse) {
+            filteredSteps = filteredSteps.filter(step => step !== 'buildingMaterialsCart');
         }
 
         // For Company Reg, Zimparks, AND Core House, keep creditTerm step
@@ -948,8 +966,16 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
 
             const isHomeConstructionHubUpdated = updatedData.intent === 'homeConstruction';
             const isCoreHouseUpdated = updatedData.subcategory === 'Core House' || updatedData.isCoreHouseFlow || (updatedData.cart || []).some(item => item.name.toLowerCase().includes('core house'));
+            const isSMEUpdated = updatedData.intent === 'smeBiz';
 
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'payment');
+
+            // SME Flow: Use companyType instead of employer
+            if (isSMEUpdated) {
+                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'employer');
+            } else {
+                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'companyType');
+            }
             
             if (!isCompanyRegUpdated) {
                 currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'companyRegistration');
@@ -961,6 +987,10 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
 
             if (!isHomeConstructionHubUpdated || !isCoreHouseUpdated) {
                 currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'housePlanApproval' && step !== 'constructionDetails');
+            }
+
+            if (!isHomeConstructionHubUpdated || isCoreHouseUpdated) {
+                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'buildingMaterialsCart');
             }
 
             // For Company Reg, Zimparks, AND Core House, keep creditTerm step
@@ -1142,6 +1172,8 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         };
 
         switch (currentStep) {
+            case 'companyType':
+                return <CompanyTypeSelection {...commonProps} />;
             case 'employer':
                 return <EmployerSelection {...commonProps} />;
             case 'product':
@@ -1169,6 +1201,24 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                         updateData={(data) => setWizardData({ ...wizardData, ...data })}
                         onNext={() => handleNext({})}
                         onBack={handleBack}
+                    />
+                );
+            case 'buildingMaterialsCart':
+                return (
+                    <BuildingMaterialsCart
+                        sessionId={sessionId}
+                        packageAmount={wizardData.finalAmount || 0}
+                        onNext={() => handleStepSubmit('buildingMaterialsCart', {})}
+                        onBack={() => {
+                            const previousStep = getPreviousStep('buildingMaterialsCart');
+                            if (previousStep) setCurrentStep(previousStep as WizardStep);
+                        }}
+                        onCartUpdate={(cartItems, total) => {
+                            updateWizardData({ 
+                                buildingMaterialsCart: cartItems,
+                                buildingMaterialsTotal: total
+                            });
+                        }}
                     />
                 );
             case 'constructionDetails':

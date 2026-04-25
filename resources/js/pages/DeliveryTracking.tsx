@@ -30,6 +30,7 @@ interface DeliveryDetails {
     trackingNumber: string;
     trackingType: string;
     purchaseType?: string;
+    paymentPaid?: boolean;
     deliveredAt?: string | null;
     // Holiday Package Details
     zimparksVoucher?: string;
@@ -325,6 +326,22 @@ export default function DeliveryTracking() {
                                                 </p>
                                             </div>
                                         </div>
+                                    </div>
+                                )}
+
+                                {deliveryDetails.purchaseType === 'cash' && deliveryDetails.paymentPaid && (
+                                    <div className="mt-8 pt-6 border-t text-center">
+                                        <p className="text-sm text-gray-500 mb-4">
+                                            Need a record of your payment?
+                                        </p>
+                                        <Button
+                                            variant="outline"
+                                            className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                            onClick={() => window.open(route('application.receipt.download', deliveryDetails.sessionId), '_blank')}
+                                        >
+                                            <ShoppingBag className="h-4 w-4 mr-2" />
+                                            Download Official Receipt
+                                        </Button>
                                     </div>
                                 )}
                             </Card>

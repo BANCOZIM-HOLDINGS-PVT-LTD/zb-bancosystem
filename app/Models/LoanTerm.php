@@ -134,15 +134,31 @@ class LoanTerm extends Model
         // Gross Loan
         $grossLoan = round($loanAmount + $adminFee, 2);
 
-        // Amortization (interest_rate is ANNUAL percentage)
+        // Amortization vs Flat Rate (Straight-line)
         $annualInterestRate = $this->interest_rate;
-        $monthlyInterestRate = $annualInterestRate / 100 / 12;
-
-        if ($monthlyInterestRate <= 0 || $duration <= 0) {
-            $monthlyPayment = $duration > 0 ? round($grossLoan / $duration, 2) : $grossLoan;
+        
+        if ($this->interest_type === self::INTEREST_FLAT) {
+            // Straight-line / Flat calculation
+            // If the interest_rate is defined as an annual rate, monthly rate is / 12
+            $monthlyInterestRate = $annualInterestRate / 100 / 12;
+            
+            if ($monthlyInterestRate <= 0 || $duration <= 0) {
+                $monthlyPayment = $duration > 0 ? round($grossLoan / $duration, 2) : $grossLoan;
+            } else {
+                $totalInterest = $grossLoan * $monthlyInterestRate * $duration;
+                $totalPayments = $grossLoan + $totalInterest;
+                $monthlyPayment = round($totalPayments / $duration, 2);
+            }
         } else {
-            $monthlyPayment = round(($grossLoan * $monthlyInterestRate * pow(1 + $monthlyInterestRate, $duration)) / 
-                              (pow(1 + $monthlyInterestRate, $duration) - 1), 2);
+            // Standard Amortization (reducing balance)
+            $monthlyInterestRate = $annualInterestRate / 100 / 12;
+
+            if ($monthlyInterestRate <= 0 || $duration <= 0) {
+                $monthlyPayment = $duration > 0 ? round($grossLoan / $duration, 2) : $grossLoan;
+            } else {
+                $monthlyPayment = round(($grossLoan * $monthlyInterestRate * pow(1 + $monthlyInterestRate, $duration)) / 
+                                  (pow(1 + $monthlyInterestRate, $duration) - 1), 2);
+            }
         }
 
         $totalPayments = round($monthlyPayment * $duration, 2);
@@ -174,7 +190,16 @@ class LoanTerm extends Model
             $paymentDate = clone $startDate;
             $paymentDate->modify("+{$i} months");
 
-            $interestPayment = $balance * ($this->interest_rate / 100 / 12);
+            if ($this->interest_type === self::INTEREST_FLAT) {
+                // Straight line: interest is same every month (Total Interest / duration)
+                $costData = $this->calculateTotalCost($loanAmount, $this->duration_months);
+                $totalInterest = $costData['total_interest'];
+                $interestPayment = $this->duration_months > 0 ? ($totalInterest / $this->duration_months) : 0;
+            } else {
+                // Amortization: interest based on remaining balance
+                $interestPayment = $balance * ($this->interest_rate / 100 / 12);
+            }
+            
             $principalPayment = $monthlyPayment - $interestPayment;
             $balance -= $principalPayment;
 

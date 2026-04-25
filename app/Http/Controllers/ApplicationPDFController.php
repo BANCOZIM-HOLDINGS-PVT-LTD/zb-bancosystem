@@ -1141,4 +1141,43 @@ class ApplicationPDFController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Download receipt PDF for a cash order
+     *
+     * @param string $sessionId
+     * @return Response
+     */
+    public function downloadReceipt(string $sessionId)
+    {
+        try {
+            $state = ApplicationState::where('session_id', $sessionId)->firstOrFail();
+            
+            // Check if it's a cash order
+            if ($state->payment_type !== 'cash') {
+                return response()->json([
+                    'error' => 'Not a cash order',
+                    'message' => 'Receipts can only be generated for cash orders.',
+                ], 400);
+            }
+
+            // Generate receipt PDF
+            $pdfPath = $this->pdfGenerator->generateReceiptPDF($state);
+            $filename = "receipt_{$state->reference_code}.pdf";
+
+            return response()->download(storage_path("app/public/{$pdfPath}"), $filename, [
+                'Content-Type' => 'application/pdf',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Receipt PDF download failed', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+            
+            return response()->json([
+                'error' => 'Failed to download receipt',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

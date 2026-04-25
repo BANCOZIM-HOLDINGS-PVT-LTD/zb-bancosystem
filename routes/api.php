@@ -32,6 +32,14 @@ Route::prefix('products')->group(function () {
     Route::get('/supplier-info', [ProductController::class, 'getSupplierInfo']);
 });
 
+// Booster API routes (SME Business Boosters)
+Route::prefix('boosters')->group(function () {
+    Route::get('/frontend-catalog', [\App\Http\Controllers\Api\BoosterController::class, 'getFrontendCatalog']);
+    Route::get('/categories', [\App\Http\Controllers\Api\BoosterController::class, 'getCategories']);
+    Route::get('/category/{categoryId}', [\App\Http\Controllers\Api\BoosterController::class, 'getBusinessesByCategory']);
+    Route::get('/business/{businessId}', [\App\Http\Controllers\Api\BoosterController::class, 'getBusiness']);
+});
+
 // Application State API routes
 Route::prefix('states')->group(function () {
     Route::post('/save', [StateController::class, 'saveState']);
@@ -308,6 +316,15 @@ if (!app()->environment('production')) {
 // Delivery Tracking API routes
 Route::prefix('delivery')->group(function () {
     Route::get('/tracking/{reference}', [\App\Http\Controllers\DeliveryTrackingController::class, 'getStatus']);
+});
+
+// Cart System Routes
+Route::prefix('cart')->group(function () {
+    Route::get('/{sessionId}', [\App\Http\Controllers\Api\CartController::class, 'getCart']);
+    Route::post('/add', [\App\Http\Controllers\Api\CartController::class, 'addItem']);
+    Route::post('/update', [\App\Http\Controllers\Api\CartController::class, 'updateQuantity']);
+    Route::post('/remove', [\App\Http\Controllers\Api\CartController::class, 'removeItem']);
+    Route::post('/clear', [\App\Http\Controllers\Api\CartController::class, 'clearCart']);
 });
 
 // Invoice SMS Notification API routes

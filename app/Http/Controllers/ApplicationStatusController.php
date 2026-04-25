@@ -172,6 +172,23 @@ public function resubmit(Request $request): JsonResponse
 
     private function determineApplicationStatus(ApplicationState $application): string
     {
+        // Check for SME-specific stages
+        $metadata = $application->metadata ?? [];
+        $smeStage = $metadata['sme_stage'] ?? null;
+        
+        if ($smeStage && $application->application_type === 'sme') {
+            return match($smeStage) {
+                'submitted' => 'sme_submitted',
+                'sme_document_review' => 'sme_document_review',
+                'sme_credit_assessment' => 'sme_credit_assessment',
+                'sme_committee_review' => 'sme_committee_review',
+                'sme_pending_documents' => 'sme_pending_documents',
+                'approved' => 'approved',
+                'rejected' => 'rejected',
+                default => $application->status ?: 'processing',
+            };
+        }
+
         return match($application->current_step) {
             'pending_review' => 'document_verification',
             'awaiting_document_reupload' => 'resubmission_required',
@@ -191,8 +208,14 @@ public function resubmit(Request $request): JsonResponse
 
     private function buildApplicationTimeline(ApplicationState $application, string $status, $deliveryTracking = null): array
     {
-        $timeline = [];
         $metadata = $application->metadata ?? [];
+        
+        // SME applications get their own dedicated timeline
+        if ($application->application_type === 'sme' || ($metadata['workflow_type'] ?? '') === 'sme') {
+            return $this->buildSMETimeline($application, $status, $metadata, $deliveryTracking);
+        }
+
+        $timeline = [];
         $step = $application->current_step;
         $appType = $application->getApplicationType();
 
@@ -289,6 +312,102 @@ public function resubmit(Request $request): JsonResponse
         return $timeline;
     }
 
+    /**
+     * Build SME-specific approval timeline for client tracking
+     */
+    private function buildSMETimeline(ApplicationState $application, string $status, array $metadata, $deliveryTracking = null): array
+    {
+        $smeStage = $metadata['sme_stage'] ?? 'submitted';
+        $timeline = [];
+
+        // Define SME stages in order
+        $stages = [
+            'submitted' => [
+                'title' => 'Application Submitted',
+                'description_done' => 'Your SME Booster application has been submitted.',
+                'description_pending' => 'Submit your SME Booster application.',
+            ],
+            'sme_document_review' => [
+                'title' => 'Document Review',
+                'description_done' => 'Business documents have been reviewed and verified.',
+                'description_pending' => 'Your business documents are being reviewed.',
+            ],
+            'sme_credit_assessment' => [
+                'title' => 'Credit Assessment',
+                'description_done' => 'Financial assessment completed.',
+                'description_pending' => 'Your business financials are being assessed.',
+            ],
+            'sme_committee_review' => [
+                'title' => 'Committee Review',
+                'description_done' => 'Committee has reviewed your application.',
+                'description_pending' => 'Your application is with the approval committee.',
+            ],
+            'approved' => [
+                'title' => 'Approved',
+                'description_done' => 'Your SME Booster application has been approved!',
+                'description_pending' => 'Awaiting final approval.',
+            ],
+        ];
+
+        $foundCurrent = false;
+        foreach ($stages as $stageKey => $stageInfo) {
+            $stageTimestamp = $metadata["sme_{$stageKey}_at"] ?? null;
+            $stageBy = $metadata["sme_{$stageKey}_by"] ?? null;
+
+            if ($stageKey === $smeStage) {
+                // Current stage
+                $timeline[] = [
+                    'title' => $stageInfo['title'],
+                    'description' => $stageInfo['description_pending'],
+                    'timestamp' => $stageTimestamp ? Carbon::parse($stageTimestamp)->format('M d, Y') : 'In Progress',
+                    'status' => ($smeStage === 'approved' || $smeStage === 'rejected') ? 'completed' : 'current',
+                ];
+                $foundCurrent = true;
+            } elseif (!$foundCurrent) {
+                // Completed stage
+                $timeline[] = [
+                    'title' => $stageInfo['title'],
+                    'description' => $stageInfo['description_done'],
+                    'timestamp' => $stageTimestamp ? Carbon::parse($stageTimestamp)->format('M d, Y') : 'Done',
+                    'status' => 'completed',
+                ];
+            } else {
+                // Future stage
+                $timeline[] = [
+                    'title' => $stageInfo['title'],
+                    'description' => $stageInfo['description_pending'],
+                    'timestamp' => '',
+                    'status' => 'pending',
+                ];
+            }
+        }
+
+        // Add delivery stage if approved
+        if ($smeStage === 'approved') {
+            $isDelivered = $deliveryTracking && $deliveryTracking->status === 'delivered';
+            $timeline[] = [
+                'title' => 'Product Delivery',
+                'description' => $deliveryTracking
+                    ? "Status: " . $deliveryTracking->status_label
+                    : 'Delivery process initiated.',
+                'timestamp' => $deliveryTracking && $deliveryTracking->delivered_at ? $deliveryTracking->delivered_at->format('M d, Y') : 'Pending',
+                'status' => $isDelivered ? 'completed' : 'current',
+            ];
+        }
+
+        // Handle rejection
+        if ($smeStage === 'rejected') {
+            $timeline[] = [
+                'title' => 'Application Rejected',
+                'description' => 'Unfortunately, your SME application did not meet the criteria at this time.',
+                'timestamp' => $metadata['sme_rejected_at'] ?? now()->format('M d, Y'),
+                'status' => 'rejected',
+            ];
+        }
+
+        return $timeline;
+    }
+
     private function calculateProgressPercentage(ApplicationState $application, $deliveryTracking = null): int
     {
         if ($deliveryTracking) {
@@ -298,6 +417,22 @@ public function resubmit(Request $request): JsonResponse
                 'in_transit', 'out_for_delivery' => 95,
                 'delivered' => 100,
                 default => 85,
+            };
+        }
+
+        // SME-specific progress percentages
+        $metadata = $application->metadata ?? [];
+        if ($application->application_type === 'sme') {
+            $smeStage = $metadata['sme_stage'] ?? 'submitted';
+            return match($smeStage) {
+                'submitted' => 15,
+                'sme_document_review' => 35,
+                'sme_credit_assessment' => 55,
+                'sme_committee_review' => 75,
+                'sme_pending_documents' => 30,
+                'approved' => 90,
+                'rejected' => 0,
+                default => 10,
             };
         }
 
@@ -323,6 +458,22 @@ public function resubmit(Request $request): JsonResponse
         $formData = $application->form_data ?? [];
         $creditType = $formData['creditType'] ?? '';
         $isPDC = str_starts_with($creditType, 'PDC');
+
+        // SME-specific next actions
+        $metadata = $application->metadata ?? [];
+        if ($application->application_type === 'sme') {
+            $smeStage = $metadata['sme_stage'] ?? 'submitted';
+            return match($smeStage) {
+                'submitted' => 'Your SME Booster application has been submitted and is entering document review.',
+                'sme_document_review' => 'Your business documents are being reviewed by our SME team.',
+                'sme_credit_assessment' => 'A credit officer is assessing your business financials.',
+                'sme_committee_review' => 'Your application is with the approval committee for final review.',
+                'sme_pending_documents' => 'Please submit the additional documents requested by our team.',
+                'approved' => 'Your SME Booster application has been approved! You will receive delivery updates shortly.',
+                'rejected' => 'Unfortunately, your SME application did not meet the criteria at this time.',
+                default => 'Your SME application is being processed.',
+            };
+        }
 
         return match($application->current_step) {
             'pending_review' => 'Bancozim Admin is currently verifying your uploaded documents.',

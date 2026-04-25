@@ -147,7 +147,13 @@ class PDFGeneratorService implements PDFGeneratorInterface
                 $hasAccount = false;
             }
             
-            $template = $this->determineTemplate($employer, $hasAccount);
+            // Check if this is an SME application (priority check before employer routing)
+            $isSME = ($formData['intent'] ?? '') === 'smeBiz' 
+                  || ($formData['formType'] ?? '') === 'sme_business'
+                  || ($formData['employer'] ?? '') === 'sme-business'
+                  || !empty($formData['companyType']);
+            
+            $template = $this->determineTemplate($employer, $hasAccount, $isSME);
             
             $this->logger->logDebug('Using PDF template', [
                 'session_id' => $applicationState->session_id,
@@ -973,8 +979,13 @@ class PDFGeneratorService implements PDFGeneratorInterface
     /**
      * Determine which PDF template to use
      */
-    private function determineTemplate(string $employer, bool $hasAccount): string
+    private function determineTemplate(string $employer, bool $hasAccount, bool $isSME = false): string
     {
+        // SME Business Booster applications use the dedicated SME business form
+        if ($isSME || $employer === 'sme-business') {
+            return 'forms.sme_business_pdf';
+        }
+        
         // Check for SSB/Government employers (handle multiple possible values)
         if (in_array($employer, ['goz-ssb', 'government-ssb', 'ssb', 'government'])) {
             return 'forms.ssb_form_pdf';
@@ -1480,7 +1491,11 @@ class PDFGeneratorService implements PDFGeneratorInterface
             $hasAccount = false;
         }
         
-        $template = $this->determineTemplate($formData['employer'] ?? 'private', $hasAccount);
+        $template = $this->determineTemplate(
+            $formData['employer'] ?? 'private', 
+            $hasAccount,
+            ($formData['intent'] ?? '') === 'smeBiz' || ($formData['formType'] ?? '') === 'sme_business' || ($formData['employer'] ?? '') === 'sme-business'
+        );
         $defaultFields = $this->getDefaultFieldsForTemplate($template);
         
         // Merge defaults with actual responses (recursive to handle nested arrays)
@@ -2388,6 +2403,79 @@ class PDFGeneratorService implements PDFGeneratorInterface
         } catch (\Exception $e) {
             Log::error('Account opening PDF generation failed', [
                 'id' => $accountOpening->id,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Generate PDF Receipt for a Cash Order
+     *
+     * @param ApplicationState $applicationState
+     * @return string Path to generated PDF
+     */
+    public function generateReceiptPDF(ApplicationState $applicationState): string
+    {
+        try {
+            $formData = $applicationState->form_data ?? [];
+            $responses = $formData['formResponses'] ?? [];
+            
+            // Format line items
+            $lineItems = [];
+            if (isset($formData['cart']) && is_array($formData['cart'])) {
+                foreach ($formData['cart'] as $item) {
+                    $lineItems[] = [
+                        'name' => $item['name'],
+                        'quantity' => $item['quantity'],
+                        'price' => $item['price'] ?? 0,
+                        'total' => ($item['price'] ?? 0) * $item['quantity']
+                    ];
+                }
+            } else {
+                $lineItems[] = [
+                    'name' => $formData['productName'] ?? $formData['selectedBusiness']['name'] ?? 'Product',
+                    'quantity' => 1,
+                    'price' => $formData['finalPrice'] ?? 0,
+                    'total' => $formData['finalPrice'] ?? 0
+                ];
+            }
+
+            $pdfData = [
+                'reference_code' => $applicationState->reference_code,
+                'application_number' => $applicationState->application_number,
+                'customer_name' => trim(($responses['firstName'] ?? '') . ' ' . ($responses['surname'] ?? '')),
+                'customer_phone' => $responses['mobile'] ?? '',
+                'customer_id' => $responses['nationalIdNumber'] ?? '',
+                'payment_date' => $applicationState->deposit_paid_at ? $applicationState->deposit_paid_at->format('d M Y H:i') : now()->format('d M Y H:i'),
+                'transaction_id' => $applicationState->deposit_transaction_id,
+                'payment_method' => $applicationState->deposit_payment_method,
+                'amount' => $applicationState->deposit_amount,
+                'line_items' => $lineItems,
+                'currency' => $formData['currency'] ?? 'USD',
+            ];
+            
+            $pdf = PDF::loadView('pdfs.receipt', $pdfData);
+            $pdf->setPaper('A5', 'portrait'); 
+            
+            $filename = "receipt_{$applicationState->reference_code}_" . time() . ".pdf";
+            $path = "receipts/{$filename}";
+            
+            if (!Storage::disk('public')->exists('receipts')) {
+                Storage::disk('public')->makeDirectory('receipts');
+            }
+            
+            Storage::disk('public')->put($path, $pdf->output());
+            
+            Log::info('Cash order receipt generated', [
+                'id' => $applicationState->id,
+                'path' => $path,
+            ]);
+            
+            return $path;
+        } catch (\Exception $e) {
+            Log::error('Receipt PDF generation failed', [
+                'id' => $applicationState->id,
                 'error' => $e->getMessage(),
             ]);
             throw $e;

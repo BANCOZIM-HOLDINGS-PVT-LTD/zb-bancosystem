@@ -231,6 +231,18 @@ class PurchaseOrder extends Model
         
         foreach ($applications as $application) {
             $products = $application->form_data['products'] ?? [];
+            
+            // Also include Building Materials Cart items
+            $cartItems = $application->form_data['buildingMaterialsCart'] ?? [];
+            foreach ($cartItems as $cartItem) {
+                if (isset($cartItem['product']['id'])) {
+                    $products[] = [
+                        'id' => $cartItem['product']['id'],
+                        'quantity' => $cartItem['quantity']
+                    ];
+                }
+            }
+            
             foreach ($products as $product) {
                 $productId = $product['id'] ?? null;
                 if ($productId) {

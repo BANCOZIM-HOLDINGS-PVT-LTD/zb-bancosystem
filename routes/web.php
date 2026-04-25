@@ -54,6 +54,7 @@ Route::post('/application/synchronize', [ApplicationWizardController::class, 'sy
 // PDF Routes
 Route::get('/application/download/{sessionId}', [ApplicationPDFController::class, 'download'])->name('application.pdf.download');
 Route::get('/application/view/{sessionId}', [ApplicationPDFController::class, 'view'])->name('application.pdf.view');
+Route::get('/application/receipt/download/{sessionId}', [ApplicationPDFController::class, 'downloadReceipt'])->name('application.receipt.download');
 Route::post('/application/pdf/batch', [ApplicationPDFController::class, 'batchDownload'])->name('application.pdf.batch');
 
 // Account Opening PDF Routes
