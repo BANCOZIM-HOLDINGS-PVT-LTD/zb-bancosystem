@@ -154,7 +154,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 setLoanSettings(settings);
 
                 // Apply intent and currency filtering
-                const filteredCategories = filterProducts(categories);
+                // Skip filtering for smeBiz as the booster API already returns a pre-filtered catalog
+                const filteredCategories = data.intent === 'smeBiz' ? categories : filterProducts(categories);
                 setProductCategories(filteredCategories);
             } catch (err) {
                 console.error('Failed to load products:', err);
