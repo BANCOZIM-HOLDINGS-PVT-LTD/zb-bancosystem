@@ -924,19 +924,45 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             if (n.includes('gold') || n.includes('1500') || n.includes('1,500')) return 'Gold Package';
                                             return name;
                                         };
+
+                                        const getTierColor = (name: string) => {
+                                            const n = name.toLowerCase();
+                                            if (n.includes('lite')) return 'border-slate-300 bg-slate-50';
+                                            if (n.includes('standard')) return 'border-emerald-500 bg-emerald-50';
+                                            if (n.includes('full house')) return 'border-purple-500 bg-purple-50';
+                                            if (n.includes('gold')) return 'border-[#FFD700] bg-yellow-50';
+                                            return 'border-gray-200';
+                                        };
+
+                                        const getTierIcon = (name: string) => {
+                                            const n = name.toLowerCase();
+                                            if (n.includes('lite')) return '🥉';
+                                            if (n.includes('standard')) return '🥈';
+                                            if (n.includes('full house')) return '🏠';
+                                            if (n.includes('gold')) return '🏆';
+                                            return '📦';
+                                        };
+
                                         const isGoldPackage = groupName.includes('Gold');
+                                        const isFullHouse = groupName.toLowerCase().includes('full house');
+                                        const isStandard = groupName.toLowerCase().includes('standard');
+                                        const isLite = groupName.toLowerCase().includes('lite');
                                         
                                         return (
                                             <div key={index} className="flex flex-col gap-2">
                                                 <Card
-                                                    className={`cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg text-center h-full flex flex-col justify-center
+                                                    className={`cursor-pointer p-4 transition-all hover:shadow-lg text-center h-full flex flex-col justify-between relative overflow-hidden
                                                         ${isSelectedGroup
                                                             ? (isGoldPackage
-                                                                ? 'border-4 border-[#FFD700] bg-yellow-50/50 dark:bg-yellow-900/10 ring-2 ring-yellow-200'
-                                                                : 'border-2 border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20')
+                                                                ? 'border-4 border-[#FFD700] bg-yellow-50/50 dark:bg-yellow-900/10 ring-2 ring-yellow-200 scale-105 z-10'
+                                                                : isFullHouse 
+                                                                    ? 'border-4 border-purple-500 bg-purple-50 dark:bg-purple-900/10 ring-2 ring-purple-200 scale-105 z-10'
+                                                                    : 'border-4 border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 ring-2 ring-emerald-200 scale-105 z-10')
                                                             : (isGoldPackage
                                                                 ? 'border-2 border-[#FFD700]/60 hover:border-[#FFD700] bg-yellow-50/30'
-                                                                : '')
+                                                                : isFullHouse
+                                                                    ? 'border-2 border-purple-200 hover:border-purple-400 bg-purple-50/30'
+                                                                    : 'border-2 border-gray-100 hover:border-emerald-300')
                                                         }`}
                                                     onClick={() => {
                                                         // Auto-select the first option when clicking a group
@@ -945,7 +971,36 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                         }
                                                     }}
                                                 >
-                                                    <h3 className="text-lg font-medium mb-2">{formatScaleName(groupName)}</h3>
+                                                    {isGoldPackage && (
+                                                        <div className="absolute top-0 right-0 bg-[#FFD700] text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
+                                                            Best Value
+                                                        </div>
+                                                    )}
+                                                    
+                                                    <div className="mb-2">
+                                                        <div className="text-2xl mb-1">{getTierIcon(groupName)}</div>
+                                                        <h3 className={`text-lg font-bold ${isGoldPackage ? 'text-yellow-700' : isFullHouse ? 'text-purple-700' : 'text-emerald-800'}`}>
+                                                            {formatScaleName(groupName)}
+                                                        </h3>
+                                                    </div>
+
+                                                    <div className="my-2">
+                                                        <div className="text-xl font-bold text-gray-900">
+                                                            {formatCurrency(isZiG ? amount * ZIG_RATE : amount)}
+                                                        </div>
+                                                        <div className="text-[10px] text-gray-500 uppercase font-medium">Starting Price</div>
+                                                    </div>
+
+                                                    <Button 
+                                                        variant={isSelectedGroup ? "default" : "outline"}
+                                                        className={`mt-2 w-full h-8 text-xs ${
+                                                            isSelectedGroup 
+                                                            ? (isGoldPackage ? 'bg-[#FFD700] hover:bg-[#E6C200] text-black' : isFullHouse ? 'bg-purple-600 hover:bg-purple-700' : 'bg-emerald-600') 
+                                                            : ''
+                                                        }`}
+                                                    >
+                                                        {isSelectedGroup ? 'Selected' : 'Select'}
+                                                    </Button>
                                                 </Card>
 
                                                 {/* Render sub-options if this group is selected and has multiple options */}
@@ -993,12 +1048,25 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             </div>
                                         )}
 
-                                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                            {selectedScale.description ? (
-                                                <p className="whitespace-pre-line">{selectedScale.description}</p>
-                                            ) : (
-                                                <p>{getPackageDescription(selectedBusiness.name, selectedScale.name)}</p>
-                                            )}
+                                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                            {(() => {
+                                                const desc = selectedScale.description || getPackageDescription(selectedBusiness.name, selectedScale.name);
+                                                const features = desc.split(/[,\n\.]+/).filter(f => f.trim().length > 0);
+                                                
+                                                if (features.length > 1) {
+                                                    return (
+                                                        <ul className="space-y-2">
+                                                            {features.map((feature, i) => (
+                                                                <li key={i} className="flex items-start gap-2">
+                                                                    <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                                                                    <span>{feature.trim()}</span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    );
+                                                }
+                                                return <p className="whitespace-pre-line">{desc}</p>;
+                                            })()}
                                         </div>
                                         <div className="mt-6 py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
                                             <span className="text-sm font-medium text-gray-600 dark:text-gray-300 block mb-1">Package Remarks:</span>

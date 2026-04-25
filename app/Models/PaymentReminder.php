@@ -8,6 +8,7 @@ class PaymentReminder extends Model
 {
     protected $fillable = [
         'application_state_id',
+        'reminder_type',
         'reminder_stage',
         'sent_at',
     ];

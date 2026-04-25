@@ -91,3 +91,10 @@ Schedule::job(new \App\Jobs\SendPaymentReminderJob())
     ->timezone('Africa/Harare')
     ->name('send-payment-reminders')
     ->description('Send SMS reminders to clients awaiting deposit for 3, 7, or 14 days');
+
+// Abandonment Reminders - sends SMS to clients who dropped off during the wizard
+Schedule::job(new \App\Jobs\SendAbandonmentReminderJob())
+    ->hourly()
+    ->timezone('Africa/Harare')
+    ->name('send-abandonment-reminders')
+    ->description('Send SMS reminders to clients who abandoned the application wizard');
