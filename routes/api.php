@@ -394,26 +394,7 @@ Route::post('/send-application-sms', function (Request $request) {
 });
 
 // Paynow Webhook route (for payment notifications)
-Route::post('/paynow/webhook', function (Request $request) {
-    try {
-        $paynowService = app(\App\Services\PaynowService::class);
-        $result = $paynowService->handleWebhook($request->all());
-
-        if ($result['verified'] && $result['is_paid']) {
-            // Log successful payment notification
-            \Log::info('Paynow webhook: Payment confirmed', [
-                'reference' => $result['reference'],
-                'amount' => $result['amount'],
-                'paynow_reference' => $result['paynow_reference'] ?? null,
-            ]);
-        }
-
-        return response('OK', 200);
-    } catch (\Exception $e) {
-        \Log::error('Paynow webhook error: ' . $e->getMessage());
-        return response('Error', 500);
-    }
-})->name('paynow.webhook');
+Route::post('/paynow/webhook', [\App\Http\Controllers\DepositPaymentController::class, 'paymentCallback'])->name('paynow.webhook');
 
 // Deposit & Full Payment API routes
 Route::prefix('deposit')->group(function () {

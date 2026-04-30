@@ -70,12 +70,34 @@ class Product extends Model
 
     /**
      * Selling price = base_price + markup + TS + TC
+     * Optimized to respect purchase_price or base_price as selling price 
+     * depending on which one is populated in the admin.
      */
     public function getSellingPriceAttribute(): float
     {
-        $cost = (float) $this->base_price;
+        // 1. If we have an explicit selling_price column value, use it
+        if (isset($this->attributes['selling_price']) && (float) $this->attributes['selling_price'] > 0) {
+            return (float) $this->attributes['selling_price'];
+        }
+
+        $base = (float) $this->base_price;
+        $purchase = (float) $this->purchase_price;
         $markup = (float) $this->markup_percentage;
-        return round($cost + ($cost * $markup / 100) + $this->ts_cost + $this->tc_cost, 2);
+
+        // If base_price is non-zero and we have a markup, calculation is likely intended (InventoryManagementResource)
+        if ($base > 0 && $markup > 0) {
+            return round($base + ($base * $markup / 100) + $this->ts_cost + $this->tc_cost, 2);
+        }
+
+        // Fallback: use the larger of base_price or purchase_price as the selling price
+        // This handles the swapped roles in different admin panels (InventoryManagementResource vs StoreProductResource)
+        $price = max($base, $purchase);
+        
+        if ($price > 0) {
+            return round($price + $this->ts_cost + $this->tc_cost, 2);
+        }
+
+        return 0.00;
     }
 
     /**

@@ -103,9 +103,8 @@ class ProductController extends Controller
                     $productData = [
                         'id' => $product->id,
                         'name' => $product->name,
-                        'basePrice' => (float) $product->base_price,
+                        'basePrice' => (float) $product->selling_price,
                         'imageUrl' => $imageUrl,
-                        'description' => $product->description ?? null,
                         'description' => $product->description ?? null,
                         'scales' => [],
                     ];
@@ -187,7 +186,7 @@ class ProductController extends Controller
                                 return [
                                     'id' => $product->id,
                                     'name' => $product->name,
-                                    'base_price' => $product->base_price,
+                                    'base_price' => (float) $product->selling_price,
                                     'formatted_price_range' => $product->formatted_price_range,
                                     'image_url' => $product->image_url,
                                     'package_sizes' => $product->packageSizes->map(function ($size) {
@@ -234,7 +233,7 @@ class ProductController extends Controller
                         'id' => $product->id,
                         'name' => $product->name,
                         'subcategory' => $product->subCategory->name,
-                        'base_price' => $product->base_price,
+                        'base_price' => (float) $product->selling_price,
                         'formatted_price_range' => $product->formatted_price_range,
                         'image_url' => $product->image_url,
                         'package_sizes' => $product->packageSizes->map(function ($size) {
@@ -265,7 +264,7 @@ class ProductController extends Controller
             'data' => [
                 'id' => $product->id,
                 'name' => $product->name,
-                'base_price' => $product->base_price,
+                'base_price' => (float) $product->selling_price,
                 'image_url' => $product->image_url,
                 'image_url' => $product->image_url,
                 'category' => [
@@ -333,7 +332,7 @@ class ProductController extends Controller
                     'category' => $product->category->name,
                     'subcategory' => $product->subCategory->name,
                     'full_category_path' => $product->full_category_path,
-                    'base_price' => $product->base_price,
+                    'base_price' => (float) $product->selling_price,
                     'formatted_price_range' => $product->formatted_price_range,
                     'image_url' => $product->image_url,
                     'package_sizes_count' => $product->packageSizes->count(),

@@ -208,6 +208,18 @@ class DepositPaymentController extends Controller
                 'payment_type' => $paymentType
             ]);
 
+            // 0. Record Financial Transaction (Accounting & Inventory)
+            try {
+                $accountingService = app(\App\Services\AccountingService::class);
+                $accountingService->recordSaleFromApplication($application);
+                Log::info("Recorded financial transaction for paid application", ['reference' => $referenceCode]);
+            } catch (\Exception $e) {
+                Log::error("Failed to record financial transaction", [
+                    'reference' => $referenceCode,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
             // 1. Create Purchase Order(s)
             try {
                 $poService = app(\App\Services\PurchaseOrderService::class);
@@ -280,6 +292,20 @@ class DepositPaymentController extends Controller
                      }
                 } catch (\Exception $e) {
                     Log::error("Failed to send payment confirmation SMS: " . $e->getMessage());
+                }
+
+                // Send Confirmation Email Receipt
+                try {
+                    $mailService = app(\App\Services\DandemutandeMailService::class);
+                    $paymentData = [
+                        'transaction_id' => $paynowReference,
+                        'amount' => $application->deposit_amount,
+                        'method' => 'Paynow',
+                        'currency' => 'USD'
+                    ];
+                    $mailService->sendPaymentReceiptEmail($application, $paymentData);
+                } catch (\Exception $e) {
+                    Log::error("Failed to send payment confirmation email: " . $e->getMessage());
                 }
 
             } catch (\Exception $e) {

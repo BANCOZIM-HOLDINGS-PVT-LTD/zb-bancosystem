@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ChevronLeft, ChevronRight, ArrowLeft, DollarSign, Calendar, Loader2, Monitor, GraduationCap, Info, X } from 'lucide-react';
+import { ChevronRight, ArrowLeft, Calendar, Loader2, Monitor, GraduationCap, Info, X, Search, SearchX } from 'lucide-react';
 import { productService, getCreditTermOptions, type BusinessType, type Subcategory, type Category, type Series } from '../../../services/productService';
 import { zimparksDestinations, type ZimparksDestination } from '../data/zimparksDestinations';
 import { getPackageDescription } from '../data/packageDescriptions';
+import { Input } from '@/components/ui/input';
 import {
     Dialog,
     DialogContent,
@@ -24,6 +25,15 @@ interface ProductSelectionProps {
 }
 
 type ViewMode = 'categories' | 'subcategories' | 'series' | 'businesses' | 'product_detail' | 'zimparks_destinations' | 'scales' | 'terms';
+
+interface SearchResult {
+    type: 'product' | 'series';
+    item: BusinessType | Series;
+    category: Category;
+    subcategory: Subcategory;
+    series: Series | null;
+    isSimilar?: boolean;
+}
 
 const DEFAULT_IMAGE = '/Product-Image-Coming-Soon.png';
 
@@ -49,7 +59,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [showDestinationModal, setShowDestinationModal] = useState<boolean>(false);
     const [showConstructionUnavailableModal, setShowConstructionUnavailableModal] = useState<boolean>(false);
 
-
+    // Search state
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
 
     const ME_SYSTEM_PERCENTAGE = 0.10; // 10% of loan amount
     const TRAINING_PERCENTAGE = 0.055; // 5.5%
@@ -71,9 +83,103 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const isMicroBiz = data.intent === 'microBiz' || data.intent === 'smeBiz';
     const isCash = data.paymentType === 'cash';
 
+    // Search Logic
+    useEffect(() => {
+        if (!searchQuery.trim()) {
+            setSearchResults([]);
+            return;
+        }
+
+        const lowerQuery = searchQuery.toLowerCase();
+        const results: SearchResult[] = [];
+        const seenProductIds = new Set<number>();
+
+        productCategories.forEach(cat => {
+            cat.subcategories.forEach(sub => {
+                // Search in businesses
+                sub.businesses.forEach(biz => {
+                    if ((biz.name.toLowerCase().includes(lowerQuery) || 
+                        (biz.specification && biz.specification.toLowerCase().includes(lowerQuery))) && 
+                        !seenProductIds.has(biz.id || 0)) {
+                        results.push({
+                            type: 'product',
+                            item: biz,
+                            category: cat,
+                            subcategory: sub,
+                            series: null
+                        });
+                        if (biz.id) seenProductIds.add(biz.id);
+                    }
+                });
+
+                // Search in series
+                sub.series?.forEach(s => {
+                    if (s.name.toLowerCase().includes(lowerQuery)) {
+                        results.push({
+                            type: 'series',
+                            item: s,
+                            category: cat,
+                            subcategory: sub,
+                            series: null
+                        });
+                    }
+                    // Search in products within series
+                    s.products.forEach(p => {
+                        if ((p.name.toLowerCase().includes(lowerQuery) || 
+                            (p.specification && p.specification.toLowerCase().includes(lowerQuery))) && 
+                            !seenProductIds.has(p.id || 0)) {
+                            results.push({
+                                type: 'product',
+                                item: p,
+                                category: cat,
+                                subcategory: sub,
+                                series: s
+                            });
+                            if (p.id) seenProductIds.add(p.id);
+                        }
+                    });
+                });
+            });
+        });
+
+        // Add similar products logic if we have results
+        if (results.length > 0 && results.length < 5) {
+            const firstResult = results[0];
+            const relatedProducts: SearchResult[] = firstResult.subcategory.businesses
+                .filter((b: BusinessType) => !seenProductIds.has(b.id || 0))
+                .slice(0, 3)
+                .map((b: BusinessType) => ({
+                    type: 'product',
+                    item: b,
+                    category: firstResult.category,
+                    subcategory: firstResult.subcategory,
+                    series: null,
+                    isSimilar: true
+                }));
+            results.push(...relatedProducts);
+        }
+
+        setSearchResults(results.slice(0, 10));
+    }, [searchQuery, productCategories]);
+
+    const handleSearchResultClick = (result: SearchResult) => {
+        setSearchQuery('');
+        setSearchResults([]);
+        
+        setSelectedCategory(result.category);
+        setSelectedSubcategory(result.subcategory);
+        
+        if (result.type === 'product') {
+            setSelectedSeries(result.series);
+            handleBusinessSelect(result.item as BusinessType);
+        } else if (result.type === 'series') {
+            handleSeriesSelect(result.item as Series);
+        }
+    };
 
 
-    const filterProducts = (categories: Category[]) => {
+
+    const filterProducts = useCallback((categories: Category[]) => {
         let intentKeywords: string[] = [];
 
         switch (data.intent) {
@@ -137,7 +243,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 subcategories: filteredSubcategories
             };
         }).filter(cat => cat.subcategories.length > 0);
-    };
+    }, [data.intent, isZiG]);
 
     // Load products from API on component mount
     useEffect(() => {
@@ -166,7 +272,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         };
 
         loadProducts();
-    }, [data.intent, selectedCurrency]); // Re-run if intent or currency changes
+    }, [data.intent, selectedCurrency, filterProducts]); // Re-run if intent or currency changes
 
     const handleCategorySelect = (category: Category) => {
         // Check if Construction category is clicked - show unavailable modal
@@ -486,6 +592,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 id: selectedBusiness?.id?.toString(),
                 name: selectedBusiness?.name,
                 product_code: selectedBusiness?.product_code,
+                basePrice: selectedBusiness?.basePrice,
                 salesData: []
             },
             selectedScale: selectedScale ? {
@@ -633,6 +740,85 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     </p>
                 )}
             </div>
+
+            {/* Search Bar - Visible in selection views */}
+            {['categories', 'subcategories', 'series', 'businesses'].includes(currentView) && (
+                <div className="relative max-w-2xl mx-auto mb-8 w-full">
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <Input
+                            type="text"
+                            placeholder="Search for products, categories, or businesses..."
+                            className="pl-10 py-6 text-lg border-emerald-100 focus:border-emerald-500 focus:ring-emerald-500 rounded-xl shadow-sm"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        {searchQuery && (
+                            <button 
+                                onClick={() => setSearchQuery('')}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                            >
+                                <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Search Results Dropdown */}
+                    {searchResults.length > 0 && (
+                        <Card className="absolute z-50 w-full mt-2 overflow-hidden shadow-xl border-emerald-100 max-h-[400px] overflow-y-auto">
+                            <div className="p-2 bg-emerald-50 text-[10px] font-bold uppercase tracking-wider text-emerald-700 flex justify-between items-center">
+                                <span>Search Results</span>
+                            </div>
+                            <div className="divide-y divide-gray-100">
+                                {searchResults.map((result, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="p-3 hover:bg-emerald-50 cursor-pointer transition-colors flex items-center gap-3"
+                                        onClick={() => handleSearchResultClick(result)}
+                                    >
+                                        <div className="w-10 h-10 bg-gray-100 rounded flex-shrink-0 overflow-hidden">
+                                            <img 
+                                                src={result.item.image_url ? `/storage/${result.item.image_url}` : DEFAULT_IMAGE} 
+                                                alt={result.item.name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="flex-grow text-left">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-medium text-gray-900">{result.item.name}</span>
+                                                {result.isSimilar && (
+                                                    <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">Suggested</span>
+                                                )}
+                                            </div>
+                                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                                                {result.category.name} <ChevronRight className="h-3 w-3" /> {result.subcategory.name}
+                                                {result.series && <><ChevronRight className="h-3 w-3" /> {result.series.name}</>}
+                                            </div>
+                                        </div>
+                                        <div className="text-emerald-600 font-bold text-sm">
+                                            {formatCurrency(isZiG ? result.item.basePrice * ZIG_RATE : result.item.basePrice)}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+                    )}
+                    {searchQuery && searchResults.length === 0 && (
+                        <Card className="absolute z-50 w-full mt-2 p-8 text-center shadow-xl border-emerald-100">
+                            <div className="flex flex-col items-center gap-3">
+                                <SearchX className="h-12 w-12 text-gray-300" />
+                                <div className="text-gray-900 font-medium">No products found for "{searchQuery}"</div>
+                                <p className="text-sm text-gray-500">Try searching for something else or browse categories below.</p>
+                                <Button variant="outline" size="sm" onClick={() => setSearchQuery('')} className="mt-2">
+                                    Clear search
+                                </Button>
+                            </div>
+                        </Card>
+                    )}
+                </div>
+            )}
 
             <div className="min-h-[400px]">
                 {currentView === 'categories' && (
@@ -926,15 +1112,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             return name;
                                         };
 
-                                        const getTierColor = (name: string) => {
-                                            const n = name.toLowerCase();
-                                            if (n.includes('lite')) return 'border-slate-300 bg-slate-50';
-                                            if (n.includes('standard')) return 'border-emerald-500 bg-emerald-50';
-                                            if (n.includes('full house')) return 'border-purple-500 bg-purple-50';
-                                            if (n.includes('gold')) return 'border-[#FFD700] bg-yellow-50';
-                                            return 'border-gray-200';
-                                        };
-
                                         const getTierIcon = (name: string) => {
                                             const n = name.toLowerCase();
                                             if (n.includes('lite')) return '🥉';
@@ -946,8 +1123,6 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
                                         const isGoldPackage = groupName.includes('Gold');
                                         const isFullHouse = groupName.toLowerCase().includes('full house');
-                                        const isStandard = groupName.toLowerCase().includes('standard');
-                                        const isLite = groupName.toLowerCase().includes('lite');
                                         
                                         return (
                                             <div key={index} className="flex flex-col gap-2">
@@ -1052,7 +1227,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                         <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                             {(() => {
                                                 const desc = selectedScale.description || getPackageDescription(selectedBusiness.name, selectedScale.name);
-                                                const features = desc.split(/[,\n\.]+/).filter(f => f.trim().length > 0);
+                                                const features = desc.split(/[,\n.]+/).filter(f => f.trim().length > 0);
                                                 
                                                 if (features.length > 1) {
                                                     return (

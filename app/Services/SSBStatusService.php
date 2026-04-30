@@ -176,7 +176,6 @@ class SSBStatusService
         // Auto-approve and move to approved state
         $application->current_step = 'approved';
         $application->status = 'approved';
-        $application->approved_at = now();
         $application->save();
 
         $this->updateStatus(
@@ -185,8 +184,13 @@ class SSBStatusService
             'Loan application fully approved and delivery process initiated'
         );
 
-        // Trigger PO and Delivery
+        // Trigger Accounting, PO and Delivery
         try {
+            // Accounting & Inventory
+            $accountingService = app(\App\Services\AccountingService::class);
+            $accountingService->recordSaleFromApplication($application);
+
+            // Purchase Order
             $poService = app(\App\Services\PurchaseOrderService::class);
             $poService->createFromApplication($application);
             

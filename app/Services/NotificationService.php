@@ -7,6 +7,13 @@ use Illuminate\Support\Facades\Log;
 
 class NotificationService
 {
+    protected $mailService;
+
+    public function __construct(DandemutandeMailService $mailService)
+    {
+        $this->mailService = $mailService;
+    }
+
     /**
      * Send a status update notification
      *
@@ -38,6 +45,9 @@ class NotificationService
 
             // Send different notifications based on status change
             $this->sendStatusSpecificNotification($applicationState, $newStatus, $applicantName, $email, $phone);
+
+            // Send Email Notification
+            $this->mailService->sendApplicationStatusUpdatedEmail($applicationState);
 
             // Store notification in application metadata for display in UI
             $this->storeNotificationInMetadata($applicationState, $oldStatus, $newStatus);
@@ -315,7 +325,12 @@ class NotificationService
             Log::info("Sending submission confirmation SMS to {$phone}: {$message}");
 
             // Send SMS
-            return $this->sendSMS($phone, $message);
+            $smsSent = $this->sendSMS($phone, $message);
+
+            // Send Email
+            $emailSent = $this->mailService->sendApplicationReceivedEmail($applicationState);
+
+            return $smsSent || $emailSent;
         } catch (\Exception $e) {
             Log::error("Failed to send submission notification: " . $e->getMessage());
             return false;

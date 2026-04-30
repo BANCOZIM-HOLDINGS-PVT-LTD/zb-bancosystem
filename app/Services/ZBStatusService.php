@@ -276,6 +276,24 @@ class ZBStatusService
                 ['approved_at' => now()->toISOString()]
             );
 
+            // Record Financial Transaction (Accounting & Inventory)
+            try {
+                $accountingService = app(\App\Services\AccountingService::class);
+                $accountingService->recordSaleFromApplication($application);
+                Log::info("ZB Approval: Financial transaction recorded", ['application_id' => $application->id]);
+            } catch (\Exception $e) {
+                Log::error("ZB Approval: Financial transaction recording failed: " . $e->getMessage(), ['application_id' => $application->id]);
+            }
+
+            // Create Purchase Order
+            try {
+                $poService = app(\App\Services\PurchaseOrderService::class);
+                $poService->createFromApplication($application);
+                Log::info("ZB Approval: PO initiated", ['application_id' => $application->id]);
+            } catch (\Exception $e) {
+                Log::error("ZB Approval: PO creation failed: " . $e->getMessage(), ['application_id' => $application->id]);
+            }
+
             // Create Delivery Tracking Record
             $formData = $application->form_data ?? [];
             $formResponses = $formData['formResponses'] ?? [];
