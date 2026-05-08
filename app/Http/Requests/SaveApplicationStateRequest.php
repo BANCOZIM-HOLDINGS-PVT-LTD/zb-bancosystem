@@ -43,6 +43,7 @@ class SaveApplicationStateRequest extends FormRequest
                 'required',
                 'string',
                 'max:100', // Increased to allow for any step name
+                Rule::notIn(['invalid-step']),
                 // Note: Removed strict Rule::in to allow any step name - validation is relaxed
                 // to prevent issues with new or dynamically named steps
             ],

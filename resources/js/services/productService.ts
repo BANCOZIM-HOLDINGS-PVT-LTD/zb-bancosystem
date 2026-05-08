@@ -24,6 +24,10 @@ export interface BusinessType {
     description?: string; // Added description
     remarks?: string; // Admin description 
     image_url?: string;
+    deposit?: number;
+    monthly_installment?: number;
+    loan_term?: number;
+    included_items?: { name: string; quantity: number; unit?: string }[];
   }[];
   tenure?: number;
 }

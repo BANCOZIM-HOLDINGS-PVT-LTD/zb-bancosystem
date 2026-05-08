@@ -30,4 +30,14 @@ class BoosterBusiness extends Model
     {
         return $this->hasMany(BoosterTier::class);
     }
+
+    public function packages(): HasMany
+    {
+        return $this->hasMany(BoosterPackage::class);
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(BoosterItem::class);
+    }
 }

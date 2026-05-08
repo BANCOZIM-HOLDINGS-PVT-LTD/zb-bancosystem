@@ -12,22 +12,45 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Config;
 use Mockery;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class PDFGeneratorServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected $pdfLoggingService;
+    protected $monitoringService;
+    protected $templateService;
+    protected $securityService;
+    protected $validationService;
+    protected $storageService;
+    protected $metadataService;
     protected $pdfGeneratorService;
     
     protected function setUp(): void
     {
         parent::setUp();
         
-        // Mock the PDFLoggingService
-        $this->pdfLoggingService = Mockery::mock(PDFLoggingService::class);
+        // Mock all 7 dependencies
+        $this->pdfLoggingService = Mockery::mock(\App\Services\PDFLoggingService::class)->shouldIgnoreMissing();
+        $this->monitoringService = Mockery::mock(\App\Services\SystemMonitoringService::class)->shouldIgnoreMissing();
+        $this->templateService = Mockery::mock(\App\Services\PDF\PDFTemplateService::class)->shouldIgnoreMissing();
+        $this->securityService = Mockery::mock(\App\Services\PDF\PDFSecurityService::class)->shouldIgnoreMissing();
+        $this->validationService = Mockery::mock(\App\Services\PDF\PDFValidationService::class)->shouldIgnoreMissing();
+        $this->storageService = Mockery::mock(\App\Services\PDF\PDFStorageService::class)->shouldIgnoreMissing();
+        $this->metadataService = Mockery::mock(\App\Services\PDF\PDFMetadataService::class)->shouldIgnoreMissing();
         
-        // Create the service with the mock logger
-        $this->pdfGeneratorService = new PDFGeneratorService($this->pdfLoggingService);
+        // Create the service with all mock dependencies
+        $this->pdfGeneratorService = new PDFGeneratorService(
+            $this->pdfLoggingService,
+            $this->monitoringService,
+            $this->templateService,
+            $this->securityService,
+            $this->validationService,
+            $this->storageService,
+            $this->metadataService
+        );
     }
     
     protected function tearDown(): void
@@ -97,9 +120,11 @@ class PDFGeneratorServiceTest extends TestCase
      */
     public function test_generate_application_pdf_throws_exception_when_form_data_is_empty()
     {
-        // Create application state with empty form data
+        // Create application state
         $applicationState = new ApplicationState([
             'session_id' => 'test-session-id',
+            'user_identifier' => 'test-user',
+            'channel' => 'web',
             'current_step' => 'completed',
             'form_data' => []
         ]);
@@ -126,9 +151,11 @@ class PDFGeneratorServiceTest extends TestCase
      */
     public function test_generate_application_pdf_throws_exception_when_form_responses_missing()
     {
-        // Create application state with form data but no form responses
+        // Create application state
         $applicationState = new ApplicationState([
             'session_id' => 'test-session-id',
+            'user_identifier' => 'test-user',
+            'channel' => 'web',
             'current_step' => 'completed',
             'form_data' => [
                 'employer' => 'some-employer',
@@ -159,8 +186,9 @@ class PDFGeneratorServiceTest extends TestCase
      */
     public function test_generate_application_pdf_success()
     {
-        // Mock Storage facade
-        Storage::fake('public');
+        // Mock Storage disk
+        $diskMock = Mockery::mock(\Illuminate\Contracts\Filesystem\Filesystem::class);
+        Storage::shouldReceive('disk')->with('public')->andReturn($diskMock);
         
         // Create a mock PDF instance
         $pdfMock = Mockery::mock('Barryvdh\DomPDF\PDF');
@@ -172,8 +200,11 @@ class PDFGeneratorServiceTest extends TestCase
         // Mock the DomPDF instance
         $domPdfMock = Mockery::mock('Dompdf\Dompdf');
         $canvasMock = Mockery::mock('Dompdf\Canvas');
+        $cpdfMock = Mockery::mock('Dompdf\Cpdf');
         
         $domPdfMock->shouldReceive('get_canvas')->andReturn($canvasMock);
+        $canvasMock->shouldReceive('get_cpdf')->andReturn($cpdfMock);
+        $cpdfMock->shouldReceive('setEncryption')->withAnyArgs()->andReturnNull();
         $pdfMock->shouldReceive('getDomPDF')->andReturn($domPdfMock);
         
         // Mock the canvas add_info method
@@ -182,9 +213,11 @@ class PDFGeneratorServiceTest extends TestCase
         // Replace the PDF facade with our mock
         Pdf::shouldReceive('loadView')->andReturn($pdfMock);
         
-        // Create application state with valid form data
+        // Create application state
         $applicationState = new ApplicationState([
             'session_id' => 'test-session-id',
+            'user_identifier' => 'test-user',
+            'channel' => 'web',
             'current_step' => 'completed',
             'form_data' => [
                 'employer' => 'some-employer',
@@ -204,30 +237,30 @@ class PDFGeneratorServiceTest extends TestCase
         $this->pdfLoggingService->shouldReceive('logPerformance')->withAnyArgs()->andReturnNull();
         
         // Ensure the applications directory exists check
-        Storage::disk('public')->shouldReceive('exists')
+        $diskMock->shouldReceive('exists')
             ->with('applications')
             ->andReturn(false);
             
-        Storage::disk('public')->shouldReceive('makeDirectory')
+        $diskMock->shouldReceive('makeDirectory')
             ->with('applications')
             ->andReturn(true);
         
         // Expect the PDF to be stored
-        Storage::disk('public')->shouldReceive('put')
+        $diskMock->shouldReceive('put')
             ->withArgs(function ($path, $content) {
                 return strpos($path, 'applications/') === 0 && $content === 'PDF content';
             })
             ->andReturn(true);
             
         // Verify file exists after saving
-        Storage::disk('public')->shouldReceive('exists')
+        $diskMock->shouldReceive('exists')
             ->withArgs(function ($path) {
                 return strpos($path, 'applications/') === 0;
             })
             ->andReturn(true);
             
         // Get file size
-        Storage::disk('public')->shouldReceive('size')
+        $diskMock->shouldReceive('size')
             ->withArgs(function ($path) {
                 return strpos($path, 'applications/') === 0;
             })
@@ -246,8 +279,9 @@ class PDFGeneratorServiceTest extends TestCase
      */
     public function test_generate_application_pdf_throws_exception_on_storage_failure()
     {
-        // Mock Storage facade
-        Storage::fake('public');
+        // Mock Storage disk
+        $diskMock = Mockery::mock(\Illuminate\Contracts\Filesystem\Filesystem::class);
+        Storage::shouldReceive('disk')->with('public')->andReturn($diskMock);
         
         // Create a mock PDF instance
         $pdfMock = Mockery::mock('Barryvdh\DomPDF\PDF');
@@ -259,8 +293,11 @@ class PDFGeneratorServiceTest extends TestCase
         // Mock the DomPDF instance
         $domPdfMock = Mockery::mock('Dompdf\Dompdf');
         $canvasMock = Mockery::mock('Dompdf\Canvas');
+        $cpdfMock = Mockery::mock('Dompdf\Cpdf');
         
         $domPdfMock->shouldReceive('get_canvas')->andReturn($canvasMock);
+        $canvasMock->shouldReceive('get_cpdf')->andReturn($cpdfMock);
+        $cpdfMock->shouldReceive('setEncryption')->withAnyArgs()->andReturnNull();
         $pdfMock->shouldReceive('getDomPDF')->andReturn($domPdfMock);
         
         // Mock the canvas add_info method
@@ -269,9 +306,11 @@ class PDFGeneratorServiceTest extends TestCase
         // Replace the PDF facade with our mock
         Pdf::shouldReceive('loadView')->andReturn($pdfMock);
         
-        // Create application state with valid form data
+        // Create application state
         $applicationState = new ApplicationState([
             'session_id' => 'test-session-id',
+            'user_identifier' => 'test-user',
+            'channel' => 'web',
             'current_step' => 'completed',
             'form_data' => [
                 'employer' => 'some-employer',
@@ -291,19 +330,19 @@ class PDFGeneratorServiceTest extends TestCase
         $this->pdfLoggingService->shouldReceive('logError')->withAnyArgs()->andReturnNull();
         
         // Ensure the applications directory exists check
-        Storage::disk('public')->shouldReceive('exists')
+        $diskMock->shouldReceive('exists')
             ->with('applications')
             ->andReturn(true);
         
         // Simulate storage failure
-        Storage::disk('public')->shouldReceive('put')
+        $diskMock->shouldReceive('put')
             ->withArgs(function ($path, $content) {
                 return strpos($path, 'applications/') === 0 && $content === 'PDF content';
             })
             ->andReturn(false);
             
         // Verify file exists after saving - return false to simulate failure
-        Storage::disk('public')->shouldReceive('exists')
+        $diskMock->shouldReceive('exists')
             ->withArgs(function ($path) {
                 return strpos($path, 'applications/') === 0;
             })
@@ -321,9 +360,11 @@ class PDFGeneratorServiceTest extends TestCase
      */
     public function test_generate_application_pdf_throws_exception_on_rendering_failure()
     {
-        // Create application state with valid form data
+        // Create application state
         $applicationState = new ApplicationState([
             'session_id' => 'test-session-id',
+            'user_identifier' => 'test-user',
+            'channel' => 'web',
             'current_step' => 'completed',
             'form_data' => [
                 'employer' => 'some-employer',

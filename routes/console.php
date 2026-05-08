@@ -85,12 +85,35 @@ Schedule::command('payday:notify-officers')
     ->name('payday-notify-officers')
     ->description('Email loan officer with clients needing account holds');
 
+// SSB Batch Export - generates the daily SSB CSV for applications awaiting export
+Schedule::job(new \App\Jobs\ExportSSBBatchJob())
+    ->dailyAt(env('SSB_EXPORT_TIME', '17:00'))
+    ->timezone('Africa/Harare')
+    ->name('export-ssb-batch')
+    ->description('Submit applications awaiting SSB batching via API and store CSV audit export');
+
+// SSB Response Import - polls the SSB API for status changes during business hours
+Schedule::job(new \App\Jobs\ImportSSBResponseJob())
+    ->weekdays()
+    ->hourly()
+    ->between('08:00', '17:00')
+    ->timezone('Africa/Harare')
+    ->name('import-ssb-responses')
+    ->description('Import SSB approval/rejection responses from API');
+
 // Payment Reminders - sends SMS to clients awaiting deposit for 3, 7, 14 days
 Schedule::job(new \App\Jobs\SendPaymentReminderJob())
     ->dailyAt('08:00')
     ->timezone('Africa/Harare')
     ->name('send-payment-reminders')
     ->description('Send SMS reminders to clients awaiting deposit for 3, 7, or 14 days');
+
+// Paynow reconciliation - keeps durable payment records aligned with provider status
+Schedule::job(new \App\Jobs\ReconcilePaynowPaymentsJob())
+    ->hourly()
+    ->timezone('Africa/Harare')
+    ->name('reconcile-paynow-payments')
+    ->description('Poll Paynow for pending payment statuses');
 
 // Abandonment Reminders - sends SMS to clients who dropped off during the wizard
 Schedule::job(new \App\Jobs\SendAbandonmentReminderJob())

@@ -48,7 +48,7 @@ class StateController extends Controller
                 $validated['channel'],
                 $validated['user_identifier'],
                 $validated['current_step'],
-                $validated['form_data'],
+                $validated['form_data'] ?? [],
                 $validated['metadata'] ?? []
             );
 
@@ -116,6 +116,29 @@ class StateController extends Controller
      */
     public function createApplication(Request $request): JsonResponse
     {
+        if ($request->filled('session_id') && !$request->filled('sessionId')) {
+            $applicationState = ApplicationState::where('session_id', $request->input('session_id'))->first();
+
+            if (!$applicationState) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Application state not found',
+                ], 404);
+            }
+
+            if ($applicationState->current_step !== 'completed') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Application state is incomplete',
+                ], 400);
+            }
+
+            $request->merge([
+                'sessionId' => $applicationState->session_id,
+                'data' => $applicationState->form_data ?? [],
+            ]);
+        }
+
         $validated = $request->validate([
             'sessionId' => 'required|string',
             'data' => 'required|array',
@@ -263,6 +286,7 @@ class StateController extends Controller
                 'application_id' => $state->session_id,
                 'reference_number' => $referenceCode,
                 'reference_code' => $referenceCode,
+                'created_at' => $state->created_at?->toISOString(),
             ]);
         } catch (\Exception $e) {
             \Log::error('Application submission failed', [

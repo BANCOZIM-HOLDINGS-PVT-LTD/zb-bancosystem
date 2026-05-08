@@ -12,6 +12,13 @@
     $fcbData = $fcbData ?? null;
     $guarantor = $guarantor ?? ($formResponses['guarantor'] ?? []);
     $otherLoans = $otherLoans ?? ($formResponses['otherLoans'] ?? []);
+    $responsiblePaymaster = $responsiblePaymaster ?? ($formResponses['responsiblePaymaster'] ?? '');
+    $deliveryAddress = $deliveryAddress ?? ($formResponses['deliveryAddress'] ?? '');
+    $propertyOwnership = $propertyOwnership ?? ($formResponses['propertyOwnership'] ?? '');
+    $productDescription = $productDescription ?? ($formResponses['productDescription'] ?? $formResponses['creditFacilityType'] ?? $formResponses['business'] ?? '');
+    $periodAtAddress = $periodAtAddress ?? ($formResponses['periodAtAddress'] ?? '');
+    $employmentStatus = $employmentStatus ?? ($formResponses['employmentStatus'] ?? '');
+    $loanTenure = $loanTenure ?? ($formResponses['loanTenure'] ?? $formResponses['term'] ?? '');
 
     // Helper to format address from JSON or string
     $formatAddress = function($value) {

@@ -7,10 +7,13 @@ use App\Services\WhatsAppStateMachine;
 use App\Services\WhatsAppCloudApiService;
 use App\Services\StateManager;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use ReflectionClass;
 
 class WhatsAppStateMachineTest extends TestCase
 {
+    use RefreshDatabase;
+
     private $stateMachine;
     private $whatsAppService;
     private $stateManager;

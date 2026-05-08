@@ -100,7 +100,10 @@ class ProductCatalogSeeder extends Seeder
                     if (!$product) {
                         // Auto-generate product code for MicroBiz businesses
                         $shortName = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $businessData['name']), 0, 8));
-                        $productCode = 'MB-' . $shortName . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+                        
+                        do {
+                            $productCode = 'MB-' . $shortName . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+                        } while (DB::table('products')->where('product_code', $productCode)->exists());
 
                         $productId = DB::table('products')->insertGetId([
                             'product_sub_category_id' => $subcategoryId,

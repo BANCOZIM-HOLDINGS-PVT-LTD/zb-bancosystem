@@ -42,7 +42,7 @@ Route::prefix('boosters')->group(function () {
 
 // Application State API routes
 Route::prefix('states')->group(function () {
-    Route::post('/save', [StateController::class, 'saveState']);
+    Route::post('/save', [StateController::class, 'saveState'])->middleware('throttle:60,1');
     Route::post('/retrieve', [StateController::class, 'retrieveState']);
     Route::post('/create-application', [StateController::class, 'createApplication']);
     Route::post('/link', [StateController::class, 'linkSessions']);
@@ -260,7 +260,7 @@ Route::prefix('reference-code')->group(function () {
 Route::prefix('application')->group(function () {
     Route::get('/status/{reference}', [\App\Http\Controllers\ApplicationStatusController::class, 'getStatus']);
     Route::post('/resubmit', [\App\Http\Controllers\ApplicationStatusController::class, 'resubmit']);
-    Route::put('/status/{sessionId}', [\App\Http\Controllers\ApplicationStatusController::class, 'updateStatus'])->middleware('auth:sanctum');
+    Route::match(['put', 'post'], '/status/{sessionId}', [\App\Http\Controllers\ApplicationStatusController::class, 'updateStatus']);
     Route::post('/notifications/{reference}/mark-read', [\App\Http\Controllers\ApplicationStatusController::class, 'markNotificationsAsRead']);
     Route::get('/status-updates/{reference}', [\App\Http\Controllers\ApplicationStatusController::class, 'getStatusUpdates']);
     Route::get('/progress/{reference}', [\App\Http\Controllers\ApplicationStatusController::class, 'getProgressDetails']);
@@ -320,11 +320,25 @@ Route::prefix('delivery')->group(function () {
 
 // Cart System Routes
 Route::prefix('cart')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Api\CartController::class, 'index']);
+    Route::get('/products', [\App\Http\Controllers\Api\CartController::class, 'products']);
+    Route::get('/total', [\App\Http\Controllers\Api\CartController::class, 'total']);
+    Route::get('/validate-stock', [\App\Http\Controllers\Api\CartController::class, 'validateStock']);
+    Route::post('/items', [\App\Http\Controllers\Api\CartController::class, 'addItem']);
+    Route::put('/items/{id}', [\App\Http\Controllers\Api\CartController::class, 'updateItem']);
+    Route::delete('/items/{id}', [\App\Http\Controllers\Api\CartController::class, 'removeItemById']);
     Route::get('/{sessionId}', [\App\Http\Controllers\Api\CartController::class, 'getCart']);
     Route::post('/add', [\App\Http\Controllers\Api\CartController::class, 'addItem']);
     Route::post('/update', [\App\Http\Controllers\Api\CartController::class, 'updateQuantity']);
     Route::post('/remove', [\App\Http\Controllers\Api\CartController::class, 'removeItem']);
     Route::post('/clear', [\App\Http\Controllers\Api\CartController::class, 'clearCart']);
+});
+
+// Cash payment verification routes
+Route::prefix('cash-payments')->group(function () {
+    Route::post('/intent', [\App\Http\Controllers\CashPaymentController::class, 'createIntent']);
+    Route::post('/{cashPayment}/verify', [\App\Http\Controllers\CashPaymentController::class, 'verify']);
+    Route::post('/{cashPayment}/reject', [\App\Http\Controllers\CashPaymentController::class, 'reject']);
 });
 
 // Invoice SMS Notification API routes
@@ -413,4 +427,3 @@ Route::post('/loan-deposits/initiate', [App\Http\Controllers\LoanController::cla
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
-

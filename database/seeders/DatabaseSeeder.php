@@ -32,11 +32,13 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AdminUserSeeder::class, // Create admin user first (admin@bancosystem.fly.dev)
             PortalUsersSeeder::class, // Create portal users (zbadmin, accounts, stores, hr, partners)
+            BranchSeeder::class, // Seed branches
             
             SupplierSeeder::class, // Suppliers for products
 
             ProductCatalogSeeder::class, // Categories + General Microbiz Products
             ServicePackageSeeder::class, // Service domain products
+            BoosterPackageSeeder::class, // SME Booster products
             
             MicrobizBusinessSeeder::class, // Detailed Microbiz businesses
             MicrobizChickenProjectSeeder::class, // Broiler Production specific
@@ -61,6 +63,8 @@ class DatabaseSeeder extends Seeder
             PersonalProductsSeeder::class, // Other Personal products (Services like Holiday, School Fees)
             
             AgentSeeder::class,
+            TestApplicationsSeeder::class, // Standard test applications
+            ComprehensiveFlowSeeder::class, // Additional flow-specific applications
         ]);
     }
 }

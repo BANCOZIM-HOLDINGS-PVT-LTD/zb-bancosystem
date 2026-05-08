@@ -241,7 +241,7 @@ class WhatsAppWebhookController extends Controller
 
         if (!$mediaData) {
             Log::error('Failed to download Cloud API media', ['media_id' => $mediaId]);
-            $this->whatsAppService->sendMessage($from, "Sorry, we couldn't process your media. Please try again.");
+                $this->sendWhatsAppMessage($from, "Sorry, we couldn't process your media. Please try again.");
             return;
         }
 
@@ -296,7 +296,7 @@ class WhatsAppWebhookController extends Controller
             // DEBUG: Test direct message sending
             if (strtolower(trim($body)) === 'test') {
                 Log::info('WhatsApp TEST: Attempting direct message send');
-                $result = $this->whatsAppService->sendMessage($from, 'Test message received! Bot is working with Cloud API.');
+                $result = $this->sendWhatsAppMessage($from, 'Test message received! Bot is working with Cloud API.');
                 Log::info('WhatsApp TEST: Send result', ['success' => $result]);
                 return;
             }
@@ -319,7 +319,7 @@ class WhatsAppWebhookController extends Controller
             
             // Try to send an error message to the user
             try {
-                $this->whatsAppService->sendMessage($from, "Sorry, something went wrong. Please try again or type 'start' to begin.");
+                $this->sendWhatsAppMessage($from, "Sorry, something went wrong. Please try again or type 'start' to begin.");
             } catch (\Exception $sendError) {
                 Log::error('Failed to send error message', ['error' => $sendError->getMessage()]);
             }
@@ -386,7 +386,7 @@ class WhatsAppWebhookController extends Controller
             // DEBUG: Test direct message sending first
             if (strtolower(trim($body)) === 'test') {
                 Log::info('WhatsApp TEST: Attempting direct message send');
-                $result = $this->whatsAppService->sendMessage($from, 'Test message received! Bot is working.');
+                $result = $this->sendWhatsAppMessage($from, 'Test message received! Bot is working.');
                 Log::info('WhatsApp TEST: Send result', ['success' => $result]);
                 return response()->json(['status' => 'ok', 'test' => 'sent'], 200);
             }
@@ -431,7 +431,7 @@ class WhatsAppWebhookController extends Controller
                     'from' => $from,
                     'phone_lookup' => $phoneNumber
                 ]);
-                $this->whatsAppService->sendMessage($from, "Please start a conversation first by sending 'Hi' or 'Hello'.");
+                $this->sendWhatsAppMessage($from, "Please start a conversation first by sending 'Hi' or 'Hello'.");
                 return response()->json(['status' => 'ok'], 200);
             }
             
@@ -441,7 +441,7 @@ class WhatsAppWebhookController extends Controller
                     'from' => $from,
                     'current_step' => $state->current_step
                 ]);
-                $this->whatsAppService->sendMessage($from, "I wasn't expecting a photo right now. Please continue with the conversation.");
+                $this->sendWhatsAppMessage($from, "I wasn't expecting a photo right now. Please continue with the conversation.");
                 return response()->json(['status' => 'ok'], 200);
             }
             
@@ -465,7 +465,7 @@ class WhatsAppWebhookController extends Controller
             
             if (empty($mediaUrl) && empty($mediaContent)) {
                 Log::warning('Media message received without URL', ['request' => $request->all()]);
-                $this->whatsAppService->sendMessage($from, "Sorry, I couldn't receive your photo. Please try sending it again.");
+                $this->sendWhatsAppMessage($from, "Sorry, I couldn't receive your photo. Please try sending it again.");
                 return response()->json(['status' => 'error', 'message' => 'No media URL'], 400);
             }
             
@@ -532,7 +532,7 @@ class WhatsAppWebhookController extends Controller
             $msg .= "• SMS: {$formData['voice_number']}\n\n";
             $msg .= "• WhatsApp: {$formData['whatsapp_contact']} \n\n";
             
-           $this->whatsAppService->sendMessage($from, $msg);
+           $this->sendWhatsAppMessage($from, $msg);
             
             Log::info('Agent application submitted via webhook', [
                 'application_id' => $application->id,
@@ -543,7 +543,7 @@ class WhatsAppWebhookController extends Controller
             Log::error('Failed to save agent application in webhook: ' . $e->getMessage());
             
             $msg = "❌ Sorry, there was an error saving your application. Please try again later or contact support.";
-            $this->whatsAppService->sendMessage($from, $msg);
+            $this->sendWhatsAppMessage($from, $msg);
         }
     }
 
@@ -618,6 +618,15 @@ class WhatsAppWebhookController extends Controller
                 return;
             }
             
+            if ($this->hasLegacyRapiWhaOverride()) {
+                $resumeUrl = config('app.url') . "/application/resume/{$referenceCode}";
+                $this->sendWhatsAppMessage(
+                    $from,
+                    "✅ *Resume Application*\n\nReference Code: *{$referenceCode}*\n\nContinue here:\n{$resumeUrl}"
+                );
+                return;
+            }
+
             // Use conversation service to resume the application
             $this->conversationService->resumeApplication($from, $referenceCode);
             
@@ -634,7 +643,7 @@ class WhatsAppWebhookController extends Controller
                 'reference_code' => $referenceCode
             ]);
             
-            $this->whatsAppService->sendMessage($from, 
+            $this->sendWhatsAppMessage($from, 
                 "❌ Sorry, there was an issue resuming your application. Please try again later or contact support."
             );
         }
@@ -682,7 +691,7 @@ class WhatsAppWebhookController extends Controller
                 'reference_code' => $referenceCode
             ]);
             
-            $this->whatsAppService->sendMessage($from, 
+            $this->sendWhatsAppMessage($from, 
                 "❌ Sorry, there was an issue checking your application status. Please try again later or contact support."
             );
         }
@@ -704,7 +713,7 @@ class WhatsAppWebhookController extends Controller
         $message .= "• Type *'start'* to begin a new application\n\n";
         $message .= "Please check your reference code and try again.";
         
-        $this->whatsAppService->sendMessage($from, $message);
+        $this->sendWhatsAppMessage($from, $message);
     }
 
     /**
@@ -768,7 +777,7 @@ class WhatsAppWebhookController extends Controller
         $message .= "• Type *'resume {$referenceCode}'* to continue\n";
         $message .= "• Type *'start'* for a new application";
         
-        $this->whatsAppService->sendMessage($from, $message);
+        $this->sendWhatsAppMessage($from, $message);
     }
 
     /**
@@ -796,7 +805,7 @@ class WhatsAppWebhookController extends Controller
         $message .= config('app.url') . "/application/status\n\n";
         $message .= "Type *'start'* to begin a new application.";
         
-        $this->whatsAppService->sendMessage($from, $message);
+        $this->sendWhatsAppMessage($from, $message);
     }
 
     /**
@@ -845,5 +854,19 @@ class WhatsAppWebhookController extends Controller
         Log::info("Twilio Message {$messageSid} to {$to} status: {$status}");
         
         return response()->json(['status' => 'ok'], 200);
+    }
+
+    private function sendWhatsAppMessage(string $to, string $message): bool
+    {
+        if ($this->hasLegacyRapiWhaOverride()) {
+            return app('App\Services\RapiWhaService')->sendMessage($to, $message) !== false;
+        }
+
+        return $this->whatsAppService->sendMessage($to, $message);
+    }
+
+    private function hasLegacyRapiWhaOverride(): bool
+    {
+        return app()->bound('App\Services\RapiWhaService');
     }
 }

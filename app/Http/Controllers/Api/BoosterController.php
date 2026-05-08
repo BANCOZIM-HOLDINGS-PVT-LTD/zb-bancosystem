@@ -16,9 +16,10 @@ class BoosterController extends Controller
     public function getFrontendCatalog()
     {
         try {
-            $categories = BoosterCategory::with(['businesses.tiers' => function ($query) {
-                $query->orderBy('amount');
-            }])->orderBy('name')->get();
+            $categories = BoosterCategory::with([
+                'businesses.packages.tierItems.item',
+                'businesses.tiers' => fn ($query) => $query->orderBy('amount'),
+            ])->orderBy('name')->get();
 
             // Map to the format expected by the frontend ProductSelection component
             $formattedCategories = $categories->map(function ($category) {
@@ -36,7 +37,25 @@ class BoosterController extends Controller
                                     'description' => $business->description,
                                     'image_url' => $business->image_url,
                                     'basePrice' => 0, // Using scales for actual prices
-                                    'scales' => $business->tiers->map(function ($tier) {
+                                    'scales' => ($business->packages->isNotEmpty()
+                                        ? $business->packages->where('is_active', true)->sortBy('price')->map(function ($package) {
+                                            return [
+                                                'id' => $package->id,
+                                                'name' => $package->name,
+                                                'multiplier' => 1,
+                                                'custom_price' => (float) $package->price,
+                                                'description' => $package->description,
+                                                'loan_term' => $package->loan_term,
+                                                'deposit' => (float) $package->deposit,
+                                                'monthly_installment' => (float) $package->monthly_installment,
+                                                'included_items' => $package->tierItems->map(fn ($tierItem) => [
+                                                    'name' => $tierItem->item?->name,
+                                                    'quantity' => $tierItem->quantity,
+                                                    'unit' => $tierItem->item?->unit,
+                                                ])->values()->all(),
+                                            ];
+                                        })
+                                        : $business->tiers->map(function ($tier) {
                                         return [
                                             'id' => $tier->id,
                                             'name' => $tier->name,
@@ -44,7 +63,7 @@ class BoosterController extends Controller
                                             'custom_price' => $tier->amount,
                                             'description' => $tier->description,
                                         ];
-                                    })->values()->all(),
+                                    }))->values()->all(),
                                 ]
                             ]
                         ];

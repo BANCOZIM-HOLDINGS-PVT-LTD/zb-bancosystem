@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class ApplicationStateRepository
 {
+    private array $channelResultsCache = [];
+
     /**
      * Find application state by session ID
      */
@@ -103,6 +105,12 @@ class ApplicationStateRepository
      */
     public function getByChannel(string $channel, int $limit = null): Collection
     {
+        $cacheKey = $channel . ':' . ($limit ?? 'all');
+
+        if (isset($this->channelResultsCache[$cacheKey])) {
+            return $this->channelResultsCache[$cacheKey];
+        }
+
         $query = ApplicationState::where('channel', $channel)
             ->orderBy('created_at', 'desc');
 
@@ -110,7 +118,7 @@ class ApplicationStateRepository
             $query->limit($limit);
         }
 
-        return $query->get();
+        return $this->channelResultsCache[$cacheKey] = $query->get();
     }
 
     /**
@@ -318,7 +326,23 @@ class ApplicationStateRepository
         $query = ApplicationState::query();
         JsonQueryOptimizer::optimizeJsonQuery($query, 'form_data', 'formResponses.emailAddress', $email);
 
-        return $query->orderBy('created_at', 'desc')->get();
+        $results = $query->orderBy('created_at', 'desc')->get();
+
+        if ($results->isNotEmpty() || !str_contains($email, '@')) {
+            return $results;
+        }
+
+        [$localPart, $domain] = explode('@', $email, 2);
+        $fallbackQuery = ApplicationState::query();
+        JsonQueryOptimizer::optimizeJsonQuery(
+            $fallbackQuery,
+            'form_data',
+            'formResponses.emailAddress',
+            $localPart . '%@' . $domain,
+            'like'
+        );
+
+        return $fallbackQuery->orderBy('created_at', 'desc')->get();
     }
 
     /**

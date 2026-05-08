@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\ApplicationState;
 use App\Models\PaymentReminder;
+use App\Services\DandemutandeMailService;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
@@ -28,36 +29,47 @@ class SendAbandonmentReminderJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(NotificationService $notificationService): void
+    public function handle(NotificationService $notificationService, DandemutandeMailService $mailService): void
     {
         Log::info('Starting SendAbandonmentReminderJob');
 
-        // Look for applications abandoned in the last 2 to 24 hours
-        // and that haven't reached completion or awaiting deposit status
-        $applications = ApplicationState::where('current_step', '!=', 'completed')
-            ->where(function($query) {
-                $query->where('status', '!=', 'awaiting_deposit')
-                      ->orWhereNull('status');
-            })
-            ->where('updated_at', '<=', Carbon::now()->subHours(2))
-            ->where('updated_at', '>=', Carbon::now()->subHours(24))
-            ->get();
+        $intervals = config('reminders.abandonment_intervals', [
+            '24_hours' => 24,
+            '48_hours' => 48,
+            '7_days' => 168,
+        ]);
 
-        foreach ($applications as $app) {
-            // Check if we already sent an abandonment reminder
-            $alreadySent = PaymentReminder::where('application_state_id', $app->id)
-                ->where('reminder_type', 'abandonment')
-                ->exists();
+        foreach ($intervals as $stage => $hours) {
+            $applications = ApplicationState::where('current_step', '!=', 'completed')
+                ->where(function ($query) {
+                    $query->where('status', '!=', 'awaiting_deposit')
+                        ->orWhereNull('status');
+                })
+                ->where('updated_at', '<=', Carbon::now()->subHours($hours))
+                ->where('updated_at', '>=', Carbon::now()->subHours($hours + 2))
+                ->get();
 
-            if (!$alreadySent) {
-                $this->sendReminder($app, $notificationService);
+            foreach ($applications as $app) {
+                $alreadySent = PaymentReminder::where('application_state_id', $app->id)
+                    ->where('reminder_type', 'abandonment')
+                    ->where('reminder_stage', $stage)
+                    ->exists();
+
+                if (!$alreadySent) {
+                    $this->sendReminder($app, $stage, $notificationService, $mailService);
+                }
             }
         }
 
         Log::info('Finished SendAbandonmentReminderJob');
     }
 
-    private function sendReminder(ApplicationState $app, NotificationService $notificationService)
+    private function sendReminder(
+        ApplicationState $app,
+        string $stage,
+        NotificationService $notificationService,
+        DandemutandeMailService $mailService
+    ): void
     {
         $formData = $app->form_data ?? [];
         
@@ -71,25 +83,51 @@ class SendAbandonmentReminderJob implements ShouldQueue
             
         $name = data_get($formData, 'formResponses.firstName') ?? 'there';
 
-        if (!$phone) {
-            // No phone number, cannot send SMS reminder
-            return;
-        }
-
         $link = url("/application/resume/{$app->session_id}");
         $message = "Hi {$name}, we noticed you didn't finish your application. You can resume right where you left off here: {$link}";
+        $channels = config("reminders.abandonment_escalation_channels.{$stage}", ['sms']);
 
-        Log::info("Sending abandonment reminder to {$phone} for app {$app->id}");
+        foreach ($channels as $channel) {
+            $success = match ($channel) {
+                'sms' => $phone ? $notificationService->sendSMS($phone, $message) : false,
+                'email' => $mailService->sendPaymentReminderEmail($app, $stage, $link),
+                'whatsapp' => $this->logWhatsAppReminder($app, $message),
+                'admin_alert' => $this->logAdminAlert($app, $stage),
+                default => false,
+            };
 
-        $success = $notificationService->sendSMS($phone, $message);
-
-        if ($success) {
             PaymentReminder::create([
                 'application_state_id' => $app->id,
                 'reminder_type' => 'abandonment',
-                'reminder_stage' => '2_hours',
+                'reminder_stage' => $stage,
+                'channel' => $channel,
+                'delivery_status' => $success ? 'sent' : 'failed',
+                'metadata' => [
+                    'phone' => $channel === 'sms' ? $phone : null,
+                    'resume_link' => $link,
+                ],
                 'sent_at' => now(),
             ]);
         }
+    }
+
+    private function logWhatsAppReminder(ApplicationState $app, string $message): bool
+    {
+        Log::info('WhatsApp abandonment reminder queued for manual/provider dispatch', [
+            'application_id' => $app->id,
+            'message' => $message,
+        ]);
+
+        return true;
+    }
+
+    private function logAdminAlert(ApplicationState $app, string $stage): bool
+    {
+        Log::warning('Abandonment reminder escalated to admin', [
+            'application_id' => $app->id,
+            'stage' => $stage,
+        ]);
+
+        return true;
     }
 }

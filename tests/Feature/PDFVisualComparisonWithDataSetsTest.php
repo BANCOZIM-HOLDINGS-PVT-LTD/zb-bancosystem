@@ -253,33 +253,30 @@ class PDFVisualComparisonWithDataSetsTest extends TestCase
     /**
      * Data provider for standard test data
      */
-    public function standardDataProvider(): array
+    public static function standardDataProvider(): array
     {
         return [
-            'ZB Account Opening' => ['zb_account_opening', fn() => $this->createZBAccountOpeningTestData()],
-            'SSB Form' => ['ssb', fn() => $this->createSSBFormTestData()],
-            'SME Account Opening' => ['sme_account_opening', fn() => $this->createSMEAccountOpeningTestData()],
-            'Account Holders' => ['account_holders', fn() => $this->createAccountHoldersTestData()]
+            'ZB Account Opening' => ['zb_account_opening', fn() => self::makeVisualComparisonState('zb_account_opening')],
+            'SSB Form' => ['ssb', fn() => self::makeVisualComparisonState('ssb')],
+            'SME Account Opening' => ['sme_account_opening', fn() => self::makeVisualComparisonState('sme_account_opening')],
+            'Account Holders' => ['account_holders', fn() => self::makeVisualComparisonState('account_holders')]
         ];
     }
     
     /**
      * Data provider for edge case test data
      */
-    public function edgeCaseDataProvider(): array
+    public static function edgeCaseDataProvider(): array
     {
         return [
             'ZB Account Opening - Long Names' => [
                 'zb_account_opening', 
-                fn() => $this->createZBAccountOpeningTestData(
-                    'Johnathon-Christopher-Alexander', 
-                    'Smith-Johnson-Williams-Brown-Davis-Miller-Wilson'
-                ),
+                fn() => self::makeVisualComparisonState('zb_account_opening', 'Johnathon-Christopher-Alexander', 'Smith-Johnson-Williams-Brown-Davis-Miller-Wilson'),
                 'long names'
             ],
             'ZB Account Opening - Special Characters' => [
                 'zb_account_opening', 
-                fn() => $this->createZBAccountOpeningTestData(
+                fn() => self::makeVisualComparisonState('zb_account_opening',
                     'John-Émile', 
                     "O'Connor-Müller"
                 ),
@@ -287,7 +284,7 @@ class PDFVisualComparisonWithDataSetsTest extends TestCase
             ],
             'SSB Form - Maximum Values' => [
                 'ssb', 
-                fn() => $this->createSSBFormTestDataWithCustomValues('John', 'Doe', [
+                fn() => self::makeVisualComparisonState('ssb', 'John', 'Doe', [
                     'grossMonthlySalary' => '999999999',
                     'loanAmount' => '999999999',
                     'repaymentPeriod' => '999'
@@ -296,14 +293,15 @@ class PDFVisualComparisonWithDataSetsTest extends TestCase
             ],
             'SME Account Opening - Long Business Name' => [
                 'sme_account_opening', 
-                fn() => $this->createSMEAccountOpeningTestData(
-                    'Extremely Long Business Name That Exceeds Normal Limits For Testing Purposes Only'
-                ),
+                fn() => self::makeVisualComparisonState('sme_account_opening', 'Test', 'User', [
+                    'businessName' => 'Extremely Long Business Name That Exceeds Normal Limits For Testing Purposes Only',
+                ]),
                 'long business name'
             ],
             'SME Account Opening - Minimum Values' => [
                 'sme_account_opening', 
-                fn() => $this->createSMEAccountOpeningTestDataWithCustomValues('Micro Business', [
+                fn() => self::makeVisualComparisonState('sme_account_opening', 'Test', 'User', [
+                    'businessName' => 'Micro Business',
                     'annualTurnover' => '0',
                     'numberOfEmployees' => '1'
                 ]),
@@ -311,7 +309,7 @@ class PDFVisualComparisonWithDataSetsTest extends TestCase
             ],
             'Account Holders - Maximum Values' => [
                 'account_holders', 
-                fn() => $this->createAccountHoldersTestDataWithCustomValues('John', 'Doe', [
+                fn() => self::makeVisualComparisonState('account_holders', 'John', 'Doe', [
                     'grossMonthlySalary' => '999999999',
                     'loanAmount' => '999999999',
                     'repaymentPeriod' => '999'
@@ -324,12 +322,12 @@ class PDFVisualComparisonWithDataSetsTest extends TestCase
     /**
      * Data provider for form variation test data
      */
-    public function formVariationDataProvider(): array
+    public static function formVariationDataProvider(): array
     {
         return [
             'ZB Account Opening - Female Doctor' => [
                 'zb_account_opening', 
-                fn() => $this->createZBAccountOpeningTestDataWithCustomValues('Jane', 'Smith', [
+                fn() => self::makeVisualComparisonState('zb_account_opening', 'Jane', 'Smith', [
                     'title' => 'Dr',
                     'gender' => 'Female',
                     'employmentStatus' => 'Contract',
@@ -339,7 +337,7 @@ class PDFVisualComparisonWithDataSetsTest extends TestCase
             ],
             'SSB Form - Health Department' => [
                 'ssb', 
-                fn() => $this->createSSBFormTestDataWithCustomValues('Jane', 'Smith', [
+                fn() => self::makeVisualComparisonState('ssb', 'Jane', 'Smith', [
                     'department' => 'Health',
                     'loanPurpose' => 'Education',
                     'repaymentPeriod' => '48'
@@ -348,7 +346,8 @@ class PDFVisualComparisonWithDataSetsTest extends TestCase
             ],
             'SME Account Opening - Manufacturing Company' => [
                 'sme_account_opening', 
-                fn() => $this->createSMEAccountOpeningTestDataWithCustomValues('Large Enterprise', [
+                fn() => self::makeVisualComparisonState('sme_account_opening', 'Test', 'User', [
+                    'businessName' => 'Large Enterprise',
                     'businessType' => 'Public Limited Company',
                     'natureOfBusiness' => 'Manufacturing',
                     'numberOfEmployees' => '500',
@@ -358,7 +357,7 @@ class PDFVisualComparisonWithDataSetsTest extends TestCase
             ],
             'Account Holders - Professor' => [
                 'account_holders', 
-                fn() => $this->createAccountHoldersTestDataWithCustomValues('Robert', 'Johnson', [
+                fn() => self::makeVisualComparisonState('account_holders', 'Robert', 'Johnson', [
                     'title' => 'Prof',
                     'occupation' => 'Medical Doctor',
                     'loanPurpose' => 'Business Investment',
@@ -367,6 +366,53 @@ class PDFVisualComparisonWithDataSetsTest extends TestCase
                 'professor variation'
             ]
         ];
+    }
+
+    private static function makeVisualComparisonState(
+        string $templateType,
+        string $firstName = 'John',
+        string $surname = 'Doe',
+        array $overrides = []
+    ): ApplicationState {
+        $formData = array_merge([
+            'formId' => match ($templateType) {
+                'zb_account_opening' => 'individual_account_opening.json',
+                'ssb' => 'ssb_account_opening_form.json',
+                'sme_account_opening' => 'smes_business_account_opening.json',
+                default => 'account_holder_loan_application.json',
+            },
+            'formType' => match ($templateType) {
+                'ssb' => 'ssb',
+                'sme_account_opening' => 'sme_business',
+                'account_holders' => 'account_holder_loan_application',
+                default => 'zb_account_opening',
+            },
+            'firstName' => $firstName,
+            'surname' => $surname,
+            'businessName' => 'Test Business',
+            'monthlyPayment' => '100.00',
+            'loanAmount' => '1000.00',
+            'loanTenure' => '12',
+            'formResponses' => [
+                'firstName' => $firstName,
+                'surname' => $surname,
+                'mobile' => '+263771234567',
+                'nationalIdNumber' => '63-123456-A-12',
+                'businessName' => 'Test Business',
+                'businessRegistrationNumber' => 'REG-123',
+                'businessAddress' => '10 First Street, Harare',
+            ],
+        ], $overrides);
+
+        $formData['formResponses'] = array_merge($formData['formResponses'], $overrides);
+
+        return new ApplicationState([
+            'session_id' => 'visual-test-' . $templateType . '-' . uniqid(),
+            'channel' => 'web',
+            'user_identifier' => 'test@example.com',
+            'current_step' => 'completed',
+            'form_data' => $formData,
+        ]);
     }
     
     /**

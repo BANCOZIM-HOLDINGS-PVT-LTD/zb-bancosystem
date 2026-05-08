@@ -42,7 +42,7 @@ class CartService
             
             // Check inventory (if inventory tracking is enabled)
             $inventory = ProductInventory::where('product_id', $productId)->first();
-            if ($inventory && $inventory->quantity < $quantity) {
+            if ($inventory && $inventory->available_stock < $quantity) {
                 return ['success' => false, 'message' => 'Not enough stock available.'];
             }
 
@@ -57,7 +57,7 @@ class CartService
                 // Update existing item
                 $newQuantity = $cartItem->quantity + $quantity;
                 
-                if ($inventory && $inventory->quantity < $newQuantity) {
+                if ($inventory && $inventory->available_stock < $newQuantity) {
                     return ['success' => false, 'message' => 'Not enough stock available for total quantity.'];
                 }
 
@@ -105,7 +105,7 @@ class CartService
 
             // Check inventory
             $inventory = ProductInventory::where('product_id', $cartItem->product_id)->first();
-            if ($inventory && $inventory->quantity < $quantity) {
+            if ($inventory && $inventory->available_stock < $quantity) {
                 return ['success' => false, 'message' => 'Not enough stock available.'];
             }
 
@@ -151,5 +151,77 @@ class CartService
             return true;
         }
         return false;
+    }
+
+    public function getTotal(string $sessionId): float
+    {
+        $cart = $this->getCart($sessionId);
+
+        if (!$cart) {
+            return 0.0;
+        }
+
+        return (float) $cart->items->sum('subtotal');
+    }
+
+    public function validateStock(string $sessionId): array
+    {
+        $cart = $this->getCart($sessionId);
+        $errors = [];
+
+        if (!$cart) {
+            return ['valid' => false, 'errors' => ['Cart not found.']];
+        }
+
+        foreach ($cart->items as $item) {
+            $inventory = $item->product?->inventory;
+
+            if ($inventory && $inventory->available_stock < $item->quantity) {
+                $errors[] = "{$item->product->name} has {$inventory->available_stock} available; {$item->quantity} requested.";
+            }
+        }
+
+        return [
+            'valid' => empty($errors),
+            'errors' => $errors,
+        ];
+    }
+
+    public function applyBulkDiscounts(string $sessionId): array
+    {
+        $cart = $this->getCart($sessionId);
+
+        if (!$cart) {
+            return ['success' => false, 'message' => 'Cart not found.'];
+        }
+
+        foreach ($cart->items as $item) {
+            $discount = match (true) {
+                $item->quantity >= 50 => 0.10,
+                $item->quantity >= 20 => 0.05,
+                default => 0,
+            };
+
+            $unitPrice = (float) $item->unit_price;
+            $item->subtotal = round($item->quantity * $unitPrice * (1 - $discount), 2);
+            $item->save();
+        }
+
+        return ['success' => true, 'cart' => $this->getCart($sessionId)];
+    }
+
+    public function reserveStock(string $sessionId): array
+    {
+        $validation = $this->validateStock($sessionId);
+        if (!$validation['valid']) {
+            return ['success' => false, 'errors' => $validation['errors']];
+        }
+
+        $cart = $this->getCart($sessionId);
+        foreach ($cart->items as $item) {
+            $item->product?->inventory?->reserveStock($item->quantity);
+        }
+
+        return ['success' => true];
     }
 }

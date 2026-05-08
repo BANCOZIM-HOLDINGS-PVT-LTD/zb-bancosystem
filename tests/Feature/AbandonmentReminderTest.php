@@ -6,15 +6,16 @@ use Tests\TestCase;
 use App\Models\ApplicationState;
 use App\Models\PaymentReminder;
 use App\Jobs\SendAbandonmentReminderJob;
+use App\Services\DandemutandeMailService;
 use App\Services\NotificationService;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Carbon\Carbon;
 use Mockery;
 
 class AbandonmentReminderTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     /** @test */
     public function it_sends_reminders_for_abandoned_applications()
@@ -24,8 +25,12 @@ class AbandonmentReminderTest extends TestCase
         $notificationService->shouldReceive('sendSMS')
             ->twice() // We expect 2 reminders to be sent (app1 and app3)
             ->andReturn(true);
+        $mailService = Mockery::mock(DandemutandeMailService::class);
+        $mailService->shouldReceive('sendPaymentReminderEmail')
+            ->once()
+            ->andReturn(true);
 
-        // 1. Abandoned application (2.5 hours ago, has phone) - SHOULD REMIND
+        // 1. Abandoned application (24.5 hours ago, has phone) - SHOULD REMIND
         $app1 = ApplicationState::create([
             'session_id' => 'session-1',
             'user_identifier' => 'user-1',
@@ -36,7 +41,7 @@ class AbandonmentReminderTest extends TestCase
             ],
         ]);
         \DB::table('application_states')->where('id', $app1->id)->update([
-            'updated_at' => Carbon::now()->subHours(2)->subMinutes(30)
+            'updated_at' => Carbon::now()->subHours(24)->subMinutes(30)
         ]);
         $app1->refresh();
 
@@ -55,7 +60,7 @@ class AbandonmentReminderTest extends TestCase
         ]);
         $app2->refresh();
 
-        // 3. Abandoned application (5 hours ago, has phone in metadata) - SHOULD REMIND
+        // 3. Abandoned application (48.5 hours ago, has phone in metadata) - SHOULD REMIND
         $app3 = ApplicationState::create([
             'session_id' => 'session-3',
             'user_identifier' => 'user-3',
@@ -65,7 +70,7 @@ class AbandonmentReminderTest extends TestCase
             'metadata' => ['phone_number' => '263773333333'],
         ]);
         \DB::table('application_states')->where('id', $app3->id)->update([
-            'updated_at' => Carbon::now()->subHours(5)
+            'updated_at' => Carbon::now()->subHours(48)->subMinutes(30)
         ]);
         $app3->refresh();
 
@@ -80,7 +85,7 @@ class AbandonmentReminderTest extends TestCase
             ],
         ]);
         \DB::table('application_states')->where('id', $app4->id)->update([
-            'updated_at' => Carbon::now()->subHours(3)
+            'updated_at' => Carbon::now()->subHours(24)
         ]);
         $app4->refresh();
 
@@ -96,7 +101,7 @@ class AbandonmentReminderTest extends TestCase
             ],
         ]);
         \DB::table('application_states')->where('id', $app5->id)->update([
-            'updated_at' => Carbon::now()->subHours(3)
+            'updated_at' => Carbon::now()->subHours(24)
         ]);
         $app5->refresh();
 
@@ -111,19 +116,19 @@ class AbandonmentReminderTest extends TestCase
             ],
         ]);
         \DB::table('application_states')->where('id', $app6->id)->update([
-            'updated_at' => Carbon::now()->subHours(4)
+            'updated_at' => Carbon::now()->subHours(24)->subMinutes(30)
         ]);
         $app6->refresh();
         PaymentReminder::create([
             'application_state_id' => $app6->id,
             'reminder_type' => 'abandonment',
-            'reminder_stage' => '2_hours',
+            'reminder_stage' => '24_hours',
             'sent_at' => Carbon::now()->subHours(1),
         ]);
 
         // Run the job
         $job = new SendAbandonmentReminderJob();
-        $job->handle($notificationService);
+        $job->handle($notificationService, $mailService);
 
         // Verify reminders were recorded in DB
         $this->assertTrue(PaymentReminder::where('application_state_id', $app1->id)->where('reminder_type', 'abandonment')->exists());

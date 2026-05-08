@@ -11,7 +11,7 @@ use Illuminate\Queue\SerializesModels;
 
 use App\Models\ApplicationState;
 
-class PaymentReceipt extends Mailable
+class PaymentReceipt extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

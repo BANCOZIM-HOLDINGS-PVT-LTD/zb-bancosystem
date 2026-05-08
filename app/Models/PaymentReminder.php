@@ -10,10 +10,14 @@ class PaymentReminder extends Model
         'application_state_id',
         'reminder_type',
         'reminder_stage',
+        'channel',
+        'delivery_status',
+        'metadata',
         'sent_at',
     ];
 
     protected $casts = [
+        'metadata' => 'array',
         'sent_at' => 'datetime',
     ];
 

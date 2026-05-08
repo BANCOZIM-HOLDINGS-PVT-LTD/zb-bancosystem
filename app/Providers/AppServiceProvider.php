@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use App\Contracts\PDFGeneratorInterface;
 use App\Contracts\ApplicationStateRepositoryInterface;
@@ -24,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
         
         // Bind SMS Provider (Switch here to change providers)
         $this->app->bind(\App\Contracts\SmsProviderInterface::class, \App\Services\CodelSmsService::class);
+        $this->app->bind(\App\Contracts\MailProviderInterface::class, \App\Services\DandemutandeMailService::class);
     }
 
     /**
@@ -39,6 +41,12 @@ class AppServiceProvider extends ServiceProvider
 
         // Register observers
         \App\Models\ApplicationState::observe(\App\Observers\ApplicationStateObserver::class);
+
+        Event::listen(\App\Events\PaymentReceived::class, \App\Listeners\CreateAccountingTransactionForPayment::class);
+        Event::listen(\App\Events\ApplicationApproved::class, \App\Listeners\CreatePurchaseOrdersForApprovedApplication::class);
+        Event::listen(\App\Events\PurchaseOrderFulfilled::class, \App\Listeners\DeductStockForFulfilledPurchaseOrder::class);
+        Event::listen(\App\Events\DeliveryReturned::class, \App\Listeners\RestoreStockForReturnedDelivery::class);
+        Event::listen(\App\Events\CommissionCalculated::class, \App\Listeners\CreateAccountingTransactionForCommission::class);
 
         // Force HTTPS in production
         if (app()->environment('production') || env('FORCE_HTTPS', false)) {

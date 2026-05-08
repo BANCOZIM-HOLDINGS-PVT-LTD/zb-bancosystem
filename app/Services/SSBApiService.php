@@ -85,6 +85,7 @@ class SSBApiService
 
         try {
             $response = Http::withToken($token)
+                ->retry(3, 500)
                 ->post($this->baseUrl . '/api/app/payroll/approve-loan', $payload);
 
             if ($response->successful()) {
@@ -114,6 +115,42 @@ class SSBApiService
     }
 
     /**
+     * Lightweight health check used by scheduled jobs/admin widgets.
+     */
+    public function healthCheck(): array
+    {
+        $token = $this->getToken();
+
+        if (!$token) {
+            return [
+                'healthy' => false,
+                'message' => 'Unable to authenticate with SSB API',
+            ];
+        }
+
+        try {
+            $response = Http::withToken($token)
+                ->retry(2, 300)
+                ->get($this->baseUrl . '/api/app/payroll/loan-status', [
+                    'loanRefNo' => 'HEALTH-CHECK',
+                ]);
+
+            return [
+                'healthy' => $response->successful() || $response->status() === 404,
+                'status' => $response->status(),
+                'message' => $response->successful() ? 'SSB API reachable' : $response->body(),
+            ];
+        } catch (\Throwable $e) {
+            Log::error('SSB API health check failed', ['error' => $e->getMessage()]);
+
+            return [
+                'healthy' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Check loan status from SSB
      */
     public function checkStatus(string $loanRefNo): array
@@ -125,6 +162,7 @@ class SSBApiService
 
         try {
             $response = Http::withToken($token)
+                ->retry(3, 500)
                 ->get($this->baseUrl . '/api/app/payroll/loan-status', [
                     'loanRefNo' => $loanRefNo
                 ]);

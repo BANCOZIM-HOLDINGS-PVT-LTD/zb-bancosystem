@@ -112,6 +112,65 @@ class PaynowService
         }
     }
 
+    public function createMobilePayment(
+        string $reference,
+        float $amount,
+        string $email,
+        string $description,
+        string $phone,
+        string $method = 'ecocash'
+    ): array {
+        try {
+            $returnUrl = str_replace('PURCHASE_NUMBER', $reference, $this->returnUrl);
+            $paynow = new Paynow(
+                $this->integrationId,
+                $this->integrationKey,
+                $this->resultUrl,
+                $returnUrl
+            );
+
+            $payment = $paynow->createPayment($reference, $email);
+            $payment->add($description, $amount);
+
+            $response = $paynow->sendMobile($payment, $phone, $method);
+
+            if ($response->success()) {
+                $pollUrl = $response->pollUrl();
+                $redirectUrl = method_exists($response, 'redirectUrl') ? $response->redirectUrl() : null;
+
+                Cache::put("paynow_poll_{$reference}", $pollUrl, now()->addHours(24));
+
+                return [
+                    'success' => true,
+                    'pollUrl' => $pollUrl,
+                    'redirectUrl' => $redirectUrl,
+                    'instructions' => method_exists($response, 'instructions') ? $response->instructions() : null,
+                    'error' => null,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'pollUrl' => null,
+                'redirectUrl' => null,
+                'error' => 'Failed to initiate mobile payment with Paynow',
+            ];
+        } catch (\Exception $e) {
+            Log::error('Paynow mobile payment error', [
+                'reference' => $reference,
+                'method' => $method,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'pollUrl' => null,
+                'redirectUrl' => null,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
     /**
      * Initiate a mobile transaction (EcoCash/OneMoney)
      * 

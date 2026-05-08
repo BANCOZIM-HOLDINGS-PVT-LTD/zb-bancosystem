@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ApplicationState extends Model
 {
+    use HasFactory;
     use SoftDeletes;
     protected $fillable = [
         'session_id',
@@ -53,6 +55,29 @@ class ApplicationState extends Model
         'approved_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (ApplicationState $state): void {
+            $state->channel ??= 'web';
+            $state->user_identifier ??= $state->reference_code ?? $state->session_id ?? 'anonymous';
+            $state->current_step ??= 'language_selection';
+            $state->form_data ??= [];
+            $state->metadata ??= [];
+            $state->expires_at ??= now()->addDay();
+            $state->last_activity ??= now();
+            $state->payment_type ??= 'credit';
+        });
+    }
+
+    public static function find($id, $columns = ['*'])
+    {
+        if (is_string($id) && !ctype_digit($id)) {
+            return static::query()->where('session_id', $id)->first($columns);
+        }
+
+        return static::query()->find($id, $columns);
+    }
+
     public function transitions(): HasMany
     {
         return $this->hasMany(StateTransition::class, 'state_id');
@@ -96,6 +121,21 @@ class ApplicationState extends Model
     public function commissions(): HasMany
     {
         return $this->hasMany(Commission::class, 'application_id');
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function cashPayments(): HasMany
+    {
+        return $this->hasMany(CashPayment::class);
+    }
+
+    public function accountingTransactions(): HasMany
+    {
+        return $this->hasMany(AccountingTransaction::class);
     }
     /**
      * Get the formatted application number

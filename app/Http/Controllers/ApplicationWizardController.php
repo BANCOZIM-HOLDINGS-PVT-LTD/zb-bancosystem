@@ -420,6 +420,7 @@ class ApplicationWizardController extends Controller
         $productName = 'ZB Product';
         $category = 'General';
         $applicationType = 'General'; // Default application type
+        $isAccountOpening = false;
 
         if ($state && $state->form_data) {
             $formData = is_string($state->form_data) ? json_decode($state->form_data, true) : $state->form_data;
@@ -435,6 +436,12 @@ class ApplicationWizardController extends Controller
                 ?? data_get($formData, 'product.category')
                 ?? data_get($formData, 'category')
                 ?? 'General';
+
+            // Check if it's an account opening
+            $isAccountOpening = data_get($formData, 'wantsAccount') === true || 
+                                data_get($formData, 'formType') === 'zb_account_opening' ||
+                                data_get($formData, 'formId') === 'individual_account_opening.json' ||
+                                data_get($formData, 'formId') === 'smes_business_account_opening.json';
 
             // Check for SSB/Government
             $employer = data_get($formData, 'employer') ?? data_get($formData, 'formResponses.employer');
@@ -461,6 +468,7 @@ class ApplicationWizardController extends Controller
             'productName' => $productName,
             'category' => $category,
             'trackingUrl' => $trackingUrl,
+            'isAccountOpening' => $isAccountOpening,
         ]);
     }
 

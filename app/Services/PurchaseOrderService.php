@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ApplicationState;
+use App\Models\BoosterPackage;
 use App\Models\MicrobizPackage;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
@@ -22,6 +23,11 @@ class PurchaseOrderService
     public function createFromApplication(ApplicationState $application): ?array
     {
         return DB::transaction(function () use ($application) {
+            $existing = PurchaseOrder::where('metadata->application_id', $application->id)->get();
+            if ($existing->isNotEmpty()) {
+                return $existing->all();
+            }
+
             $formData = $application->form_data;
 
             // Extract raw items from form data
@@ -87,9 +93,15 @@ class PurchaseOrderService
                         'total_price' => $item['price'] * $item['quantity'],
                         'notes' => $item['product_code'] ? "Code: {$item['product_code']}" : null,
                     ]);
+
+                    $product = Product::with('inventory')->find($item['product_id']);
+                    if ($product?->inventory) {
+                        $product->inventory->reserveStock((int) $item['quantity']);
+                    }
                 }
 
                 $purchaseOrders[] = $po;
+                event(new \App\Events\PurchaseOrderCreated($po));
 
                 Log::info('Purchase Order created', [
                     'po_id' => $po->id,
@@ -112,8 +124,29 @@ class PurchaseOrderService
     {
         $items = [];
 
-        // Case 1: Cart items (Building Materials, etc.)
-        if (!empty($formData['cartItems']) && is_array($formData['cartItems'])) {
+        // Case 1: Booster packages with item breakdown
+        if (!empty($formData['boosterPackageId'])) {
+            $package = BoosterPackage::with('tierItems.item')->find($formData['boosterPackageId']);
+            if ($package) {
+                foreach ($package->tierItems as $tierItem) {
+                    $boosterItem = $tierItem->item;
+                    $product = Product::where('product_code', $boosterItem?->item_code)
+                        ->orWhere('name', $boosterItem?->name)
+                        ->first();
+
+                    $items[] = [
+                        'product_id' => $product?->id,
+                        'product_code' => $product?->product_code ?? $boosterItem?->item_code,
+                        'name' => $boosterItem?->name ?? 'Booster Item',
+                        'quantity' => $tierItem->quantity,
+                        'price' => $boosterItem?->selling_price ?? 0,
+                        'supplier_id' => $product?->supplier_id,
+                    ];
+                }
+            }
+        }
+        // Case 2: Cart items (Building Materials, etc.)
+        elseif (!empty($formData['cartItems']) && is_array($formData['cartItems'])) {
             foreach ($formData['cartItems'] as $item) {
                 $productId = $item['id'] ?? null;
                 $product = $productId ? Product::find($productId) : null;

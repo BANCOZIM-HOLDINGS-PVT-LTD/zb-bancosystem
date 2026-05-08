@@ -129,6 +129,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
     const selectedCurrency = data.currency || 'USD';
     const isZiG = selectedCurrency === 'ZiG';
 
+    const [spouseError, setSpouseError] = useState<string>('');
     const [formData, setFormData] = useState({
         // Credit Facility Details (pre-populated)
         ...creditDetails,
@@ -137,7 +138,6 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
         accountNumber: '',
         accountType: '', // Account type selection
         accountCurrency: '',
-        initialDeposit: '', // Initial deposit amount
         serviceCenter: '',
 
         // Personal Details
@@ -198,8 +198,8 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
         spouseGender: '',
         spouseEmail: '',
 
-        // ZB Life Funeral Cash Cover
-        wantsFuneralCover: false,
+        // ZB Life Funeral Cash Cover - Keep state for PDF but remove UI
+        wantsFuneralCover: true, // Auto-set to true for PDF declaration
         funeralCover: {
             dependents: Array.from({ length: 8 }, () => createEmptyDependent()),
             principalMember: {
@@ -329,6 +329,27 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Validate Next of Kin details
+        const applicantFullName = `${formData.firstName} ${formData.surname}`.trim().toLowerCase();
+        const spouseFullName = formData.spouseFirstName.trim().toLowerCase();
+        const personalPhone = formData.mobile.trim();
+        const spousePhone = formData.spouseContact.trim();
+
+        if (spouseFullName === applicantFullName) {
+            setSpouseError('Next of Kin cannot be the same as the applicant.');
+            document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        if (personalPhone && spousePhone && personalPhone === spousePhone) {
+            setSpouseError('Your personal phone number cannot be the same as Next of Kin phone number.');
+            document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        // Clear error
+        setSpouseError('');
+
         // Map ZB form fields to match validation expectations
         const mappedData = {
             formResponses: {
@@ -364,10 +385,10 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
 
                 // Declaration
                 declaration: {
-                    fullName: formData.declaration.fullName,
-                    signature: formData.declaration.signature,
-                    date: formData.declaration.date,
-                    acknowledged: formData.declaration.acknowledged
+                    fullName: `${formData.firstName} ${formData.surname}`,
+                    signature: '', // captured in next step
+                    date: new Date().toISOString().split('T')[0],
+                    acknowledged: true
                 },
 
                 // Additional form fields (avoid duplicates by omitting already mapped fields)
@@ -397,7 +418,6 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 department: formData.department, // Map department field
                 accountNumber: formData.accountNumber,
                 accountType: formData.accountType,
-                initialDeposit: formData.initialDeposit,
                 wantsFuneralCover: formData.wantsFuneralCover,
                 funeralCover: formData.wantsFuneralCover ? formData.funeralCover : null,
                 personalAccidentBenefit: formData.personalAccidentBenefit,
@@ -445,7 +465,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
     return (
         <div className="max-w-4xl mx-auto space-y-6">
             <div className="text-center">
-                <h2 className="text-2xl font-semibold mb-2">New ZB Account Opening Application</h2>
+                <h2 className="text-2xl font-semibold mb-2">New ZB Bank Account Opening Application</h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-2">
                     Complete your account opening application
                 </p>
@@ -464,7 +484,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         <h3 className="text-lg font-semibold">Account Specifications</h3>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
                         <div>
                             <Label htmlFor="accountType">Account Type *</Label>
                             <Select value={formData.accountType} onValueChange={(value) => handleInputChange('accountType', value)}>
@@ -481,23 +501,10 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         </div>
 
                         <div>
-                            <Label htmlFor="initialDeposit">Initial Deposit Amount ({selectedCurrency})</Label>
-                            <Input
-                                id="initialDeposit"
-                                type="number"
-                                value={formData.initialDeposit}
-                                onChange={(e) => handleInputChange('initialDeposit', e.target.value)}
-                                placeholder="Enter initial deposit amount"
-                                min="0"
-                                step="0.01"
-                            />
-                        </div>
-
-                        <div>
-                            <Label htmlFor="serviceCenter">Nearest ZB Branch / Service Centre *</Label>
+                            <Label htmlFor="serviceCenter">nearest or preferred ZB bank branch *</Label>
                             <Select value={formData.serviceCenter} onValueChange={(value) => handleInputChange('serviceCenter', value)}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select nearest branch" />
+                                    <SelectValue placeholder="Select branch" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {ZB_BRANCHES.map((branch) => (
@@ -816,7 +823,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 <Card className="p-6">
                     <div className="flex items-center mb-4">
                         <Building className="h-6 w-6 text-emerald-600 mr-3" />
-                        <h3 className="text-lg font-semibold">Employment Details</h3>
+                        <h3 className="text-lg font-semibold">Employment Details (refer to form)</h3>
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
@@ -956,7 +963,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 </Card>
 
                 {/* Spouse/Next of Kin */}
-                <Card className="p-6">
+                <Card className="p-6" id="spouse-section">
                     <div className="flex items-center mb-4">
                         <Users className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">
@@ -969,6 +976,14 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                     <p className="text-xs text-gray-500 italic mb-4">
                         *this is for statistical and record keeping purposes only*
                     </p>
+
+                    {spouseError && (
+                        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                                {spouseError}
+                            </p>
+                        </div>
+                    )}
 
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <div>
@@ -1040,7 +1055,31 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                             />
                         </div>
 
-                        <div className="md:col-span-2">
+                        <div>
+                            <Label htmlFor="spouseGender">Gender</Label>
+                            <Select value={formData.spouseGender} onValueChange={(value) => handleInputChange('spouseGender', value)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select gender" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Male">Male</SelectItem>
+                                    <SelectItem value="Female">Female</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div>
+                            <FormField
+                                id="spouseEmail"
+                                name="spouseEmail"
+                                label="Email Address"
+                                type="email"
+                                value={formData.spouseEmail}
+                                onChange={(value) => handleInputChange('spouseEmail', value)}
+                            />
+                        </div>
+
+                        <div className="md:col-span-3">
                             <AddressInput
                                 id="spouseAddress"
                                 label="Residential Address"
@@ -1050,209 +1089,6 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                         </div>
                     </div>
                 </Card>
-
-                {/* ZB Life Funeral Cash Cover */}
-                <Card className="p-6">
-                    <div className="bg-emerald-100 p-4 rounded-lg mb-4">
-                        <h3 className="text-lg font-semibold text-emerald-800">H - ZB LIFE FUNERAL CASH COVER</h3>
-                    </div>
-
-                    <div className="mb-4">
-                        <Label className="text-base font-medium block mb-3">
-                            Would you like to add ZB Life Funeral Cash Cover to your account?
-                        </Label>
-                        <div className="max-w-xs">
-                            <Select
-                                value={formData.wantsFuneralCover ? 'yes' : 'no'}
-                                onValueChange={(value) => handleInputChange('wantsFuneralCover', value === 'yes')}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="yes">Yes</SelectItem>
-                                    <SelectItem value="no">No</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    {formData.wantsFuneralCover && (
-                        <>
-                            <p className="text-sm text-emerald-700 mb-3">
-                                Details of dependents to be covered by this application is up to eight (8) dependents.
-                                <em> Please tick (√) the appropriate box to show supplementary benefits to be included.</em>
-                            </p>
-
-                            <div className="overflow-x-auto">
-                                <table className="w-full border-collapse border border-gray-300">
-                                    <thead>
-                                        <tr className="bg-gray-50">
-                                            <th className="border border-gray-300 p-2 text-left">Surname</th>
-                                            <th className="border border-gray-300 p-2 text-left">Forename(s)</th>
-                                            <th className="border border-gray-300 p-2 text-left">Relationship</th>
-                                            <th className="border border-gray-300 p-2 text-left">Date of Birth</th>
-                                            <th className="border border-gray-300 p-2 text-left">Birth Entry/National ID No.</th>
-                                            <th className="border border-gray-300 p-2 text-left">Cover Amount Per Dependant $</th>
-                                            <th className="border border-gray-300 p-2 text-left">Premium Per Month $</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {formData.funeralCover.dependents.map((dependent, index) => (
-                                            <tr key={index}>
-                                                <td className="border border-gray-300 p-2">
-                                                    <Input
-                                                        className="w-full"
-                                                        placeholder="Surname"
-                                                        value={dependent.surname}
-                                                        onChange={(e) => handleDependentChange(index, 'surname', e.target.value)}
-                                                    />
-                                                </td>
-                                                <td className="border border-gray-300 p-2">
-                                                    <Input
-                                                        className="w-full"
-                                                        placeholder="Forename(s)"
-                                                        value={dependent.forenames}
-                                                        onChange={(e) => handleDependentChange(index, 'forenames', e.target.value)}
-                                                    />
-                                                </td>
-                                                <td className="border border-gray-300 p-2">
-                                                    <Input
-                                                        className="w-full"
-                                                        placeholder="Relationship"
-                                                        value={dependent.relationship}
-                                                        onChange={(e) => handleDependentChange(index, 'relationship', e.target.value)}
-                                                    />
-                                                </td>
-                                                <td className="border border-gray-300 p-2">
-                                                    <FormField
-                                                        id={`dependent-${index}-dob`}
-                                                        label=""
-                                                        type="dial-date"
-                                                        value={dependent.dateOfBirth}
-                                                        onChange={(value) => handleDependentChange(index, 'dateOfBirth', value)}
-                                                        maxDate={currentDate}
-                                                        defaultAge={0}
-                                                        className="space-y-1"
-                                                    />
-                                                </td>
-                                                <td className="border border-gray-300 p-2">
-                                                    <Input
-                                                        className="w-full"
-                                                        placeholder="ID Number"
-                                                        value={dependent.idNumber}
-                                                        onChange={(e) => handleDependentChange(index, 'idNumber', e.target.value)}
-                                                    />
-                                                </td>
-                                                <td className="border border-gray-300 p-2">
-                                                    <Input
-                                                        type="number"
-                                                        className="w-full"
-                                                        placeholder="Amount"
-                                                        value={dependent.coverAmount}
-                                                        onChange={(e) => handleDependentChange(index, 'coverAmount', e.target.value)}
-                                                    />
-                                                </td>
-                                                <td className="border border-gray-300 p-2">
-                                                    <Input
-                                                        type="number"
-                                                        className="w-full"
-                                                        placeholder="Premium"
-                                                        value={dependent.premium}
-                                                        onChange={(e) => handleDependentChange(index, 'premium', e.target.value)}
-                                                    />
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div className="mt-4 grid gap-4 md:grid-cols-2">
-                                <div>
-                                    <h4 className="font-semibold mb-2">Principal Member</h4>
-                                    <div className="space-y-2 text-sm">
-                                        <div className="flex justify-between">
-                                            <span>Memorial Cash Benefit:</span>
-                                            <Input className="w-20" placeholder="Amount" />
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Tombstone Cash Benefit:</span>
-                                            <Input className="w-20" placeholder="Amount" />
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Grocery Benefit:</span>
-                                            <Input className="w-20" placeholder="Amount" />
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>School Fees Benefit:</span>
-                                            <Input className="w-20" placeholder="Amount" />
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Personal Accident Benefit:</span>
-                                            <Input className="w-20" placeholder="Amount" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <h4 className="font-semibold mb-2">Supplementary Benefits (Tick (√) appropriate box)</h4>
-                                    <div className="space-y-2 text-sm">
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="memorialCash" />
-                                            <Label htmlFor="memorialCash">Memorial Cash Benefit: Amount of Cover Per Person</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="tombstoneCash" />
-                                            <Label htmlFor="tombstoneCash">Tombstone Cash Benefit: Amount of Cover Per Person</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="groceryBenefit" />
-                                            <Label htmlFor="groceryBenefit">Grocery Benefit: Amount of Cover</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="schoolFees" />
-                                            <Label htmlFor="schoolFees">School Fees Benefit: Amount of Cover</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="personalAccident" />
-                                            <Label htmlFor="personalAccident">Personal Accident Benefit: Please supply details below</Label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </Card>
-
-                {/* Personal Accident Benefit — only shown if funeral cover is selected */}
-                {formData.wantsFuneralCover && (
-                    <Card className="p-6">
-                        <div className="bg-emerald-100 p-4 rounded-lg mb-4">
-                            <h3 className="text-lg font-semibold text-emerald-800">I - PERSONAL ACCIDENT BENEFIT</h3>
-                        </div>
-
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <div>
-                                <Label htmlFor="accidentSurname">Surname</Label>
-                                <Input
-                                    id="accidentSurname"
-                                    value={formData.personalAccidentBenefit.surname}
-                                    onChange={(e) => handleInputChange('personalAccidentBenefit.surname', e.target.value)}
-                                />
-                            </div>
-
-                            <div>
-                                <Label htmlFor="accidentForenames">Forename(s)</Label>
-                                <Input
-                                    id="accidentForenames"
-                                    value={formData.personalAccidentBenefit.forenames}
-                                    onChange={(e) => handleInputChange('personalAccidentBenefit.forenames', e.target.value)}
-                                />
-                            </div>
-                        </div>
-                    </Card>
-                )}
 
                 {/* Digital Banking Services */}
                 <Card className="p-6">
@@ -1371,61 +1207,6 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                                 <Label htmlFor="driversLicenseDoc">Drivers' License</Label>
                             </div>
                         </div>
-                    </div>
-                </Card>
-
-                {/* Declaration */}
-                <Card className="p-6">
-                    <div className="bg-emerald-100 p-4 rounded-lg mb-4">
-                        <h3 className="text-lg font-semibold text-emerald-800">K - DECLARATION</h3>
-                        <p className="text-sm text-emerald-700">
-                            I confirm that to the best of my knowledge, the above information is true and correct and that all the persons registered above are not on medication for any disease or illness. Should anything change, I undertake to advise ZB Bank immediately.
-                        </p>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <div>
-                            <Label htmlFor="declarationName">Full Name</Label>
-                            <Input
-                                id="declarationName"
-                                value={formData.declaration.fullName}
-                                onChange={(e) => handleInputChange('declaration.fullName', e.target.value)}
-                            />
-                        </div>
-
-                        <div>
-                            <Label htmlFor="declarationSignature">Applicant's Signature</Label>
-                            <div className="h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 bg-gray-100 dark:bg-gray-800 cursor-not-allowed">
-                                Signature captured in next step
-                            </div>
-                        </div>
-
-                        <div>
-                            <FormField
-                                id="declarationDate"
-                                name="declaration.date"
-                                label="Date"
-                                type="dial-date"
-                                value={formData.declaration.date}
-                                onChange={(value) => handleInputChange('declaration.date', value)}
-                                maxDate={currentDate}
-                                defaultAge={0}
-                                hideDay={true}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="mt-4">
-                        <FormField
-                            id="declarationAcknowledged"
-                            name="declaration.acknowledged"
-                            label="I acknowledge and agree to the terms and conditions stated in the declaration above. *"
-                            type="checkbox"
-                            checkboxVariant="prominent"
-                            checked={formData.declaration.acknowledged === true || (formData.declaration.acknowledged as any) === 'true'}
-                            onChange={(checked) => handleInputChange('declaration.acknowledged', checked)}
-                            required
-                        />
                     </div>
                 </Card>
 

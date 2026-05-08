@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\ApplicationState;
 use App\Models\PaymentReminder;
+use App\Services\DandemutandeMailService;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
@@ -28,15 +29,15 @@ class SendPaymentReminderJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(NotificationService $notificationService): void
+    public function handle(NotificationService $notificationService, DandemutandeMailService $mailService): void
     {
         Log::info('Starting SendPaymentReminderJob');
 
-        $intervals = [
+        $intervals = config('reminders.deposit_intervals', [
             '3_days' => 3,
             '7_days' => 7,
             '14_days' => 14,
-        ];
+        ]);
 
         foreach ($intervals as $stage => $days) {
             $targetDate = Carbon::today()->subDays($days);
@@ -52,7 +53,7 @@ class SendPaymentReminderJob implements ShouldQueue
                     ->exists();
 
                 if (!$alreadySent) {
-                    $this->sendReminder($app, $stage, $notificationService);
+                    $this->sendReminder($app, $stage, $notificationService, $mailService);
                 }
             }
         }
@@ -60,30 +61,62 @@ class SendPaymentReminderJob implements ShouldQueue
         Log::info('Finished SendPaymentReminderJob');
     }
 
-    private function sendReminder(ApplicationState $app, string $stage, NotificationService $notificationService)
+    private function sendReminder(
+        ApplicationState $app,
+        string $stage,
+        NotificationService $notificationService,
+        DandemutandeMailService $mailService
+    ): void
     {
         $formData = $app->form_data ?? [];
         $phone = $formData['formResponses']['phone'] ?? $formData['formResponses']['phoneNumber'] ?? $formData['formResponses']['mobile'] ?? null;
         $name = $formData['formResponses']['firstName'] ?? 'Customer';
 
-        if (!$phone) {
-            Log::warning("Cannot send payment reminder for app {$app->id}: No phone number found.");
-            return;
-        }
-
         $link = url("/application/resume/{$app->session_id}");
         $message = "Dear {$name}, your application is awaiting deposit payment. Please complete your payment here: {$link}";
+        $channels = config("reminders.deposit_escalation_channels.{$stage}", ['sms']);
 
-        Log::info("Sending {$stage} payment reminder to {$phone} for app {$app->id}");
+        foreach ($channels as $channel) {
+            $success = match ($channel) {
+                'sms' => $phone ? $notificationService->sendSMS($phone, $message) : false,
+                'email' => $mailService->sendPaymentReminderEmail($app, $stage, $link),
+                'whatsapp' => $this->logWhatsAppReminder($app, $message),
+                'admin_alert' => $this->logAdminAlert($app, $stage),
+                default => false,
+            };
 
-        $success = $notificationService->sendSMS($phone, $message);
-
-        if ($success) {
             PaymentReminder::create([
                 'application_state_id' => $app->id,
+                'reminder_type' => 'deposit_pending',
                 'reminder_stage' => $stage,
+                'channel' => $channel,
+                'delivery_status' => $success ? 'sent' : 'failed',
+                'metadata' => [
+                    'phone' => $channel === 'sms' ? $phone : null,
+                    'resume_link' => $link,
+                ],
                 'sent_at' => now(),
             ]);
         }
+    }
+
+    private function logWhatsAppReminder(ApplicationState $app, string $message): bool
+    {
+        Log::info('WhatsApp payment reminder queued for manual/provider dispatch', [
+            'application_id' => $app->id,
+            'message' => $message,
+        ]);
+
+        return true;
+    }
+
+    private function logAdminAlert(ApplicationState $app, string $stage): bool
+    {
+        Log::warning('Payment reminder escalated to admin', [
+            'application_id' => $app->id,
+            'stage' => $stage,
+        ]);
+
+        return true;
     }
 }

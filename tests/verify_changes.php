@@ -66,7 +66,7 @@ function testPersonalServices() {
 
 function testPDFAddressOverride() {
     echo "\nTesting PDF Address Logic...\n";
-    $service = new PDFGeneratorService();
+    $service = app(PDFGeneratorService::class);
     $reflector = new ReflectionClass($service);
     $method = $reflector->getMethod('preparePDFData');
     $method->setAccessible(true);

@@ -11,7 +11,7 @@ use Illuminate\Queue\SerializesModels;
 
 use App\Models\ApplicationState;
 
-class ApplicationStatusUpdated extends Mailable
+class ApplicationStatusUpdated extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

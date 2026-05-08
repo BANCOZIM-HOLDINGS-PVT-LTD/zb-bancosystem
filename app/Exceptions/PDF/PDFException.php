@@ -98,6 +98,7 @@ class PDFException extends Exception
     {
         return [
             'error' => $this->getMessage(),
+            'message' => $this->getMessage(),
             'code' => $this->getErrorCode(),
             'details' => $this->getContext(),
         ];

@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\ApplicationState;
+use App\Models\AccountingTransaction;
 use App\Models\MicrobizPackage;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Sale;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +13,44 @@ use Illuminate\Support\Facades\Log;
 
 class AccountingService
 {
+    public function revenueBySource(string $period = 'day'): array
+    {
+        $start = match ($period) {
+            'week' => now()->startOfWeek(),
+            'month' => now()->startOfMonth(),
+            default => now()->startOfDay(),
+        };
+
+        return AccountingTransaction::where('type', 'income')
+            ->where('created_at', '>=', $start)
+            ->selectRaw('source, sum(amount) as total, count(*) as count')
+            ->groupBy('source')
+            ->get()
+            ->toArray();
+    }
+
+    public function outstandingPayments()
+    {
+        return Payment::with('applicationState')
+            ->whereIn('status', [Payment::STATUS_PENDING, Payment::STATUS_PROCESSING])
+            ->orderBy('created_at')
+            ->get();
+    }
+
+    public function actualVsProjectedIncome(): array
+    {
+        $actual = (float) AccountingTransaction::where('type', 'income')->sum('amount');
+        $projected = (float) ApplicationState::whereIn('status', ['approved', 'awaiting_deposit', 'awaiting_deposit_payment'])
+            ->get()
+            ->sum(fn (ApplicationState $application) => (float) ($application->deposit_amount ?: data_get($application->form_data, 'finalPrice', 0)));
+
+        return [
+            'actual' => $actual,
+            'projected' => $projected,
+            'variance' => $actual - $projected,
+        ];
+    }
+
     /**
      * Record sales and deduct inventory for an application.
      * This fulfills the "Real-time financial transaction logging" and

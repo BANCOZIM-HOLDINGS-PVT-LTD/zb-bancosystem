@@ -39,7 +39,10 @@ class CrossPlatformSyncServiceTest extends TestCase
                 'language' => 'en',
                 'intent' => 'hirePurchase',
                 'employer' => 'goz-ssb',
-                'category' => 'electronics'
+                'category' => 'electronics',
+                'formResponses' => [
+                    'nationalIdNumber' => '11-111111-A-11'
+                ]
             ],
             'metadata' => ['created_at_web' => now()->toISOString()],
             'expires_at' => now()->addHours(24)
@@ -56,7 +59,10 @@ class CrossPlatformSyncServiceTest extends TestCase
                 'intent' => 'hirePurchase',
                 'employer' => 'goz-ssb',
                 'selectedCategory' => ['id' => 'electronics', 'name' => 'Electronics'],
-                'selectedBusiness' => ['id' => 'laptop', 'name' => 'Laptop']
+                'selectedBusiness' => ['id' => 'laptop', 'name' => 'Laptop'],
+                'formResponses' => [
+                    'nationalIdNumber' => '11-111111-A-11'
+                ]
             ],
             'metadata' => ['phone_number' => '1234567890'],
             'expires_at' => now()->addDays(7)
@@ -97,7 +103,10 @@ class CrossPlatformSyncServiceTest extends TestCase
             'current_step' => 'employer',
             'form_data' => [
                 'language' => 'en',
-                'intent' => 'microBiz'
+                'intent' => 'microBiz',
+                'formResponses' => [
+                    'nationalIdNumber' => '22-222222-B-22'
+                ]
             ],
             'metadata' => [],
             'expires_at' => now()->addHours(24)
@@ -143,7 +152,11 @@ class CrossPlatformSyncServiceTest extends TestCase
                 'intent' => 'hirePurchase',
                 'employer' => 'entrepreneur',
                 'selectedCategory' => ['id' => 'vehicles', 'name' => 'Vehicles'],
-                'formResponses' => ['firstName' => 'John', 'lastName' => 'Doe']
+                'formResponses' => [
+                    'firstName' => 'John', 
+                    'lastName' => 'Doe',
+                    'nationalIdNumber' => '33-333333-C-33'
+                ]
             ],
             'metadata' => ['phone_number' => '5555555555'],
             'expires_at' => now()->addDays(7)
@@ -177,27 +190,29 @@ class CrossPlatformSyncServiceTest extends TestCase
     {
         // Create two states with different data
         $state1 = ApplicationState::create([
-            'session_id' => 'session_1',
+            'session_id' => 'session_1_consist',
             'channel' => 'web',
-            'user_identifier' => 'session_1',
+            'user_identifier' => 'session_1_consist',
             'current_step' => 'product',
             'form_data' => [
                 'language' => 'en',
                 'intent' => 'hirePurchase',
-                'employer' => 'goz-ssb'
+                'employer' => 'goz-ssb',
+                'formResponses' => ['nationalIdNumber' => '44-444444-D-44']
             ],
             'expires_at' => now()->addHours(24)
         ]);
         
         $state2 = ApplicationState::create([
-            'session_id' => 'session_2',
+            'session_id' => 'session_2_consist',
             'channel' => 'whatsapp',
             'user_identifier' => '1234567890',
             'current_step' => 'product',
             'form_data' => [
                 'language' => 'sn', // Different language
                 'intent' => 'microBiz', // Different intent
-                'employer' => 'goz-ssb'
+                'employer' => 'goz-ssb',
+                'formResponses' => ['nationalIdNumber' => '44-444444-D-44']
             ],
             'expires_at' => now()->addDays(7)
         ]);
@@ -223,21 +238,29 @@ class CrossPlatformSyncServiceTest extends TestCase
     {
         // Create synchronized states
         $state1 = ApplicationState::create([
-            'session_id' => 'sync_session_1',
+            'session_id' => 'sync_session_1_uniq',
             'channel' => 'web',
-            'user_identifier' => 'sync_session_1',
+            'user_identifier' => 'sync_session_1_uniq',
             'current_step' => 'product',
-            'form_data' => ['language' => 'en', 'intent' => 'hirePurchase'],
+            'form_data' => [
+                'language' => 'en', 
+                'intent' => 'hirePurchase',
+                'formResponses' => ['nationalIdNumber' => '66-666666-F-66']
+            ],
             'metadata' => ['last_sync' => now()->toISOString()],
             'expires_at' => now()->addHours(24)
         ]);
         
         $state2 = ApplicationState::create([
-            'session_id' => 'sync_session_2',
+            'session_id' => 'sync_session_2_uniq',
             'channel' => 'whatsapp',
             'user_identifier' => '1234567890',
             'current_step' => 'product',
-            'form_data' => ['language' => 'en', 'intent' => 'hirePurchase'],
+            'form_data' => [
+                'language' => 'en', 
+                'intent' => 'hirePurchase',
+                'formResponses' => ['nationalIdNumber' => '66-666666-F-66']
+            ],
             'metadata' => ['last_sync' => now()->toISOString()],
             'expires_at' => now()->addDays(7)
         ]);

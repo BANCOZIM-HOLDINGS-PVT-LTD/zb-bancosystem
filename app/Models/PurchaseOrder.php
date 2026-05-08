@@ -180,6 +180,8 @@ class PurchaseOrder extends Model
             'status' => 'received',
             'actual_delivery_date' => now(),
         ]);
+
+        event(new \App\Events\PurchaseOrderFulfilled($this));
     }
     
     /**

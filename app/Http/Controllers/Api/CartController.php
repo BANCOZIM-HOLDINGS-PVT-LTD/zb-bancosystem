@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Product;
 use App\Services\CartService;
 use Illuminate\Http\Request;
 
@@ -23,6 +24,13 @@ class CartController extends Controller
             'success' => true,
             'cart' => $cart
         ]);
+    }
+
+    public function index(Request $request)
+    {
+        $request->validate(['session_id' => 'required|string']);
+
+        return $this->getCart($request, $request->session_id);
     }
 
     public function addItem(Request $request)
@@ -59,6 +67,13 @@ class CartController extends Controller
         return response()->json($result, $result['success'] ? 200 : 400);
     }
 
+    public function updateItem(Request $request, int $id)
+    {
+        $request->merge(['cart_item_id' => $id]);
+
+        return $this->updateQuantity($request);
+    }
+
     public function removeItem(Request $request)
     {
         $request->validate([
@@ -74,6 +89,13 @@ class CartController extends Controller
         return response()->json($result, $result['success'] ? 200 : 400);
     }
 
+    public function removeItemById(Request $request, int $id)
+    {
+        $request->merge(['cart_item_id' => $id]);
+
+        return $this->removeItem($request);
+    }
+
     public function clearCart(Request $request)
     {
         $request->validate([
@@ -83,5 +105,53 @@ class CartController extends Controller
         $success = $this->cartService->clearCart($request->session_id);
 
         return response()->json(['success' => $success]);
+    }
+
+    public function products(Request $request)
+    {
+        $query = Product::query()
+            ->with('inventory', 'subCategory.category')
+            ->whereHas('subCategory.category', function ($q) {
+                $q->where(function ($inner) {
+                    $inner->where('name', 'like', '%building%')
+                        ->orWhere('name', 'like', '%material%')
+                        ->orWhere('name', 'like', '%hardware%')
+                        ->orWhere('name', 'like', '%construction%');
+                });
+            });
+
+        if ($search = $request->string('search')->toString()) {
+            $query->search($search);
+        }
+
+        if ($categoryId = $request->integer('category_id')) {
+            $query->inCategory($categoryId);
+        }
+
+        if ($request->filled('min_price') || $request->filled('max_price')) {
+            $query->priceRange((float) $request->input('min_price', 0), (float) $request->input('max_price', 999999));
+        }
+
+        return response()->json([
+            'success' => true,
+            'products' => $query->paginate($request->integer('per_page', 20)),
+        ]);
+    }
+
+    public function total(Request $request)
+    {
+        $request->validate(['session_id' => 'required|string']);
+
+        return response()->json([
+            'success' => true,
+            'total' => $this->cartService->getTotal($request->session_id),
+        ]);
+    }
+
+    public function validateStock(Request $request)
+    {
+        $request->validate(['session_id' => 'required|string']);
+
+        return response()->json($this->cartService->validateStock($request->session_id));
     }
 }

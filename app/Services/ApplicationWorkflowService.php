@@ -92,6 +92,10 @@ class ApplicationWorkflowService
             // Send notifications
             $this->notificationService->sendStatusUpdateNotification($application, $oldStatus, $newStatus);
 
+            if ($newStatus === 'approved') {
+                event(new \App\Events\ApplicationApproved($application));
+            }
+
             // Log the approval
             Log::info("Application processed (New Status: {$newStatus})", [
                 'session_id' => $application->session_id,
@@ -319,7 +323,7 @@ class ApplicationWorkflowService
         $commissionAmount = ($loanAmount * $commissionRate) / 100;
 
         if ($commissionAmount > 0) {
-            Commission::create([
+            $commission = Commission::create([
                 'agent_id' => $agent->id,
                 'application_id' => $application->id,
                 'amount' => $commissionAmount,
@@ -329,6 +333,8 @@ class ApplicationWorkflowService
                 'earned_date' => now(),
                 'reference_code' => $application->reference_code,
             ]);
+
+            event(new \App\Events\CommissionCalculated($commission));
         }
     }
 

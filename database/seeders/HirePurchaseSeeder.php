@@ -275,7 +275,11 @@ class HirePurchaseSeeder extends Seeder
                     // Generate strict code: HP-{CAT_PREFIX}-{NAME_PREFIX}-{RAND}
                     $catPrefix = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $category->name), 0, 3));
                     $namePrefix = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $productName), 0, 6));
-                    $productCode = "HP-{$catPrefix}-{$namePrefix}-" . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+                    
+                    // Loop to ensure unique product code
+                    do {
+                        $productCode = "HP-{$catPrefix}-{$namePrefix}-" . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+                    } while (Product::where('product_code', $productCode)->exists());
 
                     $product = Product::create([
                         'product_sub_category_id' => $subcategory->id,

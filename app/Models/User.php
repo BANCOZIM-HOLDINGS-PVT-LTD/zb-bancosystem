@@ -43,6 +43,8 @@ class User extends Authenticatable implements FilamentUser
         'national_id',
         'phone',
         'whatsapp_number',
+        'email_notifications_enabled',
+        'email_preferences',
         'phone_verified',
         'phone_verified_at',
         'otp_code',
@@ -89,6 +91,8 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'phone_verified' => 'boolean',
             'is_admin' => 'boolean',
+            'email_notifications_enabled' => 'boolean',
+            'email_preferences' => 'array',
         ];
     }
 

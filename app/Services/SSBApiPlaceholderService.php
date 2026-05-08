@@ -7,12 +7,9 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * SSB API Placeholder Service
- * 
- * This service is a placeholder for future SSB API integration.
- * SSB (Salary Services Bureau) will handle automatic loan approvals
- * for government employees via API.
- * 
- * TODO: Replace placeholder methods with actual SSB API calls when API keys are received.
+ *
+ * @deprecated Use SSBApiService. This class is kept only for backwards
+ * compatibility with any old references while the API workflow is now live.
  */
 class SSBApiPlaceholderService
 {

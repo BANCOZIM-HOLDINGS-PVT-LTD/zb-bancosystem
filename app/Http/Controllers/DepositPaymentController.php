@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApplicationState;
+use App\Models\Payment;
 use App\Services\PaynowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -110,14 +111,44 @@ class DepositPaymentController extends Controller
                 ? "Full Payment for Order {$referenceCode}"
                 : "Deposit Payment for Application {$referenceCode}";
 
-            $paynowResult = $this->paynowService->createPayment(
-                $referenceCode,
-                $amount,
-                $email,
-                $description
-            );
+            $phone = $formData['formResponses']['mobile'] ?? $formData['formResponses']['phoneNumber'] ?? null;
+            $isMobileMoney = in_array($paymentMethod, ['ecocash', 'smilecash']);
+
+            $paynowResult = $isMobileMoney && $phone
+                ? $this->paynowService->createMobilePayment(
+                    $referenceCode,
+                    $amount,
+                    $email,
+                    $description,
+                    $phone,
+                    $paymentMethod === 'smilecash' ? 'onemoney' : 'ecocash'
+                )
+                : $this->paynowService->createPayment(
+                    $referenceCode,
+                    $amount,
+                    $email,
+                    $description
+                );
 
             if ($paynowResult['success']) {
+                Payment::updateOrCreate(
+                    ['reference' => $referenceCode],
+                    [
+                        'application_state_id' => $application->id,
+                        'provider' => 'paynow',
+                        'method' => $paymentMethod,
+                        'amount' => $amount,
+                        'currency' => 'USD',
+                        'status' => Payment::STATUS_PENDING,
+                        'poll_url' => $paynowResult['pollUrl'] ?? null,
+                        'metadata' => [
+                            'description' => $description,
+                            'payment_type' => $paymentType,
+                            'initiated_at' => now()->toISOString(),
+                        ],
+                    ]
+                );
+
                 // Store payment method
                 $application->deposit_payment_method = $paymentMethod;
                 $application->save();
@@ -127,18 +158,6 @@ class DepositPaymentController extends Controller
                     'amount' => $amount,
                     'method' => $paymentMethod,
                 ]);
-
-                // For mobile money (ecocash, smilecash), initiate mobile payment
-                if (in_array($paymentMethod, ['ecocash', 'smilecash'])) {
-                    $phone = $formData['formResponses']['mobile'] ?? $formData['formResponses']['phoneNumber'] ?? null;
-                    if ($phone) {
-                        $this->paynowService->initiateMobile(
-                            $paynowResult['pollUrl'],
-                            $phone,
-                            $paymentMethod === 'smilecash' ? 'onemoney' : 'ecocash'
-                        );
-                    }
-                }
 
                 return response()->json([
                     'success' => true,
@@ -192,6 +211,21 @@ class DepositPaymentController extends Controller
         if ($status === 'paid' || $status === 'delivered') {
             $paymentType = $application->payment_type;
             $nextStatus = $paymentType === 'cash' ? 'paid' : 'processing';
+            $payment = Payment::firstOrCreate(
+                ['reference' => $referenceCode],
+                [
+                    'application_state_id' => $application->id,
+                    'provider' => 'paynow',
+                    'method' => $application->deposit_payment_method,
+                    'amount' => $application->deposit_amount ?: (float) $request->amount,
+                    'currency' => 'USD',
+                    'status' => Payment::STATUS_PENDING,
+                ]
+            );
+
+            $payment->markPaid($paynowReference, [
+                'callback_payload' => $request->all(),
+            ]);
 
             // Mark as paid
             $application->update([
@@ -207,6 +241,8 @@ class DepositPaymentController extends Controller
                 'transaction_id' => $paynowReference,
                 'payment_type' => $paymentType
             ]);
+
+            event(new \App\Events\PaymentReceived($payment));
 
             // 0. Record Financial Transaction (Accounting & Inventory)
             try {
@@ -318,7 +354,17 @@ class DepositPaymentController extends Controller
             return response('OK', 200);
         }
 
-        if ($status === 'cancelled' || $status === 'failed') {
+        if (in_array($status, ['cancelled', 'failed', 'timeout', 'insufficient funds', 'insufficient_funds'])) {
+            $payment = Payment::where('reference', $referenceCode)->first();
+            if ($payment) {
+                match ($status) {
+                    'cancelled' => $payment->markCancelled(['callback_payload' => $request->all()]),
+                    'timeout' => $payment->markFailed(Payment::STATUS_TIMEOUT, ['callback_payload' => $request->all()]),
+                    'insufficient funds', 'insufficient_funds' => $payment->markFailed(Payment::STATUS_INSUFFICIENT_FUNDS, ['callback_payload' => $request->all()]),
+                    default => $payment->markFailed(Payment::STATUS_FAILED, ['callback_payload' => $request->all()]),
+                };
+            }
+
             Log::warning('Deposit payment failed or cancelled', [
                 'reference_code' => $referenceCode,
                 'status' => $status,
@@ -360,6 +406,7 @@ class DepositPaymentController extends Controller
                 'deposit_paid_at' => $application->deposit_paid_at?->toISOString(),
                 'deposit_transaction_id' => $application->deposit_transaction_id,
                 'deposit_payment_method' => $application->deposit_payment_method,
+                'latest_payment' => $application->payments()->latest()->first(),
             ],
         ]);
     }

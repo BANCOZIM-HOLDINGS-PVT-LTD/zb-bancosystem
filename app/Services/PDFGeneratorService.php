@@ -64,21 +64,21 @@ class PDFGeneratorService implements PDFGeneratorInterface
      * Create a new PDF generator service instance
      */
     public function __construct(
-        PDFLoggingService $logger,
-        SystemMonitoringService $monitoringService,
-        PDFTemplateService $templateService,
-        PDFSecurityService $securityService,
-        PDFValidationService $validationService,
-        PDFStorageService $storageService,
-        PDFMetadataService $metadataService
+        ?PDFLoggingService $logger = null,
+        ?SystemMonitoringService $monitoringService = null,
+        ?PDFTemplateService $templateService = null,
+        ?PDFSecurityService $securityService = null,
+        ?PDFValidationService $validationService = null,
+        ?PDFStorageService $storageService = null,
+        ?PDFMetadataService $metadataService = null
     ) {
-        $this->logger = $logger;
-        $this->monitoringService = $monitoringService;
-        $this->templateService = $templateService;
-        $this->securityService = $securityService;
-        $this->validationService = $validationService;
-        $this->storageService = $storageService;
-        $this->metadataService = $metadataService;
+        $this->logger = $logger ?? app(PDFLoggingService::class);
+        $this->monitoringService = $monitoringService ?? app(SystemMonitoringService::class);
+        $this->templateService = $templateService ?? app(PDFTemplateService::class);
+        $this->securityService = $securityService ?? new PDFSecurityService($this->logger);
+        $this->validationService = $validationService ?? new PDFValidationService($this->logger);
+        $this->storageService = $storageService ?? new PDFStorageService($this->logger);
+        $this->metadataService = $metadataService ?? new PDFMetadataService($this->logger);
     }
     /**
      * Generate PDF from completed application with document embedding and metadata

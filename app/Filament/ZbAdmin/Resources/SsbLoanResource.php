@@ -162,6 +162,36 @@ class SsbLoanResource extends Resource
                     ->options(Branch::active()->pluck('name', 'id'))
                     ->searchable(),
             ])
+            ->headerActions([
+                Action::make('export_now')
+                    ->label('Export Now')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('info')
+                    ->visible(function () use ($user) {
+                        if (!$user) return false;
+                        return $user->isVlc() || $user->isQupaManagement()
+                            || $user->role === User::ROLE_ZB_ADMIN
+                            || $user->role === User::ROLE_SUPER_ADMIN;
+                    })
+                    ->requiresConfirmation()
+                    ->action(function () {
+                        try {
+                            \App\Jobs\ExportSSBBatchJob::dispatchSync();
+
+                            Notification::make()
+                                ->title('SSB export completed')
+                                ->body('The SSB export job ran successfully. Check SSB batch logs for details.')
+                                ->success()
+                                ->send();
+                        } catch (\Throwable $e) {
+                            Notification::make()
+                                ->title('SSB export failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+            ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
 

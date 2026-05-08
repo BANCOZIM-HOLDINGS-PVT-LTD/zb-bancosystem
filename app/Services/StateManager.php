@@ -49,11 +49,11 @@ class StateManager
 
         while ($retryCount < $maxRetries) {
             try {
-                // Reconnect to database if connection was lost
-                \DB::reconnect();
-
-                // Reconnect to database if connection was lost
-                \DB::reconnect();
+                // Reconnect defensively in long-running web requests, but keep the
+                // in-memory SQLite test connection intact.
+                if (! app()->environment('testing') || \DB::connection()->getDriverName() !== 'sqlite') {
+                    \DB::reconnect();
+                }
 
                 \Log::info('StateManager: finding existing state');
                 // Try to find existing state

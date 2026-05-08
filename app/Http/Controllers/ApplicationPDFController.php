@@ -138,6 +138,25 @@ class ApplicationPDFController extends Controller
             return response()->json($pdfException->toArray(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    public function legacyDownload(Request $request, string $sessionId)
+    {
+        if ($response = $this->legacyIncompleteResponse($sessionId)) {
+            return $response;
+        }
+
+        try {
+            $state = $this->getApplicationState($sessionId);
+            $pdfPath = $this->getPdfPathWithCache($state);
+
+            return response(Storage::disk('public')->get($pdfPath), Response::HTTP_OK, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename=',
+            ]);
+        } catch (PDFException $e) {
+            return response()->json($e->toArray(), $this->getPDFExceptionStatusCode($e));
+        }
+    }
     
     /**
      * View application PDF in browser
@@ -232,6 +251,33 @@ class ApplicationPDFController extends Controller
             
             return response()->json($pdfException->toArray(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    public function legacyView(Request $request, string $sessionId)
+    {
+        if ($response = $this->legacyIncompleteResponse($sessionId)) {
+            return $response;
+        }
+
+        $response = $this->view($request, $sessionId);
+        $response->headers->set('Content-Disposition', 'inline; filename=');
+
+        return $response;
+    }
+
+    private function legacyIncompleteResponse(string $sessionId)
+    {
+        $state = ApplicationState::where('session_id', $sessionId)->first();
+
+        if ($state && $state->current_step !== 'completed') {
+            return response()->json([
+                'error' => 'Incomplete application',
+                'message' => 'Application is not complete enough to generate a PDF',
+                'code' => 'PDF_INCOMPLETE_DATA',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        return null;
     }
     
     /**
@@ -476,6 +522,18 @@ class ApplicationPDFController extends Controller
             
             // Generate new PDF - this will throw our custom exceptions if it fails
             $pdfPath = $this->pdfGenerator->generateApplicationPDF($state);
+
+            if ($force && $oldPdfPath && $pdfPath === $oldPdfPath && Storage::disk('public')->exists($pdfPath)) {
+                $pathDirectory = pathinfo($pdfPath, PATHINFO_DIRNAME);
+                $pathDirectory = ($pathDirectory && $pathDirectory !== '.') ? $pathDirectory . '/' : '';
+                $baseName = pathinfo($pdfPath, PATHINFO_FILENAME);
+                $extension = pathinfo($pdfPath, PATHINFO_EXTENSION) ?: 'pdf';
+                $suffix = now()->format('YmdHis') . '_' . substr(md5((string) microtime(true)), 0, 6);
+                $newPdfPath = "{$pathDirectory}{$baseName}_{$suffix}.{$extension}";
+
+                Storage::disk('public')->copy($pdfPath, $newPdfPath);
+                $pdfPath = $newPdfPath;
+            }
             
             // Save new PDF path and metadata
             $formData['pdfPath'] = $pdfPath;
@@ -850,6 +908,15 @@ class ApplicationPDFController extends Controller
                 'code' => 'BATCH_PROCESSING_FAILED'
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    public function legacyBatchDownload(Request $request)
+    {
+        $response = $this->batchDownload($request);
+        $batchName = $request->input('batch_name', 'applications');
+        $response->headers->set('Content-Disposition', 'attachment; filename=' . $batchName);
+
+        return $response;
     }
     
     /**

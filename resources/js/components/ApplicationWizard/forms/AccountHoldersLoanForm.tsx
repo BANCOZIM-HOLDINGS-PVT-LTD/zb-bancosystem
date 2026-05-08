@@ -105,6 +105,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
     const [loanType, setLoanType] = useState<string>(''); // 'qupa' | 'other' | 'both'
     const [isCustomBranch, setIsCustomBranch] = useState<boolean>(false);
     const [accountNumberError, setAccountNumberError] = useState<string>('');
+    const [spouseError, setSpouseError] = useState<string>('');
     const [consentGiven, setConsentGiven] = useState<boolean>(false);
     const [consentError, setConsentError] = useState<string>('');
 
@@ -152,7 +153,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             { fullName: '', relationship: '', phoneNumber: '', residentialAddress: { type: '', addressLine: '' } as AddressData }
         ],
 
-        // Banking Details - Pre-fill ZB Bank if user has ZB account
+        // Banking Details - Pre-fill ZB Bank if user has ZB bank account
         bankName: data.hasAccount && data.accountType === 'ZB Bank Account' ? 'ZB Bank' : '',
         branch: '',
         accountNumber: '',
@@ -226,6 +227,11 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
     }, [formData.maritalStatus]);
 
     const handleSpouseChange = (index: number, field: string, value: string) => {
+        // Clear error when user starts filling in spouse details
+        if (spouseError) {
+            setSpouseError('');
+        }
+
         setFormData(prev => ({
             ...prev,
             spouseDetails: prev.spouseDetails.map((spouse, i) =>
@@ -288,7 +294,63 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             }
         }
 
+        // Validate that BOTH spouse/next of kin entries are filled in
+        const allSpousesValid = formData.spouseDetails.every(spouse => {
+            const addr = spouse.residentialAddress as AddressData;
+            const hasAddress = addr && addr.type && addr.addressLine?.trim();
+            return spouse.fullName.trim() !== '' &&
+                spouse.relationship.trim() !== '' &&
+                spouse.phoneNumber.trim() !== '' &&
+                hasAddress;
+        });
 
+        if (!allSpousesValid) {
+            setSpouseError('Both Spouse/Next of Kin entries are required. Please fill in all fields for both contacts.');
+            document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        // Validate that next of kin don't have the same name
+        if (formData.spouseDetails[0].fullName.trim().toLowerCase() === formData.spouseDetails[1].fullName.trim().toLowerCase()) {
+            setSpouseError('Both Spouse/Next of Kin cannot have the same name. Please provide different contacts.');
+            document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        // Validate that next of kin don't have the same phone number
+        if (formData.spouseDetails[0].phoneNumber.trim() === formData.spouseDetails[1].phoneNumber.trim()) {
+            setSpouseError('Both Spouse/Next of Kin cannot have the same phone number. Please provide different contacts.');
+            document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        // Validate that next of kin details don't match applicant details
+        const applicantFullName = `${formData.firstName} ${formData.surname}`.trim().toLowerCase();
+        const nextOfKinNames = formData.spouseDetails.map(s => s.fullName.trim().toLowerCase());
+        const nextOfKinPhones = formData.spouseDetails.map(s => s.phoneNumber.trim());
+        const personalPhone = formData.cellNumber.trim();
+        const supervisorPhone = formData.headOfInstitutionCell.trim();
+
+        if (nextOfKinNames.includes(applicantFullName)) {
+            setSpouseError('Next of Kin cannot be the same as the applicant.');
+            document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        if (personalPhone && nextOfKinPhones.includes(personalPhone)) {
+            setSpouseError('Your personal phone number cannot be the same as Next of Kin phone numbers.');
+            document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        if (supervisorPhone && nextOfKinPhones.includes(supervisorPhone)) {
+            setSpouseError('Supervisor phone number cannot be the same as Next of Kin phone numbers.');
+            document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        // Clear any existing error
+        setSpouseError('');
 
         // Map Account Holders form fields to match PDF template expectations
         const mappedData = {
@@ -790,7 +852,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 </Card>
 
                 {/* Spouse and Next of Kin */}
-                <Card className="p-4 md:p-6">
+                <Card className="p-4 md:p-6" id="spouse-section">
                     <div className="flex items-center mb-4">
                         <Users className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">
@@ -803,6 +865,14 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     <p className="text-xs text-gray-500 italic mb-4">
                         *this is for statistical and record keeping purposes only*
                     </p>
+
+                    {spouseError && (
+                        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                                {spouseError}
+                            </p>
+                        </div>
+                    )}
 
                     {formData.spouseDetails.map((spouse, index) => {
                         let containerLabel = "Next of Kin Details";
@@ -1296,7 +1366,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                             htmlFor="consent"
                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                         >
-                            I give consent to Qupa to deduct the agreed instalment from my zb account every month. *
+                            I give consent to Qupa to deduct the agreed instalment from my ZB bank account every month. *
                         </Label>
                         {consentError && (
                             <p className="text-sm font-medium text-red-500 mt-1">{consentError}</p>

@@ -55,6 +55,9 @@ class ApplicationStatusController extends Controller
                 if ($isPgsql) {
                     $query->whereRaw("form_data->'formResponses'->>'nationalIdNumber' = ?", [$reference])
                           ->orWhereRaw("form_data->'formResponses'->>'nationalId' = ?", [$reference]);
+                } elseif (\Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite') {
+                    $query->whereRaw("json_extract(form_data, '$.formResponses.nationalIdNumber') = ?", [$reference])
+                          ->orWhereRaw("json_extract(form_data, '$.formResponses.nationalId') = ?", [$reference]);
                 } else {
                     $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.formResponses.nationalIdNumber')) = ?", [$reference])
                           ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.formResponses.nationalId')) = ?", [$reference]);
@@ -85,13 +88,16 @@ class ApplicationStatusController extends Controller
             'status' => $status,
             'currentStep' => $application->current_step,
             'applicantName' => $applicantName,
+            'business' => $formData['business'] ?? $formData['businessName'] ?? $productName,
             'productName' => $productName,
-            'loanAmount' => $formData['finalPrice'] ?? ($formResponses['loanAmount'] ?? '0'),
+            'loanAmount' => $formData['finalPrice'] ?? $formData['amount'] ?? ($formResponses['loanAmount'] ?? '0'),
             'submittedAt' => $application->created_at->format('F j, Y'),
             'lastUpdated' => $application->updated_at->format('F j, Y'),
             'timeline' => $timeline,
             'progressPercentage' => $this->calculateProgressPercentage($application, $deliveryTracking),
+            'estimatedCompletionDate' => $metadata['estimated_completion_date'] ?? now()->addWeekdays(5)->toDateString(),
             'nextAction' => $deliveryTracking ? "Your delivery status: " . $deliveryTracking->status_label : ($metadata['client_status_message'] ?? $this->getNextAction($application)),
+            'notifications' => $metadata['notifications'] ?? [],
             'unclearDocuments' => $metadata['unclear_documents'] ?? [],
             'deliveryTracking' => $deliveryTracking ? [
                 'status' => $deliveryTracking->status,
@@ -189,6 +195,10 @@ public function resubmit(Request $request): JsonResponse
             };
         }
 
+        if (!empty($metadata['status'])) {
+            return $metadata['status'];
+        }
+
         return match($application->current_step) {
             'pending_review' => 'document_verification',
             'awaiting_document_reupload' => 'resubmission_required',
@@ -220,6 +230,13 @@ public function resubmit(Request $request): JsonResponse
         $appType = $application->getApplicationType();
 
         // 1. Submission
+        $timeline[] = [
+            'title' => 'Application Started',
+            'description' => 'Your application was started.',
+            'timestamp' => $application->created_at->format('M d, Y'),
+            'status' => 'completed',
+        ];
+
         $timeline[] = [
             'title' => 'Application Submitted',
             'description' => 'Your application has been received and is entering verification.',
@@ -279,7 +296,7 @@ public function resubmit(Request $request): JsonResponse
             // 3. Officer Review
             $isOfficerDone = isset($metadata['officer_check']) || in_array($step, ['manager_approval', 'approved']);
             $timeline[] = [
-                'title' => 'Loan Officer Assessment',
+                'title' => 'Credit Assessment',
                 'description' => $isOfficerDone ? 'Financial assessment completed.' : 'An officer is reviewing your financial eligibility.',
                 'timestamp' => isset($metadata['officer_check']['date']) ? Carbon::parse($metadata['officer_check']['date'])->format('M d, Y') : ($step === 'officer_check' ? 'In Progress' : ''),
                 'status' => $isOfficerDone ? 'completed' : ($step === 'officer_check' ? 'current' : 'pending'),
@@ -288,7 +305,14 @@ public function resubmit(Request $request): JsonResponse
             // 4. Final Approval
             $isApproved = in_array($step, ['approved', 'completed']) || ($application->status === 'approved');
             $timeline[] = [
-                'title' => 'Manager Approval',
+                'title' => 'Committee Review',
+                'description' => isset($metadata['committee_review_started']) ? 'Committee review is underway.' : 'Awaiting committee review.',
+                'timestamp' => isset($metadata['committee_review_started_at']) ? Carbon::parse($metadata['committee_review_started_at'])->format('M d, Y') : '',
+                'status' => isset($metadata['committee_review_started']) ? 'completed' : 'pending',
+            ];
+
+            $timeline[] = [
+                'title' => 'Application Approved',
                 'description' => $isApproved ? 'Application approved by Branch Manager.' : 'Awaiting final sign-off.',
                 'timestamp' => $application->approved_at ? $application->approved_at->format('M d, Y') : ($step === 'manager_approval' ? 'In Progress' : ''),
                 'status' => $isApproved ? 'completed' : ($step === 'manager_approval' ? 'current' : 'pending'),
@@ -505,5 +529,142 @@ public function resubmit(Request $request): JsonResponse
             'progressPercentage' => $accountOpening->status === 'approved' ? 100 : 50,
             'nextAction' => 'Account opening in progress.',
         ]);
+    }
+
+    public function getProgressDetails(string $reference): JsonResponse
+    {
+        $application = $this->findApplication($reference);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found.'], 404);
+        }
+
+        $status = $this->determineApplicationStatus($application);
+
+        return response()->json([
+            'currentStage' => $this->getCurrentStage($status),
+            'completedMilestones' => collect($this->buildApplicationTimeline($application, $status))
+                ->where('status', 'completed')
+                ->values()
+                ->all(),
+            'upcomingMilestones' => collect($this->buildApplicationTimeline($application, $status))
+                ->where('status', 'pending')
+                ->values()
+                ->all(),
+            'estimatedTimeRemaining' => $status === 'approved' ? 'Complete' : '3-5 business days',
+            'actionItems' => [$this->getNextAction($application)],
+        ]);
+    }
+
+    public function updateStatus(Request $request, string $sessionId): JsonResponse
+    {
+        $validated = $request->validate([
+            'status' => 'required|string',
+            'approval_details' => 'nullable|array',
+        ]);
+
+        $application = ApplicationState::where('session_id', $sessionId)->firstOrFail();
+        $metadata = $application->metadata ?? [];
+        $oldStatus = $metadata['status'] ?? $application->status ?? 'processing';
+
+        $metadata['status'] = $validated['status'];
+        $metadata['status_updated_at'] = now()->toIso8601String();
+        $metadata['status_history'] = array_merge($metadata['status_history'] ?? [], [[
+            'from' => $oldStatus,
+            'to' => $validated['status'],
+            'at' => now()->toIso8601String(),
+        ]]);
+
+        if (isset($validated['approval_details'])) {
+            $metadata['approval_details'] = $validated['approval_details'];
+        }
+
+        $application->metadata = $metadata;
+        $application->status = $validated['status'];
+        $application->save();
+
+        $this->notificationService->sendStatusUpdateNotification($application, $oldStatus, $validated['status']);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function markNotificationsAsRead(Request $request, string $reference): JsonResponse
+    {
+        $application = $this->findApplication($reference);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found.'], 404);
+        }
+
+        $this->notificationService->markNotificationsAsRead(
+            $application,
+            $request->input('notification_ids', [])
+        );
+
+        return response()->json(['success' => true]);
+    }
+
+    public function getStatusUpdates(string $reference): JsonResponse
+    {
+        $application = $this->findApplication($reference);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found.'], 404);
+        }
+
+        return response()->json([
+            'status_history' => $application->metadata['status_history'] ?? [],
+            'notifications' => $application->metadata['notifications'] ?? [],
+        ]);
+    }
+
+    public function getApplicationInsights(string $reference): JsonResponse
+    {
+        $application = $this->findApplication($reference);
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found.'], 404);
+        }
+
+        return response()->json([
+            'progressPercentage' => $this->calculateProgressPercentage($application),
+            'currentStep' => $application->current_step,
+            'nextAction' => $this->getNextAction($application),
+        ]);
+    }
+
+    private function findApplication(string $reference): ?ApplicationState
+    {
+        $originalReference = trim($reference);
+        $reference = strtoupper(str_replace([' ', '-'], '', $originalReference));
+
+        return $this->referenceCodeService->getStateByReferenceCode($reference)
+            ?? ApplicationState::where('reference_code', $reference)->first()
+            ?? ApplicationState::where('session_id', $originalReference)->first()
+            ?? ApplicationState::where('session_id', $reference)->first();
+    }
+
+    private function getCurrentStage(string $status): array
+    {
+        return match ($status) {
+            'approved' => [
+                'name' => 'Approved',
+                'description' => 'Your application has been approved.',
+                'icon' => 'check-circle',
+                'color' => 'green',
+            ],
+            'rejected' => [
+                'name' => 'Rejected',
+                'description' => 'Your application was not approved.',
+                'icon' => 'x-circle',
+                'color' => 'red',
+            ],
+            default => [
+                'name' => 'Under Review',
+                'description' => 'Your application is being processed.',
+                'icon' => 'clock',
+                'color' => 'blue',
+            ],
+        };
     }
 }

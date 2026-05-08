@@ -89,6 +89,9 @@ export interface WizardData {
 
     // Final price calculation
     finalPrice?: number;
+    finalAmount?: number;
+    buildingMaterialsCart?: any[];
+    buildingMaterialsTotal?: number;
 
     // Color selections
     color?: string;
@@ -722,8 +725,13 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             filteredSteps = filteredSteps.filter(step => step !== 'delivery');
         }
 
+        // Skip summary if it's an account opening application
+        if (wizardData.wantsAccount) {
+            filteredSteps = filteredSteps.filter(step => step !== 'summary');
+        }
+
         return filteredSteps;
-    }, [wizardData.paymentType, wizardData.creditType, wizardData.subcategory, wizardData.selectedBusiness, wizardData.business, wizardData.category, authenticatedUser, wizardData.cart, wizardData.intent, wizardData.isCoreHouseFlow]);
+    }, [wizardData.paymentType, wizardData.creditType, wizardData.subcategory, wizardData.selectedBusiness, wizardData.business, wizardData.category, authenticatedUser, wizardData.cart, wizardData.intent, wizardData.isCoreHouseFlow, wizardData.wantsAccount]);
 
     // Effect to save state whenever it changes
     useEffect(() => {
@@ -1007,10 +1015,20 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             if (updatedData.creditType !== 'PDC' && updatedData.creditType !== 'PDC30' && updatedData.creditType !== 'PDC50') {
                 currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'depositPayment');
             }
+
+            // Skip summary if it's an account opening application
+            if (updatedData.wantsAccount) {
+                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'summary');
+            }
         }
 
         const currentIndex = currentFilteredSteps.indexOf(currentStep);
         const nextStep = currentFilteredSteps[currentIndex + 1];
+
+        // Ensure formId is set if we are skipping summary and going to form
+        if (nextStep === 'form' && updatedData.wantsAccount && !updatedData.formId) {
+            updatedData.formId = updatedData.intent === 'smeBiz' ? 'smes_business_account_opening.json' : 'individual_account_opening.json';
+        }
 
         if (nextStep) {
             setLoading(true);
@@ -1207,14 +1225,12 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
                 return (
                     <BuildingMaterialsCart
                         sessionId={sessionId}
-                        packageAmount={wizardData.finalAmount || 0}
-                        onNext={() => handleStepSubmit('buildingMaterialsCart', {})}
-                        onBack={() => {
-                            const previousStep = getPreviousStep('buildingMaterialsCart');
-                            if (previousStep) setCurrentStep(previousStep as WizardStep);
-                        }}
+                        packageAmount={wizardData.finalAmount || wizardData.finalPrice || wizardData.amount || 0}
+                        onNext={() => handleNext({})}
+                        onBack={handleBack}
                         onCartUpdate={(cartItems, total) => {
-                            updateWizardData({ 
+                            setWizardData({
+                                ...wizardData,
                                 buildingMaterialsCart: cartItems,
                                 buildingMaterialsTotal: total
                             });

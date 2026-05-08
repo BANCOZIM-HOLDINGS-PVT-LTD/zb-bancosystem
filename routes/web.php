@@ -54,8 +54,12 @@ Route::post('/application/synchronize', [ApplicationWizardController::class, 'sy
 // PDF Routes
 Route::get('/application/download/{sessionId}', [ApplicationPDFController::class, 'download'])->name('application.pdf.download');
 Route::get('/application/view/{sessionId}', [ApplicationPDFController::class, 'view'])->name('application.pdf.view');
+Route::get('/application/{sessionId}/pdf/download', [ApplicationPDFController::class, 'legacyDownload'])->name('application.pdf.download.legacy');
+Route::get('/application/{sessionId}/pdf/view', [ApplicationPDFController::class, 'legacyView'])->name('application.pdf.view.legacy');
+Route::post('/application/{sessionId}/pdf/regenerate', [ApplicationPDFController::class, 'regenerate'])->name('application.pdf.regenerate.legacy');
 Route::get('/application/receipt/download/{sessionId}', [ApplicationPDFController::class, 'downloadReceipt'])->name('application.receipt.download');
 Route::post('/application/pdf/batch', [ApplicationPDFController::class, 'batchDownload'])->name('application.pdf.batch');
+Route::post('/application/pdf/batch-download', [ApplicationPDFController::class, 'legacyBatchDownload'])->name('application.pdf.batch.legacy');
 
 // Account Opening PDF Routes
 Route::get('/account-opening/pdf/{id}', [ApplicationPDFController::class, 'downloadAccountOpening'])->name('account-opening.pdf.download');
@@ -181,4 +185,3 @@ require __DIR__.'/auth.php';
 if (app()->environment('local', 'development', 'testing')) {
     require __DIR__.'/test.php';
 }
-

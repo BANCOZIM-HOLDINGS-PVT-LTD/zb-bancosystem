@@ -17,6 +17,12 @@ return new class extends Migration
              // Use raw statement for Enum change as Doctrine DBAL can struggle with Enums sometimes
              $driver = DB::getDriverName();
              
+             if ($driver === 'sqlite') {
+                 // SQLite does not support ALTER COLUMN/MODIFY COLUMN. In tests the
+                 // original column already accepts the string values we need.
+                 return;
+             }
+
              if ($driver === 'pgsql') {
                  DB::statement("ALTER TABLE delivery_trackings ALTER COLUMN courier_type TYPE VARCHAR(100)");
              } else {

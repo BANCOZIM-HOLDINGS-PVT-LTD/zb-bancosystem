@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Response as ResponseFacade;
+use Illuminate\Support\Facades\DB;
 use ZipArchive;
 use Carbon\Carbon;
 
@@ -73,11 +74,15 @@ class PDFManagementController extends Controller
      */
     public function download(Request $request, string $sessionId)
     {
-        $application = ApplicationState::where('session_id', $sessionId)->firstOrFail();
+        $application = ApplicationState::where('session_id', $sessionId)->first();
+
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
         
         try {
             // Get form type from metadata or detect from form data
-            $formType = $this->detectFormType($application);
+            $formType = $this->detectFormTypeCode($application);
             
             // Generate PDF
             $result = $this->pdfGenerator->generatePDF($application, ['formType' => $formType, 'admin' => true]);
@@ -110,7 +115,7 @@ class PDFManagementController extends Controller
     {
         $request->validate([
             'session_ids' => 'required|array',
-            'session_ids.*' => 'exists:application_states,session_id'
+            'session_ids.*' => 'string'
         ]);
         
         $applications = ApplicationState::whereIn('session_id', $request->session_ids)->get();
@@ -138,7 +143,7 @@ class PDFManagementController extends Controller
         
         foreach ($applications as $application) {
             try {
-                $formType = $this->detectFormType($application);
+                $formType = $this->detectFormTypeCode($application);
                 $result = $this->pdfGenerator->generatePDF($application, ['formType' => $formType, 'admin' => true]);
                 $pdfPath = $result['path'] ?? null;
                 
@@ -187,7 +192,7 @@ class PDFManagementController extends Controller
         $formTypeFilter = $request->input('form_type', 'all');
         if ($formTypeFilter !== 'all' && $request->format !== 'csv') {
             $applications = $applications->filter(function ($app) use ($formTypeFilter) {
-                return $this->detectFormType($app) === $formTypeFilter;
+                return $this->detectFormTypeCode($app) === $formTypeFilter;
             });
         }
 
@@ -270,7 +275,7 @@ class PDFManagementController extends Controller
         $application = ApplicationState::where('session_id', $sessionId)->firstOrFail();
         
         try {
-            $formType = $this->detectFormType($application);
+            $formType = $this->detectFormTypeCode($application);
             $result = $this->pdfGenerator->generatePDF($application, ['formType' => $formType, 'force' => true, 'admin' => true]); // Force regenerate
             $pdfPath = $result['path'] ?? null;
             
@@ -291,6 +296,17 @@ class PDFManagementController extends Controller
     // Protected Helper Methods
     
     protected function detectFormType(ApplicationState $application): string
+    {
+        return match ($this->detectFormTypeCode($application)) {
+            'ssb' => 'SSB',
+            'sme_business' => 'SME Business',
+            'zb_account_opening' => 'ZB Account Opening',
+            'account_holders' => 'Account Holders',
+            default => 'Account Holders',
+        };
+    }
+
+    protected function detectFormTypeCode(ApplicationState $application): string
     {
         // Check metadata first
         if (isset($application->metadata['form_type'])) {
@@ -318,7 +334,7 @@ class PDFManagementController extends Controller
             ? $formData['firstName'] . '_' . $formData['surname']
             : 'User_Unknown';
         
-        $date = $application->created_at->format('Ymd');
+        $date = ($application->created_at ?? now())->format('Ymd');
         
         return "{$name}_{$formType}_Application_{$date}.pdf";
     }
@@ -370,6 +386,14 @@ class PDFManagementController extends Controller
     
     protected function getFormTypeBreakdown(): array
     {
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return ApplicationState::query()
+                ->get()
+                ->map(fn (ApplicationState $application) => $application->metadata['form_type'] ?? $this->detectFormTypeCode($application))
+                ->countBy()
+                ->toArray();
+        }
+
         return ApplicationState::selectRaw("
                 JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.form_type')) as form_type,
                 COUNT(*) as count
@@ -420,7 +444,7 @@ class PDFManagementController extends Controller
 
         foreach ($applications as $application) {
             try {
-                $formType = $this->detectFormType($application);
+                $formType = $this->detectFormTypeCode($application);
                 $result = $this->pdfGenerator->generatePDF($application, ['formType' => $formType, 'admin' => true]);
                 $pdfPath = $result['path'] ?? null;
 
@@ -450,7 +474,7 @@ class PDFManagementController extends Controller
     {
         // Filter for SSB applications only
         $ssbApplications = $applications->filter(function ($app) {
-            return $this->detectFormType($app) === 'ssb';
+            return $this->detectFormTypeCode($app) === 'ssb';
         });
 
         // Implementation for CSV export - SSB ONLY

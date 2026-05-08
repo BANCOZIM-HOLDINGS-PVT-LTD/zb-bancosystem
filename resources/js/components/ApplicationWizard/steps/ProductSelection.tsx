@@ -43,7 +43,17 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [selectedSubcategory, setSelectedSubcategory] = useState<Subcategory | null>(null);
     const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
     const [selectedBusiness, setSelectedBusiness] = useState<BusinessType | null>(null);
-    const [selectedScale, setSelectedScale] = useState<{ id?: number; name: string; multiplier: number; custom_price?: number; description?: string } | null>(null);
+    const [selectedScale, setSelectedScale] = useState<{
+        id?: number;
+        name: string;
+        multiplier: number;
+        custom_price?: number;
+        description?: string;
+        deposit?: number;
+        monthly_installment?: number;
+        loan_term?: number;
+        included_items?: { name: string; quantity: number; unit?: string }[];
+    } | null>(null);
 
     const [finalAmount, setFinalAmount] = useState<number>(0);
     const [includesMESystem, setIncludesMESystem] = useState<boolean>(false);
@@ -464,6 +474,11 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             productId: selectedBusiness?.id,
             productName: selectedBusiness?.name,
             scaleId: scale?.id || (selectedScale as any)?.id,
+            boosterPackageId: scale?.id || (selectedScale as any)?.id,
+            boosterPackageItems: scale?.included_items || selectedScale?.included_items || [],
+            boosterDeposit: scale?.deposit || selectedScale?.deposit,
+            boosterMonthlyInstallment: scale?.monthly_installment || selectedScale?.monthly_installment,
+            boosterLoanTerm: scale?.loan_term || selectedScale?.loan_term,
             categoryId: selectedCategory?.id,
             includesMESystem,
             meSystemFee,
@@ -597,8 +612,17 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             },
             selectedScale: selectedScale ? {
                 id: selectedScale.id?.toString(),
-                name: selectedScale.name
+                name: selectedScale.name,
+                included_items: selectedScale.included_items || [],
+                deposit: selectedScale.deposit,
+                monthly_installment: selectedScale.monthly_installment,
+                loan_term: selectedScale.loan_term,
             } : undefined,
+            boosterPackageId: selectedScale?.id,
+            boosterPackageItems: selectedScale?.included_items || [],
+            boosterDeposit: selectedScale?.deposit,
+            boosterMonthlyInstallment: selectedScale?.monthly_installment,
+            boosterLoanTerm: selectedScale?.loan_term,
             paymentType: 'credit'
         });
     };
@@ -798,7 +822,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             </div>
                                         </div>
                                         <div className="text-emerald-600 font-bold text-sm">
-                                            {formatCurrency(isZiG ? result.item.basePrice * ZIG_RATE : result.item.basePrice)}
+                                            {result.type === 'product'
+                                                ? formatCurrency(isZiG ? (result.item as BusinessType).basePrice * ZIG_RATE : (result.item as BusinessType).basePrice)
+                                                : ''}
                                         </div>
                                     </div>
                                 ))}
@@ -1255,6 +1281,35 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
                                             <span className="text-2xl font-bold text-emerald-600">{formatCurrency(finalAmount)}</span>
                                         </div>
+                                        {selectedScale.included_items && selectedScale.included_items.length > 0 && (
+                                            <div className="mt-4 py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                                                <span className="text-sm font-medium text-gray-600 dark:text-gray-300 block mb-2">Included Items:</span>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700 dark:text-gray-200">
+                                                    {selectedScale.included_items.map((item, index) => (
+                                                        <div key={`${item.name}-${index}`} className="flex items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-1">
+                                                            <span>{item.name}</span>
+                                                            <span className="font-medium">x{item.quantity}{item.unit ? ` ${item.unit}` : ''}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {(selectedScale.deposit || selectedScale.monthly_installment || selectedScale.loan_term) && (
+                                            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                <div className="py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                                                    <span className="text-xs font-medium text-gray-500 block">Deposit</span>
+                                                    <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(selectedScale.deposit || 0)}</span>
+                                                </div>
+                                                <div className="py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                                                    <span className="text-xs font-medium text-gray-500 block">Monthly</span>
+                                                    <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(selectedScale.monthly_installment || 0)}</span>
+                                                </div>
+                                                <div className="py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                                                    <span className="text-xs font-medium text-gray-500 block">Term</span>
+                                                    <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">{selectedScale.loan_term || selectedTermMonths || 0} months</span>
+                                                </div>
+                                            </div>
+                                        )}
                                         <div className="flex justify-end mt-4">
                                             <Button
                                                 onClick={handleProceedToTerms}

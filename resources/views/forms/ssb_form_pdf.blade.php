@@ -19,6 +19,8 @@
     // Ensure formData is properly structured
     $formData = $formData ?? [];
     $formResponses = $formData['formResponses'] ?? [];
+    $deliveryAddress = $deliveryAddress ?? ($formResponses['deliveryAddress'] ?? $formData['deliveryAddress'] ?? '');
+    $productDescription = $productDescription ?? ($formResponses['productDescription'] ?? $formResponses['creditFacilityType'] ?? $formResponses['business'] ?? $formData['business'] ?? '');
 
     // Ensure spouseDetails exists
     if (!isset($formResponses['spouseDetails']) || !is_array($formResponses['spouseDetails'])) {
@@ -159,6 +161,7 @@
 
     // Monthly payment
     $monthlyPayment = $formData['monthlyPayment'] ?? '';
+    $loanTermMonths = max(1, (int)($getAny(['loanTenure', 'term', 'repaymentPeriod'], '12') ?: 12));
 
     // Spouse details - already initialized above
     $spouseDetails = $formResponses['spouseDetails'];
@@ -373,11 +376,11 @@
 <div class="page">
     <div class="header">
         <div class="logo-left">
-            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/qupa.png'))) }}" alt="Qupa Microfinance" class="qupa-logo">
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/qupa.png'))) }}" alt="Qupa Microfinance" class="qupa-logo" data-logo="qupa.png">
             <div class="tagline">Micro-Finance<br>Registered Microfinance</div>
         </div>
         <div class="logo-right">
-            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="BancoZim" class="bancozim-logo">
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="BancoZim" class="bancozim-logo" data-logo="bancozim.png">
         </div>
     </div>
 
@@ -541,14 +544,14 @@
         @endif
     </table>
 
-    <div class="section-header">5. CREDIT FACILITY APPLICATION DETAILS</div>
+    <div class="section-header">4. CREDIT FACILITY APPLICATION DETAILS</div>
 
     <table>
         <tr>
             <td width="25%">Applied Amount (USD):</td>
-            <td width="15%"><span class="filled-field">${{ number_format((float)str_replace(',', '', $getAny(['loanAmount', 'amount', 'finalPrice'], '0')), 2) }}</span></td>
+            <td width="15%"><span class="filled-field">${{ number_format((float)str_replace(',', '', $getAny(['loanAmount', 'amount', 'finalPrice'], '0')), 2, '.', '') }}</span></td>
             <td width="15%">Tenure:</td>
-            <td><span class="filled-field">{{ $getAny(['loanTenure', 'term'], '12') }} months</span></td>
+            <td><span class="filled-field">{{ $loanTermMonths }} months</span></td>
         </tr>
         <tr>
             <td>Purpose/ Asset Applied For:</td>
@@ -556,13 +559,13 @@
         </tr>
     </table>
 
-    <div class="page-number">Page 1 of 5</div>
+    <div class="page-number">Page 1 of 4</div>
 </div>
 
 <!-- PAGE 2: EARLY CONTRACT TERMINATION, DECLARATION, KYC -->
 <div class="page">
     <div class="header">
-        <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/qupa.png'))) }}" alt="Qupa Microfinance" class="qupa-logo">
+        <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/qupa.png'))) }}" alt="Qupa Microfinance" class="qupa-logo" data-logo="qupa.png">
         <div style="text-align: right; font-size: 11px;">
             ZB Chamber, 2nd Floor, corner 1st Street & George Silundika<br>
             Harare, Zimbabwe<br>
@@ -681,7 +684,7 @@
         </ol>
     </div>
 
-    <div class="page-number">Page 2 of 5</div>
+    <div class="page-number">Page 2 of 4</div>
 </div>
 
 <!-- PAGE 3: DEDUCTION ORDER FORM - TY 30 -->
@@ -694,7 +697,7 @@
         </div>
 
         <div>
-            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/qupa.png'))) }}" alt="Qupa Microfinance" class="qupa-logo" style="height: 80px;">
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/qupa.png'))) }}" alt="Qupa Microfinance" class="qupa-logo" style="height: 80px;" data-logo="qupa.png">
             <div class="tagline">Micro Finance<br>Registered Microfinance</div>
         </div>
     </div>
@@ -744,7 +747,7 @@
             <td>From Date:</td>
             <td><span class="filled-field">{{ date('Y-m-01', strtotime('first day of next month')) }}</span></td>
             <td>To Date:</td>
-            <td><span class="filled-field">{{ date('Y-m-t', strtotime('first day of next month +' . ($get('loanTenure', '12') - 1) . ' months')) }}</span></td>
+            <td><span class="filled-field">{{ date('Y-m-t', strtotime('first day of next month +' . ($loanTermMonths - 1) . ' months')) }}</span></td>
         </tr>
     </table>
 
@@ -873,13 +876,13 @@
         <div class="stamp-box">Qupa MFI Stamp</div>
     </div>
 
-    <div class="page-number">Page 3 of 5</div>
+    <div class="page-number">Page 3 of 4</div>
 </div>
 
 <!-- PAGE 4: BANCOZIM PRODUCT ORDER FORM (P.O.F) -->
 <div class="page">
     <div class="center" style="margin-bottom: 20px;">
-        <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="BancoZim" class="bancozim-logo" style="height: 65px;">
+        <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="BancoZim" class="bancozim-logo" style="height: 65px;" data-logo="bancozim.png">
     </div>
 
     <div class="center" style="font-size: 16px; font-weight: bold; margin: 15px 0;">
@@ -945,7 +948,7 @@
         </tr>
         <tr>
             <td class="right" colspan="3"><strong>TOTAL:</strong></td>
-            <td><span class="filled-field">${{ number_format((float)str_replace(',', '', $getAny(['loanAmount', 'amount', 'finalPrice'], '0')), 2) }}</span></td>
+            <td><span class="filled-field">${{ number_format((float)str_replace(',', '', $getAny(['loanAmount', 'amount', 'finalPrice'], '0')), 2, '.', '') }}</span></td>
         </tr>
     </table>
 
@@ -1009,7 +1012,7 @@
             </td>
         </tr>
     </table>
-    <div class="page-number">Page 4 of 5</div>
+    <div class="page-number">Page 4 of 4</div>
 </div>
 
 
@@ -1102,7 +1105,7 @@
         {{-- Logo Header --}}
         <div class="invoice-logo-header">
             @if(file_exists(public_path('assets/images/bancozim.png')))
-                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="Bancozim Logo">
+                <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/images/bancozim.png'))) }}" alt="Bancozim Logo" data-logo="bancozim.png">
             @else
                 <div class="invoice-logo-text">BancoZim</div>
             @endif
@@ -1168,7 +1171,7 @@
                 <tr class="invoice-total-row">
                     <td colspan="3" style="text-align: right; padding-right: 15px;">TOTAL DUE</td>
                     <td style="background-color: #e8f5e9; text-align: right;">
-                        ${{ number_format((float)str_replace(',', '', $productAmount ?? $finalPrice ?? $netLoan ?? $loanAmount ?? $amount ?? $sellingPrice ?? '0'), 2) }}
+                        ${{ number_format((float)str_replace(',', '', $productAmount ?? $finalPrice ?? $netLoan ?? $loanAmount ?? $amount ?? $sellingPrice ?? '0'), 2, '.', '') }}
                     </td>
                 </tr>
             </tbody>
@@ -1194,4 +1197,3 @@
 
 </body>
 </html>
-

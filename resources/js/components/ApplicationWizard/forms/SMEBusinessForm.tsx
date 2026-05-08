@@ -74,6 +74,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
     const isZiG = selectedCurrency === 'ZiG';
     const currencySymbol = isZiG ? 'ZiG' : '$';
 
+    const [spouseError, setSpouseError] = useState<string>('');
     const [formData, setFormData] = useState<Record<string, any>>({
         // Credit Facility Details (pre-populated)
         ...creditDetails,

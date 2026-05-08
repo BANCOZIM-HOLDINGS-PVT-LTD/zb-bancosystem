@@ -9,6 +9,7 @@ interface ApplicationSuccessProps {
     productName?: string;
     category?: string;
     trackingUrl?: string;
+    isAccountOpening?: boolean;
 }
 
 const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({
@@ -17,10 +18,20 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({
     applicationType = 'ZB Bank',
     productName = 'ZB Product',
     category = 'General',
-    trackingUrl = ''
+    trackingUrl = '',
+    isAccountOpening = false
 }) => {
     const [loading, setLoading] = useState(false);
     const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+
+    // Dynamic message based on application type
+    let message = `Thank you for choosing ${applicationType === 'SSB' ? 'SSB' : 'ZB Bank'}. Your application for ${productName} is being processed. We will notify you once it's reviewed.`;
+
+    if (isAccountOpening) {
+        message = "you will receive this application and your signature card via mail and it will require you to put your signature there after you will be allocated an account number";
+    } else if (category === 'Zimparks Holiday Package') {
+        message = `Thank you for booking your Zimparks holiday. Your reservation for ${productName} is being processed. You will receive a confirmation voucher via WhatsApp and email once approved.`;
+    }
 
     const handleCompleteApplication = async () => {
         setLoading(true);
@@ -44,17 +55,15 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({
             }
 
             // Construct SMS message based on category
-            let message = '';
-
-            // Check if it's an account opening (Personal or Business Account)
-            const isAccountOpening = category.toLowerCase().includes('account') ||
-                courseCleanName(productName).toLowerCase().includes('account');
+            let smsMessage = '';
 
             if (isAccountOpening) {
-                message = `Thank you for opening the zb account, please wait while the information you provided is being processed, we will notify you of the next steps, you can track your application using your ref code ${referenceCode} ${trackingUrl}`;
+                smsMessage = `Thank you for opening the ZB Bank account. You will receive the application and signature card via mail. BancoZim`;
+            } else if (category === 'Zimparks Holiday Package') {
+                smsMessage = `Thank you for booking your Zimparks holiday. Your reservation for ${productName} is being processed. BancoZim`;
             } else {
                 // Loan application or other product
-                message = `Thank you for your application! Your reference code is ${referenceCode} for ${productName}. You can track your application status after 48 hours using your National ID number. BancoZim`;
+                smsMessage = `Thank you for your application! Your reference code is ${referenceCode} for ${productName}. You can track your application status after 48 hours using your National ID number. BancoZim`;
             }
 
             // Send thank you SMS
@@ -67,7 +76,7 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({
                 body: JSON.stringify({
                     phoneNumber: phoneNumber,
                     referenceCode: referenceCode,
-                    message: message
+                    message: smsMessage
                 }),
             });
 
@@ -146,10 +155,10 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({
                                 <div className="absolute inset-0 rounded-full border-4 border-green-100 dark:border-green-800 animate-pulse"></div>
                             </div>
                             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
-                                Thank You for Your Application!
+                                {isAccountOpening ? 'Account Application Received' : 'Thank You for Your Application!'}
                             </h1>
                             <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-lg">
-                                Your application has been submitted successfully
+                                {isAccountOpening ? 'Your bank account opening request is in progress' : 'Your application has been submitted successfully'}
                             </p>
                         </div>
 
@@ -165,12 +174,23 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({
                                 </p>
                             </div>
 
+                            {/* Custom message for account opening */}
+                            {isAccountOpening && (
+                                <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-xl p-5 mb-8 border border-emerald-100 dark:border-emerald-900/30 text-center">
+                                    <p className="text-base sm:text-lg text-emerald-800 dark:text-emerald-300 font-medium">
+                                        {message}
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Tracking Info */}
-                            <div className="text-center mb-6 sm:mb-10">
-                                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed max-w-lg mx-auto">
-                                    You can track your application status after <span className="font-bold text-gray-900 dark:text-white">48 hours</span> by simply using the login menu instead of register selection.
-                                </p>
-                            </div>
+                            {!isAccountOpening && (
+                                <div className="text-center mb-6 sm:mb-10">
+                                    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed max-w-lg mx-auto">
+                                        You can track your application status after <span className="font-bold text-gray-900 dark:text-white">48 hours</span> by simply using the login menu instead of register selection.
+                                    </p>
+                                </div>
+                            )}
 
                             {/* What Happens Next */}
                             <div className="bg-blue-50 dark:bg-blue-900/10 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 border border-blue-100 dark:border-blue-900/30">
@@ -181,19 +201,25 @@ const ApplicationSuccess: React.FC<ApplicationSuccessProps> = ({
                                     <li className="flex gap-3 sm:gap-4">
                                         <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs sm:text-sm font-bold mt-0.5">1</div>
                                         <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300">
-                                            Your application has been sent to {applicationType === 'SSB' ? 'SSB' : 'ZB Bank'} for review
+                                            {isAccountOpening 
+                                                ? 'Our team will review your account opening documents' 
+                                                : `Your application has been sent to ${applicationType === 'SSB' ? 'SSB' : 'ZB Bank'} for review`}
                                         </p>
                                     </li>
                                     <li className="flex gap-3 sm:gap-4">
                                         <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs sm:text-sm font-bold mt-0.5">2</div>
                                         <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300">
-                                            You will be notified of the {applicationType === 'SSB' ? 'SSB' : 'ZB Bank'} response when you revisit this app within a 48 hours period
+                                            {isAccountOpening 
+                                                ? 'You will receive the application form and signature card via email' 
+                                                : `You will be notified of the ${applicationType === 'SSB' ? 'SSB' : 'ZB Bank'} response when you revisit this app within a 48 hours period`}
                                         </p>
                                     </li>
                                     <li className="flex gap-3 sm:gap-4">
                                         <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs sm:text-sm font-bold mt-0.5">3</div>
                                         <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300">
-                                            Once {applicationType === 'SSB' ? 'SSB' : 'ZB Bank'} has approved your application then your product will be delivered to the depot you have selected within a 7 day period.
+                                            {isAccountOpening 
+                                                ? 'After you provide your signature, your new account number will be allocated' 
+                                                : `Once ${applicationType === 'SSB' ? 'SSB' : 'ZB Bank'} has approved your application then your product will be delivered to the depot you have selected within a 7 day period.`}
                                         </p>
                                     </li>
                                 </ol>

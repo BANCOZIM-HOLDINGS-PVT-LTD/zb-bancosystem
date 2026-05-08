@@ -102,6 +102,7 @@ class FormTypeDetectionTest extends TestCase
             'form_data' => [
                 'firstName' => 'Mike',
                 'surname' => 'Johnson',
+                'wantsAccount' => true,
                 'accountType' => 'savings',
                 'initialDeposit' => '100.00',
                 'accountCurrency' => 'USD'
