@@ -323,6 +323,51 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Validate Next of Kin details
+        const director = formData.directorsPersonalDetails || {};
+        const applicantFullName = `${director.firstName} ${director.surname}`.trim().toLowerCase();
+        const personalPhone = director.cellNumber.trim();
+
+        const snok = formData.spouseAndNextOfKin || {};
+        const contacts = [
+            { name: snok.spouse?.fullName?.trim().toLowerCase(), phone: snok.spouse?.phoneNumber?.trim(), label: 'Spouse' },
+            { name: snok.nextOfKin1?.fullName?.trim().toLowerCase(), phone: snok.nextOfKin1?.phoneNumber?.trim(), label: 'Next of Kin 1' },
+            { name: snok.nextOfKin2?.fullName?.trim().toLowerCase(), phone: snok.nextOfKin2?.phoneNumber?.trim(), label: 'Next of Kin 2' }
+        ].filter(c => c.name || c.phone);
+
+        // Check against applicant
+        for (const contact of contacts) {
+            if (contact.name && contact.name === applicantFullName) {
+                setSpouseError(`${contact.label} cannot be the same as the applicant.`);
+                document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            if (personalPhone && contact.phone && contact.phone === personalPhone) {
+                setSpouseError(`${contact.label} phone number cannot be the same as your personal phone number.`);
+                document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+        }
+
+        // Check for duplicates among contacts
+        for (let i = 0; i < contacts.length; i++) {
+            for (let j = i + 1; j < contacts.length; j++) {
+                if (contacts[i].name && contacts[j].name && contacts[i].name === contacts[j].name) {
+                    setSpouseError(`${contacts[i].label} and ${contacts[j].label} cannot have the same name.`);
+                    document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+                if (contacts[i].phone && contacts[j].phone && contacts[i].phone === contacts[j].phone) {
+                    setSpouseError(`${contacts[i].label} and ${contacts[j].label} cannot have the same phone number.`);
+                    document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+            }
+        }
+
+        // Clear error
+        setSpouseError('');
+
         // Map SME form fields to match PDF template expectations
         const directors = formData.directorsPersonalDetails || {};
         const references = Array.isArray(formData.references) ? formData.references : [];
@@ -440,7 +485,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Business Type */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <Building className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Business Type</h3>
@@ -490,7 +535,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* Business Information */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <Building className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Business Information</h3>
@@ -627,7 +672,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* Sources of Capital */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <DollarSign className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Sources of Capital</h3>
@@ -684,7 +729,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* Financial Information */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <DollarSign className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Financial Information</h3>
@@ -777,7 +822,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* Credit Facility Application Details */}
-                <Card className="p-6 bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700">
+                <Card className="p-4 md:p-6 bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700">
                     <div className="flex items-center mb-4">
                         <DollarSign className="h-6 w-6 text-green-600 mr-3" />
                         <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Credit Application Details</h3>
@@ -863,7 +908,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* References */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <Users className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">References</h3>
@@ -898,7 +943,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* Directors' Personal Details */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">DIRECTORS' PERSONAL DETAILS</h3>
                     </div>
@@ -1096,7 +1141,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* Spouse and Next of Kin Details */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6" id="spouse-section">
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">
                             {formData.directorsPersonalDetails.maritalStatus === 'Married'
@@ -1107,6 +1152,14 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                     <p className="text-xs text-gray-500 italic mb-4">
                         *this is for statistical and record keeping purposes only*
                     </p>
+
+                    {spouseError && (
+                        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                                {spouseError}
+                            </p>
+                        </div>
+                    )}
 
                     <div className="grid gap-6 md:grid-cols-2">
                         {/* Spouse Details */}
@@ -1436,7 +1489,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* Employment Details */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">EMPLOYMENT DETAILS</h3>
                     </div>
@@ -1505,7 +1558,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* Property Ownership */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">PROPERTY OWNERSHIP</h3>
                     </div>
@@ -1524,7 +1577,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* Banking/Mobile Account Details */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">BANKING/MOBILE ACCOUNT DETAILS</h3>
                     </div>
@@ -1563,7 +1616,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* Loans with Other Institutions */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">LOANS WITH OTHER INSTITUTIONS (ALSO INCLUDE QUPA LOAN)</h3>
                     </div>
@@ -1617,7 +1670,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* Other Business Interests */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">OTHER BUSINESS INTERESTS</h3>
                     </div>
@@ -1702,7 +1755,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* Declaration */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">DECLARATION</h3>
                     </div>
@@ -1728,7 +1781,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* Directors Signature */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">DIRECTORS SIGNATURE</h3>
                     </div>
@@ -1769,7 +1822,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* KYC Checklist */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">KYC CHECKLIST</h3>
                     </div>
@@ -1844,7 +1897,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 </Card>
 
                 {/* Security (Assets Pledged) */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <Shield className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Security (Assets Pledged)</h3>
@@ -1883,13 +1936,13 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                     ))}
                 </Card>
 
-                <div className="flex justify-between pt-4">
+                <div className="flex flex-col-reverse sm:flex-row justify-between gap-4 pt-4">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={onBack}
                         disabled={loading}
-                        className="flex items-center gap-2"
+                        className="flex items-center justify-center gap-2 w-full sm:w-auto"
                     >
                         <ChevronLeft className="h-4 w-4" />
                         Back
@@ -1898,7 +1951,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                     <Button
                         type="submit"
                         disabled={loading}
-                        className="bg-emerald-600 hover:bg-emerald-700 px-8"
+                        className="bg-emerald-600 hover:bg-emerald-700 px-8 w-full sm:w-auto"
                     >
                         {loading ? 'Submitting...' : 'Agree & Submit Application'}
                     </Button>

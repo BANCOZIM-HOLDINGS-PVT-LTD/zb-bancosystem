@@ -252,6 +252,16 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
             return;
         }
 
+        // Validate that next of kin details don't match applicant details
+        const applicantFullName = `${formData.firstName} ${formData.surname}`.trim().toLowerCase();
+        const nextOfKinNames = formData.spouseDetails.map(s => s.fullName.trim().toLowerCase());
+
+        if (nextOfKinNames.includes(applicantFullName)) {
+            setSpouseError('Next of Kin cannot be the same as the applicant.');
+            document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
         // Validate that supervisor phone is different from next of kin phones
         const supervisorPhone = formData.headOfInstitutionCell.trim();
         const nextOfKinPhones = formData.spouseDetails.map(s => s.phoneNumber.trim());
@@ -899,7 +909,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                 </Card>
 
                 {/* Other Loans */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <CreditCard className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Other Loans</h3>
@@ -945,7 +955,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                 </Card>
 
                 {/* Credit Facility Details */}
-                <Card className="p-6 bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700">
+                <Card className="p-4 md:p-6 bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700">
                     <div className="flex items-center mb-4">
                         <CreditCard className="h-6 w-6 text-green-600 mr-3" />
                         <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Credit Facility Application Details</h3>
@@ -1027,13 +1037,13 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                     </div>
                 </Card>
 
-                <div className="flex justify-between pt-4">
+                <div className="flex flex-col-reverse sm:flex-row justify-between gap-4 pt-4">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={onBack}
                         disabled={loading}
-                        className="flex items-center gap-2"
+                        className="flex items-center justify-center gap-2 w-full sm:w-auto"
                     >
                         <ChevronLeft className="h-4 w-4" />
                         Back
@@ -1042,7 +1052,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                     <Button
                         type="submit"
                         disabled={loading}
-                        className="bg-emerald-600 hover:bg-emerald-700 px-8"
+                        className="bg-emerald-600 hover:bg-emerald-700 px-8 w-full sm:w-auto"
                     >
                         {loading ? 'Submitting...' : 'Agree & Submit Application'}
                     </Button>

@@ -958,7 +958,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 </Card>
 
                 {/* Banking/Mobile Account Details */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <CreditCard className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Banking/Mobile Account Details</h3>
@@ -1074,7 +1074,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 </Card>
 
                 {/* Loans with Other Institutions */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <DollarSign className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Existing Loans</h3>
@@ -1225,7 +1225,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 </Card>
 
                 {/* Credit Facility Details */}
-                <Card className="p-6 bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700">
+                <Card className="p-4 md:p-6 bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700">
                     <div className="flex items-center mb-4">
                         <CreditCard className="h-6 w-6 text-green-600 mr-3" />
                         <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Credit Application Details</h3>
@@ -1308,7 +1308,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 </Card>
 
                 {/* Guarantor Details */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <User className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Guarantor Details</h3>
@@ -1374,13 +1374,13 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     </div>
                 </div>
 
-                <div className="flex justify-between pt-4">
+                <div className="flex flex-col-reverse sm:flex-row justify-between gap-4 pt-4">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={onBack}
                         disabled={loading}
-                        className="flex items-center gap-2"
+                        className="flex items-center justify-center gap-2 w-full sm:w-auto"
                     >
                         <ChevronLeft className="h-4 w-4" />
                         Back
@@ -1389,7 +1389,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     <Button
                         type="submit"
                         disabled={loading}
-                        className="bg-emerald-600 hover:bg-emerald-700 px-8"
+                        className="bg-emerald-600 hover:bg-emerald-700 px-8 w-full sm:w-auto"
                     >
                         {loading ? 'Submitting...' : 'Agree & Submit Application'}
                     </Button>

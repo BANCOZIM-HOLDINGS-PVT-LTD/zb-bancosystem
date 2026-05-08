@@ -478,7 +478,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
 
 
                 {/* Account Specifications */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <CreditCard className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Account Specifications</h3>
@@ -532,7 +532,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 </Card>
 
                 {/* Personal Details */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <User className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Personal Details</h3>
@@ -766,7 +766,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 </Card>
 
                 {/* Contact Details */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <Smartphone className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Contact Details</h3>
@@ -820,7 +820,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 </Card>
 
                 {/* Employment Details */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <Building className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Employment Details (refer to form)</h3>
@@ -963,7 +963,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 </Card>
 
                 {/* Spouse/Next of Kin */}
-                <Card className="p-6" id="spouse-section">
+                <Card className="p-4 md:p-6" id="spouse-section">
                     <div className="flex items-center mb-4">
                         <Users className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">
@@ -1091,7 +1091,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 </Card>
 
                 {/* Digital Banking Services */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <Smartphone className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Digital Banking Services</h3>
@@ -1142,7 +1142,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 </Card>
 
                 {/* Supporting KYC Checklist */}
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="bg-emerald-100 p-4 rounded-lg mb-4">
                         <h3 className="text-lg font-semibold text-emerald-800">SUPPORTING KYC CHECKLIST</h3>
                         <p className="text-sm text-emerald-700">Please attach certified copies of the following and indicate by marking:</p>
@@ -1210,13 +1210,13 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                     </div>
                 </Card>
 
-                <div className="flex justify-between pt-4">
+                <div className="flex flex-col-reverse sm:flex-row justify-between gap-4 pt-4">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={onBack}
                         disabled={loading}
-                        className="flex items-center gap-2"
+                        className="flex items-center justify-center gap-2 w-full sm:w-auto"
                     >
                         <ChevronLeft className="h-4 w-4" />
                         Back
@@ -1225,7 +1225,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                     <Button
                         type="submit"
                         disabled={loading}
-                        className="bg-emerald-600 hover:bg-emerald-700 px-8"
+                        className="bg-emerald-600 hover:bg-emerald-700 px-8 w-full sm:w-auto"
                     >
                         {loading ? 'Submitting...' : 'Agree & Submit Application'}
                     </Button>

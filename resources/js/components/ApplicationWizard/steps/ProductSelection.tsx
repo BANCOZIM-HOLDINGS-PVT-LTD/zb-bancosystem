@@ -860,7 +860,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                 return (
                                     <Card
                                         key={category.id}
-                                        className="cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg"
+                                        className="cursor-pointer p-4 md:p-6 transition-all hover:border-emerald-600 hover:shadow-lg"
                                         onClick={() => handleCategorySelect(category)}
                                     >
                                         <div className="text-center">
@@ -884,7 +884,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                             .map((subcategory, index) => (
                                 <Card
                                     key={index}
-                                    className="cursor-pointer p-6 transition-all hover:border-emerald-600 hover:shadow-lg"
+                                    className="cursor-pointer p-4 md:p-6 transition-all hover:border-emerald-600 hover:shadow-lg"
                                     onClick={() => handleSubcategorySelect(subcategory)}
                                 >
                                     <div className="text-center">
@@ -1005,7 +1005,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 {currentView === 'product_detail' && selectedBusiness && (
                     <div className="grid md:grid-cols-2 gap-8">
                         {/* Product Image */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center min-h-[300px] overflow-hidden">
+                        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center min-h-[300px] overflow-hidden">
                             <img
                                 src={selectedBusiness.image_url ? `/storage/${selectedBusiness.image_url}` : DEFAULT_IMAGE}
                                 alt={selectedBusiness.name}
@@ -1235,7 +1235,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                             {/* Package Description Slide-in for MicroBiz and Zimparks */}
                             {selectedScale && (isMicroBiz || selectedBusiness.name === 'Zimparks Vacation Package') && (
                                 <div className="mt-8 animate-in slide-in-from-bottom-4 fade-in duration-500">
-                                    <Card className="p-6 border-emerald-200 bg-emerald-50/50 dark:bg-emerald-900/10">
+                                    <Card className="p-4 md:p-6 border-emerald-200 bg-emerald-50/50 dark:bg-emerald-900/10">
                                         <h3 className="text-lg font-semibold text-emerald-800 dark:text-emerald-400 mb-2">
                                             Package Details
                                         </h3>
@@ -1332,7 +1332,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                             {/* ME System and Training Options for MicroBiz */}
                             {isMicroBiz && (
                                 <>
-                                    <Card className="p-6 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+                                    <Card className="p-4 md:p-6 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
                                         <div className="flex items-start gap-4">
                                             <input
                                                 type="checkbox"
@@ -1357,7 +1357,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                         </div>
                                     </Card>
 
-                                    <Card className="p-6 bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
+                                    <Card className="p-4 md:p-6 bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
                                         <div className="flex items-start gap-4">
                                             <input
                                                 type="checkbox"
@@ -1425,7 +1425,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                             {/* Animated Loan Details Container */}
                             {selectedTermMonths && (
                                 <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <Card className="p-6 border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20">
+                                    <Card className="p-4 md:p-6 border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20">
                                         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                                             <Calendar className="h-5 w-5 text-emerald-600" />
                                             Loan Details
@@ -1531,12 +1531,12 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 }
             </div >
 
-            <div className="flex justify-between pt-4">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-4 pt-4">
                 <Button
                     variant="outline"
                     onClick={goBack}
                     disabled={loading}
-                    className="flex items-center gap-2"
+                    className="flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
                     <ArrowLeft className="h-4 w-4" />
                     Back
@@ -1549,7 +1549,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     <Button
                         onClick={handleContinue}
                         disabled={loading || !selectedTermMonths}
-                        className="flex items-center gap-2"
+                        className="flex items-center justify-center gap-2 w-full sm:w-auto"
                     >
                         Continue
                         <ChevronRight className="h-4 w-4" />
@@ -1619,7 +1619,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     </DialogHeader>
 
                     <div className="py-6">
-                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
+                        <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 md:p-6 rounded-xl border border-amber-200">
                             <p className="text-gray-700 text-lg leading-relaxed mb-4">
                                 <strong>Construction services are not available at the moment.</strong>
                             </p>
