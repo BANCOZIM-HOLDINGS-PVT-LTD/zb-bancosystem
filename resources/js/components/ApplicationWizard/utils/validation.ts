@@ -199,6 +199,15 @@ export const validationRules = {
     return /^[0-9]{8,17}$/.test(value);
   },
 
+  // Validate ZB Bank account numbers
+  // Must be exactly 15 digits, start with '4', and have '4' or '2' at index 12 (3rd from last)
+  zbAccountNumber: (value: string): boolean => {
+    if (!value) return true;
+    if (!/^\d{15}$/.test(value)) return false;
+    if (value[0] !== '4') return false;
+    return value[12] === '4' || value[12] === '2';
+  },
+
   // Validate postal codes (Zimbabwe format)
   postalCode: (value: string): boolean => {
     if (!value) return true; // Skip if empty
@@ -1335,6 +1344,8 @@ export const getDefaultErrorMessage = (field: string, rule: string, params?: any
       return `Please enter a valid business registration number`;
     case 'accountNumber':
       return `Please enter a valid account number`;
+    case 'zbAccountNumber':
+      return `Please enter a valid ZB Bank account number (15 digits, starting with 4)`;
     case 'postalCode':
       return `Please enter a valid postal code`;
     case 'alpha':

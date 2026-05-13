@@ -197,15 +197,19 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
 
             // Only validate if there's a value
             if (value) {
-                // Check if it's exactly 13 digits
-                if (!/^\d{13}$/.test(value)) {
-                    setAccountNumberError('Please enter your correct account number');
-                }
-                // Check if it starts with 4
-                else if (!value.startsWith('4')) {
+                if (!/^\d{15}$/.test(value)) {
+                    setAccountNumberError('ZB Bank account number must be exactly 15 digits');
+                } else if (value[0] !== '4') {
+                    setAccountNumberError('ZB Bank account number must start with 4');
+                } else if (value[12] !== '4' && value[12] !== '2') {
                     setAccountNumberError('Please enter your correct ZB Bank account number');
                 }
             }
+        }
+
+        // Clear account number error when bank changes away from ZB Bank
+        if (field === 'bankName' && value !== 'ZB Bank') {
+            setAccountNumberError('');
         }
 
         setFormData(prev => ({
@@ -284,12 +288,16 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
 
         // Validate account number for ZB Bank before submission
         if (formData.bankName === 'ZB Bank' && formData.accountNumber) {
-            if (!/^\d{13}$/.test(formData.accountNumber)) {
-                setAccountNumberError('Account number must be exactly 13 digits');
+            if (!/^\d{15}$/.test(formData.accountNumber)) {
+                setAccountNumberError('ZB Bank account number must be exactly 15 digits');
                 return;
             }
-            if (!formData.accountNumber.startsWith('4')) {
+            if (formData.accountNumber[0] !== '4') {
                 setAccountNumberError('ZB Bank account number must start with 4');
+                return;
+            }
+            if (formData.accountNumber[12] !== '4' && formData.accountNumber[12] !== '2') {
+                setAccountNumberError('Please enter your correct ZB Bank account number');
                 return;
             }
         }

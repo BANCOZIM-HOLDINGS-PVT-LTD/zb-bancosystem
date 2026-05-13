@@ -89,6 +89,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
     const [isCustomBranch, setIsCustomBranch] = useState<boolean>(false);
     const [spouseError, setSpouseError] = useState<string>(''); // Error message for spouse/next of kin validation
     const [employmentError, setEmploymentError] = useState<string>(''); // Error message for employment validation
+    const [accountNumberError, setAccountNumberError] = useState<string>('');
     const [sameAsCell, setSameAsCell] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -161,6 +162,25 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
         if (field === 'employmentNumber') {
             // No specific processing here as we handle combination in onChange events
             processedValue = value;
+        }
+
+        // Validate ZB Bank account number inline
+        if (field === 'accountNumber' && formData.bankName === 'ZB Bank') {
+            setAccountNumberError('');
+            if (value) {
+                if (!/^\d{15}$/.test(value)) {
+                    setAccountNumberError('ZB Bank account number must be exactly 15 digits');
+                } else if (value[0] !== '4') {
+                    setAccountNumberError('ZB Bank account number must start with 4');
+                } else if (value[12] !== '4' && value[12] !== '2') {
+                    setAccountNumberError('Please enter your correct ZB Bank account number');
+                }
+            }
+        }
+
+        // Clear account number error when bank changes away from ZB Bank
+        if (field === 'bankName' && value !== 'ZB Bank') {
+            setAccountNumberError('');
         }
 
         setFormData(prev => {
@@ -247,6 +267,25 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
             return;
         } else {
             setEmploymentError('');
+        }
+
+        // Validate ZB Bank account number on submit
+        if (formData.bankName === 'ZB Bank' && formData.accountNumber) {
+            if (!/^\d{15}$/.test(formData.accountNumber)) {
+                setAccountNumberError('ZB Bank account number must be exactly 15 digits');
+                document.getElementById('accountNumber')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            if (formData.accountNumber[0] !== '4') {
+                setAccountNumberError('ZB Bank account number must start with 4');
+                document.getElementById('accountNumber')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            if (formData.accountNumber[12] !== '4' && formData.accountNumber[12] !== '2') {
+                setAccountNumberError('Please enter your correct ZB Bank account number');
+                document.getElementById('accountNumber')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
         }
 
         // Validate that BOTH spouse/next of kin entries are filled in
@@ -976,6 +1015,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                             value={formData.accountNumber}
                             onChange={(value) => handleInputChange('accountNumber', value)}
                             required
+                            error={accountNumberError}
                         />
                     </div>
                 </Card>
