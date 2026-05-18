@@ -428,7 +428,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
         let amount = 0;
         if (scale.custom_price) {
-            amount = scale.custom_price;
+            amount = parseFloat(String(scale.custom_price));
         } else {
             amount = (selectedBusiness?.basePrice || 0) * scale.multiplier;
         }
@@ -534,11 +534,12 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             return;
         }
 
-        const meSystemFee = includesMESystem ? parseFloat((finalAmount * ME_SYSTEM_PERCENTAGE).toFixed(2)) : 0;
-        const trainingFee = includesTraining ? parseFloat((finalAmount * TRAINING_PERCENTAGE).toFixed(2)) : 0;
+        const numericFinalAmount = parseFloat(String(finalAmount));
+        const meSystemFee = includesMESystem ? parseFloat((numericFinalAmount * ME_SYSTEM_PERCENTAGE).toFixed(2)) : 0;
+        const trainingFee = includesTraining ? parseFloat((numericFinalAmount * TRAINING_PERCENTAGE).toFixed(2)) : 0;
 
         // Net Loan = selling price + optional fees (what user sees)
-        const netLoan = parseFloat((finalAmount + meSystemFee + trainingFee).toFixed(2));
+        const netLoan = parseFloat((numericFinalAmount + meSystemFee + trainingFee).toFixed(2));
 
         // Gross Loan = Net Loan + bank admin fee (used for backend calculation)
         const ADMIN_FEE_PERCENTAGE = loanSettings.adminFeePercentage;

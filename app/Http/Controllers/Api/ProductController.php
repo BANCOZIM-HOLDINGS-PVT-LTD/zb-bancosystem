@@ -471,13 +471,18 @@ class ProductController extends Controller
      */
     public function getGlobalLoanSettings(): JsonResponse
     {
-        $globalTerm = \App\Models\LoanTerm::whereNull('product_id')
-            ->where('is_active', true)
-            ->first();
+        try {
+            $globalTerm = \App\Models\LoanTerm::whereNull('product_id')
+                ->where('is_active', true)
+                ->first();
 
-        // Fallbacks in case the term doesn't exist
-        $interestRate = $globalTerm ? (float) $globalTerm->interest_rate : 84.00; // 84% annual = 7% monthly
-        $adminFee = $globalTerm ? (float) $globalTerm->processing_fee : 6.00;
+            $interestRate = $globalTerm ? (float) $globalTerm->interest_rate : 84.00;
+            $adminFee = $globalTerm ? (float) $globalTerm->processing_fee : 6.00;
+        } catch (\Exception $e) {
+            \Log::warning('Failed to fetch loan settings from DB, using defaults: ' . $e->getMessage());
+            $interestRate = 84.00;
+            $adminFee = 6.00;
+        }
 
         return response()->json([
             'success' => true,

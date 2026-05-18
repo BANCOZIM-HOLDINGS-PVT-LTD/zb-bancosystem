@@ -59,14 +59,13 @@ class SaveApplicationStateRequest extends FormRequest
             'form_data.intent' => [
                 'nullable',
                 'string',
-                // All valid intent values from the wizard
                 Rule::in([
-                    'hirePurchase', 'microBiz', 'checkStatus', 'trackDelivery', 
+                    'hirePurchase', 'microBiz', 'checkStatus', 'trackDelivery',
                     'loan', 'account', 'personalServices',
                     'ssbLoan', 'zbLoan', 'accountOpening', 'rdcLoan',
                     'houseConstruction', 'agentApplication', 'agentLogin',
-                    // New intent values from welcome page
-                    'homeConstruction', 'personalGadgets'
+                    'homeConstruction', 'personalGadgets',
+                    'smeBiz',
                 ]),
             ],
             'form_data.employer' => [

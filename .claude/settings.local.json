@@ -43,7 +43,9 @@
       "mcp__ide__getDiagnostics",
       "Bash(nul)",
       "Bash(flyctl postgres connect:*)",
-      "WebFetch(domain:bancosystem.fly.dev)"
+      "WebFetch(domain:bancosystem.fly.dev)",
+      "Bash(Get-Content storage\\\\logs\\\\laravel.log -Tail 80)",
+      "Bash(Select-String \"frontend-catalog|loan-settings|LoanTerm|BoosterCategory|BoosterBusiness\")"
     ],
     "deny": []
   }

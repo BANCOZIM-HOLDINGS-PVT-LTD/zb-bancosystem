@@ -74,7 +74,7 @@ class BoosterController extends Controller
             return response()->json($formattedCategories);
         } catch (\Exception $e) {
             \Log::error('Failed to fetch booster catalog: ' . $e->getMessage());
-            return response()->json([], 500);
+            return response()->json([]);
         }
     }
 
