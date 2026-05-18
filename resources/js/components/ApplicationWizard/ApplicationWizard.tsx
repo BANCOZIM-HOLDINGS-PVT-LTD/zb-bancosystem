@@ -1282,7 +1282,13 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             case 'account':
                 return <AccountVerification {...commonProps} />;
             case 'form':
-                return <FormStep {...commonProps} />;
+                return <FormStep
+                    {...commonProps}
+                    onSaveProgress={(rawData: any) => {
+                        setWizardData(prev => ({ ...prev, _rawFormData: rawData }));
+                        localStateManager.saveLocalState(sessionId || '', currentStep, { ...wizardData, _rawFormData: rawData });
+                    }}
+                />;
             case 'documents':
                 return <DocumentUploadStep {...commonProps} data={{ ...wizardData, sessionId }} />;
             default:

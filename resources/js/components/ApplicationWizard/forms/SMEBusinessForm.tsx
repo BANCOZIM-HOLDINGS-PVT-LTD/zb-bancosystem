@@ -15,9 +15,10 @@ interface SMEBusinessFormProps {
     onNext: (data: any) => void;
     onBack: () => void;
     loading?: boolean;
+    onSaveProgress?: (rawData: any) => void;
 }
 
-const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack, loading }) => {
+const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack, loading, onSaveProgress }) => {
     // Calculate credit facility details from product selection
     const calculateCreditFacilityDetails = () => {
         const businessName = data.business; // string from ProductSelection
@@ -74,8 +75,10 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
     const isZiG = selectedCurrency === 'ZiG';
     const currencySymbol = isZiG ? 'ZiG' : '$';
 
+    const _saved = data._rawFormData?._formType === 'smeBusiness' ? data._rawFormData : null;
+
     const [spouseError, setSpouseError] = useState<string>('');
-    const [formData, setFormData] = useState<Record<string, any>>({
+    const [formData, setFormData] = useState<Record<string, any>>(_saved?.formData ?? {
         // Credit Facility Details (pre-populated)
         ...creditDetails,
 
@@ -275,6 +278,11 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
         }
     });
 
+    const handleBackWithSave = () => {
+        onSaveProgress?.({ _formType: 'smeBusiness', formData });
+        onBack();
+    };
+
     const handleInputChange = (field: string, value: string) => {
         const processedValue = field.toLowerCase().includes('idnumber')
             ? formatZimbabweId(value)
@@ -465,7 +473,8 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 }
             },
             formType: 'sme_business',
-            formId: 'smes_business_account_opening.json'
+            formId: 'smes_business_account_opening.json',
+            _rawFormData: { _formType: 'smeBusiness', formData }
         };
 
         onNext(mappedData);
@@ -1940,7 +1949,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={onBack}
+                        onClick={handleBackWithSave}
                         disabled={loading}
                         className="flex items-center justify-center gap-2 w-full sm:w-auto"
                     >

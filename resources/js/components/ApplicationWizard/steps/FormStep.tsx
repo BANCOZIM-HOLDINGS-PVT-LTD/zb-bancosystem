@@ -12,9 +12,10 @@ interface FormStepProps {
     onNext: (data: any) => void;
     onBack: () => void;
     loading?: boolean;
+    onSaveProgress?: (rawData: any) => void;
 }
 
-const FormStep: React.FC<FormStepProps> = ({ data, onNext, onBack, loading }) => {
+const FormStep: React.FC<FormStepProps> = ({ data, onNext, onBack, loading, onSaveProgress }) => {
     // Debug logging to verify correct formId
     console.log('[FormStep] Rendering form with data:', {
         formId: data.formId,
@@ -26,76 +27,28 @@ const FormStep: React.FC<FormStepProps> = ({ data, onNext, onBack, loading }) =>
 
     // Determine which form to show based on the form ID from ApplicationSummary
     const getFormComponent = () => {
+        const commonFormProps = { data, onNext, onBack, loading, onSaveProgress };
         switch (data.formId) {
             case 'account_holder_loan_application.json':
-                return (
-                    <AccountHoldersLoanForm
-                        data={data}
-                        onNext={onNext}
-                        onBack={onBack}
-                        loading={loading}
-                    />
-                );
+                return <AccountHoldersLoanForm {...commonFormProps} />;
 
             case 'ssb_account_opening_form.json':
-                return (
-                    <SSBLoanForm
-                        data={data}
-                        onNext={onNext}
-                        onBack={onBack}
-                        loading={loading}
-                    />
-                );
+                return <SSBLoanForm {...commonFormProps} />;
 
             case 'rdc_loan_application.json':
-                return (
-                    <RDCLoanForm
-                        data={data}
-                        onNext={onNext}
-                        onBack={onBack}
-                        loading={loading}
-                    />
-                );
+                return <RDCLoanForm {...commonFormProps} />;
 
             case 'individual_account_opening.json':
-                return (
-                    <ZBAccountOpeningForm
-                        data={data}
-                        onNext={onNext}
-                        onBack={onBack}
-                        loading={loading}
-                    />
-                );
+                return <ZBAccountOpeningForm {...commonFormProps} />;
 
             case 'smes_business_account_opening.json':
-                return (
-                    <SMEBusinessForm
-                        data={data}
-                        onNext={onNext}
-                        onBack={onBack}
-                        loading={loading}
-                    />
-                );
+                return <SMEBusinessForm {...commonFormProps} />;
 
             case 'pensioner_loan_application.json':
-                return (
-                    <PensionerLoanForm
-                        data={data}
-                        onNext={onNext}
-                        onBack={onBack}
-                        loading={loading}
-                    />
-                );
+                return <PensionerLoanForm {...commonFormProps} />;
 
             case 'pensioners_loan_account.json':
-                return (
-                    <AccountHoldersLoanForm
-                        data={data}
-                        onNext={onNext}
-                        onBack={onBack}
-                        loading={loading}
-                    />
-                );
+                return <AccountHoldersLoanForm {...commonFormProps} />;
 
             default:
                 return (

@@ -34,6 +34,7 @@ interface ZBAccountOpeningFormProps {
     onNext: (data: any) => void;
     onBack: () => void;
     loading?: boolean;
+    onSaveProgress?: (rawData: any) => void;
 }
 
 type FuneralDependent = {
@@ -56,7 +57,7 @@ const createEmptyDependent = (): FuneralDependent => ({
     premium: ''
 });
 
-const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNext, onBack, loading }) => {
+const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNext, onBack, loading, onSaveProgress }) => {
     const normalizeIdValue = (fieldKey: string, rawValue: string | boolean): string | boolean => {
         if (typeof rawValue === 'string' && fieldKey.toLowerCase().includes('idnumber')) {
             return formatZimbabweId(rawValue);
@@ -129,8 +130,10 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
     const selectedCurrency = data.currency || 'USD';
     const isZiG = selectedCurrency === 'ZiG';
 
+    const _saved = data._rawFormData?._formType === 'zbAccountOpening' ? data._rawFormData : null;
+
     const [spouseError, setSpouseError] = useState<string>('');
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState(_saved?.formData ?? {
         // Credit Facility Details (pre-populated)
         ...creditDetails,
 
@@ -268,6 +271,11 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 }
             };
         });
+    };
+
+    const handleBackWithSave = () => {
+        onSaveProgress?.({ _formType: 'zbAccountOpening', formData });
+        onBack();
     };
 
     const handleInputChange = (field: string, value: string | boolean) => {
@@ -456,7 +464,8 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                 }
             },
             formType: 'zb_account_opening',
-            formId: 'individual_account_opening.json'
+            formId: 'individual_account_opening.json',
+            _rawFormData: { _formType: 'zbAccountOpening', formData }
         };
 
         onNext(mappedData);
@@ -1214,7 +1223,7 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={onBack}
+                        onClick={handleBackWithSave}
                         disabled={loading}
                         className="flex items-center justify-center gap-2 w-full sm:w-auto"
                     >

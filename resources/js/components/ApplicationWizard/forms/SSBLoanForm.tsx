@@ -17,9 +17,10 @@ interface SSBLoanFormProps {
     onNext: (data: any) => void;
     onBack: () => void;
     loading?: boolean;
+    onSaveProgress?: (rawData: any) => void;
 }
 
-const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading }) => {
+const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading, onSaveProgress }) => {
     // Calculate credit facility details from product selection
     const calculateCreditFacilityDetails = () => {
         const businessName = data.business; // string from ProductSelection
@@ -84,15 +85,17 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
     const isZiG = selectedCurrency === 'ZiG';
     const currencySymbol = isZiG ? 'ZiG' : '$';
 
-    const [hasOtherLoans, setHasOtherLoans] = useState<string>(''); // 'yes' or 'no'
-    const [loanType, setLoanType] = useState<string>(''); // 'qupa' | 'other' | 'both'
+    const _saved = data._rawFormData?._formType === 'ssbLoan' ? data._rawFormData : null;
+
+    const [hasOtherLoans, setHasOtherLoans] = useState<string>(_saved?.hasOtherLoans ?? '');
+    const [loanType, setLoanType] = useState<string>(_saved?.loanType ?? '');
     const [isCustomBranch, setIsCustomBranch] = useState<boolean>(false);
-    const [spouseError, setSpouseError] = useState<string>(''); // Error message for spouse/next of kin validation
-    const [employmentError, setEmploymentError] = useState<string>(''); // Error message for employment validation
+    const [spouseError, setSpouseError] = useState<string>('');
+    const [employmentError, setEmploymentError] = useState<string>('');
     const [accountNumberError, setAccountNumberError] = useState<string>('');
     const [sameAsCell, setSameAsCell] = useState(false);
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState(_saved?.formData ?? {
         // Credit Facility Details (pre-populated)
         ...creditDetails,
 
@@ -153,6 +156,11 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
         // Purpose/Asset (auto-populated from product selection)
         purposeAsset: businessName ? `${businessName} - ${data.scale || 'Standard Scale'}` : ''
     });
+
+    const handleBackWithSave = () => {
+        onSaveProgress?.({ _formType: 'ssbLoan', formData, hasOtherLoans, loanType });
+        onBack();
+    };
 
     const handleInputChange = (field: string, value: string) => {
         let processedValue = field.toLowerCase().includes('idnumber')
@@ -418,7 +426,8 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                     documentTypes: ['national_id', 'payslip', 'employment_letter']
                 }
             },
-            formType: 'ssb'
+            formType: 'ssb',
+            _rawFormData: { _formType: 'ssbLoan', formData, hasOtherLoans, loanType }
         };
 
         onNext(mappedData);
@@ -1258,7 +1267,7 @@ const SSBLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={onBack}
+                        onClick={handleBackWithSave}
                         disabled={loading}
                         className="flex items-center justify-center gap-2 w-full sm:w-auto"
                     >

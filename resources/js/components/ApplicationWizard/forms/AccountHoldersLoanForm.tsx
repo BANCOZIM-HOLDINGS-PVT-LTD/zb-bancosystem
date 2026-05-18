@@ -18,9 +18,10 @@ interface AccountHoldersLoanFormProps {
     onNext: (data: any) => void;
     onBack: () => void;
     loading?: boolean;
+    onSaveProgress?: (rawData: any) => void;
 }
 
-const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, onNext, onBack, loading }) => {
+const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, onNext, onBack, loading, onSaveProgress }) => {
     // Helper function to convert property ownership values
     const convertPropertyOwnership = (value: string): string => {
         const mappings = {
@@ -101,15 +102,17 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
     const isZiG = selectedCurrency === 'ZiG';
     const currencySymbol = isZiG ? 'ZiG' : '$';
 
-    const [hasOtherLoans, setHasOtherLoans] = useState<string>(''); // 'yes' or 'no'
-    const [loanType, setLoanType] = useState<string>(''); // 'qupa' | 'other' | 'both'
+    const _saved = data._rawFormData?._formType === 'accountHolder' ? data._rawFormData : null;
+
+    const [hasOtherLoans, setHasOtherLoans] = useState<string>(_saved?.hasOtherLoans ?? '');
+    const [loanType, setLoanType] = useState<string>(_saved?.loanType ?? '');
     const [isCustomBranch, setIsCustomBranch] = useState<boolean>(false);
     const [accountNumberError, setAccountNumberError] = useState<string>('');
     const [spouseError, setSpouseError] = useState<string>('');
-    const [consentGiven, setConsentGiven] = useState<boolean>(false);
+    const [consentGiven, setConsentGiven] = useState<boolean>(_saved?.consentGiven ?? false);
     const [consentError, setConsentError] = useState<string>('');
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState(_saved?.formData ?? {
         // Credit Facility Details (pre-populated)
         ...creditDetails,
 
@@ -184,6 +187,11 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             idNumber: ''
         }
     });
+
+    const handleBackWithSave = () => {
+        onSaveProgress?.({ _formType: 'accountHolder', formData, hasOtherLoans, loanType, consentGiven });
+        onBack();
+    };
 
     const handleInputChange = (field: string, value: string) => {
         const processedValue = field.toLowerCase().includes('idnumber')
@@ -465,7 +473,8 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     documentTypes: ['national_id', 'payslip', 'bank_statement', 'employment_letter']
                 }
             },
-            formType: 'account_holder_loan_application'
+            formType: 'account_holder_loan_application',
+            _rawFormData: { _formType: 'accountHolder', formData, hasOtherLoans, loanType, consentGiven }
         };
 
         onNext(mappedData);
@@ -1386,7 +1395,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={onBack}
+                        onClick={handleBackWithSave}
                         disabled={loading}
                         className="flex items-center justify-center gap-2 w-full sm:w-auto"
                     >

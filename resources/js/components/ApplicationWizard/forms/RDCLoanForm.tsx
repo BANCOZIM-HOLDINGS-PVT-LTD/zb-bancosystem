@@ -17,9 +17,10 @@ interface RDCLoanFormProps {
     onNext: (data: any) => void;
     onBack: () => void;
     loading?: boolean;
+    onSaveProgress?: (rawData: any) => void;
 }
 
-const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading }) => {
+const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading, onSaveProgress }) => {
     // Calculate credit facility details from product selection
     const calculateCreditFacilityDetails = () => {
         const businessName = data.business; // string from ProductSelection
@@ -81,14 +82,16 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
     const isZiG = selectedCurrency === 'ZiG';
     const currencySymbol = isZiG ? 'ZiG' : '$';
 
-    const [hasOtherLoans, setHasOtherLoans] = useState<string>(''); // 'yes' or 'no'
+    const _saved = data._rawFormData?._formType === 'rdcLoan' ? data._rawFormData : null;
+
+    const [hasOtherLoans, setHasOtherLoans] = useState<string>(_saved?.hasOtherLoans ?? '');
     const [isCustomBranch, setIsCustomBranch] = useState<boolean>(false);
-    const [spouseError, setSpouseError] = useState<string>(''); // Error message for spouse/next of kin validation
-    const [employmentError, setEmploymentError] = useState<string>(''); // Error message for employment validation
+    const [spouseError, setSpouseError] = useState<string>('');
+    const [employmentError, setEmploymentError] = useState<string>('');
     const [accountNumberError, setAccountNumberError] = useState<string>('');
     const [sameAsCell, setSameAsCell] = useState(false);
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState(_saved?.formData ?? {
         // Credit Facility Details (pre-populated)
         ...creditDetails,
 
@@ -139,6 +142,11 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
         // Purpose/Asset (auto-populated from product selection)
         purposeAsset: businessName ? `${businessName} - ${data.scale || 'Standard Scale'}` : ''
     });
+
+    const handleBackWithSave = () => {
+        onSaveProgress?.({ _formType: 'rdcLoan', formData, hasOtherLoans });
+        onBack();
+    };
 
     const handleInputChange = (field: string, value: string) => {
         let processedValue = field.toLowerCase().includes('idnumber')
@@ -376,7 +384,8 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                     documentTypes: ['national_id', 'payslip', 'employment_letter']
                 }
             },
-            formType: 'rdc' // Updated form type
+            formType: 'rdc',
+            _rawFormData: { _formType: 'rdcLoan', formData, hasOtherLoans }
         };
 
         onNext(mappedData);
@@ -1081,7 +1090,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={onBack}
+                        onClick={handleBackWithSave}
                         disabled={loading}
                         className="flex items-center justify-center gap-2 w-full sm:w-auto"
                     >
