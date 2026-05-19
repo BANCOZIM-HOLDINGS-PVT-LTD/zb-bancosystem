@@ -180,8 +180,10 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                     setAccountNumberError('ZB Bank account number must be exactly 15 digits');
                 } else if (value[0] !== '4') {
                     setAccountNumberError('ZB Bank account number must start with 4');
-                } else if (value[12] !== '4' && value[12] !== '2') {
-                    setAccountNumberError('Please enter your correct ZB Bank account number');
+                } else if (isZiG ? value[12] !== '2' : value[12] !== '4') {
+                    setAccountNumberError(isZiG
+                        ? 'Please enter your ZiG ZB Bank account number'
+                        : 'Please enter your USD ZB Bank account number');
                 }
             }
         }
@@ -289,8 +291,10 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                 document.getElementById('accountNumber')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
-            if (formData.accountNumber[12] !== '4' && formData.accountNumber[12] !== '2') {
-                setAccountNumberError('Please enter your correct ZB Bank account number');
+            if (isZiG ? formData.accountNumber[12] !== '2' : formData.accountNumber[12] !== '4') {
+                setAccountNumberError(isZiG
+                    ? 'Please enter your ZiG ZB Bank account number'
+                    : 'Please enter your USD ZB Bank account number');
                 document.getElementById('accountNumber')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
