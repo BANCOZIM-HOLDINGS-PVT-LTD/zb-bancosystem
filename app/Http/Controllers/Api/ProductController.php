@@ -565,7 +565,13 @@ class ProductController extends Controller
                             $scales[] = [
                                 'id' => $package->id,
                                 'name' => $name,
-                                'group_name' => ucwords(str_replace('_', ' ', $tier)) . ' Package',
+                                'group_name' => match ($tier) {
+                                                'gold'       => 'Executive Package',
+                                                'lite'       => 'Lite Package',
+                                                'standard'   => 'Standard Package',
+                                                'full_house' => 'Full House Package',
+                                                default      => ucwords(str_replace('_', ' ', $tier)) . ' Package',
+                                            },
                                 'option_name' => $optionLabel,
                                 'multiplier' => 1.0,
                                 'custom_price' => (float) $package->price,

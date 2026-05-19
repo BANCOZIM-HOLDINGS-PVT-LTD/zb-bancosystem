@@ -65,10 +65,10 @@ class MicrobizPackageResource extends BaseResource
                                 Forms\Components\Select::make('tier')
                                     ->label('Tier')
                                     ->options([
-                                        'lite' => 'Lite',
-                                        'standard' => 'Standard',
+                                        'lite'       => 'Lite',
+                                        'standard'   => 'Standard',
                                         'full_house' => 'Full House',
-                                        'gold' => 'Gold',
+                                        'gold'       => 'Executive',
                                     ])
                                     ->required()
                                     ->searchable()
@@ -221,11 +221,11 @@ class MicrobizPackageResource extends BaseResource
                         'success' => 'gold',
                     ])
                     ->formatStateUsing(fn ($state) => match ($state) {
-                        'lite' => 'Lite',
-                        'standard' => 'Standard',
+                        'lite'       => 'Lite',
+                        'standard'   => 'Standard',
                         'full_house' => 'Full House',
-                        'gold' => 'Gold',
-                        default => ucfirst(str_replace('_', ' ', $state)),
+                        'gold'       => 'Executive',
+                        default      => ucfirst(str_replace('_', ' ', $state)),
                     }),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Package Name')
@@ -268,10 +268,10 @@ class MicrobizPackageResource extends BaseResource
             ->filters([
                 Tables\Filters\SelectFilter::make('tier')
                     ->options([
-                        'lite' => 'Lite',
-                        'standard' => 'Standard',
+                        'lite'       => 'Lite',
+                        'standard'   => 'Standard',
                         'full_house' => 'Full House',
-                        'gold' => 'Gold',
+                        'gold'       => 'Executive',
                     ]),
                 Tables\Filters\SelectFilter::make('microbiz_subcategory_id')
                     ->label('Business Subcategory')

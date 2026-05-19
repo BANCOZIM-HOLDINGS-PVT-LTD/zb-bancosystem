@@ -93,7 +93,7 @@ class MicrobizPackage extends Model
             'lite' => 'Lite Package',
             'standard' => 'Standard Package',
             'full_house' => 'Full House Package',
-            'gold' => 'Gold Package',
+            'gold' => 'Executive Package',
             default => ucfirst(str_replace('_', ' ', $this->tier)) . ' Package',
         };
     }

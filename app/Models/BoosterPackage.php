@@ -70,6 +70,17 @@ class BoosterPackage extends Model
             ->withTimestamps();
     }
 
+    public function getTierLabelAttribute(): string
+    {
+        return match ($this->tier) {
+            'silver'   => 'Silver',
+            'gold'     => 'Gold',
+            'diamond'  => 'Diamond',
+            'platinum' => 'Platinum',
+            default    => ucfirst($this->tier),
+        };
+    }
+
     public function getTotalItemsCostAttribute(): float
     {
         return $this->tierItems->sum(fn (BoosterTierItem $tierItem) => $tierItem->line_total);

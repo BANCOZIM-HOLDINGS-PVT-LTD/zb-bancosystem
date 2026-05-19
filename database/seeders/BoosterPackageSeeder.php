@@ -66,10 +66,10 @@ class BoosterPackageSeeder extends Seeder
         ];
 
         $tiers = [
-            ['name' => 'Starter Tier', 'amount' => 2500],
-            ['name' => 'Growth Tier', 'amount' => 5000],
-            ['name' => 'Premium Tier', 'amount' => 7500],
-            ['name' => 'Elite Tier', 'amount' => 10000],
+            ['name' => 'Silver',   'amount' => 2500],
+            ['name' => 'Gold',     'amount' => 5000],
+            ['name' => 'Diamond',  'amount' => 7500],
+            ['name' => 'Platinum', 'amount' => 10000],
         ];
 
         DB::transaction(function () use ($boosterData, $tiers) {
