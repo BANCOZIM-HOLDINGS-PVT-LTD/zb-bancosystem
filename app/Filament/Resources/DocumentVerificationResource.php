@@ -73,6 +73,16 @@ class DocumentVerificationResource extends Resource
                     ]),
             ])
             ->actions([
+                Action::make('view_documents')
+                    ->label('View Docs')
+                    ->icon('heroicon-o-photo')
+                    ->color('info')
+                    ->modalHeading(fn (Model $record) => 'Documents — ' . ($record->application_number ?? $record->reference_code))
+                    ->modalWidth('4xl')
+                    ->modalContent(fn (Model $record) => view('filament.modals.application-documents', ['record' => $record]))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Close'),
+
                 Action::make('verify_documents')
                     ->label('Verify Documents')
                     ->icon('heroicon-o-check-circle')

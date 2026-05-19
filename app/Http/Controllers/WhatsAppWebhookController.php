@@ -458,20 +458,55 @@ class WhatsAppWebhookController extends Controller
                      ?? $request->input('media_url')
                      ?? $request->input('mediaUrl');
             
-            // For Cloud API, we'll store a placeholder since we downloaded the content
-            if ($request->input('cloud_api_media') && !$mediaUrl) {
-                $mediaUrl = 'cloud_api_media_' . time();
-            }
-            
             if (empty($mediaUrl) && empty($mediaContent)) {
                 Log::warning('Media message received without URL', ['request' => $request->all()]);
                 $this->sendWhatsAppMessage($from, "Sorry, I couldn't receive your photo. Please try sending it again.");
                 return response()->json(['status' => 'error', 'message' => 'No media URL'], 400);
             }
-            
+
+            // Save image to local storage so it is always viewable in admin without auth headers.
+            $storedPath = null;
+            try {
+                $imgContent = $mediaContent; // Cloud API binary content
+
+                // Twilio URL — fetch with Basic Auth
+                if (!$imgContent && $mediaUrl && str_contains($mediaUrl, 'api.twilio.com')) {
+                    $sid   = config('services.twilio.account_sid');
+                    $token = config('services.twilio.auth_token');
+                    if ($sid && $token) {
+                        $resp = \Illuminate\Support\Facades\Http::withBasicAuth($sid, $token)->get($mediaUrl);
+                        if ($resp->successful()) {
+                            $imgContent = $resp->body();
+                        }
+                    }
+                }
+
+                // Generic external URL
+                if (!$imgContent && $mediaUrl && str_starts_with($mediaUrl, 'http')) {
+                    $resp = \Illuminate\Support\Facades\Http::get($mediaUrl);
+                    if ($resp->successful()) {
+                        $imgContent = $resp->body();
+                    }
+                }
+
+                if ($imgContent) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('agent-ids');
+                    $ext = 'jpg'; // Default; most ID photos are JPEG
+                    $filename = 'agent-ids/' . \Illuminate\Support\Str::uuid() . '.' . $ext;
+                    \Illuminate\Support\Facades\Storage::disk('public')->put($filename, $imgContent);
+                    $storedPath = $filename;
+                    Log::info('Agent ID image saved locally', ['path' => $storedPath]);
+                }
+            } catch (\Exception $saveEx) {
+                Log::warning('Could not save agent ID image locally, falling back to original URL', [
+                    'error' => $saveEx->getMessage(),
+                ]);
+            }
+
             // Process the ID upload - only front ID required now
             $formData = $state->form_data ?? [];
-            $formData['id_front_url'] = $mediaUrl;
+            // Prefer local path; fall back to original URL so something is always stored
+            $formData['id_front_url'] = $storedPath ?? $mediaUrl;
             
             // Save agent application to database with front ID
             $this->saveAgentApplication($from, $state, $formData);

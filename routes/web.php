@@ -64,6 +64,11 @@ Route::post('/application/pdf/batch-download', [ApplicationPDFController::class,
 // Account Opening PDF Routes
 Route::get('/account-opening/pdf/{id}', [ApplicationPDFController::class, 'downloadAccountOpening'])->name('account-opening.pdf.download');
 
+// Agent ID image proxy — serves Twilio/Cloud API images through server-side auth
+Route::get('/admin/agent-media/{agent}/{side}', [\App\Http\Controllers\AgentMediaController::class, 'show'])
+    ->where('side', 'front|back')
+    ->name('admin.agent.media');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         $user = Auth::user();
