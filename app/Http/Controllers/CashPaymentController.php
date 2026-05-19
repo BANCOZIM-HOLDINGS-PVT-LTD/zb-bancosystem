@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Events\PaymentReceived;
 use App\Models\ApplicationState;
 use App\Models\CashPayment;
+use App\Models\DeliveryTracking;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CashPaymentController extends Controller
 {
@@ -95,6 +97,47 @@ class CashPaymentController extends Controller
                     'status' => 'paid',
                     'current_step' => 'processing',
                 ]);
+
+                // Auto-create delivery tracking record if one doesn't exist yet
+                if (!$application->delivery) {
+                    $formData     = $application->form_data ?? [];
+                    $responses    = $formData['formResponses'] ?? [];
+                    $delivery     = $formData['deliverySelection'] ?? [];
+
+                    $clientName = trim(
+                        ($responses['firstName'] ?? '') . ' ' . ($responses['surname'] ?? '')
+                    );
+
+                    $depot = '';
+                    if (!empty($delivery['city'])) {
+                        $depot = $delivery['city'] . ' (' . ($delivery['agent'] ?? 'Zim Post Office') . ')';
+                    } elseif (!empty($delivery['depot'])) {
+                        $depot = $delivery['depot'];
+                    }
+
+                    $product = $formData['business']
+                        ?? $formData['selectedBusiness']['name']
+                        ?? $formData['category']
+                        ?? 'Cash Order';
+
+                    DeliveryTracking::create([
+                        'application_state_id' => $application->id,
+                        'status'               => 'pending',
+                        'product_type'         => $product,
+                        'recipient_name'       => $clientName ?: 'N/A',
+                        'recipient_phone'      => $responses['mobile'] ?? $responses['cellNumber'] ?? '',
+                        'client_national_id'   => $responses['nationalIdNumber'] ?? $responses['idNumber'] ?? '',
+                        'delivery_depot'       => $depot,
+                        'courier_type'         => $delivery['agent'] ?? null,
+                        'admin_notes'          => 'Auto-created on cash payment verification. Cashier ref: ' . $cashPayment->cashier_reference,
+                    ]);
+
+                    Log::info('DeliveryTracking auto-created for cash order', [
+                        'application_id'       => $application->id,
+                        'reference_code'       => $application->reference_code,
+                        'cashier_reference'    => $cashPayment->cashier_reference,
+                    ]);
+                }
             }
 
             event(new PaymentReceived($payment));
