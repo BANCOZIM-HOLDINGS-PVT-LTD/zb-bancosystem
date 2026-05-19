@@ -570,7 +570,7 @@ class ProductController extends Controller
                                 'multiplier' => 1.0,
                                 'custom_price' => (float) $package->price,
                                 'description' => $package->generated_description,
-                                'remarks' => $package->description, // Admin description
+                                'remarks' => $package->remarks,
                                 'image_url' => $package->image_url ? url('storage/' . $package->image_url) : null,
                             ];
                         }
@@ -628,7 +628,8 @@ class ProductController extends Controller
                                 'name' => $package->name,
                                 'multiplier' => 1.0,
                                 'custom_price' => (float) $package->price,
-                                'description' => $package->generated_description, // Use the accessor
+                                'description' => $package->generated_description,
+                                'remarks' => $package->remarks,
                                 'image_url' => $package->image_url ? url('storage/' . $package->image_url) : null,
                             ];
                         })->toArray();

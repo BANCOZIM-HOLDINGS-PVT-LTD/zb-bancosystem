@@ -94,6 +94,11 @@ class MicrobizPackageResource extends BaseResource
                             ->rows(3)
                             ->placeholder('Describe what\'s included in this package...')
                             ->helperText('This description will be visible to applicants'),
+                        Forms\Components\Textarea::make('remarks')
+                            ->label('Package Remarks')
+                            ->rows(3)
+                            ->placeholder('Enter any additional remarks for this package...')
+                            ->helperText('These remarks will appear in the Package Remarks section on the user-facing side'),
                         Forms\Components\FileUpload::make('image_url')
                             ->label('Tier Image')
                             ->image()
