@@ -4,6 +4,7 @@ import SSBLoanForm from '../forms/SSBLoanForm';
 import RDCLoanForm from '../forms/RDCLoanForm';
 import ZBAccountOpeningForm from '../forms/ZBAccountOpeningForm';
 import SMEBusinessForm from '../forms/SMEBusinessForm';
+import SchoolBoosterForm from '../forms/SchoolBoosterForm';
 // Import with exact path to fix resolution issues
 import PensionerLoanForm from '../forms/PensionerLoanForm';
 
@@ -43,6 +44,9 @@ const FormStep: React.FC<FormStepProps> = ({ data, onNext, onBack, loading, onSa
 
             case 'smes_business_account_opening.json':
                 return <SMEBusinessForm {...commonFormProps} />;
+
+            case 'school_booster_application.json':
+                return <SchoolBoosterForm {...commonFormProps} />;
 
             case 'pensioner_loan_application.json':
                 return <PensionerLoanForm {...commonFormProps} />;

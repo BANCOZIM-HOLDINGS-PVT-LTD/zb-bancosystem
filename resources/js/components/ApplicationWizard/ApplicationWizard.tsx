@@ -12,6 +12,7 @@ import ApplicationSummary from './steps/ApplicationSummary';
 import FormStep from './steps/FormStep';
 import CompanyRegistrationStep from './steps/CompanyRegistrationStep';
 import CompanyTypeSelection from './steps/CompanyTypeSelection';
+import SchoolTypeSelection from './steps/SchoolTypeSelection';
 import ZimparksHolidayStep from './steps/ZimparksHolidayStep';
 import DocumentUploadStep from '../DocumentUpload/DocumentUploadStep';
 import RegistrationPrompt from './steps/RegistrationPrompt';
@@ -513,6 +514,7 @@ const allSteps = [
     'delivery',
     'registration', // NEW: Registration prompt after delivery
     'companyType', // SME: Company type selection (replaces employer for smeBiz)
+    'schoolType',  // School Booster: School type selection (replaces employer for schoolBooster)
     'employer', // MOVED: Now after registration
     'account', // MOVED: Now after employer
     'summary',
@@ -643,6 +645,7 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
     const steps = React.useMemo(() => {
         const isCashFlow = wizardData.paymentType === 'cash';
         const isSME = wizardData.intent === 'smeBiz';
+        const isSchoolBooster = wizardData.intent === 'schoolBooster';
 
         if (isCashFlow) {
             // "Express" flow: Product -> Delivery -> Summary -> Payment
@@ -684,12 +687,14 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         // Credit flow - filter out full payment step
         filteredSteps = filteredSteps.filter(step => step !== 'payment');
 
-        // SME Flow: Use companyType instead of employer, skip account step
+        // SME Flow: Use companyType instead of employer
         if (isSME) {
-            filteredSteps = filteredSteps.filter(step => step !== 'employer');
+            filteredSteps = filteredSteps.filter(step => step !== 'employer' && step !== 'schoolType');
+        } else if (isSchoolBooster) {
+            // School Booster: Use schoolType instead of employer or companyType
+            filteredSteps = filteredSteps.filter(step => step !== 'employer' && step !== 'companyType');
         } else {
-            // Non-SME: Remove the companyType step (only for SME)
-            filteredSteps = filteredSteps.filter(step => step !== 'companyType');
+            filteredSteps = filteredSteps.filter(step => step !== 'companyType' && step !== 'schoolType');
         }
 
         // Filter out steps based on product type
@@ -975,14 +980,17 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             const isHomeConstructionHubUpdated = updatedData.intent === 'homeConstruction';
             const isCoreHouseUpdated = updatedData.subcategory === 'Core House' || updatedData.isCoreHouseFlow || (updatedData.cart || []).some(item => item.name.toLowerCase().includes('core house'));
             const isSMEUpdated = updatedData.intent === 'smeBiz';
+            const isSchoolBoosterUpdated = updatedData.intent === 'schoolBooster';
 
             currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'payment');
 
-            // SME Flow: Use companyType instead of employer
+            // Step routing by intent
             if (isSMEUpdated) {
-                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'employer');
+                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'employer' && step !== 'schoolType');
+            } else if (isSchoolBoosterUpdated) {
+                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'employer' && step !== 'companyType');
             } else {
-                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'companyType');
+                currentFilteredSteps = currentFilteredSteps.filter(step => step !== 'companyType' && step !== 'schoolType');
             }
             
             if (!isCompanyRegUpdated) {
@@ -1027,7 +1035,11 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
 
         // Ensure formId is set if we are skipping summary and going to form
         if (nextStep === 'form' && updatedData.wantsAccount && !updatedData.formId) {
-            updatedData.formId = updatedData.intent === 'smeBiz' ? 'smes_business_account_opening.json' : 'individual_account_opening.json';
+            updatedData.formId = updatedData.intent === 'smeBiz'
+                ? 'smes_business_account_opening.json'
+                : updatedData.intent === 'schoolBooster'
+                ? 'school_booster_application.json'
+                : 'individual_account_opening.json';
         }
 
         if (nextStep) {
@@ -1192,6 +1204,8 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         switch (currentStep) {
             case 'companyType':
                 return <CompanyTypeSelection {...commonProps} />;
+            case 'schoolType':
+                return <SchoolTypeSelection {...commonProps} />;
             case 'employer':
                 return <EmployerSelection {...commonProps} />;
             case 'product':

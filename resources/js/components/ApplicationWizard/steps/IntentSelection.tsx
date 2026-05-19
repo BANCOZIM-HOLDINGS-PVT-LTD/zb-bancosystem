@@ -30,6 +30,12 @@ const intents = [
         icon: Briefcase
     },
     {
+        id: 'schoolBooster',
+        title: 'School Booster',
+        description: 'Get equipment and resources on credit to improve your school\'s learning facilities.',
+        icon: FileText
+    },
+    {
         id: 'checkStatus',
         title: 'Check Application Status',
         icon: FileText,

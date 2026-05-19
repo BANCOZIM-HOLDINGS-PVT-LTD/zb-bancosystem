@@ -81,6 +81,8 @@ class ProductService {
       
       if (intent === 'smeBiz') {
         url = '/api/boosters/frontend-catalog';
+      } else if (intent === 'schoolBooster') {
+        url = '/api/school-boosters/frontend-catalog';
       } else if (intent) {
         url = `${this.baseUrl}/frontend-catalog?intent=${intent}`;
       }

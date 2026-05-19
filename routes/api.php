@@ -40,6 +40,13 @@ Route::prefix('boosters')->group(function () {
     Route::get('/business/{businessId}', [\App\Http\Controllers\Api\BoosterController::class, 'getBusiness']);
 });
 
+// School Booster API routes
+Route::prefix('school-boosters')->group(function () {
+    Route::get('/frontend-catalog', [\App\Http\Controllers\Api\SchoolBoosterController::class, 'getFrontendCatalog']);
+    Route::get('/categories', [\App\Http\Controllers\Api\SchoolBoosterController::class, 'getCategories']);
+    Route::get('/business/{businessId}', [\App\Http\Controllers\Api\SchoolBoosterController::class, 'getBusiness']);
+});
+
 // Application State API routes
 Route::prefix('states')->group(function () {
     Route::post('/save', [StateController::class, 'saveState'])->middleware('throttle:60,1');

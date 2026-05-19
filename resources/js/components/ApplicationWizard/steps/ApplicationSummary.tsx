@@ -78,6 +78,10 @@ const getFormIdByEmployer = (employerId: string, hasAccount: boolean, wantsAccou
     if (intent === 'smeBiz' || employerId === 'sme-business') {
         return 'smes_business_account_opening.json';
     }
+    // School Booster always uses the school booster form
+    if (intent === 'schoolBooster' || employerId === 'school-booster') {
+        return 'school_booster_application.json';
+    }
 
     switch (employerId) {
         case 'government-ssb':
