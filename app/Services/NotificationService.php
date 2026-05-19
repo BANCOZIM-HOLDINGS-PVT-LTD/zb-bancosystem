@@ -37,8 +37,12 @@ class NotificationService
             // Get applicant email
             $email = $formResponses['email'] ?? null;
 
-            // Get applicant phone
-            $phone = $formResponses['phone'] ?? $formResponses['phoneNumber'] ?? null;
+            // Get applicant phone — covers all form field names
+            $phone = $formResponses['mobile']
+                ?? $formResponses['cellNumber']
+                ?? $formResponses['phone']
+                ?? $formResponses['phoneNumber']
+                ?? null;
 
             // Log the notification
             Log::info("Status update notification for {$applicationState->session_id}: {$oldStatus} -> {$newStatus}");
@@ -64,28 +68,58 @@ class NotificationService
      */
     private function sendStatusSpecificNotification(ApplicationState $applicationState, string $status, string $applicantName, ?string $email, ?string $phone): void
     {
-        $nationalId = $applicationState->national_id ?? $applicationState->session_id;
+        $referenceCode = $applicationState->reference_code ?? $applicationState->session_id;
+
+        // Resolve phone from all possible form fields if not passed
+        if (!$phone) {
+            $formResponses = $applicationState->form_data['formResponses'] ?? [];
+            $phone = $formResponses['mobile']
+                ?? $formResponses['cellNumber']
+                ?? $formResponses['phone']
+                ?? $formResponses['phoneNumber']
+                ?? null;
+        }
+
+        $message = null;
 
         switch ($status) {
             case 'approved':
-                $message = "Great news {$applicantName}! Your loan application ({$nationalId}) has been approved. Check your status at: " . url("/application/status?ref={$nationalId}");
-                Log::info("APPROVAL notification: Would send to {$applicantName} ({$email}, {$phone}): {$message}");
+                $message = "Great news {$applicantName}! Your application ({$referenceCode}) has been approved.";
                 break;
 
             case 'rejected':
-                $message = "Dear {$applicantName}, your loan application ({$nationalId}) requires additional review. Please check your status for details: " . url("/application/status?ref={$nationalId}");
-                Log::info("REJECTION notification: Would send to {$applicantName} ({$email}, {$phone}): {$message}");
+            case 'resubmission_required':
+                $message = "Dear {$applicantName}, your application ({$referenceCode}) requires attention. Please check your application status for details.";
+                break;
+
+            case 'documents_verified':
+                $message = "Dear {$applicantName}, your documents for application ({$referenceCode}) have been verified successfully.";
                 break;
 
             case 'under_review':
-                $message = "Hello {$applicantName}, your loan application ({$nationalId}) is now under review. We'll notify you of any updates.";
-                Log::info("REVIEW notification: Would send to {$applicantName} ({$email}, {$phone}): {$message}");
+            case 'qupa_allocation_pending':
+            case 'vlc_allocation_pending':
+                $message = "Hello {$applicantName}, your application ({$referenceCode}) is now under review. We will notify you of any updates.";
                 break;
 
             case 'completed':
-                $message = "Congratulations {$applicantName}! Your loan has been processed and disbursed. Track delivery at: " . url("/delivery/tracking?ref={$nationalId}");
-                Log::info("COMPLETION notification: Would send to {$applicantName} ({$email}, {$phone}): {$message}");
+                $message = "Congratulations {$applicantName}! Your application ({$referenceCode}) has been processed. Track your delivery at: " . url("/delivery/tracking");
                 break;
+
+            case 'awaiting_proof_of_employment':
+                $message = "Dear {$applicantName}, documents verified for ({$referenceCode}). Please upload your Confirmation of Employment letter to continue.";
+                break;
+
+            case 'awaiting_deposit_payment':
+                $message = "Dear {$applicantName}, documents verified for ({$referenceCode}). Please proceed with your deposit payment to continue.";
+                break;
+        }
+
+        if ($message && $phone) {
+            Log::info("Sending status SMS to {$phone} for {$referenceCode}: {$status}");
+            $this->sendSMS($phone, $message);
+        } else {
+            Log::warning("Status SMS not sent for {$referenceCode}: " . (!$phone ? 'no phone' : 'no message for status') . " (status={$status})");
         }
     }
 
@@ -248,26 +282,29 @@ class NotificationService
             $formData = $applicationState->form_data ?? [];
             $formResponses = $formData['formResponses'] ?? [];
 
-            // Get applicant name
             $applicantName = trim(
                 ($formResponses['firstName'] ?? '') . ' ' .
                 ($formResponses['lastName'] ?? ($formResponses['surname'] ?? ''))
             ) ?: 'Applicant';
 
-            // Get applicant email
-            $email = $formResponses['email'] ?? null;
+            // Cover all phone field names across form types
+            $phone = $formResponses['mobile']
+                ?? $formResponses['cellNumber']
+                ?? $formResponses['phone']
+                ?? $formResponses['phoneNumber']
+                ?? null;
 
-            // Get applicant phone
-            $phone = $formResponses['phone'] ?? $formResponses['phoneNumber'] ?? null;
+            if (!$phone) {
+                Log::warning("sendReferenceCodeNotification: no phone for session {$applicationState->session_id}");
+                return false;
+            }
 
-            // Log the notification
-            Log::info("Reference code notification for {$applicationState->session_id}: {$referenceCode}");
+            // referenceCode IS the national ID without dashes
+            $message = "Dear {$applicantName}, your Microbiz application reference number is {$referenceCode}. "
+                     . "Use this number (your ID without dashes) to track your application status.";
 
-            // In a real implementation, we would send an email or SMS here
-            // For now, we'll just log it
-            Log::info("Would send reference code {$referenceCode} to {$applicantName} ({$email}, {$phone})");
-
-            return true;
+            Log::info("Sending reference code SMS to {$phone}: {$referenceCode}");
+            return $this->sendSMS($phone, $message);
         } catch (\Exception $e) {
             Log::error("Failed to send reference code notification: " . $e->getMessage());
             return false;
@@ -292,33 +329,50 @@ class NotificationService
                 ($formResponses['lastName'] ?? ($formResponses['surname'] ?? ''))
             ) ?: 'Applicant';
 
-            // Get applicant phone
-            $phone = $formResponses['phone'] ?? $formResponses['phoneNumber'] ?? $formResponses['mobile'] ?? null;
+            // Get applicant phone — check all field names used across different form types
+            $phone = $formResponses['mobile']
+                ?? $formResponses['cellNumber']
+                ?? $formResponses['phone']
+                ?? $formResponses['phoneNumber']
+                ?? $formData['formData']['cellNumber']
+                ?? null;
 
             if (!$phone) {
                 Log::warning("No phone number found for application submission notification: {$applicationState->session_id}");
                 return false;
             }
 
-            $referenceCode = $applicationState->reference_code ?? $applicationState->session_id;
-
-            $referenceCode = $applicationState->reference_code ?? $applicationState->session_id;
+            // Reference code = national ID without dashes.
+            // Derive it from the stored reference_code, or fall back to the raw ID field stripped of dashes.
+            $referenceCode = $applicationState->reference_code;
+            if (!$referenceCode) {
+                $rawId = $formResponses['nationalIdNumber']
+                    ?? $formResponses['idNumber']
+                    ?? $formResponses['nationalId']
+                    ?? null;
+                if ($rawId) {
+                    $referenceCode = strtoupper(preg_replace('/[^A-Z0-9]/i', '', $rawId));
+                }
+            }
+            $referenceCode = $referenceCode ?: 'N/A';
 
             // Check for application type
             $isZB = str_starts_with($referenceCode, 'ZBAH');
-            $isSSB = str_starts_with($referenceCode, 'SSB');
 
             if ($isZB) {
-                $message = "Your application has been received, kindly go to your HR to get your confirmation of the employment letter which you will upload when you login to track your application status";
+                $message = "Dear {$applicantName}, your application has been received. "
+                    . "Your reference number is {$referenceCode} (your ID without dashes). "
+                    . "Kindly obtain a Confirmation of Employment letter from your HR and upload it when tracking your application.";
             } else {
-                // Check if application includes M&E or Training
                 $includesME = $formData['includesMESystem'] ?? false;
                 $includesTraining = $formData['includesTraining'] ?? false;
 
                 if ($includesME || $includesTraining) {
-                    $message = "YOUR APPLICATION HAS BEEN Completed TOGETHER WITH THE TRAINING AND OR M&E SYSTEM";
+                    $message = "Dear {$applicantName}, your application ({$referenceCode}) has been received including the Training and/or M&E System component. We will be in touch shortly.";
                 } else {
-                    $message = "Thank you {$applicantName}! Your application ({$referenceCode}) has been received and is under review. We will notify you of any updates.";
+                    $message = "Dear {$applicantName}, your Microbiz application has been received. "
+                        . "Your reference number is {$referenceCode} (your ID without dashes). "
+                        . "We will notify you of any updates.";
                 }
             }
             

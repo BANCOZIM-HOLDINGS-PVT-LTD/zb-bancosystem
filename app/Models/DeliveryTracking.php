@@ -111,7 +111,7 @@ class DeliveryTracking extends Model
 
                     if ($mobile) {
                         $reference = $tracking->applicationState ? $tracking->applicationState->reference_code : 'N/A';
-                        $message = "Your BancoZim order ({$reference}) has been dispatched via {$tracking->courier_type}.";
+                        $message = "Your Microbiz order ({$reference}) has been dispatched via {$tracking->courier_type}.";
 
                         if ($tracking->courier_type === 'Zim Post Office') {
                              $message .= " You will be notified when it is ready for collection at your nearest post office.";
@@ -158,7 +158,7 @@ class DeliveryTracking extends Model
 
                         if ($mobile) {
                             $reference = $applicationState->reference_code ?? 'N/A';
-                            $message = "Your BancoZim order ({$reference}) has been delivered successfully. Thank you for choosing us! You may now apply for a new product at bancosystem.fly.dev";
+                            $message = "Your Microbiz order ({$reference}) has been delivered successfully. Thank you for choosing us! You may now apply for a new product at bancosystem.fly.dev";
                             $smsService->sendSMS($mobile, $message);
                         }
                     }

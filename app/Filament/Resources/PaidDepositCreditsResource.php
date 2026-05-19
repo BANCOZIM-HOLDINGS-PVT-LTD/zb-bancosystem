@@ -185,7 +185,7 @@ class PaidDepositCreditsResource extends Resource
                              $smsService = app(\App\Services\SMSService::class);
                              $phone = $record->form_data['formResponses']['mobile'] ?? $record->form_data['formResponses']['phoneNumber'] ?? null;
                              if ($phone) {
-                                 $msg = "Payment Received! Your BancoZim order ({$record->reference_code}) is now being processed. You will be notified when it is dispatched.";
+                                 $msg = "Payment Received! Your Microbiz order ({$record->reference_code}) is now being processed. You will be notified when it is dispatched.";
                                  $smsService->sendSMS($phone, $msg);
                              }
                         } catch (\Exception $e) {

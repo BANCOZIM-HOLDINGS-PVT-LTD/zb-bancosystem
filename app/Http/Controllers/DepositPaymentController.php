@@ -323,7 +323,7 @@ class DepositPaymentController extends Controller
                      $smsService = app(\App\Services\SMSService::class);
                      $phone = $tracking->recipient_phone;
                      if ($phone) {
-                         $msg = "Payment Received! Your BancoZim order ({$referenceCode}) is now being processed. You will be notified when it is dispatched.";
+                         $msg = "Payment Received! Your Microbiz order ({$referenceCode}) is now being processed. You will be notified when it is dispatched.";
                          $smsService->sendSMS($phone, $msg);
                      }
                 } catch (\Exception $e) {
