@@ -7,12 +7,14 @@ use App\Models\ApplicationState;
 use App\Services\PDFGeneratorService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Model;
 
 class CashOrderResource extends BaseResource
 {
@@ -32,9 +34,6 @@ class CashOrderResource extends BaseResource
 
     protected static ?string $slug = 'cash-orders';
 
-    /**
-     * Only show cash orders — applications that have a cash payment record.
-     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
@@ -44,18 +43,7 @@ class CashOrderResource extends BaseResource
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make('Order Details')
-                    ->schema([
-                        Forms\Components\TextInput::make('reference_code')
-                            ->label('Reference Code')
-                            ->disabled(),
-                        Forms\Components\TextInput::make('status')
-                            ->label('Application Status')
-                            ->disabled(),
-                    ])->columns(2),
-            ]);
+        return $form->schema([]);
     }
 
     public static function table(Table $table): Table
@@ -76,13 +64,7 @@ class CashOrderResource extends BaseResource
                             (data_get($record->form_data, 'formResponses.firstName') ?? '') . ' ' .
                             (data_get($record->form_data, 'formResponses.surname') ?? '')
                         ) ?: 'N/A'
-                    )
-                    ->searchable(query: function (Builder $query, string $search) {
-                        $query->where(function ($q) use ($search) {
-                            $q->whereRaw("JSON_EXTRACT(form_data, '$.formResponses.firstName') LIKE ?", ["%{$search}%"])
-                              ->orWhereRaw("JSON_EXTRACT(form_data, '$.formResponses.surname') LIKE ?", ["%{$search}%"]);
-                        });
-                    }),
+                    ),
 
                 Tables\Columns\TextColumn::make('product')
                     ->label('Product')
@@ -98,19 +80,9 @@ class CashOrderResource extends BaseResource
                     ->label('Amount')
                     ->getStateUsing(fn (ApplicationState $record): string =>
                         '$' . number_format(
-                            $record->payments->where('provider', 'cash')->first()?->amount ?? 0,
-                            2
+                            $record->payments->where('provider', 'cash')->first()?->amount ?? 0, 2
                         )
-                    )
-                    ->sortable(query: function (Builder $query, string $direction) {
-                        $query->orderBy(
-                            \App\Models\Payment::select('amount')
-                                ->whereColumn('application_state_id', 'application_states.id')
-                                ->where('provider', 'cash')
-                                ->limit(1),
-                            $direction
-                        );
-                    }),
+                    ),
 
                 Tables\Columns\BadgeColumn::make('payment_status')
                     ->label('Payment')
@@ -121,7 +93,7 @@ class CashOrderResource extends BaseResource
                         'gray'    => 'pending',
                         'warning' => 'processing',
                         'success' => 'paid',
-                        'danger'  => fn ($state) => in_array($state, ['failed', 'cancelled', 'timeout']),
+                        'danger'  => 'failed',
                     ])
                     ->formatStateUsing(fn ($state) => ucfirst($state)),
 
@@ -131,12 +103,11 @@ class CashOrderResource extends BaseResource
                         $record->delivery?->status ?? 'not_dispatched'
                     )
                     ->colors([
-                        'gray'    => 'not_dispatched',
-                        'gray'    => 'pending',
+                        'gray'    => fn ($state) => in_array($state, ['not_dispatched', 'pending']),
                         'blue'    => 'processing',
                         'indigo'  => 'dispatched',
                         'purple'  => 'in_transit',
-                        'yellow'  => 'out_for_delivery',
+                        'warning' => 'out_for_delivery',
                         'success' => 'delivered',
                         'danger'  => fn ($state) => in_array($state, ['failed', 'returned']),
                     ])
@@ -162,36 +133,27 @@ class CashOrderResource extends BaseResource
 
                 Tables\Columns\TextColumn::make('paid_at')
                     ->label('Paid At')
-                    ->getStateUsing(fn (ApplicationState $record) =>
+                    ->getStateUsing(fn (ApplicationState $record): string =>
                         $record->payments->where('provider', 'cash')->first()?->paid_at?->format('d M Y H:i') ?? '—'
                     )
-                    ->sortable(query: function (Builder $query, string $direction) {
-                        $query->orderBy(
-                            \App\Models\Payment::select('paid_at')
-                                ->whereColumn('application_state_id', 'application_states.id')
-                                ->where('provider', 'cash')
-                                ->limit(1),
-                            $direction
-                        );
-                    }),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Ordered')
                     ->dateTime('d M Y')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('payment_status')
                     ->label('Payment Status')
                     ->options([
-                        'pending'    => 'Pending',
-                        'paid'       => 'Paid',
-                        'failed'     => 'Failed',
-                        'cancelled'  => 'Cancelled',
+                        'pending'   => 'Pending',
+                        'paid'      => 'Paid',
+                        'failed'    => 'Failed',
+                        'cancelled' => 'Cancelled',
                     ])
                     ->query(function (Builder $query, array $data) {
-                        if ($data['value']) {
+                        if (!empty($data['value'])) {
                             $query->whereHas('payments', fn ($q) => $q
                                 ->where('provider', 'cash')
                                 ->where('status', $data['value'])
@@ -204,17 +166,18 @@ class CashOrderResource extends BaseResource
                     ->options([
                         'not_dispatched'   => 'Not Dispatched',
                         'pending'          => 'Pending',
-                        'processing'       => 'Processing',
                         'dispatched'       => 'Dispatched',
                         'in_transit'       => 'In Transit',
                         'out_for_delivery' => 'Out for Delivery',
                         'delivered'        => 'Delivered',
                     ])
                     ->query(function (Builder $query, array $data) {
-                        if ($data['value'] === 'not_dispatched') {
-                            $query->doesntHave('delivery');
-                        } elseif ($data['value']) {
-                            $query->whereHas('delivery', fn ($q) => $q->where('status', $data['value']));
+                        if (!empty($data['value'])) {
+                            if ($data['value'] === 'not_dispatched') {
+                                $query->doesntHave('delivery');
+                            } else {
+                                $query->whereHas('delivery', fn ($q) => $q->where('status', $data['value']));
+                            }
                         }
                     }),
             ])
@@ -229,7 +192,6 @@ class CashOrderResource extends BaseResource
                     ->action(function (ApplicationState $record) {
                         try {
                             $pdfGenerator = app(PDFGeneratorService::class);
-                            $record->payment_type = 'cash'; // ensure it passes the check
                             $pdfPath = $pdfGenerator->generateReceiptPDF($record);
                             $filename = "invoice_{$record->reference_code}.pdf";
 
@@ -253,21 +215,20 @@ class CashOrderResource extends BaseResource
             ->defaultSort('created_at', 'desc');
     }
 
-    public static function infolist(\Filament\Infolists\Infolist $infolist): \Filament\Infolists\Infolist
+    public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist
             ->schema([
-                \Filament\Infolists\Components\Section::make('Order Summary')
+                Infolists\Components\Section::make('Order Summary')
                     ->schema([
-                        \Filament\Infolists\Components\TextEntry::make('reference_code')
+                        Infolists\Components\TextEntry::make('reference_code')
                             ->label('Reference Code')
+                            ->copyable(),
+                        Infolists\Components\TextEntry::make('session_id')
+                            ->label('Session ID (Delivery Tracking)')
                             ->copyable()
-                            ->weight('bold'),
-                        \Filament\Infolists\Components\TextEntry::make('session_id')
-                            ->label('Session ID (Delivery Tracking ID)')
-                            ->copyable()
-                            ->helperText('Client uses this to track delivery'),
-                        \Filament\Infolists\Components\TextEntry::make('client_name')
+                            ->helperText('Client uses this to track their delivery'),
+                        Infolists\Components\TextEntry::make('client_name')
                             ->label('Client Name')
                             ->getStateUsing(fn (ApplicationState $record): string =>
                                 trim(
@@ -275,17 +236,17 @@ class CashOrderResource extends BaseResource
                                     (data_get($record->form_data, 'formResponses.surname') ?? '')
                                 ) ?: 'N/A'
                             ),
-                        \Filament\Infolists\Components\TextEntry::make('client_phone')
+                        Infolists\Components\TextEntry::make('client_phone')
                             ->label('Phone')
                             ->getStateUsing(fn (ApplicationState $record): string =>
                                 data_get($record->form_data, 'formResponses.mobile') ?? '—'
                             ),
-                        \Filament\Infolists\Components\TextEntry::make('client_id')
+                        Infolists\Components\TextEntry::make('client_id')
                             ->label('National ID')
                             ->getStateUsing(fn (ApplicationState $record): string =>
                                 data_get($record->form_data, 'formResponses.nationalIdNumber') ?? '—'
                             ),
-                        \Filament\Infolists\Components\TextEntry::make('product')
+                        Infolists\Components\TextEntry::make('product')
                             ->label('Product')
                             ->getStateUsing(fn (ApplicationState $record): string =>
                                 data_get($record->form_data, 'business')
@@ -295,9 +256,9 @@ class CashOrderResource extends BaseResource
                             ),
                     ])->columns(3),
 
-                \Filament\Infolists\Components\Section::make('Payment Details')
+                Infolists\Components\Section::make('Payment Details')
                     ->schema([
-                        \Filament\Infolists\Components\TextEntry::make('payment_status')
+                        Infolists\Components\TextEntry::make('payment_status')
                             ->label('Payment Status')
                             ->badge()
                             ->getStateUsing(fn (ApplicationState $record): string =>
@@ -309,38 +270,38 @@ class CashOrderResource extends BaseResource
                                 'failed'  => 'danger',
                                 default   => 'warning',
                             }),
-                        \Filament\Infolists\Components\TextEntry::make('payment_amount')
+                        Infolists\Components\TextEntry::make('payment_amount')
                             ->label('Amount')
                             ->getStateUsing(fn (ApplicationState $record): string =>
                                 '$' . number_format(
                                     $record->payments->where('provider', 'cash')->first()?->amount ?? 0, 2
                                 )
                             ),
-                        \Filament\Infolists\Components\TextEntry::make('cashier_reference')
+                        Infolists\Components\TextEntry::make('cashier_reference')
                             ->label('Cashier Reference')
                             ->getStateUsing(fn (ApplicationState $record): string =>
                                 $record->cashPayments->first()?->cashier_reference ?? '—'
                             ),
-                        \Filament\Infolists\Components\TextEntry::make('receipt_number')
+                        Infolists\Components\TextEntry::make('receipt_number')
                             ->label('Receipt Number')
                             ->getStateUsing(fn (ApplicationState $record): string =>
                                 $record->payments->where('provider', 'cash')->first()?->receipt_number ?? '—'
                             ),
-                        \Filament\Infolists\Components\TextEntry::make('paid_at')
+                        Infolists\Components\TextEntry::make('paid_at')
                             ->label('Paid At')
                             ->getStateUsing(fn (ApplicationState $record): string =>
                                 $record->payments->where('provider', 'cash')->first()?->paid_at?->format('d M Y H:i') ?? '—'
                             ),
-                        \Filament\Infolists\Components\TextEntry::make('verified_by_name')
+                        Infolists\Components\TextEntry::make('verified_by')
                             ->label('Verified By')
                             ->getStateUsing(fn (ApplicationState $record): string =>
                                 $record->cashPayments->first()?->verifier?->name ?? '—'
                             ),
                     ])->columns(3),
 
-                \Filament\Infolists\Components\Section::make('Delivery Status')
+                Infolists\Components\Section::make('Delivery Status')
                     ->schema([
-                        \Filament\Infolists\Components\TextEntry::make('delivery_status')
+                        Infolists\Components\TextEntry::make('delivery_status')
                             ->label('Status')
                             ->badge()
                             ->getStateUsing(fn (ApplicationState $record): string =>
@@ -365,22 +326,22 @@ class CashOrderResource extends BaseResource
                                 'delivered'        => 'Delivered',
                                 default            => ucfirst(str_replace('_', ' ', $state)),
                             }),
-                        \Filament\Infolists\Components\TextEntry::make('courier_type')
+                        Infolists\Components\TextEntry::make('courier_type')
                             ->label('Courier')
                             ->getStateUsing(fn (ApplicationState $record): string =>
                                 $record->delivery?->courier_type ?? '—'
                             ),
-                        \Filament\Infolists\Components\TextEntry::make('delivery_depot')
+                        Infolists\Components\TextEntry::make('delivery_depot')
                             ->label('Depot / Address')
                             ->getStateUsing(fn (ApplicationState $record): string =>
                                 $record->delivery?->delivery_depot ?? $record->delivery?->delivery_address ?? '—'
                             ),
-                        \Filament\Infolists\Components\TextEntry::make('dispatched_at')
+                        Infolists\Components\TextEntry::make('dispatched_at')
                             ->label('Dispatched At')
                             ->getStateUsing(fn (ApplicationState $record): string =>
                                 $record->delivery?->dispatched_at?->format('d M Y H:i') ?? '—'
                             ),
-                        \Filament\Infolists\Components\TextEntry::make('delivered_at')
+                        Infolists\Components\TextEntry::make('delivered_at')
                             ->label('Delivered At')
                             ->getStateUsing(fn (ApplicationState $record): string =>
                                 $record->delivery?->delivered_at?->format('d M Y H:i') ?? '—'
@@ -404,11 +365,14 @@ class CashOrderResource extends BaseResource
 
     public static function getNavigationBadge(): ?string
     {
-        $pending = static::getEloquentQuery()
-            ->whereHas('payments', fn ($q) => $q->where('provider', 'cash')->where('status', 'pending'))
-            ->count();
-
-        return $pending > 0 ? (string) $pending : null;
+        try {
+            $count = static::getEloquentQuery()
+                ->whereHas('payments', fn ($q) => $q->where('provider', 'cash')->where('status', 'pending'))
+                ->count();
+            return $count > 0 ? (string) $count : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     public static function getNavigationBadgeColor(): ?string
