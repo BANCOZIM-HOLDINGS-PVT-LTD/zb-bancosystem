@@ -1,7 +1,7 @@
 import { type SharedData } from '@/types';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
-import { Globe, CreditCard, Briefcase, FileText, Package, ChevronRight, User, DollarSign, ShoppingBag, Hammer, GraduationCap, Laptop, Home, RotateCcw, LoaderCircle } from 'lucide-react';
+import { Globe, CreditCard, Briefcase, FileText, Package, ChevronRight, User, DollarSign, ShoppingBag, Hammer, GraduationCap, Laptop, Home, RotateCcw, LoaderCircle, School } from 'lucide-react';
 import Footer from '@/components/Footer';
 
 interface WelcomeProps {
@@ -43,6 +43,12 @@ const PRODUCT_INTENTS = [
         name: 'Personal and Homeware Products',
         description: '(improve your lifestyle with the latest gadgets & modern furniture)',
         icon: Laptop,
+    },
+    {
+        id: 'schoolBooster',
+        name: 'School Booster',
+        description: '(get equipment and resources on credit to improve your school\'s learning facilities)',
+        icon: School,
     }
 ];
 

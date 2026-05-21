@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
             ProductCatalogSeeder::class, // Categories + General Microbiz Products
             ServicePackageSeeder::class, // Service domain products
             BoosterPackageSeeder::class, // SME Booster products
+            SchoolBoosterSeeder::class, // School Booster packages
             
             MicrobizBusinessSeeder::class, // Detailed Microbiz businesses
             MicrobizChickenProjectSeeder::class, // Broiler Production specific
