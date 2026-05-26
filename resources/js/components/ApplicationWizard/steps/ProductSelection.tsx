@@ -56,6 +56,26 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     } | null>(null);
 
     const [finalAmount, setFinalAmount] = useState<number>(0);
+
+    // Sync finalAmount whenever a business is selected but finalAmount is still 0.
+    // This covers products with no scales (user never clicks a variant, so handleScaleSelect
+    // is never called and finalAmount stays 0 even though basePrice is correct).
+    useEffect(() => {
+        if (finalAmount > 0 || !selectedBusiness) return;
+        let amount = 0;
+        if (selectedScale?.custom_price) {
+            amount = parseFloat(String(selectedScale.custom_price));
+        } else if (selectedScale) {
+            amount = (selectedBusiness.basePrice || 0) * (selectedScale.multiplier || 1);
+        } else {
+            amount = selectedBusiness.basePrice || 0;
+        }
+        if (isZiG && amount > 0) {
+            amount = parseFloat((amount * ZIG_RATE).toFixed(2));
+        }
+        if (amount > 0) setFinalAmount(amount);
+    }, [selectedBusiness, selectedScale]); // intentionally omit finalAmount/isZiG to avoid loops
+
     const [includesMESystem, setIncludesMESystem] = useState<boolean>(false);
     const [includesTraining, setIncludesTraining] = useState<boolean>(false);
     const [productCategories, setProductCategories] = useState<Category[]>([]);

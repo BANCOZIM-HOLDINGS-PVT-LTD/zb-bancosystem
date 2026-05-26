@@ -210,8 +210,10 @@ export default function AgentDashboard({
         setGeneratedLink(`${window.location.origin}/apply?ref=${agent.agent_code}&product_id=${selectedProductId}`);
     };
 
-    const shareWhatsApp = (link: string) => {
-        const text = `🌟 Start your own business with Microbiz Zimbabwe! Apply now: ${link}`;
+    const shareWhatsApp = (link: string, productName?: string, imageUrl?: string) => {
+        let text = `🌟 Start your own business with Microbiz Zimbabwe! Apply now: ${link}`;
+        if (productName) text = `🛒 *${productName}* — Apply now via Microbiz Zimbabwe!\n\n${link}`;
+        if (imageUrl) text += `\n\n📸 ${imageUrl}`;
         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     };
 
@@ -380,11 +382,23 @@ export default function AgentDashboard({
                         {/* Posters & General Link */}
                         <div className="lg:col-span-5 space-y-6">
                             <div className="relative aspect-[4/5] rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm group">
-                                <img src={selectedPosterLink.poster || DEFAULT_IMAGE} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-5 flex flex-col justify-end">
-                                    <p className="text-sm font-black text-white">{selectedPosterLink.name}</p>
-                                    <p className="text-[10px] font-medium text-slate-300 line-clamp-1">{selectedPosterLink.description}</p>
-                                </div>
+                                {generatedLink && selectedProduct?.image_url ? (
+                                    <>
+                                        <img src={`/storage/${selectedProduct.image_url}`} className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-5 flex flex-col justify-end">
+                                            <p className="text-sm font-black text-white">{selectedProduct.name}</p>
+                                            <p className="text-[10px] font-medium text-slate-300 line-clamp-1">{selectedSubCategory?.name}</p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <img src={selectedPosterLink.poster || DEFAULT_IMAGE} className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-5 flex flex-col justify-end">
+                                            <p className="text-sm font-black text-white">{selectedPosterLink.name}</p>
+                                            <p className="text-[10px] font-medium text-slate-300 line-clamp-1">{selectedPosterLink.description}</p>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                                 {generalLinks.map((link) => (
@@ -442,12 +456,32 @@ export default function AgentDashboard({
                                     {generatedLink ? (
                                         <div className="w-full text-center space-y-4 animate-in zoom-in duration-300">
                                             <div className="h-24 w-24 bg-white dark:bg-slate-900 rounded-2xl mx-auto p-2 shadow-sm flex items-center justify-center border border-slate-100 dark:border-slate-800 overflow-hidden">
-                                                <img src={selectedProduct?.image_url || DEFAULT_IMAGE} className="max-h-full max-w-full object-contain" />
+                                                <img src={selectedProduct?.image_url ? `/storage/${selectedProduct.image_url}` : DEFAULT_IMAGE} className="max-h-full max-w-full object-contain" />
                                             </div>
                                             <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Link Ready</p>
                                             <div className="flex gap-2 p-1 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200">
                                                 <div className="flex-1 px-2 text-[9px] font-mono font-bold text-slate-400 truncate self-center">{generatedLink}</div>
                                                 <button onClick={copyProductLink} className="p-2 text-emerald-600">{productCopied ? <CheckCircle className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}</button>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 pt-1">
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => shareWhatsApp(
+                                                        generatedLink,
+                                                        selectedProduct?.name,
+                                                        selectedProduct?.image_url ? `${window.location.origin}/storage/${selectedProduct.image_url}` : undefined
+                                                    )}
+                                                    className="bg-[#25D366] hover:bg-[#1DA851] text-[9px] font-black uppercase tracking-widest"
+                                                >
+                                                    WhatsApp
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => shareFacebook(generatedLink)}
+                                                    className="bg-[#1877F2] hover:bg-[#166FE5] text-[9px] font-black uppercase tracking-widest"
+                                                >
+                                                    Facebook
+                                                </Button>
                                             </div>
                                         </div>
                                     ) : (
