@@ -411,7 +411,7 @@ class ProductController extends Controller
                             return [
                                 'id' => $s->id,
                                 'name' => $s->name,
-                                'image_url' => $s->image_url,
+                                'image_url' => $this->normalizeProductImageUrl($s->image_url),
                                 'products' => $s->products->map(function ($product) {
                                     return [
                                         'id' => $product->id,
@@ -420,8 +420,7 @@ class ProductController extends Controller
                                         'specification' => $product->specification,
                                         'basePrice' => (float) $product->selling_price,
                                         'originalPrice' => (float) $product->base_price,
-                                        'image_url' => $product->image_url,
-                                        'image_url' => $product->image_url,
+                                        'image_url' => $this->normalizeProductImageUrl($product->image_url),
                                         'scales' => $product->packageSizes->map(function ($size) {
                                             return [
                                                 'id' => $size->id,
@@ -443,8 +442,7 @@ class ProductController extends Controller
                                 'specification' => $product->specification,
                                 'basePrice' => (float) $product->selling_price,
                                 'originalPrice' => (float) $product->base_price,
-                                'image_url' => $product->image_url,
-                                'description' => $product->description,
+                                'image_url' => $this->normalizeProductImageUrl($product->image_url),
                                 'description' => $product->description,
                                 'scales' => $product->packageSizes->map(function ($size) {
                                     return [
@@ -746,5 +744,17 @@ class ProductController extends Controller
                 'branches' => $supplier->branches ?? [],
             ]
         ]);
+    }
+
+    private function normalizeProductImageUrl(?string $imageUrl): ?string
+    {
+        if (!$imageUrl) return null;
+        if (str_starts_with($imageUrl, 'http')) return $imageUrl;
+        // Ensure images stored as bare filenames get the products/ directory prefix
+        // so the frontend can correctly build /storage/products/filename.jpg
+        if (!str_contains($imageUrl, '/')) {
+            return 'products/' . $imageUrl;
+        }
+        return $imageUrl;
     }
 }

@@ -32,10 +32,6 @@ primary_region = "jnb" # Johannesburg, closest to Zimbabwe
   size = "shared-cpu-1x"
   memory = "1gb"
 
-[[statics]]
-  guest_path = "/var/www/html/public"
-  url_prefix = "/"
-
 [mounts]
   source = "storage_vol"
   destination = "/var/www/html/storage/app/public"

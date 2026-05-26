@@ -415,7 +415,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         if (isPersonalProducts || data.intent === 'homeConstruction') {
             // ... existing logic ...
             if (business.scales.length === 1) {
-                handleScaleSelect(business.scales[0]);
+                handleScaleSelect(business.scales[0], business);
             }
             setCurrentView('product_detail');
         } else {
@@ -423,14 +423,17 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         }
     };
 
-    const handleScaleSelect = (scale: { id?: number; name: string; multiplier: number; custom_price?: number; description?: string }) => {
+    const handleScaleSelect = (scale: { id?: number; name: string; multiplier: number; custom_price?: number; description?: string }, businessOverride?: BusinessType) => {
         setSelectedScale(scale);
 
         let amount = 0;
         if (scale.custom_price) {
             amount = parseFloat(String(scale.custom_price));
         } else {
-            amount = (selectedBusiness?.basePrice || 0) * scale.multiplier;
+            // Use businessOverride when called from handleBusinessSelect, because
+            // setSelectedBusiness is async and selectedBusiness would still be null.
+            const biz = businessOverride ?? selectedBusiness;
+            amount = (biz?.basePrice || 0) * scale.multiplier;
         }
 
         // Apply currency conversion
