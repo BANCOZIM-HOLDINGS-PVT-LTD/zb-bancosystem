@@ -39,25 +39,23 @@ class ReferenceCodeService
             throw new \Exception("Application state not found for session {$sessionId}");
         }
 
-        // If national ID not provided, try to extract from form data
-        if (!$nationalId) {
-            $formData = $state->form_data ?? [];
-            
-            // Try multiple possible locations for the national ID
-            // 1. Direct formResponses level
+        // Cash flow has no personal-details step, so never extract national ID from form data.
+        // Always generate a random MB code for cash flow applications.
+        $formData = $state->form_data ?? [];
+        $paymentType = $formData['paymentType'] ?? $state->payment_type ?? 'credit';
+
+        if ($paymentType === 'cash') {
+            $nationalId = null;
+        } elseif (!$nationalId) {
+            // Credit flow: try to extract national ID from form data
             $formResponses = $formData['formResponses'] ?? [];
-            
-            // 2. Check for nested data structure (some forms nest data differently)
+
             if (empty($formResponses) && isset($formData['data']['formResponses'])) {
                 $formResponses = $formData['data']['formResponses'];
             }
-            
-            // 3. Check if form data itself contains the responses directly
             if (empty($formResponses) && isset($formData['nationalIdNumber'])) {
                 $nationalId = $formData['nationalIdNumber'];
             }
-
-            // Try multiple possible keys for national ID from formResponses
             if (!$nationalId) {
                 $nationalId = $formResponses['idNumber']
                            ?? $formResponses['nationalIdNumber']
@@ -65,8 +63,7 @@ class ReferenceCodeService
                            ?? $formResponses['national_id_number']
                            ?? null;
             }
-            
-            // Log the form data structure for debugging
+
             Log::info("Extracting national ID for session {$sessionId}", [
                 'form_data_keys' => array_keys($formData),
                 'form_responses_keys' => is_array($formResponses) ? array_keys($formResponses) : 'not_array',

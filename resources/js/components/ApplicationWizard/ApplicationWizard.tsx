@@ -933,10 +933,13 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
 
             // Generate reference code
             try {
-                // Get the national ID from form responses to pass to the API
-                const nationalId = updatedData.formResponses?.nationalIdNumber ||
+                // Cash flow has no form step, so never pass a national ID — always generate a random MB code.
+                // Credit flow can use the national ID as the reference code.
+                const nationalId = isCashFlow ? '' : (
+                    updatedData.formResponses?.nationalIdNumber ||
                     wizardData.formResponses?.nationalIdNumber ||
-                    '';
+                    ''
+                );
 
                 const response = await fetch('/api/reference-code/generate', {
                     method: 'POST',
@@ -1101,6 +1104,9 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
 
             // Save the current step to local storage when navigating back
             localStateManager.saveLocalState(sessionId || '', prevStep, wizardData);
+        } else {
+            // First step — go back to the home/intents page
+            window.location.href = '/';
         }
     }, [currentStep, steps, sessionId, wizardData, localStateManager]);
 
