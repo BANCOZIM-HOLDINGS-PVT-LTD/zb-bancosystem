@@ -561,9 +561,25 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
         }
 
         // If intent is provided in initialData, it means we're coming from Welcome page
-        // In this case, prioritize props over saved state
         if (initialData.intent) {
-            // Clear any old saved state to start fresh
+            const savedState = localStateManager.getLocalState();
+
+            // If there's an in-progress session for the SAME intent, restore it so
+            // users don't lose progress when they navigate back and click Apply again.
+            if (savedState && savedState.formData?.intent === initialData.intent) {
+                return {
+                    currentStep: savedState.currentStep,
+                    wizardData: {
+                        ...savedState.formData,
+                        paymentType: (urlParams.get('paymentType') as 'credit' | 'cash') || savedState.formData.paymentType || 'credit',
+                        language: initialData.language || savedState.formData.language,
+                        currency: initialData.currency || savedState.formData.currency,
+                    },
+                    sessionId: savedState.sessionId
+                };
+            }
+
+            // Different intent or no saved state — start fresh
             localStateManager.clearLocalState();
             return {
                 currentStep: initialStep,
@@ -744,6 +760,20 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
             localStateManager.debouncedSave(sessionId, currentStep, wizardData);
         }
     }, [wizardData, currentStep, sessionId, isStateRestored]);
+
+    // Warn users before closing/refreshing once they've moved past the product step
+    useEffect(() => {
+        const isEarlyStep = currentStep === 'product' || currentStep === 'language';
+        if (isEarlyStep || !isStateRestored) return;
+
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = '';
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [currentStep, isStateRestored]);
 
     // Effect to mark state as restored after initial load
     useEffect(() => {

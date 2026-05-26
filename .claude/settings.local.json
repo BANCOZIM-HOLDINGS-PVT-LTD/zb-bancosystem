@@ -46,7 +46,8 @@
       "WebFetch(domain:bancosystem.fly.dev)",
       "Bash(Get-Content storage\\\\logs\\\\laravel.log -Tail 80)",
       "Bash(Select-String \"frontend-catalog|loan-settings|LoanTerm|BoosterCategory|BoosterBusiness\")",
-      "Bash(Get-ChildItem *)"
+      "Bash(Get-ChildItem *)",
+      "Bash(Select-Object Name)"
     ],
     "deny": []
   }
