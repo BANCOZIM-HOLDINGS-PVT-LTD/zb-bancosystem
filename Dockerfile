@@ -9,8 +9,8 @@ COPY package*.json ./
 COPY vite.config.ts ./
 COPY tsconfig.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install all dependencies (devDeps needed for Vite build)
+RUN npm ci
 
 # Copy source files
 COPY resources/ ./resources/
