@@ -426,14 +426,20 @@ export const validateProductStep = (data: Partial<WizardData>): ValidationResult
       }
     ];
 
-    // Only require scale and amount for standard products (not Company Reg or Zimparks)
-    if (!isCompanyReg && !isZimparksHoliday) {
+    // Products with no scales (e.g. bancozim personalGadgets with a single base price)
+    // are valid as long as amount > 0 — they skip the scale requirement entirely.
+    const isNoScaleProduct = !data.scale && !data.selectedScale && Number(data.amount) > 0;
+
+    // Only require scale and amount for standard products (not Company Reg, Zimparks, or no-scale products)
+    if (!isCompanyReg && !isZimparksHoliday && !isNoScaleProduct) {
       productFields.push({
         field: 'scale',
         rules: [
           { rule: 'required', message: 'Please select a scale' }
         ]
       });
+    }
+    if (!isCompanyReg && !isZimparksHoliday) {
       productFields.push({
         field: 'amount',
         rules: [
