@@ -18,7 +18,18 @@ const PaymentStep: React.FC<PaymentStepProps> = ({ data, onNext, onBack, loading
     const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
 
     const totalAmount = data.finalPrice || data.amount || 0;
-    const referenceCode = data.referenceCode;
+    const referenceCode = data.referenceCode || (() => {
+        try {
+            const saved = JSON.parse(
+                sessionStorage.getItem('bancozim_application_state') ||
+                localStorage.getItem('bancozim_application_state') ||
+                '{}'
+            );
+            return saved?.formData?.referenceCode;
+        } catch {
+            return undefined;
+        }
+    })();
 
     // Cleanup polling on unmount
     useEffect(() => {
@@ -28,13 +39,15 @@ const PaymentStep: React.FC<PaymentStepProps> = ({ data, onNext, onBack, loading
     }, [pollInterval]);
 
     const handleInitiatePayment = async (method: string) => {
+        if (!referenceCode) {
+            setPaymentError('Order reference not found. Please go back and try again.');
+            return;
+        }
+
         setProcessing(true);
         setPaymentError(null);
 
         try {
-            // Reusing the deposit initiation logic but it will handle full amount if the app is marked as 'cash'
-            // We'll need to ensure the backend supports this or create a new endpoint.
-            // For now, let's assume we'll update the backend to handle cash applications in this endpoint.
             const response = await axios.post('/api/deposit/initiate', {
                 reference_code: referenceCode,
                 payment_method: method,
