@@ -75,10 +75,24 @@ class ReferenceCodeService
         }
 
         if (!$nationalId) {
-            Log::error("National ID not found in application data for session {$sessionId}", [
-                'form_data' => json_encode($state->form_data ?? [])
-            ]);
-            throw new \Exception("National ID is required to generate a reference code. Please ensure your ID number is provided in the application.");
+            // Cash flow: personal details not yet collected — generate a random reference code.
+            Log::info("No national ID found for session {$sessionId} — generating random reference code (cash flow)");
+            do {
+                $code = 'MB' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
+            } while (ApplicationState::withTrashed()
+                ->where('reference_code', $code)
+                ->where('session_id', '!=', $sessionId)
+                ->exists());
+
+            $updatedState = $this->storeReferenceCode($sessionId, $code);
+            if (!$updatedState) {
+                throw new \Exception("Failed to store generated reference code for session {$sessionId}");
+            }
+            if ($updatedState && $this->notificationService) {
+                $this->notificationService->sendReferenceCodeNotification($updatedState, $code);
+            }
+            Log::info("Generated random reference code {$code} for cash-flow session {$sessionId}");
+            return $code;
         }
 
         // Sanitize and format the national ID
