@@ -47,7 +47,20 @@
       "Bash(Get-Content storage\\\\logs\\\\laravel.log -Tail 80)",
       "Bash(Select-String \"frontend-catalog|loan-settings|LoanTerm|BoosterCategory|BoosterBusiness\")",
       "Bash(Get-ChildItem *)",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "Bash(C:\\\\Users\\\\user\\\\Downloads\\\\flyctl_0.4.7_Windows_x86_64 \\(1\\)\\\\flyctl.exe version *)",
+      "Bash(C:\\\\Users\\\\user\\\\Downloads\\\\flyctl_0.4.7_Windows_x86_64 \\(1\\)\\\\flyctl.exe auth *)",
+      "Bash(\"C:\\\\Users\\\\user\\\\Downloads\\\\flyctl_0.4.7_Windows_x86_64 \\(1\\)\\\\flyctl.exe\" deploy --app bancosystem)",
+      "Bash(Get-Content \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--xampp-htdocs-zb-bancosystem\\\\308be83b-9135-4292-8369-2e89d1c6dec2\\\\tasks\\\\bma1aa1hg.output\")",
+      "Bash(Select-Object -Last 60)",
+      "PowerShell(Get-ChildItem \"C:\\\\xampp\\\\htdocs\\\\zb bancosystem\\\\storage\\\\app\\\\public\" -Force | ForEach-Object { \"$\\($_.Mode\\) $\\($_.Name\\)\" })",
+      "PowerShell($flyctl = \"C:\\\\Users\\\\user\\\\Downloads\\\\flyctl_0.4.7_Windows_x86_64 \\(1\\)\\\\flyctl.exe\"; Set-Location \"C:\\\\xampp\\\\htdocs\\\\zb bancosystem\"; & $flyctl deploy 2>&1 | Select-Object -Last 40)",
+      "PowerShell($flyctl = \"C:\\\\Users\\\\user\\\\Downloads\\\\flyctl_0.4.7_Windows_x86_64 \\(1\\)\\\\flyctl.exe\"; Set-Location \"C:\\\\xampp\\\\htdocs\\\\zb bancosystem\"; & $flyctl deploy 2>&1 | Select-Object -Last 20)",
+      "PowerShell($flyctl = \"C:\\\\Users\\\\user\\\\Downloads\\\\flyctl_0.4.7_Windows_x86_64 \\(1\\)\\\\flyctl.exe\"; & $flyctl ssh console -a bancosystem -C \"php artisan up\" 2>&1)",
+      "PowerShell($flyctl = \"C:\\\\Users\\\\user\\\\Downloads\\\\flyctl_0.4.7_Windows_x86_64 \\(1\\)\\\\flyctl.exe\"; & $flyctl secrets list -a bancosystem 2>&1)",
+      "PowerShell($flyctl = \"C:\\\\Users\\\\user\\\\Downloads\\\\flyctl_0.4.7_Windows_x86_64 \\(1\\)\\\\flyctl.exe\"; Set-Location \"C:\\\\xampp\\\\htdocs\\\\zb bancosystem\"; & $flyctl deploy 2>&1 | Select-Object -Last 15)",
+      "PowerShell($flyctl = \"C:\\\\Users\\\\user\\\\Downloads\\\\flyctl_0.4.7_Windows_x86_64 \\(1\\)\\\\flyctl.exe\"; & $flyctl ssh console -a bancosystem -C \"tail -50 /var/www/html/storage/logs/laravel.log\" 2>&1 | Select-String -Pattern \"422|Validation|reference|payment_method|deposit|initiat\" | Select-Object -Last 30)",
+      "Bash(C:\\\\Users\\\\user\\\\Downloads\\\\flyctl_0.4.7_Windows_x86_64 \\(1\\)\\\\flyctl.exe ssh *)"
     ],
     "deny": []
   }

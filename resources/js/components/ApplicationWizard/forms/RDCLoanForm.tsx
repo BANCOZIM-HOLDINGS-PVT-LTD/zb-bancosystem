@@ -91,7 +91,7 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
     const [accountNumberError, setAccountNumberError] = useState<string>('');
     const [sameAsCell, setSameAsCell] = useState(false);
 
-    const [formData, setFormData] = useState(_saved?.formData ?? {
+    const defaultFormData = {
         // Credit Facility Details (pre-populated)
         ...creditDetails,
 
@@ -100,15 +100,15 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
         surname: '',
         firstName: '',
         gender: '',
-        dateOfBirth: '', // Will be set by dial-date picker with defaultAge
+        dateOfBirth: '',
         maritalStatus: '',
         nationality: 'Zimbabwean',
-        idNumber: data.formResponses?.nationalIdNumber || '',
-        cellNumber: data.formResponses?.mobile || '',
+        idNumber: (data.formResponses?.nationalIdNumber || '') as string,
+        cellNumber: (data.formResponses?.mobile || '') as string,
         whatsApp: '',
-        emailAddress: data.formResponses?.emailAddress || '',
-        responsibleMinistry: data.specificEmployer || '', // Pre-fill with selected council from Account Verification
-        employerName: data.employerName || '', // Pre-fill with selected council
+        emailAddress: (data.formResponses?.emailAddress || '') as string,
+        responsibleMinistry: (data.specificEmployer || '') as string,
+        employerName: (data.employerName || '') as string,
         employerAddress: '',
         permanentAddress: '',
         propertyOwnership: '',
@@ -124,9 +124,8 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
 
         // Spouse and Next of Kin
         spouseDetails: [
-            { fullName: '', relationship: '', phoneNumber: '', residentialAddress: '' },
             { fullName: '', relationship: '', phoneNumber: '', residentialAddress: '' }
-        ],
+        ] as Array<{ fullName: string; relationship: string; phoneNumber: string; residentialAddress: string }>,
 
         // Banking Details
         bankName: '',
@@ -137,11 +136,15 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
         otherLoans: [
             { institution: '', monthlyInstallment: '', currentBalance: '', maturityDate: '' },
             { institution: '', monthlyInstallment: '', currentBalance: '', maturityDate: '' }
-        ],
+        ] as Array<{ institution: string; monthlyInstallment: string; currentBalance: string; maturityDate: string }>,
 
         // Purpose/Asset (auto-populated from product selection)
-        purposeAsset: businessName ? `${businessName} - ${data.scale || 'Standard Scale'}` : ''
-    });
+        purposeAsset: (businessName ? `${businessName} - ${data.scale || 'Standard Scale'}` : '') as string,
+    };
+
+    const [formData, setFormData] = useState<typeof defaultFormData>(
+        _saved?.formData ?? defaultFormData
+    );
 
     const handleBackWithSave = () => {
         onSaveProgress?.({ _formType: 'rdcLoan', formData, hasOtherLoans });
@@ -274,60 +277,34 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
             }
         }
 
-        // Validate that BOTH spouse/next of kin entries are filled in
-        const allSpousesValid = formData.spouseDetails.every(spouse =>
-            spouse.fullName.trim() !== '' &&
-            spouse.relationship.trim() !== '' &&
-            spouse.phoneNumber.trim() !== '' &&
-            spouse.residentialAddress.trim() !== ''
-        );
-
-        if (!allSpousesValid) {
-            setSpouseError('Both Spouse/Next of Kin entries are required. Please fill in all fields for both contacts.');
-            // Scroll to the spouse section
+        // Validate that the single next of kin entry is filled in
+        const nok = formData.spouseDetails[0];
+        if (!nok || !nok.fullName.trim() || !nok.relationship.trim() || !nok.phoneNumber.trim()) {
+            setSpouseError('Next of Kin details are required. Please fill in all fields.');
             document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
 
-        // Validate that next of kin don't have the same name
-        if (formData.spouseDetails[0].fullName.trim().toLowerCase() === formData.spouseDetails[1].fullName.trim().toLowerCase()) {
-            setSpouseError('Both Spouse/Next of Kin cannot have the same name. Please provide different contacts.');
-            document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
-
-        // Validate that next of kin don't have the same phone number
-        if (formData.spouseDetails[0].phoneNumber.trim() === formData.spouseDetails[1].phoneNumber.trim()) {
-            setSpouseError('Both Spouse/Next of Kin cannot have the same phone number. Please provide different contacts.');
-            document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
-
-        // Validate that next of kin details don't match applicant details
+        // Validate that next of kin is not the same as the applicant
         const applicantFullName = `${formData.firstName} ${formData.surname}`.trim().toLowerCase();
-        const nextOfKinNames = formData.spouseDetails.map(s => s.fullName.trim().toLowerCase());
-
-        if (nextOfKinNames.includes(applicantFullName)) {
+        if (nok.fullName.trim().toLowerCase() === applicantFullName) {
             setSpouseError('Next of Kin cannot be the same as the applicant.');
             document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
 
-        // Validate that supervisor phone is different from next of kin phones
+        const nokPhone = nok.phoneNumber.trim();
         const supervisorPhone = formData.headOfInstitutionCell.trim();
-        const nextOfKinPhones = formData.spouseDetails.map(s => s.phoneNumber.trim());
+        const personalPhone = formData.cellNumber.trim();
 
-        if (supervisorPhone && nextOfKinPhones.includes(supervisorPhone)) {
-            setSpouseError('Supervisor phone number cannot be the same as Next of Kin phone numbers.');
+        if (supervisorPhone && nokPhone === supervisorPhone) {
+            setSpouseError('Next of Kin phone number cannot be the same as the supervisor phone number.');
             document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
 
-        // Validate that personal cell phone is different from next of kin phones (WhatsApp can be same)
-        const personalPhone = formData.cellNumber.trim();
-
-        if (personalPhone && nextOfKinPhones.includes(personalPhone)) {
-            setSpouseError('Your personal phone number cannot be the same as Next of Kin phone numbers.');
+        if (personalPhone && nokPhone === personalPhone) {
+            setSpouseError('Next of Kin phone number cannot be the same as your personal phone number.');
             document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
@@ -796,12 +773,10 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
 
                     {formData.spouseDetails.map((spouse, index) => {
                         let containerLabel = "Next of Kin Details";
-                        if (index === 0) {
-                            if (formData.maritalStatus === 'Married') {
-                                if (formData.gender === 'Male') containerLabel = "Wife's Details";
-                                else if (formData.gender === 'Female') containerLabel = "Husband's Details";
-                                else containerLabel = "Spouse Details";
-                            }
+                        if (formData.maritalStatus === 'Married') {
+                            if (formData.gender === 'Male') containerLabel = "Wife's / Next of Kin Details";
+                            else if (formData.gender === 'Female') containerLabel = "Husband's / Next of Kin Details";
+                            else containerLabel = "Spouse / Next of Kin Details";
                         }
 
                         return (
@@ -813,16 +788,16 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
                                 </div>
                                 <FormField
                                     id={`spouse-${index}-name`}
-                                    label={`Full Name${index === 0 ? ' *' : ''}`}
+                                    label="Full Name *"
                                     type="text"
                                     value={spouse.fullName}
                                     onChange={(value) => handleSpouseChange(index, 'fullName', value)}
-                                    required={index === 0}
+                                    required
                                     autoCapitalize={true}
                                 />
 
                                 <div>
-                                    <Label htmlFor={`spouse-${index}-relationship`}>Relationship{index === 0 && spouse.fullName ? ' *' : ''}</Label>
+                                    <Label htmlFor={`spouse-${index}-relationship`}>Relationship *</Label>
                                     <Select value={spouse.relationship} onValueChange={(value) => handleSpouseChange(index, 'relationship', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select relationship" />
@@ -840,11 +815,11 @@ const RDCLoanForm: React.FC<RDCLoanFormProps> = ({ data, onNext, onBack, loading
 
                                 <FormField
                                     id={`spouse-${index}-phone`}
-                                    label={`Phone Number${index === 0 && spouse.fullName ? ' *' : ''}`}
+                                    label="Phone Number *"
                                     type="phone"
                                     value={spouse.phoneNumber}
                                     onChange={(value) => handleSpouseChange(index, 'phoneNumber', value)}
-                                    required={index === 0 && !!spouse.fullName}
+                                    required
                                 />
 
                                 <FormField

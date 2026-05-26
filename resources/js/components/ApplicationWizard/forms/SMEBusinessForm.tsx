@@ -197,13 +197,6 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                 phoneNumber: '',
                 emailAddress: '',
                 address: JSON.stringify({})
-            },
-            nextOfKin2: {
-                fullName: '',
-                relationship: '',
-                phoneNumber: '',
-                emailAddress: '',
-                address: JSON.stringify({})
             }
         },
 
@@ -339,8 +332,7 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
         const snok = formData.spouseAndNextOfKin || {};
         const contacts = [
             { name: snok.spouse?.fullName?.trim().toLowerCase(), phone: snok.spouse?.phoneNumber?.trim(), label: 'Spouse' },
-            { name: snok.nextOfKin1?.fullName?.trim().toLowerCase(), phone: snok.nextOfKin1?.phoneNumber?.trim(), label: 'Next of Kin 1' },
-            { name: snok.nextOfKin2?.fullName?.trim().toLowerCase(), phone: snok.nextOfKin2?.phoneNumber?.trim(), label: 'Next of Kin 2' }
+            { name: snok.nextOfKin1?.fullName?.trim().toLowerCase(), phone: snok.nextOfKin1?.phoneNumber?.trim(), label: 'Next of Kin' }
         ].filter(c => c.name || c.phone);
 
         // Check against applicant
@@ -1380,121 +1372,6 @@ const SMEBusinessForm: React.FC<SMEBusinessFormProps> = ({ data, onNext, onBack,
                         </div>
                     </div>
 
-                    {/* Next of Kin 2 */}
-                    <div className="mt-6">
-                        <h4 className="font-semibold mb-3 text-emerald-700">NEXT OF KIN 2</h4>
-                        <div className="grid gap-4 md:grid-cols-4">
-                            <div>
-                                <FormField
-                                    id="nextOfKin2Name"
-                                    label="Full Name"
-                                    type="text"
-                                    value={formData.spouseAndNextOfKin.nextOfKin2.fullName}
-                                    onChange={(value) => {
-                                        setFormData(prev => ({
-                                            ...prev,
-                                            spouseAndNextOfKin: {
-                                                ...prev.spouseAndNextOfKin,
-                                                nextOfKin2: {
-                                                    ...prev.spouseAndNextOfKin.nextOfKin2,
-                                                    fullName: value
-                                                }
-                                            }
-                                        }));
-                                    }}
-                                    autoCapitalize={true}
-                                />
-                            </div>
-                            <div>
-                                <FormField
-                                    id="nextOfKin2Relationship"
-                                    label="Relationship"
-                                    type="select"
-                                    value={formData.spouseAndNextOfKin.nextOfKin2.relationship}
-                                    onChange={(value) => {
-                                        setFormData(prev => ({
-                                            ...prev,
-                                            spouseAndNextOfKin: {
-                                                ...prev.spouseAndNextOfKin,
-                                                nextOfKin2: {
-                                                    ...prev.spouseAndNextOfKin.nextOfKin2,
-                                                    relationship: value
-                                                }
-                                            }
-                                        }));
-                                    }}
-                                    options={[
-                                        { value: "Spouse", label: "Spouse" },
-                                        { value: "Parent", label: "Parent" },
-                                        { value: "Child", label: "Child" },
-                                        { value: "Relative", label: "Relative" },
-                                        { value: "Work colleague", label: "Work colleague" },
-                                        { value: "Friend", label: "Friend" }
-                                    ]}
-                                />
-                            </div>
-                            <div>
-                                <FormField
-                                    id="nextOfKin2Phone"
-                                    label="Phone Number"
-                                    type="phone"
-                                    value={formData.spouseAndNextOfKin.nextOfKin2.phoneNumber}
-                                    onChange={(value) => {
-                                        setFormData(prev => ({
-                                            ...prev,
-                                            spouseAndNextOfKin: {
-                                                ...prev.spouseAndNextOfKin,
-                                                nextOfKin2: {
-                                                    ...prev.spouseAndNextOfKin.nextOfKin2,
-                                                    phoneNumber: value
-                                                }
-                                            }
-                                        }));
-                                    }}
-                                />
-                            </div>
-                            <div>
-                                <FormField
-                                    id="nextOfKin2Email"
-                                    label="Email Address"
-                                    type="email"
-                                    value={formData.spouseAndNextOfKin.nextOfKin2.emailAddress}
-                                    onChange={(value) => {
-                                        setFormData(prev => ({
-                                            ...prev,
-                                            spouseAndNextOfKin: {
-                                                ...prev.spouseAndNextOfKin,
-                                                nextOfKin2: {
-                                                    ...prev.spouseAndNextOfKin.nextOfKin2,
-                                                    emailAddress: value
-                                                }
-                                            }
-                                        }));
-                                    }}
-                                />
-                            </div>
-                        </div>
-                        <div className="mt-3">
-                            <FormField
-                                id="nextOfKin2Address"
-                                label="Address"
-                                type="text"
-                                value={typeof formData.spouseAndNextOfKin.nextOfKin2.address === 'string' ? formData.spouseAndNextOfKin.nextOfKin2.address : ''}
-                                onChange={(value) => {
-                                    setFormData(prev => ({
-                                        ...prev,
-                                        spouseAndNextOfKin: {
-                                            ...prev.spouseAndNextOfKin,
-                                            nextOfKin2: {
-                                                ...prev.spouseAndNextOfKin.nextOfKin2,
-                                                address: value
-                                            }
-                                        }
-                                    }));
-                                }}
-                            />
-                        </div>
-                    </div>
                 </Card>
 
                 {/* Employment Details */}

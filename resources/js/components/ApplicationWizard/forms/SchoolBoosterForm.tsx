@@ -92,7 +92,6 @@ const SchoolBoosterForm: React.FC<SchoolBoosterFormProps> = ({ data, onNext, onB
         spouseAndNextOfKin: {
             spouse: { fullName: '', phoneNumber: '', emailAddress: '', address: '' },
             nextOfKin1: { fullName: '', relationship: '', phoneNumber: '', emailAddress: '', address: '' },
-            nextOfKin2: { fullName: '', relationship: '', phoneNumber: '', emailAddress: '', address: '' },
         },
 
         // Banking Details
@@ -350,22 +349,20 @@ const SchoolBoosterForm: React.FC<SchoolBoosterFormProps> = ({ data, onNext, onB
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
                 <SectionHeader icon={<Users className="h-5 w-5 text-emerald-600" />} title="Spouse & Next of Kin" />
                 {spouseError && <p className="text-red-500 text-sm mb-3">{spouseError}</p>}
-                {(['nextOfKin1', 'nextOfKin2'] as const).map((key, idx) => (
-                    <div key={key} className="mb-4">
-                        <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Next of Kin {idx + 1}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <FormField label="Full Name">
-                                <Input value={formData.spouseAndNextOfKin[key].fullName} onChange={e => handleDeepNestedChange('spouseAndNextOfKin', key, 'fullName', e.target.value)} placeholder="Full name" />
-                            </FormField>
-                            <FormField label="Relationship">
-                                <Input value={formData.spouseAndNextOfKin[key].relationship} onChange={e => handleDeepNestedChange('spouseAndNextOfKin', key, 'relationship', e.target.value)} placeholder="e.g. Spouse, Sibling" />
-                            </FormField>
-                            <FormField label="Phone Number">
-                                <Input value={formData.spouseAndNextOfKin[key].phoneNumber} onChange={e => handleDeepNestedChange('spouseAndNextOfKin', key, 'phoneNumber', e.target.value)} placeholder="e.g. 0771234567" />
-                            </FormField>
-                        </div>
+                <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Next of Kin</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <FormField label="Full Name">
+                            <Input value={formData.spouseAndNextOfKin.nextOfKin1.fullName} onChange={e => handleDeepNestedChange('spouseAndNextOfKin', 'nextOfKin1', 'fullName', e.target.value)} placeholder="Full name" />
+                        </FormField>
+                        <FormField label="Relationship">
+                            <Input value={formData.spouseAndNextOfKin.nextOfKin1.relationship} onChange={e => handleDeepNestedChange('spouseAndNextOfKin', 'nextOfKin1', 'relationship', e.target.value)} placeholder="e.g. Spouse, Sibling" />
+                        </FormField>
+                        <FormField label="Phone Number">
+                            <Input value={formData.spouseAndNextOfKin.nextOfKin1.phoneNumber} onChange={e => handleDeepNestedChange('spouseAndNextOfKin', 'nextOfKin1', 'phoneNumber', e.target.value)} placeholder="e.g. 0771234567" />
+                        </FormField>
                     </div>
-                ))}
+                </div>
             </div>
 
             {/* ── BANKING DETAILS ── */}

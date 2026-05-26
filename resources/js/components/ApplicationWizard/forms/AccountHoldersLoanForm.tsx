@@ -152,8 +152,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
 
         // Spouse and Next of Kin
         spouseDetails: [
-            { fullName: '', relationship: '', phoneNumber: '', residentialAddress: { type: '', addressLine: '' } as AddressData },
-            { fullName: '', relationship: '', phoneNumber: '', residentialAddress: { type: '', addressLine: '' } as AddressData }
+            { fullName: '', relationship: '', phoneNumber: '', idNumber: '', residentialAddress: { type: '', addressLine: '' } as AddressData }
         ],
 
         // Banking Details - Pre-fill ZB Bank if user has ZB bank account
@@ -314,57 +313,33 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             }
         }
 
-        // Validate that BOTH spouse/next of kin entries are filled in
-        const allSpousesValid = formData.spouseDetails.every(spouse => {
-            const addr = spouse.residentialAddress as AddressData;
-            const hasAddress = addr && addr.type && addr.addressLine?.trim();
-            return spouse.fullName.trim() !== '' &&
-                spouse.relationship.trim() !== '' &&
-                spouse.phoneNumber.trim() !== '' &&
-                hasAddress;
-        });
-
-        if (!allSpousesValid) {
-            setSpouseError('Both Spouse/Next of Kin entries are required. Please fill in all fields for both contacts.');
+        // Validate the single next of kin entry
+        const nok = formData.spouseDetails[0];
+        if (!nok || !nok.fullName.trim() || !nok.relationship.trim() || !nok.phoneNumber.trim()) {
+            setSpouseError('Next of Kin details are required. Please fill in all fields.');
             document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
 
-        // Validate that next of kin don't have the same name
-        if (formData.spouseDetails[0].fullName.trim().toLowerCase() === formData.spouseDetails[1].fullName.trim().toLowerCase()) {
-            setSpouseError('Both Spouse/Next of Kin cannot have the same name. Please provide different contacts.');
-            document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
-
-        // Validate that next of kin don't have the same phone number
-        if (formData.spouseDetails[0].phoneNumber.trim() === formData.spouseDetails[1].phoneNumber.trim()) {
-            setSpouseError('Both Spouse/Next of Kin cannot have the same phone number. Please provide different contacts.');
-            document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
-
-        // Validate that next of kin details don't match applicant details
         const applicantFullName = `${formData.firstName} ${formData.surname}`.trim().toLowerCase();
-        const nextOfKinNames = formData.spouseDetails.map(s => s.fullName.trim().toLowerCase());
-        const nextOfKinPhones = formData.spouseDetails.map(s => s.phoneNumber.trim());
-        const personalPhone = formData.cellNumber.trim();
-        const supervisorPhone = formData.headOfInstitutionCell.trim();
-
-        if (nextOfKinNames.includes(applicantFullName)) {
+        if (nok.fullName.trim().toLowerCase() === applicantFullName) {
             setSpouseError('Next of Kin cannot be the same as the applicant.');
             document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
 
-        if (personalPhone && nextOfKinPhones.includes(personalPhone)) {
-            setSpouseError('Your personal phone number cannot be the same as Next of Kin phone numbers.');
+        const nokPhone = nok.phoneNumber.trim();
+        const personalPhone = formData.cellNumber.trim();
+        const supervisorPhone = formData.headOfInstitutionCell.trim();
+
+        if (personalPhone && nokPhone === personalPhone) {
+            setSpouseError('Next of Kin phone number cannot be the same as your personal phone number.');
             document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
 
-        if (supervisorPhone && nextOfKinPhones.includes(supervisorPhone)) {
-            setSpouseError('Supervisor phone number cannot be the same as Next of Kin phone numbers.');
+        if (supervisorPhone && nokPhone === supervisorPhone) {
+            setSpouseError('Next of Kin phone number cannot be the same as the supervisor phone number.');
             document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
@@ -431,8 +406,12 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                 purposeAsset: formData.purposeAsset,
                 purposeOfLoan: formData.purposeAsset,
 
-                // Guarantor details
-                guarantor: formData.guarantor,
+                // Guarantor = Next of Kin
+                guarantor: {
+                    name: formData.spouseDetails[0]?.fullName || '',
+                    phoneNumber: formData.spouseDetails[0]?.phoneNumber || '',
+                    idNumber: (formData.spouseDetails[0] as any)?.idNumber || ''
+                },
 
                 // Spouse/Next of Kin details - ensure addresses are properly formatted
                 spouseDetails: formData.spouseDetails.map(spouse => ({
@@ -896,13 +875,11 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     )}
 
                     {formData.spouseDetails.map((spouse, index) => {
-                        let containerLabel = "Next of Kin Details";
-                        if (index === 0) {
-                            if (formData.maritalStatus === 'Married') {
-                                if (formData.gender === 'Male') containerLabel = "Wife's Details";
-                                else if (formData.gender === 'Female') containerLabel = "Husband's Details";
-                                else containerLabel = "Spouse Details";
-                            }
+                        let containerLabel = "Next of Kin / Guarantor Details";
+                        if (formData.maritalStatus === 'Married') {
+                            if (formData.gender === 'Male') containerLabel = "Wife's / Next of Kin Details (Guarantor)";
+                            else if (formData.gender === 'Female') containerLabel = "Husband's / Next of Kin Details (Guarantor)";
+                            else containerLabel = "Spouse / Next of Kin Details (Guarantor)";
                         }
 
                         return (
@@ -911,26 +888,26 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                     <h4 className="text-md font-medium text-emerald-800 dark:text-emerald-400 border-b pb-1">
                                         {containerLabel}
                                     </h4>
+                                    <p className="text-xs text-gray-500 italic mt-1">This person will also serve as the guarantor for this application.</p>
                                 </div>
 
                                 <div>
                                     <FormField
                                         id={`spouse-${index}-name`}
-                                        label={`Full Names${index === 0 ? ' *' : ''}`}
+                                        label="Full Names *"
                                         type="text"
                                         value={spouse.fullName}
                                         onChange={(value) => handleSpouseChange(index, 'fullName', value)}
-                                        required={index === 0}
+                                        required
                                         autoCapitalize={true}
                                     />
                                 </div>
 
                                 <div>
-                                    <Label htmlFor={`spouse-${index}-relationship`}>Relationship{index === 0 && spouse.fullName ? ' *' : ''}</Label>
+                                    <Label htmlFor={`spouse-${index}-relationship`}>Relationship *</Label>
                                     <Select
                                         value={spouse.relationship}
                                         onValueChange={(value) => handleSpouseChange(index, 'relationship', value)}
-                                        disabled={index === 0 && formData.maritalStatus === 'Married'}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select relationship" />
@@ -949,11 +926,29 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 <div>
                                     <FormField
                                         id={`spouse-${index}-phone`}
-                                        label={`Phone Numbers${index === 0 && spouse.fullName ? ' *' : ''}`}
+                                        label="Phone Number *"
                                         type="phone"
                                         value={spouse.phoneNumber}
                                         onChange={(value) => handleSpouseChange(index, 'phoneNumber', value)}
-                                        required={index === 0 && !!spouse.fullName}
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <FormField
+                                        id={`spouse-${index}-id`}
+                                        label="National ID Number *"
+                                        type="text"
+                                        value={(spouse as any).idNumber || ''}
+                                        onChange={(value) => setFormData(prev => ({
+                                            ...prev,
+                                            spouseDetails: prev.spouseDetails.map((s, i) =>
+                                                i === index ? { ...s, idNumber: value } : s
+                                            )
+                                        }))}
+                                        required
+                                        capitalizeCheckLetter={true}
+                                        placeholder="e.g. 12-345678 A 12"
                                     />
                                 </div>
 
@@ -970,7 +965,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                                 )
                                             }));
                                         }}
-                                        required={index === 0}
+                                        required
                                     />
                                 </div>
                             </div>
@@ -1328,50 +1323,6 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                     </div>
                 </Card>
 
-                {/* Guarantor Details */}
-                <Card className="p-4 md:p-6">
-                    <div className="flex items-center mb-4">
-                        <User className="h-6 w-6 text-emerald-600 mr-3" />
-                        <h3 className="text-lg font-semibold">Guarantor Details</h3>
-                        <h5>Please fill in the guarantor details below</h5>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <div>
-                            <FormField
-                                id="guarantorName"
-                                label="Guarantor Name *"
-                                type="text"
-                                value={formData.guarantor.name}
-                                onChange={(value) => handleGuarantorChange('name', value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <FormField
-                                id="guarantorPhone"
-                                label="Guarantor Phone Number *"
-                                type="phone"
-                                value={formData.guarantor.phoneNumber}
-                                onChange={(value) => handleGuarantorChange('phoneNumber', value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <FormField
-                                id="guarantorId"
-                                label="Guarantor ID Number *"
-                                type="text"
-                                value={formData.guarantor.idNumber}
-                                onChange={(value) => handleGuarantorChange('idNumber', value)}
-                                required
-                                capitalizeCheckLetter={true}
-                                placeholder="e.g. 12-345678 A 12"
-                                title="Zimbabwe ID format: 12-345678 A 12"
-                            />
-                        </div>
-                    </div>
-                </Card>
 
                 <div className="flex items-start space-x-2 my-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                     <Checkbox
