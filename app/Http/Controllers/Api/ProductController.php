@@ -491,6 +491,19 @@ class ProductController extends Controller
         ]);
     }
 
+    public function getWarrantySettings(): JsonResponse
+    {
+        $settings = \App\Models\WarrantySetting::current();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'warranty_enabled' => $settings->warranty_enabled,
+                'warranty_text'    => $settings->warranty_text,
+            ],
+        ]);
+    }
+
     /**
      * Get product statistics
      */

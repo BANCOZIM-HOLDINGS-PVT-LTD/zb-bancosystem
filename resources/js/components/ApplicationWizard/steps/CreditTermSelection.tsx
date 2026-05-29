@@ -23,7 +23,7 @@ const CreditTermSelection: React.FC<CreditTermSelectionProps> = ({ data, onNext,
     };
 
     // Generate months from 3 to 24
-    const creditTerms = Array.from({ length: 22 }, (_, i) => ({ months: i + 3 }));
+    const creditTerms = Array.from({ length: 16 }, (_, i) => ({ months: i + 3 }));
 
     useEffect(() => {
         const loadSettings = async () => {

@@ -82,6 +82,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [loanSettings, setLoanSettings] = useState<{ interestRate: number; adminFeePercentage: number }>({ interestRate: 0.84, adminFeePercentage: 0.06 });
+    const [warrantySettings, setWarrantySettings] = useState<{ warrantyEnabled: boolean; warrantyText: string }>({ warrantyEnabled: true, warrantyText: '12 month warranty' });
     const [selectedTermMonths, setSelectedTermMonths] = useState<number | null>(null);
     const [validationError, setValidationError] = useState<string>('');
     const [showZBBankingNotification, setShowZBBankingNotification] = useState<boolean>(false);
@@ -282,12 +283,14 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 setIsLoadingProducts(true);
                 setError(null);
                 
-                const [categories, settings] = await Promise.all([
+                const [categories, settings, warranty] = await Promise.all([
                     productService.getProductCategories(data.intent),
-                    productService.getLoanSettings()
+                    productService.getLoanSettings(),
+                    productService.getWarrantySettings(),
                 ]);
-                
+
                 setLoanSettings(settings);
+                setWarrantySettings(warranty);
 
                 // Apply intent and currency filtering
                 // Skip filtering for smeBiz as the booster API already returns a pre-filtered catalog
@@ -1307,6 +1310,22 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                 {(selectedScale as any).remarks || selectedBusiness.description || 'No additional remarks.'}
                                             </span>
                                         </div>
+
+                                        {/* Warranty notice */}
+                                        {warrantySettings.warrantyEnabled && (() => {
+                                            const catName = (selectedCategory?.name || '').toLowerCase();
+                                            const subName = (selectedSubcategory?.name || '').toLowerCase();
+                                            const bizName = (selectedBusiness?.name || '').toLowerCase();
+                                            const isChickenContext = catName.includes('chicken') || subName.includes('chicken') || bizName.includes('broiler') || bizName.includes('layer');
+                                            const isExemptFromExclusion = bizName.includes('incubator') || bizName.includes('seed') || bizName.includes('fertiliser') || bizName.includes('fertilizer');
+                                            const showWarranty = !isChickenContext || isExemptFromExclusion;
+                                            return showWarranty ? (
+                                                <div className="mt-4 py-2 px-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-700 flex items-center gap-2">
+                                                    <Shield className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                                                    <span className="text-sm text-emerald-800 dark:text-emerald-200 font-medium">{warrantySettings.warrantyText}</span>
+                                                </div>
+                                            ) : null;
+                                        })()}
 
                                         {/* Broiler gain compensation policy notice */}
                                         {selectedBusiness.name.toLowerCase().includes('broiler') && (

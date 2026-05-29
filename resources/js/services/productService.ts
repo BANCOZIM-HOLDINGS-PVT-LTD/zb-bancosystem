@@ -232,12 +232,24 @@ class ProductService {
     }
   }
 
+  async getWarrantySettings(): Promise<{ warrantyEnabled: boolean; warrantyText: string }> {
+    try {
+      const response = await axios.get('/api/products/warranty-settings');
+      return {
+        warrantyEnabled: response.data.data.warranty_enabled,
+        warrantyText: response.data.data.warranty_text,
+      };
+    } catch {
+      return { warrantyEnabled: true, warrantyText: '12 month warranty' };
+    }
+  }
+
   /**
    * Calculate credit term options
    */
   getCreditTermOptions(amount: number, interestRate: number = 0.84, interestType: string = 'amortization'): CreditTermOption[] {
     // Generate terms from 3 to 24 months for general use
-    const terms = Array.from({ length: 22 }, (_, i) => i + 3); // [3, 4, 5, ..., 24]
+    const terms = Array.from({ length: 16 }, (_, i) => i + 3); // [3, 4, 5, ..., 18]
 
     return terms.map(months => {
       let monthlyPayment = 0;
