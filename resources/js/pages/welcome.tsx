@@ -16,40 +16,44 @@ interface WelcomeProps {
 const PRODUCT_INTENTS = [
     {
         id: 'microBiz',
-        name: 'Micro and Small Business Starter Kit',
+        name: 'Small business starter kit',
         description: '(empower yourself for income generating projects)',
         icon: Briefcase,
     },
-    {
-        id: 'smeBiz',
-        name: 'Small and Medium Business Booster Kit',
-        description: '(expand your existing business operations)',
-        icon: ShoppingBag,
-    },
+  
     {
         id: 'homeConstruction',
-        name: 'House Construction and Improvements',
+        name: 'Building materials',
         description: '(build your house or improve your home living space)',
         icon: Hammer,
     },
     {
-        id: 'personalServices',
-        name: 'Personal Development',
-        description: '(equip yourself or your loved ones with life changing skills )',
-        icon: GraduationCap,
+        id: 'schoolBooster',
+        name: 'School infrastructure improvement',
+        description: '(get equipment and resources to improve your school\'s learning facilities)',
+        icon: School,
     },
-    {
+    
+     {
         id: 'personalGadgets',
         name: 'Personal and Homeware Products',
         description: '(improve your lifestyle with the latest gadgets & modern furniture)',
         icon: Laptop,
     },
     {
-        id: 'schoolBooster',
-        name: 'School Booster',
-        description: '(get equipment and resources on credit to improve your school\'s learning facilities)',
-        icon: School,
+        id: 'smeBiz',
+        name: 'Business booster package',
+        description: '(expand your existing business operations)',
+        icon: ShoppingBag,
+    },
+   {
+        id: 'personalServices',
+        name: 'Personal Development',
+        description: '(equip yourself or your loved ones with life changing skills )',
+        icon: GraduationCap,
     }
+      
+   
 ];
 
 export default function Welcome({ hasApplications, hasCompletedApplications, referralCode, agentId, agentName }: WelcomeProps) {
@@ -226,7 +230,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                         />
                                         <h1 className="text-3xl font-bold mb-4">Hello there! I am Adala</h1>
                                         <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                            Consider me your smart uncle and digital assistant. My mission is to ensure you get the best user experience for your credit purchase on the Buy Now Pay Later facility, because we are family.
+                                            Consider me your smart uncle and digital assistant. My mission is to ensure you get the best user experience for your credit purchase on the Buy Now Pay Later facility and cash purchase, because we are family.
                                         </p>
                                     </div>
 
@@ -250,7 +254,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                             How would you like to pay?
                                         </h1>
                                         <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                            Select your preferred payment facility
+                                            Select your preferred payment method
                                         </p>
                                         <button
                                             onClick={() => setCurrentStep('language')}
@@ -271,10 +275,10 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                                 </div>
                                                 <div className="flex-1">
                                                     <h3 className="text-lg font-semibold mb-2 group-hover:text-emerald-600">
-                                                        Buy Now Pay Later
+                                                        Purchase now pay later
                                                     </h3>
                                                     <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
-                                                        Get products on credit and pay in installments.
+                                                        Get products/projects on credit and pay in installments
                                                     </p>
                                                 </div>
                                                 <ChevronRight className="h-5 w-5 text-gray-400 flex-shrink-0 group-hover:text-emerald-600" />
@@ -291,7 +295,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                                 </div>
                                                 <div className="flex-1">
                                                     <h3 className="text-lg font-semibold mb-2 group-hover:text-emerald-600">
-                                                        Full Cash Payment
+                                                        Purchase now pay now
                                                     </h3>
                                                     <p className="text-sm text-[#706f6c] dark:text-[#A1A09A]">
                                                         Pay in full now and get faster delivery.
@@ -308,10 +312,10 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                 <div className="space-y-8">
                                     <div className="text-center">
                                         <h1 className="text-3xl font-bold mb-4">
-                                            Select Category
+                                             Catalog Offering
                                         </h1>
                                         <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                            Choose the category that best fits your needs
+                                            Select the category in which you are interested in
                                         </p>
                                         <button
                                             onClick={() => setCurrentStep('paymentMethod')}
@@ -396,7 +400,7 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                             Select Currency
                                         </h1>
                                         <p className="text-lg text-[#706f6c] dark:text-[#A1A09A]">
-                                            Please select the applicable currency
+                                            Please select the preferred currency
                                         </p>
                                         <button
                                             onClick={() => setCurrentStep('intent')}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ChevronLeft, CheckCircle, User, Building, DollarSign, CreditCard, MapPin, Package, Monitor, GraduationCap, Briefcase } from 'lucide-react';
+import { ChevronLeft, CheckCircle, User, Building, DollarSign, CreditCard, MapPin, Package, Monitor, GraduationCap, Briefcase, Shield } from 'lucide-react';
 
 interface ApplicationData {
     language?: string;
@@ -28,6 +28,10 @@ interface ApplicationData {
     meSystemFee?: number;
     includesTraining?: boolean;
     trainingFee?: number;
+    includesInsurance?: boolean;
+    insuranceFee?: number;
+    meTrainingMonthly?: number;
+    insuranceMonthly?: number;
     // New loan amount fields
     netLoan?: number;
     grossLoan?: number;
@@ -84,6 +88,10 @@ const getFormIdByEmployer = (employerId: string, hasAccount: boolean, wantsAccou
     }
 
     switch (employerId) {
+        case 'educational-institution':
+            if (hasAccount) return 'account_holder_loan_application.json';
+            if (wantsAccount) return 'individual_account_opening.json';
+            return 'individual_account_opening.json';
         case 'government-ssb':
         // SSB employers always use SSB form
         case 'government-ssb':
@@ -450,36 +458,36 @@ const ApplicationSummary: React.FC<ApplicationSummaryProps> = ({ data, onNext, o
                                     <span className="font-medium">
                                         ${(() => {
                                             const total = data.finalPrice || data.netLoan || data.amount || 0;
-                                            const meSystem = data.meSystemFee || 0;
-                                            const training = data.trainingFee || 0;
-                                            const base = total - meSystem - training;
+                                            const meSystem = data.includesMESystem ? (data.meSystemFee || 0) : 0;
+                                            const insurance = data.includesInsurance ? (data.insuranceFee || 0) : 0;
+                                            const base = total - meSystem - insurance;
                                             return base.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                                         })()}
                                     </span>
                                 </div>
 
-                                {/* M&E System Fee */}
+                                {/* M&E & Training Fee (combined 20%) */}
                                 {data.includesMESystem && data.meSystemFee && (
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
                                             <Monitor className="h-3 w-3" />
-                                            M&E System (10%)
+                                            M&amp;E &amp; Training (20%)
                                         </span>
-                                        <span className="font-medium text-emerald-600">
+                                        <span className="font-medium text-blue-600">
                                             +${data.meSystemFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
                                     </div>
                                 )}
 
-                                {/* Training Fee */}
-                                {data.includesTraining && data.trainingFee && (
+                                {/* Insurance Fee (5%) */}
+                                {data.includesInsurance && data.insuranceFee && data.insuranceFee > 0 && (
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                                            <GraduationCap className="h-3 w-3" />
-                                            Training (5.5%)
+                                            <Shield className="h-3 w-3" />
+                                            Insurance (5%)
                                         </span>
-                                        <span className="font-medium text-purple-600">
-                                            +${data.trainingFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        <span className="font-medium text-amber-600">
+                                            +${data.insuranceFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
                                     </div>
                                 )}

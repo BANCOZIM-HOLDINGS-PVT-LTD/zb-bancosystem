@@ -38,9 +38,9 @@ const CreditTypeSelection: React.FC<CreditTypeSelectionProps> = ({ data, onNext,
     return (
         <div className="space-y-6">
             <div className="text-center">
-                <h2 className="text-2xl font-semibold mb-2">Choose the deposit plan best for you</h2>
+                <h2 className="text-2xl font-semibold mb-2">Available Credit Payment Options</h2>
                 <p className="text-gray-600 dark:text-gray-400">
-                    Select your preferred credit payment option
+                    Select your preferred deposit plan
                 </p>
                 <div className="mt-2 text-sm text-blue-600 dark:text-blue-400">
                     Loan Amount: <span className="font-bold">{formatCurrency(loanAmount)}</span>

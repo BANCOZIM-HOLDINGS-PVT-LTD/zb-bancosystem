@@ -9,8 +9,10 @@ use App\Models\BoosterItem;
 use App\Models\BoosterPackage;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -286,6 +288,41 @@ class BoosterPackageResource extends BaseResource
                     ->searchable(),
 
                 Tables\Filters\TernaryFilter::make('is_active')->label('Active'),
+            ])
+            ->headerActions([
+                Action::make('setTierPrice')
+                    ->label('Set Tier Price')
+                    ->icon('heroicon-o-currency-dollar')
+                    ->color('warning')
+                    ->form([
+                        Forms\Components\Select::make('tier')
+                            ->label('Tier')
+                            ->options([
+                                'silver'   => 'Silver',
+                                'gold'     => 'Gold',
+                                'diamond'  => 'Diamond',
+                                'platinum' => 'Platinum',
+                            ])
+                            ->required()
+                            ->helperText('All Business Booster packages of this tier will be updated'),
+                        Forms\Components\TextInput::make('price')
+                            ->label('New Price (USD)')
+                            ->numeric()
+                            ->prefix('$')
+                            ->step(0.01)
+                            ->required()
+                            ->minValue(0),
+                    ])
+                    ->action(function (array $data): void {
+                        $count = BoosterPackage::where('tier', $data['tier'])->update(['price' => $data['price']]);
+                        Notification::make()
+                            ->title("Updated {$count} " . ucfirst($data['tier']) . " package(s) to \${$data['price']}")
+                            ->success()
+                            ->send();
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('Set Price for All Business Booster Packages of a Tier')
+                    ->modalDescription('This will update the price for ALL Business Booster packages of the selected tier. This cannot be undone.'),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

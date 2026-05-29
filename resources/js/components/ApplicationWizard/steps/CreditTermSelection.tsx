@@ -17,8 +17,7 @@ const CreditTermSelection: React.FC<CreditTermSelectionProps> = ({ data, onNext,
 
     const isZiG = data.currency === 'ZiG';
     const currencySymbol = isZiG ? 'ZiG' : '$';
-    // const ZIG_RATE = 13.5; // Should ideally come from props or global constant
-
+    
     const formatCurrency = (amount: number) => {
         return `${currencySymbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };

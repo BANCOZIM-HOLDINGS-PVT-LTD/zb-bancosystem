@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ChevronRight, ArrowLeft, Calendar, Loader2, Monitor, GraduationCap, Info, X, Search, SearchX } from 'lucide-react';
+import { ChevronRight, ArrowLeft, Calendar, Loader2, Monitor, GraduationCap, Info, X, Search, SearchX, Shield } from 'lucide-react';
 import { productService, getCreditTermOptions, type BusinessType, type Subcategory, type Category, type Series } from '../../../services/productService';
 import { zimparksDestinations, type ZimparksDestination } from '../data/zimparksDestinations';
 import { getPackageDescription } from '../data/packageDescriptions';
@@ -77,7 +77,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     }, [selectedBusiness, selectedScale]); // intentionally omit finalAmount/isZiG to avoid loops
 
     const [includesMESystem, setIncludesMESystem] = useState<boolean>(false);
-    const [includesTraining, setIncludesTraining] = useState<boolean>(false);
+    const [includesInsurance, setIncludesInsurance] = useState<boolean>(false);
     const [productCategories, setProductCategories] = useState<Category[]>([]);
     const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -93,13 +93,13 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
 
-    const ME_SYSTEM_PERCENTAGE = 0.10; // 10% of loan amount
-    const TRAINING_PERCENTAGE = 0.055; // 5.5%
+    const ME_TRAINING_PERCENTAGE = 0.20; // M&E + Training combined: 20% of net loan
+    const INSURANCE_PERCENTAGE = 0.05;  // Insurance: 5% of net loan
 
     // Currency Logic
     const selectedCurrency = data.currency || 'USD';
     const isZiG = selectedCurrency === 'ZiG';
-    const ZIG_RATE = 35;
+    const ZIG_RATE = 40;
 
     const formatCurrency = (amount: number) => {
         const symbol = isZiG ? 'ZiG' : '$';
@@ -483,9 +483,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     };
 
     const handleCashComplete = (amount: number, scale?: any) => {
-        const meSystemFee = includesMESystem ? parseFloat((amount * ME_SYSTEM_PERCENTAGE).toFixed(2)) : 0;
-        const trainingFee = includesTraining ? parseFloat((amount * TRAINING_PERCENTAGE).toFixed(2)) : 0;
-        const finalPrice = amount + meSystemFee + trainingFee;
+        const meSystemFee = includesMESystem ? parseFloat((amount * ME_TRAINING_PERCENTAGE).toFixed(2)) : 0;
+        const insuranceFee = includesInsurance ? parseFloat((amount * INSURANCE_PERCENTAGE).toFixed(2)) : 0;
+        const finalPrice = amount + meSystemFee + insuranceFee;
 
         onNext({
             category: selectedCategory?.name,
@@ -505,8 +505,9 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             categoryId: selectedCategory?.id,
             includesMESystem,
             meSystemFee,
-            includesTraining,
-            trainingFee,
+            includesTraining: false,
+            trainingFee: 0,
+            insuranceFee,
             productCode: selectedBusiness?.product_code,
             paymentType: 'cash'
         });
@@ -558,11 +559,13 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         }
 
         const numericFinalAmount = parseFloat(String(finalAmount));
-        const meSystemFee = includesMESystem ? parseFloat((numericFinalAmount * ME_SYSTEM_PERCENTAGE).toFixed(2)) : 0;
-        const trainingFee = includesTraining ? parseFloat((numericFinalAmount * TRAINING_PERCENTAGE).toFixed(2)) : 0;
+        const meSystemFee = includesMESystem ? parseFloat((numericFinalAmount * ME_TRAINING_PERCENTAGE).toFixed(2)) : 0;
+        const insuranceFee = includesInsurance ? parseFloat((numericFinalAmount * INSURANCE_PERCENTAGE).toFixed(2)) : 0;
+        const meTrainingMonthly = meSystemFee > 0 ? parseFloat((meSystemFee / selectedTermMonths).toFixed(2)) : 0;
+        const insuranceMonthly = insuranceFee > 0 ? parseFloat((insuranceFee / selectedTermMonths).toFixed(2)) : 0;
 
-        // Net Loan = selling price + optional fees (what user sees)
-        const netLoan = parseFloat((numericFinalAmount + meSystemFee + trainingFee).toFixed(2));
+        // Net Loan = selling price + optional M&E+Training + optional Insurance
+        const netLoan = parseFloat((numericFinalAmount + meSystemFee + insuranceFee).toFixed(2));
 
         // Gross Loan = Net Loan + bank admin fee (used for backend calculation)
         const ADMIN_FEE_PERCENTAGE = loanSettings.adminFeePercentage;
@@ -623,8 +626,12 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             // Additional details
             includesMESystem,
             meSystemFee,
-            includesTraining,
-            trainingFee,
+            includesTraining: false,
+            trainingFee: 0,
+            includesInsurance,
+            insuranceFee,
+            meTrainingMonthly,
+            insuranceMonthly,
             // Product details
             productCode: selectedBusiness?.product_code,
             selectedBusiness: {
@@ -767,7 +774,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
             <div className="text-center">
                 <h2 className="text-2xl font-semibold mb-2">
-                    {currentView === 'categories' && (isPersonalProducts ? 'Select Product Category' : 'Select Business Category')}
+                    {currentView === 'categories' && (isPersonalProducts ? 'Available Product Categories' : 'Available Business Categories')}
                     {currentView === 'subcategories' && `${selectedCategory?.name} - Select Type`}
                     {currentView === 'businesses' && (isPersonalProducts ? `${selectedSubcategory?.name} - Select Product` : `${selectedSubcategory?.name} - Select Business`)}
                     {currentView === 'zimparks_destinations' && 'Select Your Destination Resort'}
@@ -775,7 +782,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     {currentView === 'terms' && `Net Loan (selling price): ${formatCurrency(finalAmount)}`}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400">
-                    {currentView === 'categories' && (isPersonalProducts ? 'Choose the type of product you want to purchase' : 'Choose the type of business you want to start')}
+                    {currentView === 'categories' && (isPersonalProducts ? 'Select the type of product you want to purchase' : 'Select the starter kit you want')}
                     {currentView === 'subcategories' && 'Select a specific category'}
                     {currentView === 'businesses' && (isPersonalProducts ? 'Choose your product' : 'Choose your business type')}
                     {currentView === 'zimparks_destinations' && 'Choose from our exclusive list of 30 premier destinations'}
@@ -789,8 +796,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 )}
             </div>
 
-            {/* Search Bar - Visible in selection views */}
-            {['categories', 'subcategories', 'series', 'businesses'].includes(currentView) && (
+            {/* Search Bar - Categories page only */}
+            {currentView === 'categories' && (
                 <div className="relative max-w-2xl mx-auto mb-8 w-full">
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1300,6 +1307,26 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                 {(selectedScale as any).remarks || selectedBusiness.description || 'No additional remarks.'}
                                             </span>
                                         </div>
+
+                                        {/* Broiler gain compensation policy notice */}
+                                        {selectedBusiness.name.toLowerCase().includes('broiler') && (
+                                            <div className="mt-4 py-3 px-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-700">
+                                                <p className="text-sm text-amber-900 dark:text-amber-200">
+                                                    Please read the gain compensation policy in cases of broiler mortality.
+                                                </p>
+                                                <a
+                                                    href="/pdfs/broiler-gain-compensation-policy.pdf"
+                                                    download
+                                                    className="inline-flex items-center gap-2 mt-2 text-sm font-medium text-amber-700 dark:text-amber-300 underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                    </svg>
+                                                    Download Gain Compensation Policy (PDF)
+                                                </a>
+                                            </div>
+                                        )}
+
                                         <div className="mt-4 py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700 flex items-center justify-between">
                                             <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Package Price:</span>
 
@@ -1353,7 +1380,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                 {
                     currentView === 'terms' && (
                         <div className="space-y-6">
-                            {/* ME System and Training Options for MicroBiz */}
+                            {/* M&E+Training and Insurance checkboxes for MicroBiz */}
                             {isMicroBiz && (
                                 <>
                                     <Card className="p-4 md:p-6 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
@@ -1368,39 +1395,49 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                             <div className="flex-1">
                                                 <label htmlFor="me-system" className="font-semibold text-lg cursor-pointer flex items-center gap-2">
                                                     <Monitor className="h-5 w-5" />
-                                                    Add Monitoring & Evaluation System
+                                                    Add Monitoring, Evaluation &amp; Training
                                                 </label>
                                                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                                    Track your business performance, monitor inventory, manage finances, and get business insights with our advanced M&E system.
+                                                    Business performance tracking, inventory management, financial monitoring, and comprehensive business training.
                                                 </p>
-                                                <div className="mt-2 flex items-center gap-2">
-                                                    <span className="text-xl font-bold text-emerald-600">+{formatCurrency(finalAmount * ME_SYSTEM_PERCENTAGE)}</span>
-                                                    <span className="text-sm text-gray-500">(10% of selling price)</span>
+                                                <div className="mt-2 flex flex-wrap items-center gap-3">
+                                                    <span className="text-xl font-bold text-emerald-600">+{formatCurrency(finalAmount * ME_TRAINING_PERCENTAGE)}</span>
+                                                    <span className="text-sm text-gray-500">(20% of net loan)</span>
+                                                    {selectedTermMonths && includesMESystem && (
+                                                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                                                            = {formatCurrency((finalAmount * ME_TRAINING_PERCENTAGE) / selectedTermMonths)}/month
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
                                     </Card>
 
-                                    <Card className="p-4 md:p-6 bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800">
+                                    <Card className="p-4 md:p-6 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
                                         <div className="flex items-start gap-4">
                                             <input
                                                 type="checkbox"
-                                                id="training"
-                                                checked={includesTraining}
-                                                onChange={(e) => setIncludesTraining(e.target.checked)}
-                                                className="mt-1 h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                                id="insurance"
+                                                checked={includesInsurance}
+                                                onChange={(e) => setIncludesInsurance(e.target.checked)}
+                                                className="mt-1 h-5 w-5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                                             />
                                             <div className="flex-1">
-                                                <label htmlFor="training" className="font-semibold text-lg cursor-pointer flex items-center gap-2">
-                                                    <GraduationCap className="h-5 w-5" />
-                                                    Add Technical and Business Management Training
+                                                <label htmlFor="insurance" className="font-semibold text-lg cursor-pointer flex items-center gap-2">
+                                                    <Shield className="h-5 w-5" />
+                                                    Add Insurance
                                                 </label>
                                                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                                    Get comprehensive training on technical skills and business management to help you succeed in your business venture.
+                                                    Loan protection insurance covering your repayments in case of unforeseen circumstances.
                                                 </p>
-                                                <div className="mt-2 flex items-center gap-2">
-                                                    <span className="text-xl font-bold text-purple-600">+{formatCurrency(finalAmount * TRAINING_PERCENTAGE)}</span>
-                                                    <span className="text-sm text-gray-500">(5.5% of selling price)</span>
+                                                <div className="mt-2 flex flex-wrap items-center gap-3">
+                                                    <span className="text-xl font-bold text-amber-600">+{formatCurrency(finalAmount * INSURANCE_PERCENTAGE)}</span>
+                                                    <span className="text-sm text-gray-500">(5% of net loan)</span>
+                                                    {selectedTermMonths && includesInsurance && (
+                                                        <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                                                            = {formatCurrency((finalAmount * INSURANCE_PERCENTAGE) / selectedTermMonths)}/month
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -1412,13 +1449,13 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                             <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Gross Loan inclusive of {loanSettings.adminFeePercentage * 100}% admin charges</p>
                                 <p className="text-3xl font-bold text-emerald-600">
-                                    {formatCurrency((finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0)) * (1 + loanSettings.adminFeePercentage))}
+                                    {formatCurrency((finalAmount + (includesMESystem ? finalAmount * ME_TRAINING_PERCENTAGE : 0) + (includesInsurance ? finalAmount * INSURANCE_PERCENTAGE : 0)) * (1 + loanSettings.adminFeePercentage))}
                                 </p>
-                                {(includesMESystem || includesTraining) && (
+                                {(includesMESystem || includesInsurance) && (
                                     <p className="text-sm text-gray-500 mt-1">
-                                        Base Price: {formatCurrency(finalAmount + (includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0) + (includesTraining ? finalAmount * TRAINING_PERCENTAGE : 0))}
-                                        {includesMESystem && ` (incl. M&E)`}
-                                        {includesTraining && ` (incl. Training)`}
+                                        Net Loan: {formatCurrency(finalAmount + (includesMESystem ? finalAmount * ME_TRAINING_PERCENTAGE : 0) + (includesInsurance ? finalAmount * INSURANCE_PERCENTAGE : 0))}
+                                        {includesMESystem && ` (incl. M&E+Training)`}
+                                        {includesInsurance && ` (incl. Insurance)`}
                                     </p>
                                 )}
                             </div>
@@ -1456,15 +1493,14 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                         </h3>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {/* Net Loan (Selling Price) */}
+                                            {/* Net Loan */}
                                             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
                                                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Net Loan (selling price)</p>
                                                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                                                     {(() => {
-                                                        const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
-                                                        const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
-                                                        const netLoan = finalAmount + meSystemFee + trainingFee;
-                                                        return formatCurrency(netLoan);
+                                                        const meT = includesMESystem ? finalAmount * ME_TRAINING_PERCENTAGE : 0;
+                                                        const ins = includesInsurance ? finalAmount * INSURANCE_PERCENTAGE : 0;
+                                                        return formatCurrency(finalAmount + meT + ins);
                                                     })()}
                                                 </p>
                                             </div>
@@ -1474,39 +1510,33 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Gross Loan</p>
                                                 <p className="text-2xl font-bold text-emerald-600">
                                                     {(() => {
-                                                        const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
-                                                        const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
-                                                        const netLoan = finalAmount + meSystemFee + trainingFee;
-                                                        const grossLoan = netLoan * (1 + loanSettings.adminFeePercentage);
-                                                        return formatCurrency(grossLoan);
+                                                        const meT = includesMESystem ? finalAmount * ME_TRAINING_PERCENTAGE : 0;
+                                                        const ins = includesInsurance ? finalAmount * INSURANCE_PERCENTAGE : 0;
+                                                        return formatCurrency((finalAmount + meT + ins) * (1 + loanSettings.adminFeePercentage));
                                                     })()}
                                                 </p>
                                             </div>
 
-                                            {/* Monthly Payment */}
+                                            {/* Monthly Installment */}
                                             <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Monthly Payment</p>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Monthly Installment</p>
                                                 <p className="text-2xl font-bold text-blue-600">
                                                     {(() => {
-                                                        const meSystemFee = includesMESystem ? (finalAmount * ME_SYSTEM_PERCENTAGE) : 0;
-                                                        const trainingFee = includesTraining ? (finalAmount * TRAINING_PERCENTAGE) : 0;
-                                                        const netLoan = finalAmount + meSystemFee + trainingFee;
+                                                        const meT = includesMESystem ? finalAmount * ME_TRAINING_PERCENTAGE : 0;
+                                                        const ins = includesInsurance ? finalAmount * INSURANCE_PERCENTAGE : 0;
+                                                        const netLoan = finalAmount + meT + ins;
                                                         const grossLoan = netLoan * (1 + loanSettings.adminFeePercentage);
-                                                        
-                                                        let monthlyPayment = 0;
+                                                        let monthly = 0;
                                                         if (data.intent === 'smeBiz') {
                                                             const FLAT_MONTHLY_RATE = 0.09;
-                                                            monthlyPayment = (grossLoan / selectedTermMonths) + (grossLoan * FLAT_MONTHLY_RATE);
+                                                            monthly = (grossLoan / selectedTermMonths) + (grossLoan * FLAT_MONTHLY_RATE);
                                                         } else {
-                                                            const interestRate = loanSettings.interestRate;
-                                                            const monthlyInterestRate = interestRate / 12;
-                                                            monthlyPayment = grossLoan > 0
-                                                                ? (grossLoan * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, selectedTermMonths)) /
-                                                                (Math.pow(1 + monthlyInterestRate, selectedTermMonths) - 1)
+                                                            const r = loanSettings.interestRate / 12;
+                                                            monthly = grossLoan > 0
+                                                                ? (grossLoan * r * Math.pow(1 + r, selectedTermMonths)) / (Math.pow(1 + r, selectedTermMonths) - 1)
                                                                 : 0;
                                                         }
-                                                        
-                                                        return formatCurrency(monthlyPayment);
+                                                        return formatCurrency(monthly);
                                                     })()}
                                                 </p>
                                             </div>
@@ -1526,6 +1556,34 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                 </p>
                                             </div>
                                         </div>
+
+                                        {/* M&E+Training and Insurance monthly breakdown */}
+                                        {(includesMESystem || includesInsurance) && (
+                                            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {includesMESystem && (
+                                                    <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                                                        <p className="text-xs text-blue-700 dark:text-blue-400 font-medium flex items-center gap-1 mb-1">
+                                                            <Monitor className="h-3 w-3" /> M&amp;E &amp; Training / month
+                                                        </p>
+                                                        <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                                                            {formatCurrency((finalAmount * ME_TRAINING_PERCENTAGE) / selectedTermMonths)}
+                                                        </p>
+                                                        <p className="text-xs text-blue-500">{formatCurrency(finalAmount * ME_TRAINING_PERCENTAGE)} over {selectedTermMonths} months</p>
+                                                    </div>
+                                                )}
+                                                {includesInsurance && (
+                                                    <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
+                                                        <p className="text-xs text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1 mb-1">
+                                                            <Shield className="h-3 w-3" /> Insurance / month
+                                                        </p>
+                                                        <p className="text-lg font-bold text-amber-700 dark:text-amber-300">
+                                                            {formatCurrency((finalAmount * INSURANCE_PERCENTAGE) / selectedTermMonths)}
+                                                        </p>
+                                                        <p className="text-xs text-amber-500">{formatCurrency(finalAmount * INSURANCE_PERCENTAGE)} over {selectedTermMonths} months</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
 
                                         {/* Additional Info */}
                                         <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">

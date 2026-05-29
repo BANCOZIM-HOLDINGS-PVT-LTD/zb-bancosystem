@@ -8,8 +8,10 @@ use App\Models\SchoolItem;
 use App\Models\SchoolPackage;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 
 class SchoolPackageResource extends BaseResource
@@ -118,6 +120,41 @@ class SchoolPackageResource extends BaseResource
                 Tables\Filters\SelectFilter::make('school_business_id')->label('School Type')
                     ->options(SchoolBusiness::with('category')->get()->mapWithKeys(fn ($b) => [$b->id => $b->category->name . ' → ' . $b->name]))->searchable(),
                 Tables\Filters\TernaryFilter::make('is_active')->label('Active'),
+            ])
+            ->headerActions([
+                Action::make('setTierPrice')
+                    ->label('Set Tier Price')
+                    ->icon('heroicon-o-currency-dollar')
+                    ->color('warning')
+                    ->form([
+                        Forms\Components\Select::make('tier')
+                            ->label('Tier')
+                            ->options([
+                                'essential'    => 'Essential',
+                                'intermediate' => 'Intermediate',
+                                'advanced'     => 'Advanced',
+                                'premium'      => 'Premium',
+                            ])
+                            ->required()
+                            ->helperText('All School Booster packages of this tier will be updated'),
+                        Forms\Components\TextInput::make('price')
+                            ->label('New Price (USD)')
+                            ->numeric()
+                            ->prefix('$')
+                            ->step(0.01)
+                            ->required()
+                            ->minValue(0),
+                    ])
+                    ->action(function (array $data): void {
+                        $count = SchoolPackage::where('tier', $data['tier'])->update(['price' => $data['price']]);
+                        Notification::make()
+                            ->title("Updated {$count} " . ucfirst($data['tier']) . " package(s) to \${$data['price']}")
+                            ->success()
+                            ->send();
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('Set Price for All School Booster Packages of a Tier')
+                    ->modalDescription('This will update the price for ALL School Booster packages of the selected tier. This cannot be undone.'),
             ])
             ->actions([Tables\Actions\ViewAction::make(), Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])])

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Building, Building2, User, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Building, Building2, User, MoreHorizontal, ChevronLeft, ChevronRight, GraduationCap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { STATE_UNIVERSITIES, MISSION_SCHOOLS, PRIVATE_SCHOOLS } from '../data/educationalInstitutions';
 
 interface EmployerSelectionProps {
     data: any;
@@ -82,22 +83,11 @@ const employerOptions: EmployerOption[] = [
         isSpecial: false
     },
     {
-        id: 'state-university',
-        name: 'State University',
-        icon: Building2,
-        isSpecial: false
-    },
-    {
-        id: 'mission-school',
-        name: 'Mission School',
-        icon: Building2,
-        isSpecial: false
-    },
-    {
-        id: 'private-school',
-        name: 'Private School',
-        icon: Building2,
-        isSpecial: false
+        id: 'educational-institution',
+        name: 'Educational Institution',
+        icon: GraduationCap,
+        isSpecial: true,
+        description: 'State University, Mission School, Private School'
     },
     {
         id: 'small-company',
@@ -121,7 +111,8 @@ const employerOptions: EmployerOption[] = [
 
 const EmployerSelection: React.FC<EmployerSelectionProps> = ({ data, onNext, onBack, loading }) => {
     const [showModal, setShowModal] = useState(false);
-    const [modalType, setModalType] = useState<'parastatal' | 'corporate' | 'security-company' | null>(null);
+    const [modalType, setModalType] = useState<'parastatal' | 'corporate' | 'security-company' | 'educational-institution' | null>(null);
+    const [educationSubType, setEducationSubType] = useState<'state-university' | 'mission-school' | 'private-school' | null>(null);
     const [otherEmployer, setOtherEmployer] = useState('');
     const [showOtherInput, setShowOtherInput] = useState(false);
     const [selectedEmployer, setSelectedEmployer] = useState<string>('');
@@ -130,7 +121,12 @@ const EmployerSelection: React.FC<EmployerSelectionProps> = ({ data, onNext, onB
         const employer = employerOptions.find(e => e.id === employerId);
 
         if (employer?.isSpecial) {
-            setModalType(employerId === 'parastatal' ? 'parastatal' : 'corporate');
+            if (employerId === 'educational-institution') {
+                setModalType('educational-institution');
+                setEducationSubType(null);
+            } else {
+                setModalType(employerId === 'parastatal' ? 'parastatal' : 'corporate');
+            }
             setShowOtherInput(false);
             setOtherEmployer('');
             setShowModal(true);
@@ -146,6 +142,17 @@ const EmployerSelection: React.FC<EmployerSelectionProps> = ({ data, onNext, onB
     const handleModalSelect = (specificEmployer: string) => {
         if (specificEmployer === 'OTHER') {
             setShowOtherInput(true);
+            return;
+        }
+
+        if (modalType === 'educational-institution') {
+            onNext({
+                employer: 'educational-institution',
+                employerName: specificEmployer,
+                specificEmployer,
+                educationSubType
+            });
+            setShowModal(false);
             return;
         }
 
@@ -228,14 +235,70 @@ const EmployerSelection: React.FC<EmployerSelectionProps> = ({ data, onNext, onB
                         <div className="text-center mb-6">
                             <h3 className="text-xl font-semibold mb-2">
                                 {modalType === 'parastatal' ? 'Select Parastatal' :
-                                    'Select Employer'}
+                                 modalType === 'educational-institution' ? 'Select Your Institution' :
+                                 'Select Employer'}
                             </h3>
                             <p className="text-sm text-gray-500">
                                 {showOtherInput ? 'Please specify your employer' : 'Select from the list below'}
                             </p>
                         </div>
 
-                        {!showOtherInput ? (
+                        {modalType === 'educational-institution' ? (
+                            <>
+                                {!educationSubType ? (
+                                    <div className="space-y-3">
+                                        <p className="text-sm text-gray-500 text-center mb-4">
+                                            What type of educational institution do you work for?
+                                        </p>
+                                        {[
+                                            { id: 'state-university' as const, label: 'State University' },
+                                            { id: 'mission-school' as const, label: 'Mission School' },
+                                            { id: 'private-school' as const, label: 'Private School' },
+                                        ].map(({ id, label }) => (
+                                            <button
+                                                key={id}
+                                                onClick={() => setEducationSubType(id)}
+                                                className="w-full p-4 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-200 dark:border-gray-700 font-medium flex items-center justify-between"
+                                            >
+                                                {label}
+                                                <ChevronRight className="h-4 w-4 text-gray-400" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2 max-h-[55vh] overflow-y-auto">
+                                        <button
+                                            onClick={() => setEducationSubType(null)}
+                                            className="w-full p-2 text-left text-sm text-emerald-600 hover:underline flex items-center gap-1 mb-2"
+                                        >
+                                            <ChevronLeft className="h-3 w-3" />
+                                            Back to institution type
+                                        </button>
+                                        {(educationSubType === 'state-university' ? STATE_UNIVERSITIES :
+                                          educationSubType === 'mission-school' ? MISSION_SCHOOLS :
+                                          PRIVATE_SCHOOLS
+                                        ).map((institution) => (
+                                            <button
+                                                key={institution}
+                                                onClick={() => handleModalSelect(institution)}
+                                                className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700"
+                                            >
+                                                {institution}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => { setShowModal(false); setEducationSubType(null); }}
+                                        className="w-full"
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </>
+                        ) : !showOtherInput ? (
                             <div className="space-y-2 max-h-[60vh] overflow-y-auto">
                                 {parastatals.map((company) => (
                                     <button
@@ -283,7 +346,7 @@ const EmployerSelection: React.FC<EmployerSelectionProps> = ({ data, onNext, onB
                             </div>
                         )}
 
-                        {!showOtherInput && (
+                        {modalType !== 'educational-institution' && !showOtherInput && (
                             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                                 <Button
                                     variant="outline"

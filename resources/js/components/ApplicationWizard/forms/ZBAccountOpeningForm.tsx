@@ -334,6 +334,16 @@ const ZBAccountOpeningForm: React.FC<ZBAccountOpeningFormProps> = ({ data, onNex
         }
     }, [data.employer]);
 
+    // Pre-fill institution name for educational institution employees
+    React.useEffect(() => {
+        if (data.employer === 'educational-institution' && data.specificEmployer && !formData.employerName) {
+            setFormData(prev => ({
+                ...prev,
+                employerName: data.specificEmployer
+            }));
+        }
+    }, [data.employer, data.specificEmployer]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 

@@ -52,6 +52,10 @@ export interface WizardData {
     meSystemFee?: number;
     includesTraining?: boolean;
     trainingFee?: number;
+    includesInsurance?: boolean;
+    insuranceFee?: number;
+    meTrainingMonthly?: number;
+    insuranceMonthly?: number;
 
     // Cart for Building Materials (or other multi-item categories)
     cart?: {
