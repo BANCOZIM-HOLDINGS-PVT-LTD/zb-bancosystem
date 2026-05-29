@@ -120,7 +120,7 @@ const ZIMPOST_LOCATIONS: Record<string, string[]> = {
 };
 
 // Product Delivery Type Determination
-type DeliveryType = 'training' | 'driving' | 'zimparks' | 'chicken_lite' | 'chicken_fullhouse' | 'agri' | 'building' | 'tuckshop' | 'zimpost_default';
+type DeliveryType = 'training' | 'driving' | 'zimparks' | 'chicken_lite' | 'chicken_fullhouse' | 'building' | 'zimpost_default';
 
 const determineProductDeliveryType = (data: any): DeliveryType => {
     const category = (data.category || '').toLowerCase();
@@ -150,16 +150,8 @@ const determineProductDeliveryType = (data: any): DeliveryType => {
         combined.includes('timber') || combined.includes('roofing') || combined.includes('brick') ||
         combined.includes('core house')) return 'building';
 
-    // Agri / farming / greenhouse / specialised
-    if (combined.includes('agriculture') || combined.includes('agri') || combined.includes('farming') ||
-        combined.includes('machinery') || combined.includes('greenhouse') || combined.includes('green house') ||
-        combined.includes('irrigation') || combined.includes('tractor') || combined.includes('fertilizer') ||
-        combined.includes('seed') || combined.includes('carport') || combined.includes('mechanization')) return 'agri';
-
-    // Tuckshop / groceries
-    if (combined.includes('tuckshop') || combined.includes('grocery') || combined.includes('groceries') ||
-        combined.includes('retailing') || combined.includes('retail') || combined.includes('airtime') ||
-        combined.includes('candy') || combined.includes('back to school') || combined.includes('stationery')) return 'tuckshop';
+    // Agri / farming / greenhouse / specialised → Zimpost
+    // Tuckshop / groceries → Zimpost
 
     // Default: ZimPost courier (Bancozim and other MicroBiz)
     return 'zimpost_default';
@@ -174,14 +166,10 @@ const getDeliveryMessage = (deliveryType: DeliveryType, supplierInfo: SupplierIn
         case 'zimparks':
             return 'Please note if the transaction is executed successfully, then you or your beneficiary will receive accommodation from our partnering Hotel/Resort details are listed below, kindly choose location and dates below.';
         case 'chicken_lite':
-            return 'Please note if the transaction is executed successfully, then you or your beneficiary will collect your products from the supplier listed below, kindly choose from which location you would want to collect from.';
+            return 'Please note if the transaction is executed successfully, then you or your beneficiary will collect your products from a Gain Outlet/Branch. Kindly choose from which location you would want to collect from.';
         case 'chicken_fullhouse':
-            return 'Please note if the transaction is executed successfully, then you or your beneficiary will collect your products from the supplier listed below, kindly choose from which location you would want to collect from. The Chicken coop will be delivered by a Zimpost Courier Service, delivering countrywide. Please choose the nearest Post Office nearest to you where you will collect from.';
-        case 'agri':
-            return 'Please note if the transaction is executed successfully, then you or your beneficiary will collect your products from the supplier listed below, kindly choose from which location you would want to collect from.';
+            return 'Please note if the transaction is executed successfully, then you or your beneficiary will collect your feeds and inputs from a Gain Outlet/Branch. The Chicken coop will be delivered by a Zimpost Courier Service, delivering countrywide. Please choose the nearest Post Office nearest to you where you will collect from.';
         case 'building':
-            return 'Please note if the transaction is executed successfully, then you or your beneficiary will collect your products from the supplier listed below, kindly choose from which location you would want to collect from.';
-        case 'tuckshop':
             return 'Please note if the transaction is executed successfully, then you or your beneficiary will collect your products from the supplier listed below, kindly choose from which location you would want to collect from.';
         case 'zimpost_default':
             return 'Please note if the transaction is executed successfully then the product will be delivered by a Zimpost Courier Service, delivering countrywide. Please choose the nearest Post Office where then you or your beneficiary will collect from.';
@@ -214,9 +202,6 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
     const [zimpostCity, setZimpostCity] = useState<string>(data.deliverySelection?.zimpostCity || '');
     const [zimpostBranch, setZimpostBranch] = useState<string>(data.deliverySelection?.zimpostBranch || '');
 
-    // Tuckshop agent is Gain Cash & Carry only
-    const [tuckshopAgent] = useState<'Gain Cash & Carry'>('Gain Cash & Carry');
-
     // Supplier info from API
     const [supplierInfo, setSupplierInfo] = useState<SupplierInfo | null>(null);
     const [supplierLoading, setSupplierLoading] = useState(false);
@@ -232,7 +217,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
     useEffect(() => {
         const fetchSupplierInfo = async () => {
             // Only fetch for product types that need supplier info from API
-            if (!['training', 'chicken_lite', 'chicken_fullhouse', 'agri', 'driving'].includes(deliveryType)) return;
+            if (!['training', 'chicken_lite', 'chicken_fullhouse', 'driving'].includes(deliveryType)) return;
 
             setSupplierLoading(true);
             try {
@@ -363,51 +348,35 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
 
         // ---- Chicken lite/standard/gold ----
         if (deliveryType === 'chicken_lite') {
-            if (!selectedDepot) { setError('Please select a collection branch'); return; }
+            if (!selectedDepot) { setError('Please select a Gain Outlet/Branch'); return; }
             onNext({
                 ...data,
                 ...cashResponses,
                 deliverySelection: {
-                    agent: supplierInfo?.name || 'Farm & City',
+                    agent: 'Gain Cash & Carry',
                     depot: selectedDepot,
                     ...personFields,
-                    supplierName: supplierInfo?.name || 'Farm & City',
+                    supplierName: 'Gain Cash & Carry',
                 }
             });
             return;
         }
 
-        // ---- Chicken full house: supplier branch + zimpost ----
+        // ---- Chicken full house: Gain branch + zimpost for coop ----
         if (deliveryType === 'chicken_fullhouse') {
-            if (!selectedDepot) { setError('Please select a collection branch for inputs'); return; }
+            if (!selectedDepot) { setError('Please select a Gain Outlet/Branch for inputs'); return; }
             if (!zimpostCity) { setError('Please select your city/province for coop delivery'); return; }
             if (!zimpostBranch) { setError('Please select a post office branch for coop delivery'); return; }
             onNext({
                 ...data,
                 ...cashResponses,
                 deliverySelection: {
-                    agent: supplierInfo?.name || 'Farm & City',
+                    agent: 'Gain Cash & Carry',
                     depot: selectedDepot,
                     zimpostCity,
                     zimpostBranch,
                     ...personFields,
-                    supplierName: supplierInfo?.name || 'Farm & City',
-                }
-            });
-            return;
-        }
-
-        // ---- Agri / greenhouse / specialized ----
-        if (deliveryType === 'agri') {
-            if (!selectedDepot) { setError('Please select a collection branch'); return; }
-            onNext({
-                ...data,
-                ...cashResponses,
-                deliverySelection: {
-                    agent: supplierInfo?.name || 'Farm & City',
-                    depot: selectedDepot,
-                    ...personFields,
-                    supplierName: supplierInfo?.name || 'Farm & City',
+                    supplierName: 'Gain Cash & Carry',
                 }
             });
             return;
@@ -424,23 +393,6 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                     depot: selectedDepot,
                     ...personFields,
                     supplierName: 'PG Building Materials',
-                }
-            });
-            return;
-        }
-
-        // ---- Tuckshop ----
-        if (deliveryType === 'tuckshop') {
-            if (!selectedDepot) { setError(`Please select a Gain Cash & Carry depot`); return; }
-            onNext({
-                ...data,
-                ...cashResponses,
-                deliverySelection: {
-                    agent: 'Gain Cash & Carry',
-                    depot: selectedDepot,
-                    ...personFields,
-                    supplierName: 'Gain Cash & Carry',
-                    isAgentEditable: false,
                 }
             });
             return;
@@ -467,8 +419,8 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
         if (supplierInfo?.branches && supplierInfo.branches.length > 0) {
             return supplierInfo.branches;
         }
-        // Fallback to Farm & City depots
-        return FARM_AND_CITY_DEPOTS.map(d => ({ name: d, address: d }));
+        // Fallback to Gain depots for chicken products
+        return GAIN_DEPOTS.map(d => ({ name: d, address: d }));
     };
 
     // Helper: get EasyGo locations
@@ -624,45 +576,38 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                 );
 
             case 'chicken_lite':
-            case 'agri':
                 return (
                     <div>
-                        {supplierLoading ? (
-                            <p className="text-gray-500 text-sm">Loading supplier information...</p>
-                        ) : (
-                            <>
-                                {renderSupplierCard()}
-                                {renderBranchSelector(
-                                    getSupplierBranches(),
-                                    `Select ${supplierInfo?.name || 'Farm & City'} Branch`
-                                )}
-                            </>
-                        )}
+                        <div className="p-4 border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg mb-4">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Building2 className="h-5 w-5 text-emerald-600" />
+                                <p className="font-medium text-gray-900 dark:text-white">Gain Cash &amp; Carry</p>
+                            </div>
+                            <p className="text-xs text-gray-500">Your products will be ready for collection at your selected Gain Outlet/Branch.</p>
+                        </div>
+                        {renderBranchSelector(GAIN_DEPOTS.map(d => ({ name: d, address: d })), 'Select Gain Outlet/Branch')}
                     </div>
                 );
 
             case 'chicken_fullhouse':
                 return (
                     <div className="space-y-6">
-                        {supplierLoading ? (
-                            <p className="text-gray-500 text-sm">Loading supplier information...</p>
-                        ) : (
-                            <>
-                                {renderSupplierCard()}
-                                <div>
-                                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                                        1. Collection Branch (for feeds & inputs)
-                                    </h4>
-                                    {renderBranchSelector(
-                                        getSupplierBranches(),
-                                        `Select ${supplierInfo?.name || 'Farm & City'} Branch`
-                                    )}
-                                </div>
-                            </>
-                        )}
                         <div>
                             <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                                2. Zimpost Delivery (for chicken coop & housing)
+                                1. Collection Branch (for feeds &amp; inputs)
+                            </h4>
+                            <div className="p-4 border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg mb-4">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Building2 className="h-5 w-5 text-emerald-600" />
+                                    <p className="font-medium text-gray-900 dark:text-white">Gain Cash &amp; Carry</p>
+                                </div>
+                                <p className="text-xs text-gray-500">Your feeds and inputs will be ready for collection at your selected Gain Outlet/Branch.</p>
+                            </div>
+                            {renderBranchSelector(GAIN_DEPOTS.map(d => ({ name: d, address: d })), 'Select Gain Outlet/Branch')}
+                        </div>
+                        <div>
+                            <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                                2. Zimpost Delivery (for chicken coop &amp; housing)
                             </h4>
                             <p className="text-sm text-gray-500 mb-3">
                                 The chicken coop and housing materials will be delivered to your nearest post office via Zimpost Courier Connect.
@@ -692,37 +637,6 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                     </div>
                 );
 
-            case 'tuckshop':
-                return (
-                    <div className="space-y-4">
-                        {/* Agent Info */}
-                        <div className="p-4 border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
-                            <div className="flex items-center gap-2 mb-1">
-                                <Building2 className="h-5 w-5 text-emerald-600" />
-                                <p className="font-medium text-gray-900 dark:text-white">Gain Cash & Carry</p>
-                            </div>
-                            <p className="text-xs text-gray-500">Your groceries will be ready for collection at your selected Gain depot.</p>
-                        </div>
-                        
-                        {/* Depot Select */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Select Gain Depot <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                                value={selectedDepot}
-                                onChange={(e) => setSelectedDepot(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                            >
-                                <option value="">Select a depot closest to you</option>
-                                {GAIN_DEPOTS.map((depot) => (
-                                    <option key={depot} value={depot}>{depot}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                );
-
             case 'zimpost_default':
                 return renderZimpostSelector(selectedCity, setSelectedCity, selectedDepot, setSelectedDepot);
         }
@@ -737,7 +651,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                         <div className="flex items-center gap-3 mb-2">
                             <Truck className="h-8 w-8 text-emerald-600" />
                             <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                                Product Delivery Confirmation
+                            Delivery Confirmation
                             </h2>
                         </div>
                         <p className="text-gray-600 dark:text-gray-400">
@@ -800,8 +714,8 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                             </div>
                         )}
 
-                        {/* ===== Beneficiary Section ===== */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
+                        {/* ===== Beneficiary Section — personal services only ===== */}
+                        {(data.intent || '').toLowerCase() === 'personalservices' && <div className="bg-white dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                 <Users className="w-5 h-5 text-emerald-600" /> Who is this product for?
                             </h3>
@@ -870,7 +784,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                     </div>
                                 </div>
                             )}
-                        </div>
+                        </div>}
 
                         {/* ===== Collector Section ===== */}
                         <div className="bg-white dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
