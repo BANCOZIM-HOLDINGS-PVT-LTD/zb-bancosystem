@@ -119,6 +119,16 @@ const ZIMPOST_LOCATIONS: Record<string, string[]> = {
     ]
 };
 
+const parsePGDepot = (depot: string): { name: string; address: string } => {
+    const idx = depot.indexOf(' - ');
+    return idx === -1 ? { name: depot, address: '' } : { name: depot.substring(0, idx), address: depot.substring(idx + 3) };
+};
+
+const parseGainDepot = (depot: string): { storeName: string; city: string } => {
+    const parts = depot.split(' - ');
+    return { storeName: parts[0] || depot, city: parts.length > 1 ? parts[parts.length - 1] : '' };
+};
+
 // Product Delivery Type Determination
 type DeliveryType = 'training' | 'driving' | 'zimparks' | 'chicken_lite' | 'chicken_fullhouse' | 'building' | 'zimpost_default';
 
@@ -429,6 +439,46 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
         'Chitungwiza', 'Marondera', 'Masvingo', 'Chinhoyi', 'Victoria Falls', 'Gwanda'
     ];
 
+    const renderDepotInfoCard = (depot: string, type: 'gain' | 'pg' | 'zimpost', city?: string) => {
+        if (!depot) return null;
+        if (type === 'pg') {
+            const { name, address } = parsePGDepot(depot);
+            return (
+                <div className="mt-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700 flex items-start gap-3">
+                    <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                    <div>
+                        <p className="font-semibold text-sm text-blue-900 dark:text-blue-200">PG Building Materials — {name}</p>
+                        {address && <p className="text-sm text-blue-700 dark:text-blue-300">{address}</p>}
+                    </div>
+                </div>
+            );
+        }
+        if (type === 'gain') {
+            const { storeName, city: parsedCity } = parseGainDepot(depot);
+            return (
+                <div className="mt-3 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700 flex items-start gap-3">
+                    <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+                    <div>
+                        <p className="font-semibold text-sm text-emerald-900 dark:text-emerald-200">Gain Cash &amp; Carry — {storeName}</p>
+                        {parsedCity && <p className="text-sm text-emerald-700 dark:text-emerald-300">{parsedCity}</p>}
+                    </div>
+                </div>
+            );
+        }
+        if (type === 'zimpost') {
+            return (
+                <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-600 flex items-start gap-3">
+                    <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400 mt-0.5 shrink-0" />
+                    <div>
+                        <p className="font-semibold text-sm text-gray-900 dark:text-white">Zim Post Office — {depot}</p>
+                        {city && <p className="text-sm text-gray-600 dark:text-gray-400">{city}</p>}
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    };
+
     // Render supplier info card
     const renderSupplierCard = () => {
         if (!supplierInfo) return null;
@@ -503,9 +553,18 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                             <option key={branch} value={branch}>{branch}</option>
                         ))}
                     </select>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    {branchState && (
+                        <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-600 flex items-start gap-3">
+                            <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400 mt-0.5 shrink-0" />
+                            <div>
+                                <p className="font-semibold text-sm text-gray-900 dark:text-white">Zim Post Office — {branchState}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{cityState}</p>
+                            </div>
+                        </div>
+                    )}
+                    {!branchState && <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                         You will collect your product at your nearest post office.
-                    </p>
+                    </p>}
                 </div>
             )}
         </div>
@@ -586,6 +645,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                             <p className="text-xs text-gray-500">Your products will be ready for collection at your selected Gain Outlet/Branch.</p>
                         </div>
                         {renderBranchSelector(GAIN_DEPOTS.map(d => ({ name: d, address: d })), 'Select Gain Outlet/Branch')}
+                        {renderDepotInfoCard(selectedDepot, 'gain')}
                     </div>
                 );
 
@@ -604,6 +664,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                 <p className="text-xs text-gray-500">Your feeds and inputs will be ready for collection at your selected Gain Outlet/Branch.</p>
                             </div>
                             {renderBranchSelector(GAIN_DEPOTS.map(d => ({ name: d, address: d })), 'Select Gain Outlet/Branch')}
+                            {renderDepotInfoCard(selectedDepot, 'gain')}
                         </div>
                         <div>
                             <h4 className="font-medium text-gray-900 dark:text-white mb-2">
@@ -634,6 +695,7 @@ const DeliverySelection: React.FC<DeliverySelectionProps> = ({ data, onNext, onB
                                 <option key={depot} value={depot}>{depot}</option>
                             ))}
                         </select>
+                        {renderDepotInfoCard(selectedDepot, 'pg')}
                     </div>
                 );
 
