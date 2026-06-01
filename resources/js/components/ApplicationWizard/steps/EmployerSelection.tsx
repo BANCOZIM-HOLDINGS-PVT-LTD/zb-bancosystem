@@ -50,6 +50,11 @@ const otherPrivateOptions = [
     { id: 'ngo-nonprofit', name: "NGO / Non Profit Organisation" },
 ];
 
+const PRIVATE_UNIVERSITIES = [
+    'Africa University',
+    "Women's University in Africa",
+];
+
 const VOCATIONAL_TRAINING_CENTRES = [
     'Harare Polytechnic',
     'Bulawayo Polytechnic',
@@ -90,10 +95,11 @@ const employerGroups: EmployerGroup[] = [
     {
         heading: 'Educational Institutions',
         options: [
-            { id: 'edu-state-university', name: 'State Universities & Polytechnics', icon: GraduationCap, isSpecial: true },
-            { id: 'edu-private-school',   name: 'Private Schools',                  icon: GraduationCap, isSpecial: true },
-            { id: 'edu-mission-school',   name: 'Mission Schools',                  icon: GraduationCap, isSpecial: true },
-            { id: 'edu-vtc',              name: 'Vocational Training Centres (VTCs)', icon: GraduationCap, isSpecial: true },
+            { id: 'edu-state-university',    name: 'State Universities & Polytechnics', icon: GraduationCap, isSpecial: true },
+            { id: 'edu-private-university', name: 'Private Universities',              icon: GraduationCap, isSpecial: true },
+            { id: 'edu-private-school',     name: 'Private Schools',                  icon: GraduationCap, isSpecial: true },
+            { id: 'edu-mission-school',     name: 'Mission Schools',                  icon: GraduationCap, isSpecial: true },
+            { id: 'edu-vtc',               name: 'Vocational Training Centres (VTCs)', icon: GraduationCap, isSpecial: true },
         ],
     },
     {
@@ -119,13 +125,14 @@ const optionNameById: Record<string, string> = Object.fromEntries(
 );
 
 type ModalType = 'parastatal' | 'other-private' | 'educational-institution' | 'private-pension';
-type EduSubType = 'state-university' | 'mission-school' | 'private-school' | 'vtc';
+type EduSubType = 'state-university' | 'private-university' | 'mission-school' | 'private-school' | 'vtc';
 
 const EDU_SUBTYPE_MAP: Record<string, EduSubType> = {
-    'edu-state-university': 'state-university',
-    'edu-mission-school':   'mission-school',
-    'edu-private-school':   'private-school',
-    'edu-vtc':              'vtc',
+    'edu-state-university':    'state-university',
+    'edu-private-university':  'private-university',
+    'edu-mission-school':      'mission-school',
+    'edu-private-school':      'private-school',
+    'edu-vtc':                 'vtc',
 };
 
 const EmployerSelection: React.FC<EmployerSelectionProps> = ({ data, onNext, onBack, loading }) => {
@@ -225,18 +232,20 @@ const EmployerSelection: React.FC<EmployerSelectionProps> = ({ data, onNext, onB
     };
 
     const eduInstitutionList = (): string[] => {
-        if (educationSubType === 'state-university') return STATE_UNIVERSITIES;
-        if (educationSubType === 'mission-school')   return MISSION_SCHOOLS;
-        if (educationSubType === 'private-school')   return PRIVATE_SCHOOLS;
-        if (educationSubType === 'vtc')              return VOCATIONAL_TRAINING_CENTRES;
+        if (educationSubType === 'state-university')   return STATE_UNIVERSITIES;
+        if (educationSubType === 'private-university') return PRIVATE_UNIVERSITIES;
+        if (educationSubType === 'mission-school')     return MISSION_SCHOOLS;
+        if (educationSubType === 'private-school')     return PRIVATE_SCHOOLS;
+        if (educationSubType === 'vtc')                return VOCATIONAL_TRAINING_CENTRES;
         return [];
     };
 
     const eduSubTypeLabel: Record<EduSubType, string> = {
-        'state-university': 'State Universities & Polytechnics',
-        'mission-school':   'Mission Schools',
-        'private-school':   'Private Schools',
-        'vtc':              'Vocational Training Centres',
+        'state-university':   'State Universities & Polytechnics',
+        'private-university': 'Private Universities',
+        'mission-school':     'Mission Schools',
+        'private-school':     'Private Schools',
+        'vtc':                'Vocational Training Centres',
     };
 
     return (

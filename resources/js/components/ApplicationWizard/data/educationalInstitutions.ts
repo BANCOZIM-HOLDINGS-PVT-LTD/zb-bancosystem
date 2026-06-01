@@ -8,7 +8,6 @@ export const STATE_UNIVERSITIES = [
     'Midlands State University',
     'National University of Science and Technology',
     'University of Zimbabwe',
-    'Women\'s University in Africa',
     'Zimbabwe Open University',
 ].sort();
 
