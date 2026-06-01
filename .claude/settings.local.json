@@ -62,7 +62,13 @@
       "PowerShell($flyctl = \"C:\\\\Users\\\\user\\\\Downloads\\\\flyctl_0.4.7_Windows_x86_64 \\(1\\)\\\\flyctl.exe\"; & $flyctl ssh console -a bancosystem -C \"tail -50 /var/www/html/storage/logs/laravel.log\" 2>&1 | Select-String -Pattern \"422|Validation|reference|payment_method|deposit|initiat\" | Select-Object -Last 30)",
       "Bash(C:\\\\Users\\\\user\\\\Downloads\\\\flyctl_0.4.7_Windows_x86_64 \\(1\\)\\\\flyctl.exe ssh *)",
       "Bash(dir app\\\\Models)",
-      "Bash(findstr -i setting)"
+      "Bash(findstr -i setting)",
+      "Bash(flyctl version *)",
+      "Read(//usr/local/**)",
+      "Bash(ipconfig)",
+      "Bash(findstr /i \"IPv4\")",
+      "Bash(Get-Content \"C:/xampp/htdocs/zb bancosystem/storage/logs/laravel.log\")",
+      "PowerShell(Get-Content *)"
     ],
     "deny": []
   }

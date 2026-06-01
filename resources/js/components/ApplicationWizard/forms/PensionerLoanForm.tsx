@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronLeft, User, Building, CreditCard, Users } from 'lucide-react';
+import { ChevronLeft, User, Building, CreditCard, Users, FileText } from 'lucide-react';
 import FormField from '../components/FormField';
 import AddressInput, { AddressData } from '@/components/ui/address-input';
 import { formatZimbabweId } from '../utils/formatters';
@@ -21,10 +21,9 @@ interface SSBLoanFormProps {
 }
 
 const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, loading, onSaveProgress }) => {
-    // Calculate credit facility details from product selection
     const calculateCreditFacilityDetails = () => {
-        const businessName = data.business; // string from ProductSelection
-        const finalPrice = data.amount || 0; // number from ProductSelection
+        const businessName = data.business;
+        const finalPrice = data.amount || 0;
         const intent = data.intent || 'hirePurchase';
         const selectedMonth = data.creditTerm;
 
@@ -34,12 +33,10 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
         } else if ((intent === 'microBiz' || intent === 'microBizLoan' || intent === 'smeBiz') && businessName) {
             facilityType = `Micro Biz Loan - ${businessName}`;
         } else if (businessName) {
-            // Fallback if intent doesn't match
             facilityType = `Credit Facility - ${businessName}`;
         }
 
-        // Calculate tenure
-        let tenure = 12; // default
+        let tenure = 12;
         if (selectedMonth) {
             tenure = parseInt(selectedMonth.toString());
         } else {
@@ -49,7 +46,6 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
             else tenure = 24;
         }
 
-        // Calculate monthly payment
         let monthlyPaymentValue = 0;
         if (data.monthlyPayment) {
             monthlyPaymentValue = parseFloat(data.monthlyPayment);
@@ -61,10 +57,9 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                 (Math.pow(1 + monthlyInterestRate, tenure) - 1) : 0;
         }
 
-        // Note 7: SSB Loan starts first of next month and ends on last day of start date + loan period
         const today = new Date();
         const firstOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-        const loanEndDate = new Date(firstOfNextMonth.getFullYear(), firstOfNextMonth.getMonth() + tenure, 0); // Last day of the end month
+        const loanEndDate = new Date(firstOfNextMonth.getFullYear(), firstOfNextMonth.getMonth() + tenure, 0);
 
         return {
             creditFacilityType: facilityType,
@@ -91,52 +86,56 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
     const [loanType, setLoanType] = useState<string>(_saved?.loanType ?? '');
     const [isCustomBranch, setIsCustomBranch] = useState<boolean>(false);
     const [spouseError, setSpouseError] = useState<string>('');
-    const [employmentError, setEmploymentError] = useState<string>('');
     const [accountNumberError, setAccountNumberError] = useState<string>('');
     const [sameAsCell, setSameAsCell] = useState(false);
+    const [declarationError, setDeclarationError] = useState<string>('');
+
+    // Declaration checkboxes
+    const [agreedToTerms, setAgreedToTerms] = useState<boolean>(_saved?.agreedToTerms ?? false);
+    const [authorizedCreditCheck, setAuthorizedCreditCheck] = useState<boolean>(_saved?.authorizedCreditCheck ?? false);
+    const [authorizedDebitOrder, setAuthorizedDebitOrder] = useState<boolean>(_saved?.authorizedDebitOrder ?? false);
 
     const [formData, setFormData] = useState(_saved?.formData ?? {
         // Credit Facility Details (pre-populated)
         ...creditDetails,
 
-        // Personal Details
+        // Applicant Details
         title: '',
         surname: '',
         firstName: '',
         gender: '',
-        dateOfBirth: '', // Will be set by dial-date picker with defaultAge
+        dateOfBirth: '',
         maritalStatus: '',
         nationality: 'Zimbabwean',
         idNumber: data.formResponses?.nationalIdNumber || '',
         cellNumber: data.formResponses?.mobile || '',
         whatsApp: '',
         emailAddress: data.formResponses?.emailAddress || '',
-        responsibleMinistry: '',
-        employerName: '',
-        employerAddress: '',
         permanentAddress: { type: '', addressLine: '' } as AddressData,
         propertyOwnership: '',
         periodAtAddress: '',
-        employmentStatus: '',
-        jobTitle: '',
-        dateOfEmployment: '',
-        employmentNumber: '',
-        headOfInstitution: '',
-        headOfInstitutionCell: '',
-        currentNetSalary: '',
-        payDayRange: '',
 
-        // Spouse and Next of Kin
+        // Pension/Employment History
+        responsibleMinistry: '',
+        pensionNssaNumber: '',
+        lengthOfService: '',
+        retirementDate: '',
+        monthlyPension: '',
+        pensionPayDay: '',
+
+        // Next of Kin
         spouseDetails: [
-            { fullName: '', relationship: '', phoneNumber: '', residentialAddress: { type: '', addressLine: '' } as AddressData }
+            { fullName: '', relationship: '', idNumber: '', phoneNumber: '', residentialAddress: { type: '', addressLine: '' } as AddressData }
         ],
 
         // Banking Details
         bankName: '',
         branch: '',
         accountNumber: '',
+        mobileWalletProvider: '',
+        mobileWalletNumber: '',
 
-        // Other Loans - Qupa (ZB) and Other Institutions
+        // Other Loans
         qupaLoan: {
             maturityDate: '',
             monthlyInstallment: '',
@@ -146,18 +145,16 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
             maturityDate: '',
             monthlyInstallment: '',
         },
-        // Legacy format for backward compatibility
         otherLoans: [
             { institution: '', monthlyInstallment: '', currentBalance: '', maturityDate: '' },
             { institution: '', monthlyInstallment: '', currentBalance: '', maturityDate: '' }
         ],
 
-        // Purpose/Asset (auto-populated from product selection)
         purposeAsset: businessName ? `${businessName} - ${data.scale || 'Standard Scale'}` : ''
     });
 
     const handleBackWithSave = () => {
-        onSaveProgress?.({ _formType: 'pensionerLoan', formData, hasOtherLoans, loanType });
+        onSaveProgress?.({ _formType: 'pensionerLoan', formData, hasOtherLoans, loanType, agreedToTerms, authorizedCreditCheck, authorizedDebitOrder });
         onBack();
     };
 
@@ -166,12 +163,6 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
             ? formatZimbabweId(value)
             : value;
 
-        if (field === 'employmentNumber') {
-            // No specific processing here as we handle combination in onChange events
-            processedValue = value;
-        }
-
-        // Validate ZB Bank account number inline
         if (field === 'accountNumber' && formData.bankName === 'ZB Bank') {
             setAccountNumberError('');
             if (value) {
@@ -187,31 +178,25 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
             }
         }
 
-        // Clear account number error when bank changes away from ZB Bank
         if (field === 'bankName' && value !== 'ZB Bank') {
             setAccountNumberError('');
         }
 
         setFormData(prev => {
             const updates: any = { [field]: processedValue };
-
-            // Auto-update WhatsApp if same as cell is checked
             if (field === 'cellNumber' && sameAsCell) {
                 updates.whatsApp = processedValue;
             }
-
             return { ...prev, ...updates };
         });
     };
 
-    // Update WhatsApp when checkbox changes
     useEffect(() => {
         if (sameAsCell) {
             handleInputChange('whatsApp', formData.cellNumber);
         }
     }, [sameAsCell]);
 
-    // Auto-set spouse relation if married
     useEffect(() => {
         if (formData.maritalStatus === 'Married') {
             setFormData(prev => ({
@@ -224,11 +209,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
     }, [formData.maritalStatus]);
 
     const handleSpouseChange = (index: number, field: string, value: string) => {
-        // Clear error when user starts filling in spouse details
-        if (spouseError) {
-            setSpouseError('');
-        }
-
+        if (spouseError) setSpouseError('');
         setFormData(prev => ({
             ...prev,
             spouseDetails: prev.spouseDetails.map((spouse, i) =>
@@ -246,7 +227,6 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
         }));
     };
 
-    // Helper methods for data conversion
     const convertPropertyOwnership = (ownership: string) => {
         const mapping: Record<string, string> = {
             'Owned': 'Owned',
@@ -267,16 +247,6 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-
-        // Validate Employment Number
-        const employmentNumberRegex = /^\d{7}[A-Z]$/;
-        if (!employmentNumberRegex.test(formData.employmentNumber)) {
-            setEmploymentError('Employment Number must be 7 digits followed by a letter (e.g. 1234567A)');
-            document.getElementById('employmentNumber')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        } else {
-            setEmploymentError('');
-        }
 
         // Validate ZB Bank account number on submit
         if (formData.bankName === 'ZB Bank' && formData.accountNumber) {
@@ -299,9 +269,8 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
             }
         }
 
-        // Validate the single next of kin entry
+        // Validate next of kin
         const nok = formData.spouseDetails[0];
-        const nokAddr = nok?.residentialAddress as AddressData;
         if (!nok || !nok.fullName.trim() || !nok.relationship.trim() || !nok.phoneNumber.trim()) {
             setSpouseError('Next of Kin details are required. Please fill in all fields.');
             document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -316,25 +285,23 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
         }
 
         const nokPhone = nok.phoneNumber.trim();
-        const supervisorPhone = formData.headOfInstitutionCell.trim();
         const personalPhone = formData.cellNumber.trim();
-
-        if (supervisorPhone && nokPhone === supervisorPhone) {
-            setSpouseError('Next of Kin phone number cannot be the same as the supervisor phone number.');
-            document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
-
         if (personalPhone && nokPhone === personalPhone) {
             setSpouseError('Next of Kin phone number cannot be the same as your personal phone number.');
             document.getElementById('spouse-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
 
-        // Clear any existing error
         setSpouseError('');
 
-        // Map SSB form fields to match validation expectations
+        // Validate declarations
+        if (!agreedToTerms || !authorizedCreditCheck || !authorizedDebitOrder) {
+            setDeclarationError('You must agree to all declarations before submitting.');
+            document.getElementById('declaration-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        setDeclarationError('');
+
         const formResponses: Record<string, any> = {
             ...formData,
         };
@@ -346,31 +313,35 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
         formResponses.nationalIdNumber = formData.idNumber;
         formResponses.mobile = formData.cellNumber;
         formResponses.emailAddress = formData.emailAddress;
-        formResponses.employeeNumber = formData.employmentNumber;
+        // Map pensioner fields to backend-expected keys
+        formResponses.employeeNumber = formData.pensionNssaNumber;
         formResponses.ministry = formData.responsibleMinistry;
-        formResponses.netSalary = formData.currentNetSalary;
-        formResponses.payDayRange = formData.payDayRange;
-        formResponses.responsiblePaymaster = formData.headOfInstitution;
         formResponses.responsibleMinistry = formData.responsibleMinistry;
+        formResponses.netSalary = formData.monthlyPension;
+        formResponses.payDayRange = formData.pensionPayDay;
+        formResponses.jobTitle = `Retired - ${formData.lengthOfService} years service`;
+        formResponses.dateOfEmployment = formData.retirementDate;
         formResponses.loanAmount = formData.loanAmount;
         formResponses.loanTenure = formData.loanTenure;
-        // Serialize address to JSON for PDF template
         formResponses.residentialAddress = JSON.stringify(formData.permanentAddress);
         formResponses.permanentAddress = JSON.stringify(formData.permanentAddress);
         formResponses.checkLetter = '';
         formResponses.propertyOwnership = convertPropertyOwnership(formData.propertyOwnership);
         formResponses.periodAtAddress = convertPeriodToText(formData.periodAtAddress);
-        // Serialize spouse addresses to JSON for PDF template
+        formResponses.mobileWalletProvider = formData.mobileWalletProvider;
+        formResponses.mobileWalletNumber = formData.mobileWalletNumber;
         formResponses.spouseDetails = formData.spouseDetails.map(spouse => ({
             ...spouse,
             residentialAddress: JSON.stringify(spouse.residentialAddress)
         }));
 
-        // Add hasOtherLoans flag and loan data
         formResponses.hasOtherLoans = hasOtherLoans;
         formResponses.loanType = loanType;
         formResponses.qupaLoan = formData.qupaLoan;
         formResponses.otherInstitutionLoan = formData.otherInstitutionLoan;
+        formResponses.agreedToTerms = agreedToTerms;
+        formResponses.authorizedCreditCheck = authorizedCreditCheck;
+        formResponses.authorizedDebitOrder = authorizedDebitOrder;
 
         if (hasOtherLoans === 'no') {
             formResponses.otherLoans = [
@@ -378,7 +349,6 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                 { institution: 'N/A', monthlyInstallment: 'N/A', currentBalance: 'N/A', maturityDate: 'N/A' }
             ];
         } else {
-            // Map new loan structure to legacy format for backward compatibility
             formResponses.otherLoans = formData.otherLoans;
         }
 
@@ -402,7 +372,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                 }
             },
             formType: 'pensioner',
-            _rawFormData: { _formType: 'pensionerLoan', formData, hasOtherLoans, loanType }
+            _rawFormData: { _formType: 'pensionerLoan', formData, hasOtherLoans, loanType, agreedToTerms, authorizedCreditCheck, authorizedDebitOrder }
         };
 
         onNext(mappedData);
@@ -422,11 +392,11 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
 
             <form onSubmit={handleSubmit} className="space-y-6">
 
-                {/* Personal Details */}
+                {/* Applicant Details */}
                 <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
                         <User className="h-6 w-6 text-emerald-600 mr-3" />
-                        <h3 className="text-lg font-semibold">Personal Details</h3>
+                        <h3 className="text-lg font-semibold">Applicant Details</h3>
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -466,18 +436,18 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             required
                         />
 
-                        <div>
-                            <Label htmlFor="gender">Gender *</Label>
-                            <Select value={formData.gender} onValueChange={(value: string) => handleInputChange('gender', value)} required>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select gender" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Male">Male</SelectItem>
-                                    <SelectItem value="Female">Female</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        <FormField
+                            id="idNumber"
+                            label="National ID Number"
+                            type="text"
+                            value={formData.idNumber}
+                            onChange={(value) => handleInputChange('idNumber', value)}
+                            capitalizeCheckLetter={true}
+                            placeholder="e.g. 08-1234567A-08"
+                            title="Zimbabwe ID format: 08-1234567A-08"
+                            required
+                            readOnly={!!data.formResponses?.nationalIdNumber}
+                        />
 
                         <FormField
                             id="dateOfBirth"
@@ -491,6 +461,19 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             showAgeValidation={false}
                             required
                         />
+
+                        <div>
+                            <Label htmlFor="gender">Gender *</Label>
+                            <Select value={formData.gender} onValueChange={(value: string) => handleInputChange('gender', value)} required>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select gender" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Male">Male</SelectItem>
+                                    <SelectItem value="Female">Female</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
 
                         <div>
                             <Label htmlFor="maritalStatus">Marital Status</Label>
@@ -518,20 +501,6 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                         />
 
                         <FormField
-                            id="idNumber"
-                            label="ID Number"
-                            type="text"
-                            value={formData.idNumber}
-                            onChange={(value) => handleInputChange('idNumber', value)}
-                            capitalizeCheckLetter={true}
-                            placeholder="e.g. 12-345678 A 12"
-                            title="Zimbabwe ID format: 12-345678 A 12"
-                            required
-                            readOnly={!!data.formResponses?.nationalIdNumber}
-
-                        />
-
-                        <FormField
                             id="cellNumber"
                             label="Cell Number"
                             type="phone"
@@ -547,7 +516,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                                     <Checkbox
                                         id="sameAsCell"
                                         checked={sameAsCell}
-                                        onCheckedChange={(checked: boolean) => setIsCustomBranch(checked as boolean)}
+                                        onCheckedChange={(checked: boolean) => setSameAsCell(checked as boolean)}
                                     />
                                     <label
                                         htmlFor="sameAsCell"
@@ -589,7 +558,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                         <div className="md:col-span-2 lg:col-span-3">
                             <AddressInput
                                 id="permanentAddress"
-                                label="Residential Address"
+                                label="Physical Home Address"
                                 value={formData.permanentAddress}
                                 onChange={(value) => setFormData(prev => ({ ...prev, permanentAddress: value }))}
                                 required
@@ -618,18 +587,30 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             value={formData.periodAtAddress}
                             onChange={(value) => handleInputChange('periodAtAddress', value)}
                         />
+                    </div>
+                </Card>
 
-                        <div className="md:col-span-2 lg:col-span-3">
-                            <Label htmlFor="responsibleMinistry">You are employed by which Ministry *</Label>
-                            <Select value={formData.responsibleMinistry} onValueChange={(value: string) => handleInputChange('responsibleMinistry', value)}>
+                {/* Pension/Employment History */}
+                <Card className="p-4 md:p-6">
+                    <div className="flex items-center mb-4">
+                        <Building className="h-6 w-6 text-emerald-600 mr-3" />
+                        <h3 className="text-lg font-semibold">Pension / Employment History</h3>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <div className="md:col-span-2">
+                            <Label htmlFor="responsibleMinistry">Ministry or Department Previously Worked For *</Label>
+                            <Select value={formData.responsibleMinistry} onValueChange={(value: string) => handleInputChange('responsibleMinistry', value)} required>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select Ministry" />
+                                    <SelectValue placeholder="Select Ministry / Department" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Primary and Secondary Education">Primary and Secondary Education</SelectItem>
                                     <SelectItem value="Health and Child Care">Health and Child Care</SelectItem>
                                     <SelectItem value="Home Affairs and Cultural Heritage">Home Affairs and Cultural Heritage</SelectItem>
                                     <SelectItem value="Justice">Justice, Legal and Parliamentary Affairs</SelectItem>
+                                    <SelectItem value="Defence and War Veterans">Defence and War Veterans</SelectItem>
+                                    <SelectItem value="State Security">State Security</SelectItem>
                                     <SelectItem value="Agriculture">Lands, Agriculture, Fisheries, Water and Rural Development</SelectItem>
                                     <SelectItem value="Energy and Power Development">Energy and Power Development</SelectItem>
                                     <SelectItem value="Environment">Environment, Climate, Tourism and Hospitality Industry</SelectItem>
@@ -640,79 +621,43 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                                     <SelectItem value="Industry and Commerce">Industry and Commerce</SelectItem>
                                     <SelectItem value="Lands and Agriculture">Lands and Agriculture</SelectItem>
                                     <SelectItem value="Local Government">Local Government and Public Works</SelectItem>
-                                    <SelectItem value="Mines and Mining Development">Mines and Mining Development</SelectItem>
+                                    <SelectItem value="Mines and Mining Development">Mines and Mining Development Development</SelectItem>
                                     <SelectItem value="National Housing">National Housing and Social Amenities</SelectItem>
                                     <SelectItem value="Public Service">Public Service, Labour and Social Welfare</SelectItem>
                                     <SelectItem value="Tourism and Hospitality">Tourism and Hospitality</SelectItem>
                                     <SelectItem value="Transport and Infrastructure">Transport and Infrastructure</SelectItem>
                                     <SelectItem value="Women Affairs">Women Affairs, Community Development and Gender Equality</SelectItem>
                                     <SelectItem value="Youth, Sport, Arts and Recreation">Youth, Sport, Arts and Recreation</SelectItem>
-
-
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                    </div>
-                </Card>
-
-                {/* Employment Details */}
-                <Card className="p-4 md:p-6">
-                    <div className="flex items-center mb-4">
-                        <Building className="h-6 w-6 text-emerald-600 mr-3" />
-                        <h3 className="text-lg font-semibold">Employment Details</h3>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <FormField
-                            id="employerName"
-                            label="Name of Institution"
-                            type="text"
-                            value={formData.employerName}
-                            onChange={(value) => handleInputChange('employerName', value)}
-                            autoCapitalize={true}
-                            required
-                        />
-
-                        <FormField
-                            id="employerAddress"
-                            label="Institution Address"
-                            type="text"
-                            value={typeof formData.employerAddress === 'string' ? formData.employerAddress : ''}
-                            onChange={(value) => handleInputChange('employerAddress', value)}
-                            required
-                        />
-
-                        <div>
-                            <Label htmlFor="employmentStatus">Employment Status</Label>
-                            <Select value={formData.employmentStatus} onValueChange={(value: string) => handleInputChange('employmentStatus', value)} required>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select employment status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Permanent">Permanent</SelectItem>
-                                    <SelectItem value="Contract">Contract</SelectItem>
-                                    <SelectItem value="Temporary">Temporary</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
                         <FormField
-                            id="jobTitle"
-                            label="Job Title"
+                            id="pensionNssaNumber"
+                            label="Pension / NSSA Number"
                             type="text"
-                            value={formData.jobTitle}
-                            onChange={(value) => handleInputChange('jobTitle', value)}
-                            autoCapitalize={true}
+                            value={formData.pensionNssaNumber}
+                            onChange={(value) => handleInputChange('pensionNssaNumber', value)}
+                            placeholder="e.g. P12345678"
                             required
                         />
 
                         <FormField
-                            id="dateOfEmployment"
-                            label="Date of Employment"
+                            id="lengthOfService"
+                            label="Length of Service (Years)"
+                            type="number"
+                            value={formData.lengthOfService}
+                            onChange={(value) => handleInputChange('lengthOfService', value)}
+                            placeholder="e.g. 25"
+                            required
+                        />
+
+                        <FormField
+                            id="retirementDate"
+                            label="Retirement Date"
                             type="dial-date"
-                            value={formData.dateOfEmployment}
-                            onChange={(value) => handleInputChange('dateOfEmployment', value)}
+                            value={formData.retirementDate}
+                            onChange={(value) => handleInputChange('retirementDate', value)}
                             maxDate={currentDate}
                             defaultAge={0}
                             required
@@ -720,49 +665,10 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                         />
 
                         <div>
-                            <Label htmlFor="employmentNumber">Employment Number *</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    id="employmentNumber"
-                                    className="flex-1"
-                                    placeholder="1234567"
-                                    maxLength={7}
-                                    value={formData.employmentNumber && formData.employmentNumber.match(/^\d+/) ? (formData.employmentNumber.match(/^\d+/) || [''])[0] : ''}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                        const num = e.target.value.replace(/\D/g, '').slice(0, 7);
-                                        const currentLetter = formData.employmentNumber ? formData.employmentNumber.replace(/^\d+/, '') : '';
-                                        handleInputChange('employmentNumber', num + currentLetter);
-                                    }}
-                                    required
-                                />
-                                <div className="flex flex-col">
-                                    <span className="text-xs text-gray-500 mb-1">Check Letter</span>
-                                    <Input
-                                        id="employmentCheckLetter"
-                                        className="w-16 text-center"
-                                        placeholder="A"
-                                        maxLength={1}
-                                        value={formData.employmentNumber ? formData.employmentNumber.replace(/^\d+/, '') : ''}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                            const letter = e.target.value.replace(/[^a-zA-Z]/g, '').slice(0, 1).toUpperCase();
-                                            const currentNumMatch = formData.employmentNumber ? formData.employmentNumber.match(/^\d+/) : null;
-                                            const numStr = currentNumMatch ? currentNumMatch[0] : '';
-                                            handleInputChange('employmentNumber', numStr + letter);
-                                        }}
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            {employmentError && (
-                                <p className="text-sm text-red-500 mt-1">{employmentError}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <Label htmlFor="currentNetSalary">Net Pay Range ({selectedCurrency}) *</Label>
-                            <Select value={formData.currentNetSalary} onValueChange={(value: string) => handleInputChange('currentNetSalary', value)} required>
+                            <Label htmlFor="monthlyPension">Monthly Pension Amount ({selectedCurrency}) *</Label>
+                            <Select value={formData.monthlyPension} onValueChange={(value: string) => handleInputChange('monthlyPension', value)} required>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select net pay range" />
+                                    <SelectValue placeholder="Select pension range" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="10-50">{currencySymbol}10 - {currencySymbol}50</SelectItem>
@@ -775,140 +681,26 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                         </div>
 
                         <div className="md:col-span-2">
-                            <Label htmlFor="payDayRange">Monthly Pay Day Range *</Label>
-                            <Select value={formData.payDayRange} onValueChange={(value: string) => handleInputChange('payDayRange', value)} required>
+                            <Label htmlFor="pensionPayDay">Monthly Pension Pay Day Range *</Label>
+                            <Select value={formData.pensionPayDay} onValueChange={(value: string) => handleInputChange('pensionPayDay', value)} required>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select your pay day range" />
+                                    <SelectValue placeholder="Select your pension pay day range" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="week1">I usually get paid in the first week (1st - 7th)</SelectItem>
-                                    <SelectItem value="week2">I usually get paid in the second week (8th - 15th)</SelectItem>
-                                    <SelectItem value="week3">I usually get paid in the third week (16th - 21st)</SelectItem>
-                                    <SelectItem value="week4">I usually get paid after the 22nd</SelectItem>
+                                    <SelectItem value="week1">I usually receive my pension in the first week (1st - 7th)</SelectItem>
+                                    <SelectItem value="week2">I usually receive my pension in the second week (8th - 15th)</SelectItem>
+                                    <SelectItem value="week3">I usually receive my pension in the third week (16th - 21st)</SelectItem>
+                                    <SelectItem value="week4">I usually receive my pension after the 22nd</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
-
-                        <FormField
-                            id="headOfInstitution"
-                            label="Name of Immediate Supervisor"
-                            type="text"
-                            value={formData.headOfInstitution}
-                            onChange={(value) => handleInputChange('headOfInstitution', value)}
-                            autoCapitalize={true}
-                            required
-                        />
-
-                        <FormField
-                            id="headOfInstitutionCell"
-                            label="Cell No of Immediate Supervisor"
-                            type="phone"
-                            value={formData.headOfInstitutionCell}
-                            onChange={(value) => handleInputChange('headOfInstitutionCell', value)}
-                            required
-                        />
                     </div>
-                </Card>
-
-                {/* Spouse and Next of Kin */}
-                <Card className="p-4 md:p-6" id="spouse-section">
-                    <div className="flex items-center mb-4">
-                        <Users className="h-6 w-6 text-emerald-600 mr-3" />
-                        <h3 className="text-lg font-semibold">
-                            Next of Kin Details *
-                        </h3>
-                    </div>
-                    <p className="text-xs text-gray-500 italic mb-4">
-                        *this is for statistical and record keeping purposes only*
-                    </p>
-
-                    {spouseError && (
-                        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                            <p className="text-sm text-red-600 dark:text-red-400 font-medium">
-                                {spouseError}
-                            </p>
-                        </div>
-                    )}
-
-                    {formData.spouseDetails.map((spouse, index) => {
-                        let containerLabel = "Next of Kin Details";
-                        if (formData.maritalStatus === 'Married') {
-                            if (formData.gender === 'Male') containerLabel = "Wife's / Next of Kin Details";
-                            else if (formData.gender === 'Female') containerLabel = "Husband's / Next of Kin Details";
-                            else containerLabel = "Spouse / Next of Kin Details";
-                        }
-
-                        return (
-                            <div key={index} className="grid gap-4 md:grid-cols-4 mb-4 p-4 border rounded-lg">
-                                <div className="md:col-span-4 mb-2">
-                                    <h4 className="text-md font-medium text-emerald-800 dark:text-emerald-400 border-b pb-1">
-                                        {containerLabel}
-                                    </h4>
-                                </div>
-                                <FormField
-                                    id={`spouse-${index}-name`}
-                                    label="Full Name *"
-                                    type="text"
-                                    value={spouse.fullName}
-                                    onChange={(value) => handleSpouseChange(index, 'fullName', value)}
-                                    autoCapitalize={true}
-                                    required
-                                />
-
-                                <div>
-                                    <Label htmlFor={`spouse-${index}-relationship`}>Relationship *</Label>
-                                    <Select
-                                        value={spouse.relationship}
-                                        onValueChange={(value: string) => handleSpouseChange(index, 'relationship', value)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select relationship" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Spouse">Spouse</SelectItem>
-                                            <SelectItem value="Parent">Parent</SelectItem>
-                                            <SelectItem value="Child">Child</SelectItem>
-                                            <SelectItem value="Relative">Relative</SelectItem>
-                                            <SelectItem value="Work colleague">Work colleague</SelectItem>
-                                            <SelectItem value="Friend">Friend</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <FormField
-                                    id={`spouse-${index}-phone`}
-                                    label="Phone Number *"
-                                    type="phone"
-                                    value={spouse.phoneNumber}
-                                    onChange={(value) => handleSpouseChange(index, 'phoneNumber', value)}
-                                    required
-                                />
-
-                                <div className="md:col-span-2">
-                                    <AddressInput
-                                        id={`spouse-${index}-address`}
-                                        label="Residential Address"
-                                        value={spouse.residentialAddress as AddressData}
-                                        onChange={(value) => {
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                spouseDetails: prev.spouseDetails.map((s, i) =>
-                                                    i === index ? { ...s, residentialAddress: value } : s
-                                                )
-                                            }));
-                                        }}
-                                        required
-                                    />
-                                </div>
-                            </div>
-                        );
-                    })}
                 </Card>
 
                 {/* Banking Details */}
                 <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
-                        <Building className="h-6 w-6 text-emerald-600 mr-3" />
+                        <CreditCard className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Banking Details</h3>
                     </div>
 
@@ -919,8 +711,8 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                                 value={formData.bankName}
                                 onValueChange={(value: string) => {
                                     handleInputChange('bankName', value);
-                                    handleInputChange('branch', ''); // Reset branch when bank changes
-                                    setIsCustomBranch(false); // Reset custom branch mode
+                                    handleInputChange('branch', '');
+                                    setIsCustomBranch(false);
                                 }}
                                 required
                             >
@@ -938,7 +730,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                         </div>
 
                         <div>
-                            <Label htmlFor="branch">Branch *</Label>
+                            <Label htmlFor="branch">Branch Name *</Label>
                             {!isCustomBranch ? (
                                 <Select
                                     value={formData.branch}
@@ -997,33 +789,160 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
 
                         <FormField
                             id="accountNumber"
-                            label="Account Number"
+                            label="ZB Bank Account Number"
                             type="text"
                             value={formData.accountNumber}
                             onChange={(value) => handleInputChange('accountNumber', value)}
                             required
                             error={accountNumberError}
                         />
+
+                        <div>
+                            <Label htmlFor="mobileWalletProvider">Mobile Wallet Provider</Label>
+                            <Select value={formData.mobileWalletProvider} onValueChange={(value: string) => handleInputChange('mobileWalletProvider', value)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select provider" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="EcoCash">EcoCash</SelectItem>
+                                    <SelectItem value="OneMoney">OneMoney</SelectItem>
+                                    <SelectItem value="InnBucks">InnBucks</SelectItem>
+                                    <SelectItem value="ZimSwitch">ZimSwitch</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <FormField
+                                id="mobileWalletNumber"
+                                label="Mobile Wallet Number (for loan disbursement)"
+                                type="phone"
+                                value={formData.mobileWalletNumber}
+                                onChange={(value) => handleInputChange('mobileWalletNumber', value)}
+                            />
+                        </div>
                     </div>
                 </Card>
 
-                {/* Loans with Other Institutions */}
+                {/* Next of Kin Details */}
+                <Card className="p-4 md:p-6" id="spouse-section">
+                    <div className="flex items-center mb-4">
+                        <Users className="h-6 w-6 text-emerald-600 mr-3" />
+                        <h3 className="text-lg font-semibold">
+                            Next of Kin Details *
+                        </h3>
+                    </div>
+                    <p className="text-xs text-gray-500 italic mb-4">
+                        *this is for statistical and record keeping purposes only*
+                    </p>
+
+                    {spouseError && (
+                        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                                {spouseError}
+                            </p>
+                        </div>
+                    )}
+
+                    {formData.spouseDetails.map((spouse, index) => {
+                        let containerLabel = "Next of Kin Details";
+                        if (formData.maritalStatus === 'Married') {
+                            if (formData.gender === 'Male') containerLabel = "Wife's / Next of Kin Details";
+                            else if (formData.gender === 'Female') containerLabel = "Husband's / Next of Kin Details";
+                            else containerLabel = "Spouse / Next of Kin Details";
+                        }
+
+                        return (
+                            <div key={index} className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-4 p-4 border rounded-lg">
+                                <div className="md:col-span-2 lg:col-span-4 mb-2">
+                                    <h4 className="text-md font-medium text-emerald-800 dark:text-emerald-400 border-b pb-1">
+                                        {containerLabel}
+                                    </h4>
+                                </div>
+
+                                <FormField
+                                    id={`spouse-${index}-name`}
+                                    label="Full Name *"
+                                    type="text"
+                                    value={spouse.fullName}
+                                    onChange={(value) => handleSpouseChange(index, 'fullName', value)}
+                                    autoCapitalize={true}
+                                    required
+                                />
+
+                                <div>
+                                    <Label htmlFor={`spouse-${index}-relationship`}>Relationship *</Label>
+                                    <Select
+                                        value={spouse.relationship}
+                                        onValueChange={(value: string) => handleSpouseChange(index, 'relationship', value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select relationship" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Spouse">Spouse</SelectItem>
+                                            <SelectItem value="Child">Child</SelectItem>
+                                            <SelectItem value="Parent">Parent</SelectItem>
+                                            <SelectItem value="Relative">Relative</SelectItem>
+                                            <SelectItem value="Work colleague">Work colleague</SelectItem>
+                                            <SelectItem value="Friend">Friend</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <FormField
+                                    id={`spouse-${index}-idNumber`}
+                                    label="ID Number"
+                                    type="text"
+                                    value={spouse.idNumber || ''}
+                                    onChange={(value) => handleSpouseChange(index, 'idNumber', formatZimbabweId(value))}
+                                    placeholder="e.g. 08-1234567A-08"
+                                />
+
+                                <FormField
+                                    id={`spouse-${index}-phone`}
+                                    label="Contact Number *"
+                                    type="phone"
+                                    value={spouse.phoneNumber}
+                                    onChange={(value) => handleSpouseChange(index, 'phoneNumber', value)}
+                                    required
+                                />
+
+                                <div className="md:col-span-2 lg:col-span-4">
+                                    <AddressInput
+                                        id={`spouse-${index}-address`}
+                                        label="Residential Address"
+                                        value={spouse.residentialAddress as AddressData}
+                                        onChange={(value) => {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                spouseDetails: prev.spouseDetails.map((s, i) =>
+                                                    i === index ? { ...s, residentialAddress: value } : s
+                                                )
+                                            }));
+                                        }}
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        );
+                    })}
+                </Card>
+
+                {/* Existing Loans */}
                 <Card className="p-4 md:p-6">
                     <div className="flex items-center mb-4">
-                        <CreditCard className="h-6 w-6 text-emerald-600 mr-3" />
+                        <Building className="h-6 w-6 text-emerald-600 mr-3" />
                         <h3 className="text-lg font-semibold">Existing Loans</h3>
                     </div>
 
-                    {/* Question 1: Do you have a loan? */}
                     <div className="mb-4">
                         <Label htmlFor="hasOtherLoans">Do you have a loan with any other financial institution? *</Label>
                         <Select
                             value={hasOtherLoans}
                             onValueChange={(value: string) => {
                                 setHasOtherLoans(value);
-                                if (value === 'no') {
-                                    setLoanType('');
-                                }
+                                if (value === 'no') setLoanType('');
                             }}
                             required
                         >
@@ -1037,7 +956,6 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                         </Select>
                     </div>
 
-                    {/* Question 2: What type of loan? (Only if Yes) */}
                     {hasOtherLoans === 'yes' && (
                         <div className="mb-4">
                             <Label htmlFor="loanType">Is it Qupa, Other Institution, or Both? *</Label>
@@ -1054,7 +972,6 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                         </div>
                     )}
 
-                    {/* Qupa Loan Details (shown for 'qupa' or 'both') */}
                     {hasOtherLoans === 'yes' && (loanType === 'qupa' || loanType === 'both') && (
                         <div className="mb-4 p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/20">
                             <h4 className="text-md font-medium text-blue-800 dark:text-blue-300 mb-3">
@@ -1099,7 +1016,6 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                         </div>
                     )}
 
-                    {/* Other Institution Loan Details (shown for 'other' or 'both') */}
                     {hasOtherLoans === 'yes' && (loanType === 'other' || loanType === 'both') && (
                         <div className="mb-4 p-4 border rounded-lg bg-orange-50 dark:bg-orange-900/20">
                             <h4 className="text-md font-medium text-orange-800 dark:text-orange-300 mb-3">
@@ -1158,14 +1074,13 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                     )}
                 </Card>
 
-                {/* Credit Facility Details */}
+                {/* Credit Application Details */}
                 <Card className="p-4 md:p-6 bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700">
                     <div className="flex items-center mb-4">
                         <CreditCard className="h-6 w-6 text-green-600 mr-3" />
                         <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">Credit Application Details</h3>
                     </div>
 
-                    {/* Pre-populated readonly fields */}
                     <div className="grid gap-4 mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg border">
                         <div className="text-sm text-green-600 dark:text-green-400 font-medium mb-2">
                             ✅ The following details have been automatically filled based on your product selection:
@@ -1218,16 +1133,10 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                                     />
                                 </div>
                             </div>
-                            {/* Hidden Interest Rate */}
-                            <input
-                                type="hidden"
-                                value={`${formData.interestRate}%`}
-                                readOnly
-                            />
+                            <input type="hidden" value={`${formData.interestRate}%`} readOnly />
                         </div>
                     </div>
 
-                    {/* Editable purpose field */}
                     <div>
                         <Label htmlFor="purposeAsset">Purpose/Asset Applied For *</Label>
                         <Textarea
@@ -1239,6 +1148,68 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                             placeholder="Describe the purpose and asset details..."
                         />
                     </div>
+                </Card>
+
+                {/* Declaration & Signatures */}
+                <Card className="p-4 md:p-6" id="declaration-section">
+                    <div className="flex items-center mb-4">
+                        <FileText className="h-6 w-6 text-emerald-600 mr-3" />
+                        <h3 className="text-lg font-semibold">Declaration & Signatures</h3>
+                    </div>
+
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                        By submitting this application, I declare that all information provided is true and correct to the best of my knowledge. I further agree to the following:
+                    </p>
+
+                    {declarationError && (
+                        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                                {declarationError}
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="space-y-4">
+                        <div className="flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                            <Checkbox
+                                id="agreedToTerms"
+                                checked={agreedToTerms}
+                                onCheckedChange={(checked: boolean) => setAgreedToTerms(checked as boolean)}
+                                className="mt-0.5"
+                            />
+                            <label htmlFor="agreedToTerms" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer leading-relaxed">
+                                <span className="font-medium">Terms & Conditions:</span> I have read, understood, and agree to the terms and conditions governing this pensioner loan facility, including the applicable interest rates, fees, and repayment obligations.
+                            </label>
+                        </div>
+
+                        <div className="flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                            <Checkbox
+                                id="authorizedCreditCheck"
+                                checked={authorizedCreditCheck}
+                                onCheckedChange={(checked: boolean) => setAuthorizedCreditCheck(checked as boolean)}
+                                className="mt-0.5"
+                            />
+                            <label htmlFor="authorizedCreditCheck" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer leading-relaxed">
+                                <span className="font-medium">Credit & Reference Check Authorization:</span> I authorize ZB Bank to conduct credit and reference checks on my behalf, including enquiries with the Credit Registry of Zimbabwe and any other relevant financial or reference institutions, for the purpose of assessing this loan application.
+                            </label>
+                        </div>
+
+                        <div className="flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                            <Checkbox
+                                id="authorizedDebitOrder"
+                                checked={authorizedDebitOrder}
+                                onCheckedChange={(checked: boolean) => setAuthorizedDebitOrder(checked as boolean)}
+                                className="mt-0.5"
+                            />
+                            <label htmlFor="authorizedDebitOrder" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer leading-relaxed">
+                                <span className="font-medium">Automatic Debit Order Authorization:</span> I authorize the relevant pension authority (PSMAS / NSSA) and/or ZB Bank to make automatic debit orders against my monthly pension for loan repayment, for the duration of the loan tenure, until the outstanding balance is fully settled.
+                            </label>
+                        </div>
+                    </div>
+
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 italic">
+                        Your electronic submission of this form constitutes your signature and agreement to the above declarations.
+                    </p>
                 </Card>
 
                 <div className="flex flex-col-reverse sm:flex-row justify-between gap-4 pt-4">
@@ -1262,7 +1233,7 @@ const PensionerLoanForm: React.FC<SSBLoanFormProps> = ({ data, onNext, onBack, l
                     </Button>
                 </div>
             </form>
-        </div >
+        </div>
     );
 };
 

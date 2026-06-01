@@ -19,13 +19,13 @@ const Footer: React.FC = () => {
                     <span className="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
 
                     <a
-                        href="tel:+263705074666"
+                        href="tel:+263 8644 988 988"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                     >
                         <Phone className="h-3.5 w-3.5" />
-                        <span>Cell number: 078 507 4666</span>
+                        <span>Cell number: 08644 988 988</span>
                     </a>
                     <span className="hidden sm:inline text-gray-300 dark:text-gray-700">|</span>
 
