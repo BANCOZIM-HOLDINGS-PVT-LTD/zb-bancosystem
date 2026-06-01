@@ -26,7 +26,65 @@ interface EmployerGroup {
 }
 
 const parastatals = [
-    'ZESA', 'TELONE', 'ZIMRA', 'NSSA', 'ZINARA', 'GMB', 'CAAZ', 'NRZ', 'ZUPCO', 'ZETDC', 'ZPC'
+    // A
+    'Airports Company of Zimbabwe (ACZ)',
+    'Agricultural Marketing Authority (AMA)',
+    'Agricultural Rural Development Authority (ARDA)',
+    // B
+    'Broadcasting Authority of Zimbabwe (BAZ)',
+    // C
+    'Civil Aviation Authority of Zimbabwe (CAAZ)',
+    'Competition and Tariff Commission (CTC)',
+    'Consumer Council of Zimbabwe (CCZ)',
+    // D
+    'Deposit Protection Corporation (DPC)',
+    // E
+    'Empower Bank',
+    'Environmental Management Agency (EMA)',
+    // F
+    'Food and Nutrition Council (FNC)',
+    'Forestry Commission',
+    // G
+    'Grain Marketing Board (GMB)',
+    // H
+    'Health Professions Authority (HPA)',
+    // I
+    'Industrial Development Corporation of Zimbabwe (IDCZ)',
+    'Infrastructure Development Bank of Zimbabwe (IDBZ)',
+    'Insurance and Pensions Commission (IPEC)',
+    // L
+    'Lotteries and Gaming Board',
+    // M
+    'Medicines Control Authority of Zimbabwe (MCAZ)',
+    'Minerals Marketing Corporation of Zimbabwe (MMCZ)',
+    // N
+    'National AIDS Council (NAC)',
+    'National Arts Council of Zimbabwe (NACZ)',
+    'National Railways of Zimbabwe (NRZ)',
+    'National Social Security Authority (NSSA)',
+    'NetOne',
+    // P
+    "People's Own Savings Bank (POSB)",
+    'Pig Industry Board',
+    // R
+    'Reserve Bank of Zimbabwe (RBZ)',
+    'Road Motor Services (RMS)',
+    // S
+    'Small and Medium Enterprises Development Corporation (SMEDCO)',
+    'Sports and Recreation Commission (SRC)',
+    // T
+    'TelOne',
+    'Tobacco Industry and Marketing Board (TIMB)',
+    // Z
+    'Zambezi River Authority (ZRA)',
+    'Zimbabwe Broadcasting Corporation (ZBC)',
+    'Zimbabwe Electricity Supply Authority (ZESA)',
+    'Zimbabwe Investment and Development Agency (ZIDA)',
+    'Zimbabwe National Road Administration (ZINARA)',
+    'Zimbabwe National Water Authority (ZINWA)',
+    'Zimbabwe Parks and Wildlife Management Authority (ZimParks)',
+    'Zimbabwe Revenue Authority (ZIMRA)',
+    'Zimbabwe Tourism Authority (ZTA)',
 ];
 
 const privatePensionFunds = [
@@ -52,7 +110,12 @@ const otherPrivateOptions = [
 
 const PRIVATE_UNIVERSITIES = [
     'Africa University',
-    "Women's University in Africa",
+    'Zimbabwe Ezekiel Guti University (ZEGU)',
+    'Catholic University of Zimbabwe (CUZ)',
+    'Reformed Church University (RCU)',
+    'Arrupe Jesuit University (AJU)',
+    'Solusi University',
+    "Women's University in Africa (WUA)",
 ];
 
 const VOCATIONAL_TRAINING_CENTRES = [
@@ -96,7 +159,7 @@ const employerGroups: EmployerGroup[] = [
         heading: 'Educational Institutions',
         options: [
             { id: 'edu-state-university',    name: 'State Universities & Polytechnics', icon: GraduationCap, isSpecial: true },
-            { id: 'edu-private-university', name: 'Private Universities',              icon: GraduationCap, isSpecial: true },
+            { id: 'edu-private-university', name: 'Private Universities and Colleges',              icon: GraduationCap, isSpecial: true },
             { id: 'edu-private-school',     name: 'Private Schools',                  icon: GraduationCap, isSpecial: true },
             { id: 'edu-mission-school',     name: 'Mission Schools',                  icon: GraduationCap, isSpecial: true },
             { id: 'edu-vtc',               name: 'Vocational Training Centres (VTCs)', icon: GraduationCap, isSpecial: true },
