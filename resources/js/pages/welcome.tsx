@@ -244,8 +244,8 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                             <div className="flex items-start gap-3">
                                 <RotateCcw className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                                 <div>
-                                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">You have an application in progress</p>
-                                    <p className="text-sm text-blue-800 dark:text-blue-300">Continue right where you left off.</p>
+                                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">Welcome back!</p>
+                                    <p className="text-sm text-blue-800 dark:text-blue-300">Continue right where you left off or start a new application.</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -253,14 +253,14 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                                     onClick={() => { window.location.href = serverResume.resume_url; }}
                                     className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
                                 >
-                                    Continue
+                                    Resume Application
                                     <ChevronRight className="h-4 w-4" />
                                 </button>
                                 <button
                                     onClick={() => setServerResumeDismissed(true)}
                                     className="rounded-lg px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-900/30"
                                 >
-                                    Dismiss
+                                    Start a New Application
                                 </button>
                             </div>
                         </div>
