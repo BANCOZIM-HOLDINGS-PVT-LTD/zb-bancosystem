@@ -121,60 +121,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/holiday-packages', [\App\Http\Controllers\AdminController::class, 'exportHolidayPackages'])->name('holiday-packages');
     });
     
-    // Admin routes (Filament handles /admin routes)
-    /*
-    Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified'])->group(function () {
-        Route::get('/', [\App\Http\Controllers\AdminController::class, 'dashboard'])->name('dashboard');
-
-        // Application Management (TODO: Implement controllers)
-        /*
-        Route::prefix('applications')->name('applications.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'index'])->name('index');
-            Route::get('/{sessionId}', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'show'])->name('show');
-            Route::put('/{sessionId}/status', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'updateStatus'])->name('update-status');
-            Route::post('/{sessionId}/notes', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'addNote'])->name('add-note');
-            Route::get('/{sessionId}/pdf', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'downloadPdf'])->name('download-pdf');
-            Route::post('/bulk-action', [\App\Http\Controllers\Admin\ApplicationManagementController::class, 'bulkAction'])->name('bulk-action');
-        });
-        */
-
-        // Analytics & Reports (TODO: Implement controllers)
-        /*
-        Route::prefix('analytics')->name('analytics.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('index');
-            Route::get('/export', [\App\Http\Controllers\Admin\AnalyticsController::class, 'export'])->name('export');
-            Route::get('/channel-performance', [\App\Http\Controllers\Admin\AnalyticsController::class, 'channelPerformance'])->name('channel-performance');
-            Route::get('/conversion-funnel', [\App\Http\Controllers\Admin\AnalyticsController::class, 'conversionFunnel'])->name('conversion-funnel');
-        });
-        */
-
-        // System Management (TODO: Implement controllers)
-        /*
-        Route::prefix('system')->name('system.')->group(function () {
-            Route::get('/health', [\App\Http\Controllers\Admin\SystemController::class, 'health'])->name('health');
-            Route::get('/logs', [\App\Http\Controllers\Admin\SystemController::class, 'logs'])->name('logs');
-            Route::post('/cache/clear', [\App\Http\Controllers\Admin\SystemController::class, 'clearCache'])->name('clear-cache');
-            Route::get('/queue/status', [\App\Http\Controllers\Admin\SystemController::class, 'queueStatus'])->name('queue-status');
-            Route::post('/maintenance', [\App\Http\Controllers\Admin\SystemController::class, 'toggleMaintenance'])->name('maintenance');
-        });
-
-        // User Management (TODO: Implement controllers)
-        Route::prefix('users')->name('users.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('index');
-            Route::post('/', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('store');
-            Route::get('/{user}', [\App\Http\Controllers\Admin\UserController::class, 'show'])->name('show');
-            Route::put('/{user}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('update');
-            Route::delete('/{user}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('destroy');
-        });
-
-        // Settings (TODO: Implement controllers)
-        Route::prefix('settings')->name('settings.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('index');
-            Route::put('/general', [\App\Http\Controllers\Admin\SettingsController::class, 'updateGeneral'])->name('update-general');
-            Route::put('/notifications', [\App\Http\Controllers\Admin\SettingsController::class, 'updateNotifications'])->name('update-notifications');
-            Route::put('/security', [\App\Http\Controllers\Admin\SettingsController::class, 'updateSecurity'])->name('update-security');
-        });
-        */
+    // Admin UI is served by Filament under /admin (see app/Filament).
 });
 
 // Agent Portal Routes

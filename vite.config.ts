@@ -35,6 +35,9 @@ export default defineConfig(({ mode }) => {
         ],
         esbuild: {
             jsx: 'automatic',
+            // Strip console.* and debugger from production bundles so debug logging
+            // (and any PII it may carry) never ships to the browser. Dev keeps them.
+            drop: mode === 'production' ? ['console', 'debugger'] : [],
         },
         resolve: {
             alias: {

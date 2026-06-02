@@ -162,22 +162,31 @@ class PDFGeneratorService implements PDFGeneratorInterface
                 'has_account' => $hasAccount
             ]);
 
-            // Add FCB Report Data for Account Holder Loans
+            // Add FCB Report Data for Account Holder Loans.
+            // FCBService currently returns MOCK credit data, so it must never appear on
+            // production PDFs. Only attach it when a real FCB integration is enabled
+            // (config services.fcb.enabled) or when running outside production (dev/testing).
             $fcbData = null;
             if ($template === 'forms.account_holders_pdf') {
-                $nationalId = $formData['formResponses']['nationalIdNumber'] 
-                    ?? $formData['formResponses']['nationalId'] 
-                    ?? $formData['nationalId'] 
-                    ?? '00000000A00'; // Fallback
-                    
-                // Use the FCB Service (We can instantiate directly or inject. For now direct instantiation for simplicity in this specific scope)
-                $fcbService = new \App\Services\FCBService();
-                $fcbData = $fcbService->checkCreditStatus($nationalId);
-                
-                $this->logger->logDebug('Fetched FCB Data', [
-                    'national_id' => $nationalId,
-                    'report_serial' => $fcbData['report_serial'] ?? 'N/A'
-                ]);
+                $fcbAllowed = config('services.fcb.enabled', false) || ! app()->environment('production');
+
+                if ($fcbAllowed) {
+                    $nationalId = $formData['formResponses']['nationalIdNumber']
+                        ?? $formData['formResponses']['nationalId']
+                        ?? $formData['nationalId']
+                        ?? '00000000A00'; // Fallback
+
+                    // Use the FCB Service (We can instantiate directly or inject. For now direct instantiation for simplicity in this specific scope)
+                    $fcbService = new \App\Services\FCBService();
+                    $fcbData = $fcbService->checkCreditStatus($nationalId);
+
+                    $this->logger->logDebug('Fetched FCB Data', [
+                        'national_id' => $nationalId,
+                        'report_serial' => $fcbData['report_serial'] ?? 'N/A'
+                    ]);
+                } else {
+                    $this->logger->logDebug('FCB report omitted: real FCB integration not enabled on production');
+                }
             }
             
             // Prepare data for PDF

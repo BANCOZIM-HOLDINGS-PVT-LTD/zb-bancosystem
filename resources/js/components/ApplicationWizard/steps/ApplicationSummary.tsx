@@ -93,8 +93,6 @@ const getFormIdByEmployer = (employerId: string, hasAccount: boolean, wantsAccou
             if (wantsAccount) return 'individual_account_opening.json';
             return 'individual_account_opening.json';
         case 'government-ssb':
-        // SSB employers always use SSB form
-        case 'government-ssb':
             // SSB employers always use SSB form
             return 'ssb_account_opening_form.json';
         case 'government-pensioner':

@@ -35,9 +35,7 @@ class StateController extends Controller
     {
         try {
             \Log::info('Entering StateController::saveState', ['session_id' => $request->input('session_id')]);
-            
-            \Log::info('Entering StateController::saveState', ['session_id' => $request->input('session_id')]);
-            
+
             // Increase execution time for this request to handle slow local DB operations
             set_time_limit(300);
 

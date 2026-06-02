@@ -89,6 +89,17 @@ return [
         'sender_id' => env('CODEL_SENDER_ID', 'MicroBiz'),
     ],
 
+    // Financial Clearing Bureau (FCB) credit-report integration.
+    // FCBService currently returns MOCK data, so 'enabled' defaults to false and
+    // the FCB section is omitted from production PDFs until a real integration is
+    // wired up and FCB_ENABLED=true is set.
+    'fcb' => [
+        'enabled' => env('FCB_ENABLED', false),
+        'api_url' => env('FCB_API_URL'),
+        'api_key' => env('FCB_API_KEY'),
+        'api_secret' => env('FCB_API_SECRET'),
+    ],
+
     'ssb' => [
         'api_url' => env('SSB_API_URL', 'http://147.93.87.208:5555'),
         'client_id' => env('SSB_CLIENT_ID', 'UNIPAY_App'),
