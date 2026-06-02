@@ -640,14 +640,75 @@ class ProductController extends Controller
                         ->sortBy('price')
                         ->values()
                         ->map(function ($package) {
+                            // Expose the items that make up each package so the frontend can show
+                            // "what it consists of" (same shape MicroBiz/Booster panels consume).
+                            $includedItems = $package->items->map(function ($item) {
+                                return [
+                                    'name' => $item->name,
+                                    'quantity' => (int) ($item->pivot->quantity ?? 1),
+                                    'unit' => $item->unit,
+                                ];
+                            })->values()->toArray();
+
+                            // Provisional license logic (Drivers Licence Class 4/3 packages).
+                            // If an applicant already holds a provisional licence they keep the same
+                            // price but receive extra Class 4/3 practical lessons (value-equivalent).
+                            $effectivePrice = fn ($item) => (float) $item->unit_cost * (1 + ((float) ($item->markup_percentage ?? 0) / 100));
+                            $isClass43 = fn ($name) => preg_match('/4\s*\/?\s*3|3\s*\/?\s*4/', (string) $name) === 1;
+
+                            $provisionalValue = 0.0;
+                            foreach ($package->items as $item) {
+                                if (preg_match('/provisional/i', (string) $item->name) && $isClass43($item->name)) {
+                                    $provisionalValue += $effectivePrice($item) * (int) ($item->pivot->quantity ?? 1);
+                                }
+                            }
+
+                            $lessonItem = $package->items->first(function ($item) use ($isClass43) {
+                                return preg_match('/practical/i', (string) $item->name) && $isClass43($item->name);
+                            });
+                            $lessonPrice = $lessonItem ? $effectivePrice($lessonItem) : 0.0;
+                            $bonusLessons = ($provisionalValue > 0 && $lessonPrice > 0)
+                                ? (int) round($provisionalValue / $lessonPrice)
+                                : 0;
+
+                            // Name/tier-tolerant trigger detection (works even if a package has no
+                            // attached items, e.g. when created manually via the admin panel).
+                            $nameBlob = strtolower($package->name . ' ' . ($package->tier ?? ''));
+                            $isClass43Pkg = (bool) preg_match('/4\s*\/?\s*3|3\s*\/?\s*4|\blite\b|class\s*4\b/', $nameBlob)
+                                && ! preg_match('/1\s*\/?\s*2|2\s*\/?\s*1/', $nameBlob);
+                            $requiresProvisionalCheck = $provisionalValue > 0
+                                || in_array($package->tier, ['lite', 'full_house'], true)
+                                || $isClass43Pkg;
+
+                            // Class 2/1 sequence applies to Standard (Class 1/2) and Full House packages.
+                            $hasClass12Item = $package->items->contains(function ($item) {
+                                return preg_match('/class\s*[12]\s*\/?\s*[12]/i', (string) $item->name)
+                                    || preg_match('/defensive/i', (string) $item->name);
+                            });
+                            $requiresClassCheck = $hasClass12Item
+                                || in_array($package->tier, ['standard', 'full_house'], true)
+                                || (bool) preg_match('/1\s*\/?\s*2|2\s*\/?\s*1|full\s*house/', $nameBlob);
+
                             return [
                                 'id' => $package->id,
                                 'name' => $package->name,
+                                'group_name' => match ($package->tier) {
+                                    'gold'       => 'Executive Package',
+                                    'lite'       => 'Lite Package',
+                                    'standard'   => 'Standard Package',
+                                    'full_house' => 'Full House Package',
+                                    default      => $package->tier ? ucwords(str_replace('_', ' ', $package->tier)) . ' Package' : $package->name,
+                                },
                                 'multiplier' => 1.0,
                                 'custom_price' => (float) $package->price,
                                 'description' => $package->generated_description,
                                 'remarks' => $package->remarks,
                                 'image_url' => $package->image_url ? url('storage/' . $package->image_url) : null,
+                                'included_items' => $includedItems,
+                                'requires_provisional_check' => $requiresProvisionalCheck,
+                                'provisional_bonus_lessons' => $bonusLessons,
+                                'provisional_bonus_label' => $lessonItem?->name,
+                                'requires_class_check' => $requiresClassCheck,
                             ];
                         })->toArray();
 

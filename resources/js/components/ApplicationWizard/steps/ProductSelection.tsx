@@ -94,6 +94,16 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
 
+    // Provisional license state (Drivers Licence Class 4/3 packages)
+    const [hasProvisional, setHasProvisional] = useState<'yes' | 'no' | null>(null);
+    const [provisionalFile, setProvisionalFile] = useState<{ path: string; name: string; type: string; size: number } | null>(null);
+    const [provisionalUploading, setProvisionalUploading] = useState<boolean>(false);
+    const [provisionalError, setProvisionalError] = useState<string>('');
+
+    // Class 2/1 selection state (Drivers Licence Standard / Full House packages)
+    const [licenceClassChoice, setLicenceClassChoice] = useState<'class2' | 'class1' | null>(null);
+    const [classEligibilityConfirmed, setClassEligibilityConfirmed] = useState<boolean>(false);
+
     const ME_TRAINING_PERCENTAGE = 0.20; // M&E + Training combined: 20% of net loan
     const INSURANCE_PERCENTAGE = 0.05;  // Insurance: 5% of net loan
 
@@ -446,8 +456,105 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         }
     };
 
+    // Intents whose packages show a "Package Details" panel (so the user can review contents
+    // and, for Drivers Licence, answer the provisional-licence question) before continuing.
+    const showsPackagePanel = isMicroBiz || data.intent === 'personalServices' || data.intent === 'schoolBooster';
+
+    // Provisional-licence derived state (Drivers Licence Class 4/3 packages).
+    const selScaleAny = selectedScale as any;
+    const provisionalRequired = !!selScaleAny?.requires_provisional_check;
+    const provisionalApplied = provisionalRequired && hasProvisional === 'yes';
+    const provisionalBonusLessons = provisionalApplied ? (selScaleAny?.provisional_bonus_lessons || 0) : 0;
+    const provisionalBonusLabel = provisionalApplied ? (selScaleAny?.provisional_bonus_label || null) : null;
+    // Block continue until the provisional question is answered (and a file uploaded when "yes").
+    const provisionalBlocksContinue = provisionalRequired &&
+        (hasProvisional === null || (hasProvisional === 'yes' && !provisionalFile));
+
+    // Class 2/1 derived state (Standard / Full House packages).
+    const classRequired = !!selScaleAny?.requires_class_check;
+    const proficiencyLabel = (selScaleAny?.group_name || '').toLowerCase().includes('full house')
+        ? 'Low Proficiency' : 'High Proficiency';
+    const licenceClassOption = licenceClassChoice === 'class2' ? 'Option 1'
+        : licenceClassChoice === 'class1' ? 'Option 2' : null;
+    const classBlocksContinue = classRequired && (licenceClassChoice === null || !classEligibilityConfirmed);
+
+    // Build the package item list, adding the bonus practical lessons when a provisional is held.
+    const buildIncludedItems = (baseItems?: { name: string; quantity: number; unit?: string }[]) => {
+        const items = (baseItems || selectedScale?.included_items || []).map(i => ({ ...i }));
+        if (provisionalApplied && provisionalBonusLessons > 0 && provisionalBonusLabel) {
+            const idx = items.findIndex(i => i.name === provisionalBonusLabel);
+            if (idx >= 0) {
+                items[idx] = { ...items[idx], quantity: (items[idx].quantity || 0) + provisionalBonusLessons };
+            } else {
+                items.push({ name: `Bonus: ${provisionalBonusLabel}`, quantity: provisionalBonusLessons });
+            }
+        }
+        return items;
+    };
+
+    // Fields appended to the onNext payload describing the provisional-licence + class outcome.
+    const provisionalPayload = {
+        hasProvisionalLicense: provisionalApplied,
+        provisionalBonusLessons,
+        provisionalBonusLabel,
+        provisionalLicense: provisionalApplied ? provisionalFile : null,
+        // Class 2/1 sequence outcome (Standard / Full House packages)
+        licenceClassChoice: classRequired ? licenceClassChoice : null,
+        licenceClassOption: classRequired ? licenceClassOption : null,
+        requiresClass4Upload: classRequired,
+    };
+
+    // Upload the provisional-licence proof (image/PDF, <= 5MB) to the shared documents endpoint.
+    const handleProvisionalUpload = async (file: File | undefined) => {
+        if (!file) return;
+        setProvisionalError('');
+        const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+        if (!validTypes.includes(file.type)) {
+            setProvisionalError('Only JPG, PNG, or PDF files are allowed.');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setProvisionalError('File size must be 5MB or less.');
+            return;
+        }
+        setProvisionalUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('documentType', 'provisional_license');
+            if (data.sessionId) formData.append('sessionId', data.sessionId);
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const res = await fetch('/api/documents/upload', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body: formData,
+            });
+            if (!res.ok) throw new Error('Upload failed');
+            const result = await res.json().catch(() => ({} as any));
+            setProvisionalFile({
+                path: result.path || `uploads/provisional_license/${file.name}`,
+                name: file.name,
+                type: file.type,
+                size: file.size,
+            });
+        } catch (e) {
+            setProvisionalError('Upload failed. Please try again.');
+            setProvisionalFile(null);
+        } finally {
+            setProvisionalUploading(false);
+        }
+    };
+
     const handleScaleSelect = (scale: { id?: number; name: string; multiplier: number; custom_price?: number; description?: string }, businessOverride?: BusinessType) => {
         setSelectedScale(scale);
+
+        // Reset provisional-licence + class answers whenever a different package is picked.
+        setHasProvisional(null);
+        setProvisionalFile(null);
+        setProvisionalError('');
+        setProvisionalUploading(false);
+        setLicenceClassChoice(null);
+        setClassEligibilityConfirmed(false);
 
         let amount = 0;
         if (scale.custom_price) {
@@ -468,18 +575,18 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         setSelectedTermMonths(null); // Reset term selection
         setValidationError(''); // Clear validation error
 
-        if (isCash) {
+        // Service / School Booster packages show a details panel first (even for cash),
+        // so the user can review contents before proceeding via the panel button.
+        const isZimparks = selectedBusiness?.name === 'Zimparks Vacation Package';
+        if (isCash && !showsPackagePanel) {
             handleCashComplete(amount, scale);
             return;
         }
 
-        // For Zimparks and MicroBiz, stay on scales view to show description
-        const isZimparks = selectedBusiness?.name === 'Zimparks Vacation Package';
-
         if (isPersonalProducts || data.intent === 'homeConstruction') {
             // Stay on product detail view
-        } else if (isMicroBiz || isZimparks) {
-            // Stay on current view
+        } else if (isMicroBiz || isZimparks || showsPackagePanel) {
+            // Stay on current view to show the package details panel
         } else {
             setCurrentView('terms');
         }
@@ -501,7 +608,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             productName: selectedBusiness?.name,
             scaleId: scale?.id || (selectedScale as any)?.id,
             boosterPackageId: scale?.id || (selectedScale as any)?.id,
-            boosterPackageItems: scale?.included_items || selectedScale?.included_items || [],
+            boosterPackageItems: buildIncludedItems(scale?.included_items),
             boosterDeposit: scale?.deposit || selectedScale?.deposit,
             boosterMonthlyInstallment: scale?.monthly_installment || selectedScale?.monthly_installment,
             boosterLoanTerm: scale?.loan_term || selectedScale?.loan_term,
@@ -512,6 +619,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             trainingFee: 0,
             insuranceFee,
             productCode: selectedBusiness?.product_code,
+            ...provisionalPayload,
             paymentType: 'cash'
         });
     };
@@ -647,16 +755,17 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
             selectedScale: selectedScale ? {
                 id: selectedScale.id?.toString(),
                 name: selectedScale.name,
-                included_items: selectedScale.included_items || [],
+                included_items: buildIncludedItems(),
                 deposit: selectedScale.deposit,
                 monthly_installment: selectedScale.monthly_installment,
                 loan_term: selectedScale.loan_term,
             } : undefined,
             boosterPackageId: selectedScale?.id,
-            boosterPackageItems: selectedScale?.included_items || [],
+            boosterPackageItems: buildIncludedItems(),
             boosterDeposit: selectedScale?.deposit,
             boosterMonthlyInstallment: selectedScale?.monthly_installment,
             boosterLoanTerm: selectedScale?.loan_term,
+            ...provisionalPayload,
             paymentType: 'credit'
         });
     };
@@ -1267,7 +1376,7 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                             </div>
 
                             {/* Package Description Slide-in for MicroBiz and Zimparks */}
-                            {selectedScale && (isMicroBiz || selectedBusiness.name === 'Zimparks Vacation Package') && (
+                            {selectedScale && (isMicroBiz || showsPackagePanel || selectedBusiness.name === 'Zimparks Vacation Package') && (
                                 <div className="mt-8 animate-in slide-in-from-bottom-4 fade-in duration-500">
                                     <Card className="p-4 md:p-6 border-emerald-200 bg-emerald-50/50 dark:bg-emerald-900/10">
                                         <h3 className="text-lg font-semibold text-emerald-800 dark:text-emerald-400 mb-2">
@@ -1351,19 +1460,25 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
 
                                             <span className="text-2xl font-bold text-emerald-600">{formatCurrency(finalAmount)}</span>
                                         </div>
-                                        {selectedScale.included_items && selectedScale.included_items.length > 0 && (
-                                            <div className="mt-4 py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
-                                                <span className="text-sm font-medium text-gray-600 dark:text-gray-300 block mb-2">Included Items:</span>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700 dark:text-gray-200">
-                                                    {selectedScale.included_items.map((item, index) => (
-                                                        <div key={`${item.name}-${index}`} className="flex items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-1">
-                                                            <span>{item.name}</span>
-                                                            <span className="font-medium">x{item.quantity}{item.unit ? ` ${item.unit}` : ''}</span>
-                                                        </div>
-                                                    ))}
+                                        {(() => {
+                                            const displayedItems = buildIncludedItems();
+                                            return displayedItems.length > 0 ? (
+                                                <div className="mt-4 py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300 block mb-2">Included Items:</span>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700 dark:text-gray-200">
+                                                        {displayedItems.map((item, index) => {
+                                                            const isBonusLine = provisionalApplied && item.name === provisionalBonusLabel;
+                                                            return (
+                                                                <div key={`${item.name}-${index}`} className="flex items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-1">
+                                                                    <span>{item.name}{isBonusLine && <span className="ml-1 text-xs font-medium text-emerald-600">(incl. +{provisionalBonusLessons} bonus)</span>}</span>
+                                                                    <span className="font-medium">x{item.quantity}{item.unit ? ` ${item.unit}` : ''}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
+                                            ) : null;
+                                        })()}
                                         {(selectedScale.deposit || selectedScale.monthly_installment || selectedScale.loan_term) && (
                                             <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                                                 <div className="py-3 px-4 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
@@ -1380,14 +1495,141 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                                                 </div>
                                             </div>
                                         )}
-                                        <div className="flex justify-end mt-4">
+                                        {/* Class 2/1 selection (Drivers Licence Standard / Full House packages) */}
+                                        {classRequired && (
+                                            <div className="mt-4 py-4 px-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                                <p className="text-sm font-semibold text-purple-900 dark:text-purple-200 mb-1">
+                                                    Which licence class do you want? <span className="text-xs font-normal">({proficiencyLabel})</span>
+                                                </p>
+                                                <div className="flex gap-3 my-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setLicenceClassChoice('class2'); setClassEligibilityConfirmed(false); }}
+                                                        className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${licenceClassChoice === 'class2'
+                                                            ? 'border-purple-600 bg-purple-100 text-purple-700 ring-1 ring-purple-600'
+                                                            : 'border-gray-200 text-gray-700 hover:border-purple-300'}`}
+                                                    >
+                                                        Class 2 <span className="text-xs">(Option 1)</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setLicenceClassChoice('class1'); setClassEligibilityConfirmed(false); }}
+                                                        className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${licenceClassChoice === 'class1'
+                                                            ? 'border-purple-600 bg-purple-100 text-purple-700 ring-1 ring-purple-600'
+                                                            : 'border-gray-200 text-gray-700 hover:border-purple-300'}`}
+                                                    >
+                                                        Class 1 <span className="text-xs">(Option 2)</span>
+                                                    </button>
+                                                </div>
+
+                                                {licenceClassChoice && (
+                                                    <label className="flex items-start gap-2 mt-2 cursor-pointer animate-in fade-in slide-in-from-top-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={classEligibilityConfirmed}
+                                                            onChange={(e) => setClassEligibilityConfirmed(e.target.checked)}
+                                                            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                                        />
+                                                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                                                            {licenceClassChoice === 'class2'
+                                                                ? 'I confirm I am at least 18 years old and hold a valid Class 4 licence (which I will upload at the documents stage).'
+                                                                : 'I confirm I have held a Class 4 licence for more than 5 years, OR a Class 2 licence for 3+ years with a defensive driving certificate (Class 4 licence to be uploaded at the documents stage).'}
+                                                        </span>
+                                                    </label>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Provisional licence question (Drivers Licence Class 4/3 packages) */}
+                                        {provisionalRequired && (
+                                            <div className="mt-4 py-4 px-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                                <p className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-3">
+                                                    Do you already have a provisional licence?
+                                                </p>
+                                                <div className="flex gap-3 mb-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setHasProvisional('yes'); setProvisionalError(''); }}
+                                                        className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${hasProvisional === 'yes'
+                                                            ? 'border-emerald-600 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600'
+                                                            : 'border-gray-200 text-gray-700 hover:border-emerald-300'}`}
+                                                    >
+                                                        Yes, I have one
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setHasProvisional('no'); setProvisionalFile(null); setProvisionalError(''); }}
+                                                        className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${hasProvisional === 'no'
+                                                            ? 'border-emerald-600 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600'
+                                                            : 'border-gray-200 text-gray-700 hover:border-emerald-300'}`}
+                                                    >
+                                                        No, not yet
+                                                    </button>
+                                                </div>
+
+                                                {hasProvisional === 'yes' && (
+                                                    <div className="mt-3 animate-in fade-in slide-in-from-top-2">
+                                                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                                                            Upload your provisional licence as proof (JPG, PNG or PDF, max 5MB). The price stays the same — you'll receive
+                                                            {provisionalBonusLessons > 0
+                                                                ? <span className="font-semibold text-emerald-700"> +{provisionalBonusLessons} extra {provisionalBonusLabel || 'practical lessons'}</span>
+                                                                : ' extra practical lessons'} as compensation.
+                                                        </p>
+                                                        {!provisionalFile ? (
+                                                            <label className="inline-flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border-2 border-dashed border-blue-300 hover:border-blue-500 text-sm text-blue-700">
+                                                                <Info className="h-4 w-4" />
+                                                                {provisionalUploading ? 'Uploading…' : 'Choose file to upload'}
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/jpeg,image/png,image/jpg,application/pdf"
+                                                                    className="hidden"
+                                                                    disabled={provisionalUploading}
+                                                                    onChange={(e) => handleProvisionalUpload(e.target.files?.[0])}
+                                                                />
+                                                            </label>
+                                                        ) : (
+                                                            <div className="flex items-center justify-between gap-3 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-emerald-300">
+                                                                <span className="text-sm text-emerald-700 font-medium truncate">✓ {provisionalFile.name}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setProvisionalFile(null)}
+                                                                    className="text-gray-400 hover:text-red-500"
+                                                                >
+                                                                    <X className="h-4 w-4" />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                        {provisionalError && (
+                                                            <p className="mt-2 text-sm text-red-600">{provisionalError}</p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div className="flex flex-col items-end mt-4">
                                             <Button
                                                 onClick={handleProceedToTerms}
-                                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
+                                                disabled={provisionalBlocksContinue || classBlocksContinue || provisionalUploading}
+                                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 disabled:opacity-50"
                                             >
                                                 {isCash ? 'Proceed to Delivery' : 'Agree & Continue'}
                                                 <ChevronRight className="ml-2 h-4 w-4" />
                                             </Button>
+                                            {classBlocksContinue && (
+                                                <p className="text-xs text-gray-500 mt-2">
+                                                    {licenceClassChoice === null
+                                                        ? 'Please choose Class 2 or Class 1 to continue.'
+                                                        : 'Please confirm you meet the eligibility requirements to continue.'}
+                                                </p>
+                                            )}
+                                            {provisionalBlocksContinue && (
+                                                <p className="text-xs text-gray-500 mt-2">
+                                                    {hasProvisional === null
+                                                        ? 'Please tell us whether you have a provisional licence to continue.'
+                                                        : 'Please upload your provisional licence to continue.'}
+                                                </p>
+                                            )}
                                         </div>
                                     </Card>
                                 </div>

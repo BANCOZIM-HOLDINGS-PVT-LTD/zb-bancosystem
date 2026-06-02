@@ -83,11 +83,24 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
 
     const isZBEmployee = data?.isZBEmployee === true || data?.employer === 'zb-financial-holdings';
 
+    // Drivers Licence Class 2/1 applications require a valid Class 4 licence as proof of eligibility.
+    const class4Requirement: DocumentRequirement = {
+        id: 'class4_license',
+        name: 'Class 4 Licence',
+        description: 'Upload your valid Class 4 driver\'s licence (required for Class 2/1 applications)',
+        icon: <CreditCard className="h-6 w-6 text-emerald-600" />,
+        required: true,
+        acceptedTypes: ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'],
+        maxSize: 5
+    };
+
     // Document requirements based on employer type
     const getDocumentRequirements = (): DocumentRequirement[] => {
-        if (isZBEmployee) return [];
+        if (isZBEmployee) {
+            return data?.requiresClass4Upload ? [class4Requirement] : [];
+        }
 
-        return [
+        const requirements: DocumentRequirement[] = [
             {
                 id: 'national_id',
                 name: 'National ID',
@@ -107,6 +120,12 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                 maxSize: 10
             }
         ];
+
+        if (data?.requiresClass4Upload) {
+            requirements.push(class4Requirement);
+        }
+
+        return requirements;
     };
 
     const documentRequirements = getDocumentRequirements();
@@ -1207,6 +1226,21 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                 documentTypes: Object.keys(uploadedFiles)
             }
         };
+
+        // Include a provisional licence uploaded earlier (Drivers Licence Class 4/3 packages)
+        // so it appears in the application PDF's supporting documents.
+        if (data.provisionalLicense && data.provisionalLicense.path) {
+            documentsData.documentReferences['provisional_license'] = [{
+                id: `provisional_${Date.now()}`,
+                path: data.provisionalLicense.path,
+                name: data.provisionalLicense.name || 'Provisional Licence',
+                type: data.provisionalLicense.type || 'application/octet-stream',
+                size: data.provisionalLicense.size || 0,
+                uploadedAt: new Date().toISOString(),
+                securityHash: '',
+                metadata: {}
+            }];
+        }
 
         onNext({ ...data, documents: documentsData });
     };

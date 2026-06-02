@@ -28,6 +28,10 @@ export interface BusinessType {
     monthly_installment?: number;
     loan_term?: number;
     included_items?: { name: string; quantity: number; unit?: string }[];
+    requires_provisional_check?: boolean; // Drivers Licence Class 4/3: ask if applicant has a provisional
+    provisional_bonus_lessons?: number; // Extra Class 4/3 lessons granted when provisional already held
+    provisional_bonus_label?: string; // Name of the practical-lesson item used for the bonus
+    requires_class_check?: boolean; // Drivers Licence Class 1/2 + Full House: ask Class 2 or Class 1
   }[];
   tenure?: number;
 }

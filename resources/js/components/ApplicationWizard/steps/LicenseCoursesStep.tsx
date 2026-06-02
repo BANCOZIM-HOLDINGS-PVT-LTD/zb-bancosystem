@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Car, GraduationCap, MapPin, Award, Info, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Car, GraduationCap, MapPin, Award, Info, Check, FileText, Upload, X as XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
