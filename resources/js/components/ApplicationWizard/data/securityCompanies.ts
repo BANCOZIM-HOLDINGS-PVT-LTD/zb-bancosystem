@@ -1,5 +1,5 @@
 export const securityCompanies = [
-    'JP SECURITY',
+    'J&P SECURITY',
     'SECURICO',
     'SAFEGUARD',
     'TRUST ME SECURITY',
