@@ -1051,8 +1051,7 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
                                 id="accountNumber"
                                 value={formData.accountNumber}
                                 onChange={(e) => handleInputChange('accountNumber', e.target.value)}
-                                maxLength={formData.bankName === 'ZB Bank' ? 13 : undefined}
-                                placeholder={formData.bankName === 'ZB Bank' ? 'XXXXXXXXXXXXX' : ''}
+                                placeholder=""
                                 className={accountNumberError ? 'border-red-500' : ''}
                             />
                             {accountNumberError && (
