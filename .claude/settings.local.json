@@ -68,7 +68,8 @@
       "Bash(ipconfig)",
       "Bash(findstr /i \"IPv4\")",
       "Bash(Get-Content \"C:/xampp/htdocs/zb bancosystem/storage/logs/laravel.log\")",
-      "PowerShell(Get-Content *)"
+      "PowerShell(Get-Content *)",
+      "Bash(npx tsc *)"
     ],
     "deny": []
   }

@@ -81,10 +81,13 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
         window.scrollTo(0, 0);
     }, []);
 
+    const isZBEmployee = data?.isZBEmployee === true || data?.employer === 'zb-financial-holdings';
+
     // Document requirements based on employer type
     const getDocumentRequirements = (): DocumentRequirement[] => {
+        if (isZBEmployee) return [];
 
-        const baseRequirements: DocumentRequirement[] = [
+        return [
             {
                 id: 'national_id',
                 name: 'National ID',
@@ -104,8 +107,6 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
                 maxSize: 10
             }
         ];
-
-        return baseRequirements;
     };
 
     const documentRequirements = getDocumentRequirements();
@@ -1593,6 +1594,33 @@ const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({ data, onNext, o
             <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Required Documents</h3>
                 {documentRequirements.map(requirement => createDropzone(requirement))}
+
+                {/* Greyed-out documents for ZB employees */}
+                {isZBEmployee && (
+                    <>
+                        {[
+                            { id: 'national_id', name: 'National ID', icon: <CreditCard className="h-6 w-6 text-gray-400" /> },
+                            { id: 'payslip',     name: 'Payslip',     icon: <FileIcon className="h-6 w-6 text-gray-400" /> },
+                        ].map(doc => (
+                            <Card key={doc.id} className="p-6 opacity-50 pointer-events-none select-none">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                        {doc.icon}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-gray-400">{doc.name}</h3>
+                                        <p className="text-sm text-gray-400">Not required for ZB employees</p>
+                                        <span className="text-xs text-gray-400">N/A</span>
+                                    </div>
+                                </div>
+                                <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg p-6 text-center bg-gray-50 dark:bg-gray-800/50">
+                                    <Upload className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+                                    <p className="text-sm text-gray-400">Not required for ZB Financial Holdings employees</p>
+                                </div>
+                            </Card>
+                        ))}
+                    </>
+                )}
             </div>
 
             {/* Selfie Capture */}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Building, Building2, ChevronLeft, ChevronRight, GraduationCap, Leaf, User, HardHat } from 'lucide-react';
+import { Building, Building2, ChevronLeft, ChevronRight, GraduationCap, Leaf, User, HardHat, Heart, Cross } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { STATE_UNIVERSITIES, MISSION_SCHOOLS, PRIVATE_SCHOOLS } from '../data/educationalInstitutions';
 
@@ -102,10 +102,46 @@ const privatePensionFunds = [
     'CBZ Life Assurance',
 ];
 
-const otherPrivateOptions = [
-    { id: 'large-company', name: 'Large Company (more than 100 employees)' },
-    { id: 'small-company', name: 'Small Company (less than 100 employees)' },
-    { id: 'ngo-nonprofit', name: "NGO / Non Profit Organisation" },
+const LARGE_CORPORATIONS = [
+    'Delta Corporation Limited (DLTA)',
+    'Econet Wireless Zimbabwe Limited (ECO)',
+    'Ariston Holdings Limited (ARIS)',
+    'Schweppes Zimbabwe Limited',
+    'Dairiboard',
+];
+
+const MINING_COMPANIES = [
+    'MMCZ',
+    'RioZim Limited (RIOZ)',
+    'Unki Platinum Mine',
+    'Mimosa Mine',
+];
+
+const AGRO_INDUSTRY_COMPANIES = [
+    'Ariston Holdings',
+    'Cottco Holdings Limited (COTT)',
+    'Seed Co Limited (SEED)',
+    'Tanganda Tea Company (TANG)',
+    'TSL Limited',
+];
+
+const TOBACCO_COMPANIES = [
+    'Tobacco Industry and Marketing Board',
+    'Premier Tobacco Auction Floors',
+    'British American Tobacco Zimbabwe (BAT)',
+    'Ethical Sales Floor',
+    'Boka Tobacco Sales Floors',
+    'Tian Ze Tobacco Company',
+    'Mashonaland Tobacco Company (MTC)',
+    'Premium Leaf Zimbabwe',
+];
+
+const SUGAR_COMPANIES = [
+    'Tongaat Hulett Zimbabwe',
+    'Hippo Valley Estates Ltd',
+    'Triangle Sugar Estate',
+    'Mwenezana Estates',
+    'Mkwasine Estates',
 ];
 
 const PRIVATE_UNIVERSITIES = [
@@ -116,6 +152,39 @@ const PRIVATE_UNIVERSITIES = [
     'Arrupe Jesuit University (AJU)',
     'Solusi University',
     "Women's University in Africa (WUA)",
+];
+
+const ZB_SUBSIDIARIES = [
+    'ZB Building Society',
+    'ZB Asset Management',
+    'ZB Life Assurance Limited',
+    'ZB Reinsurance Limited',
+    'ZB Transfer Secretaries (Pvt) Ltd',
+    'ZB Associated Services',
+    'Qupa Microfinance',
+];
+
+const PRIVATE_HEALTHCARE = [
+    'Cimas Health Group',
+    'MASCA (Medical Aid Society of Central Africa)',
+    'PSMAS (Premier Service Medical Aid Society)',
+    'Bon Vie Medical Aid Society',
+    'FLIMAS (Fidelity Life Medical Aid Society)',
+    'Generation Health',
+    'First Mutual Medical Aid',
+];
+
+const FUNERAL_SERVICES = [
+    'Nyaradzo Group',
+    'First Mutual Life',
+    'Cell Funeral Assurance Company',
+    'Fidelity Life Assurance',
+];
+
+const HARARE_COMMERCIAL = [
+    'City Parking (Pvt) Ltd',
+    'Harare Quarry (Pvt) Ltd',
+    'Sunshine Holdings',
 ];
 
 const VOCATIONAL_TRAINING_CENTRES = [
@@ -143,16 +212,17 @@ const employerGroups: EmployerGroup[] = [
     {
         heading: 'Private Sectors',
         options: [
-            { id: 'mining-company',  name: 'Mining Company',   icon: HardHat },
-            { id: 'security-company', name: 'Security Company', icon: Building },
-            { id: 'other-private',   name: 'Other',            icon: Building2, isSpecial: true, description: 'Large, Small Company, NGO' },
+            { id: 'mining-company',   name: 'Mining Company',      icon: HardHat,   isSpecial: true, description: 'RioZim, Unki, Mimosa & others' },
+            { id: 'security-company', name: 'Security Company',     icon: Building },
+            { id: 'other-private',    name: 'Large Corporations',   icon: Building2, isSpecial: true, description: 'Delta, Econet, Schweppes & others' },
         ],
     },
     {
         heading: 'Municipalities and District Councils',
         options: [
-            { id: 'municipality',         name: 'Urban (Municipality)',  icon: Building2 },
-            { id: 'rural-district-council', name: 'Rural District Council', icon: Building2 },
+            { id: 'municipality',           name: 'Urban (Municipality)',                    icon: Building2 },
+            { id: 'rural-district-council', name: 'Rural District Council',                  icon: Building2 },
+            { id: 'harare-commercial',      name: 'City of Harare Commercial Companies',     icon: Building2, isSpecial: true, description: 'City Parking, Harare Quarry, Sunshine Holdings' },
         ],
     },
     {
@@ -168,9 +238,27 @@ const employerGroups: EmployerGroup[] = [
     {
         heading: 'Agricultural Based Companies',
         options: [
-            { id: 'agricultural-tobacco', name: 'Commodity Tobacco', icon: Leaf },
-            { id: 'agricultural-sugar',   name: 'Commodity Sugar',   icon: Leaf },
-            { id: 'agricultural-cotton',  name: 'Commodity Cotton',  icon: Leaf },
+            { id: 'agricultural-tobacco',      name: 'Tobacco Marketing & Processing', icon: Leaf, isSpecial: true, description: 'BAT, Premier, Tian Ze & others' },
+            { id: 'agricultural-sugar',        name: 'Sugar Refining & Processing',    icon: Leaf, isSpecial: true, description: 'Tongaat, Hippo Valley & others' },
+            { id: 'agricultural-agro-industry', name: 'Agro-Industry',                 icon: Leaf, isSpecial: true, description: 'Cottco, Seed Co, TSL & others' },
+        ],
+    },
+    {
+        heading: 'Private Health Care Sector',
+        options: [
+            { id: 'private-healthcare', name: 'Private Health Care', icon: Heart, isSpecial: true, description: 'Cimas, PSMAS, MASCA, Bon Vie & others' },
+        ],
+    },
+    {
+        heading: 'Funeral Services Sector',
+        options: [
+            { id: 'funeral-services', name: 'Funeral Services', icon: Cross, isSpecial: true, description: 'Nyaradzo, First Mutual, Cell Funeral & others' },
+        ],
+    },
+    {
+        heading: 'ZB Financial Holdings Group',
+        options: [
+            { id: 'zb-financial-holdings', name: 'ZB Financial Holdings Group', icon: Building2, isSpecial: true, description: 'ZB Building Society, ZB Asset Management & others' },
         ],
     },
     {
@@ -187,7 +275,7 @@ const optionNameById: Record<string, string> = Object.fromEntries(
     employerGroups.flatMap(g => g.options.map(o => [o.id, o.name]))
 );
 
-type ModalType = 'parastatal' | 'other-private' | 'educational-institution' | 'private-pension';
+type ModalType = 'parastatal' | 'other-private' | 'educational-institution' | 'private-pension' | 'zb-financial-holdings' | 'mining-company' | 'agro-industry' | 'tobacco-commodity' | 'sugar-commodity' | 'private-healthcare' | 'funeral-services' | 'harare-commercial';
 type EduSubType = 'state-university' | 'private-university' | 'mission-school' | 'private-school' | 'vtc';
 
 const EDU_SUBTYPE_MAP: Record<string, EduSubType> = {
@@ -230,6 +318,22 @@ const EmployerSelection: React.FC<EmployerSelectionProps> = ({ data, onNext, onB
             openModal('other-private');
         } else if (employerId === 'private-pension') {
             openModal('private-pension');
+        } else if (employerId === 'zb-financial-holdings') {
+            openModal('zb-financial-holdings');
+        } else if (employerId === 'mining-company') {
+            openModal('mining-company');
+        } else if (employerId === 'agricultural-agro-industry') {
+            openModal('agro-industry');
+        } else if (employerId === 'agricultural-tobacco') {
+            openModal('tobacco-commodity');
+        } else if (employerId === 'agricultural-sugar') {
+            openModal('sugar-commodity');
+        } else if (employerId === 'private-healthcare') {
+            openModal('private-healthcare');
+        } else if (employerId === 'funeral-services') {
+            openModal('funeral-services');
+        } else if (employerId === 'harare-commercial') {
+            openModal('harare-commercial');
         } else if (employerId in EDU_SUBTYPE_MAP) {
             openModal('educational-institution', EDU_SUBTYPE_MAP[employerId]);
         } else {
@@ -245,6 +349,59 @@ const EmployerSelection: React.FC<EmployerSelectionProps> = ({ data, onNext, onB
     const handleModalSelect = (specificName: string, specificId?: string) => {
         if (specificName === 'OTHER') {
             setShowOtherInput(true);
+            return;
+        }
+
+        if (modalType === 'zb-financial-holdings') {
+            onNext({
+                employer: 'zb-financial-holdings',
+                employerName: specificName,
+                specificEmployer: specificName,
+                isZBEmployee: true,
+            });
+            closeModal();
+            return;
+        }
+
+        if (modalType === 'mining-company') {
+            onNext({ employer: 'mining-company', employerName: specificName, specificEmployer: specificName });
+            closeModal();
+            return;
+        }
+
+        if (modalType === 'agro-industry') {
+            onNext({ employer: 'agricultural-agro-industry', employerName: specificName, specificEmployer: specificName });
+            closeModal();
+            return;
+        }
+
+        if (modalType === 'tobacco-commodity') {
+            onNext({ employer: 'agricultural-tobacco', employerName: specificName, specificEmployer: specificName });
+            closeModal();
+            return;
+        }
+
+        if (modalType === 'sugar-commodity') {
+            onNext({ employer: 'agricultural-sugar', employerName: specificName, specificEmployer: specificName });
+            closeModal();
+            return;
+        }
+
+        if (modalType === 'private-healthcare') {
+            onNext({ employer: 'private-healthcare', employerName: specificName, specificEmployer: specificName });
+            closeModal();
+            return;
+        }
+
+        if (modalType === 'funeral-services') {
+            onNext({ employer: 'funeral-services', employerName: specificName, specificEmployer: specificName });
+            closeModal();
+            return;
+        }
+
+        if (modalType === 'harare-commercial') {
+            onNext({ employer: 'harare-commercial', employerName: specificName, specificEmployer: specificName });
+            closeModal();
             return;
         }
 
@@ -375,9 +532,17 @@ const EmployerSelection: React.FC<EmployerSelectionProps> = ({ data, onNext, onB
 
                         <div className="text-center mb-6">
                             <h3 className="text-xl font-semibold mb-1">
-                                {modalType === 'parastatal'             ? 'Select Parastatal' :
-                                 modalType === 'other-private'          ? 'Select Company Type' :
-                                 modalType === 'private-pension'        ? 'Select Pension Fund' :
+                                {modalType === 'parastatal'               ? 'Select Parastatal' :
+                                 modalType === 'other-private'            ? 'Select Corporation' :
+                                 modalType === 'private-pension'          ? 'Select Pension Fund' :
+                                 modalType === 'zb-financial-holdings'    ? 'ZB Financial Holdings Group' :
+                                 modalType === 'mining-company'           ? 'Select Mining Company' :
+                                 modalType === 'agro-industry'            ? 'Select Agro-Industry Company' :
+                                 modalType === 'tobacco-commodity'        ? 'Tobacco Marketing & Processing' :
+                                 modalType === 'sugar-commodity'          ? 'Sugar Refining & Processing' :
+                                 modalType === 'private-healthcare'       ? 'Private Health Care Sector' :
+                                 modalType === 'funeral-services'         ? 'Funeral Services Sector' :
+                                 modalType === 'harare-commercial'        ? 'City of Harare Commercial Companies' :
                                  modalType === 'educational-institution' && educationSubType
                                      ? eduSubTypeLabel[educationSubType]
                                      : 'Select Institution'}
@@ -429,16 +594,110 @@ const EmployerSelection: React.FC<EmployerSelectionProps> = ({ data, onNext, onB
                                 </button>
                             </div>
 
-                        ) : modalType === 'other-private' ? (
-                            /* ── Other private company types ── */
-                            <div className="space-y-2">
-                                {otherPrivateOptions.map((opt) => (
+                        ) : modalType === 'zb-financial-holdings' ? (
+                            /* ── ZB Financial Holdings subsidiaries ── */
+                            <div className="space-y-2 max-h-[55vh] overflow-y-auto">
+                                {ZB_SUBSIDIARIES.map((subsidiary) => (
                                     <button
-                                        key={opt.id}
-                                        onClick={() => handleModalSelect(opt.name, opt.id)}
+                                        key={subsidiary}
+                                        onClick={() => handleModalSelect(subsidiary)}
                                         className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700"
                                     >
-                                        {opt.name}
+                                        {subsidiary}
+                                    </button>
+                                ))}
+                            </div>
+
+                        ) : modalType === 'mining-company' ? (
+                            /* ── Mining companies ── */
+                            <div className="space-y-2 max-h-[55vh] overflow-y-auto">
+                                {MINING_COMPANIES.map((company) => (
+                                    <button
+                                        key={company}
+                                        onClick={() => handleModalSelect(company)}
+                                        className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700"
+                                    >
+                                        {company}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => handleModalSelect('OTHER')}
+                                    className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700 font-medium"
+                                >
+                                    Other (Please Specify)
+                                </button>
+                            </div>
+
+                        ) : modalType === 'agro-industry' ? (
+                            /* ── Agro-Industry companies ── */
+                            <div className="space-y-2 max-h-[55vh] overflow-y-auto">
+                                {AGRO_INDUSTRY_COMPANIES.map((company) => (
+                                    <button
+                                        key={company}
+                                        onClick={() => handleModalSelect(company)}
+                                        className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700"
+                                    >
+                                        {company}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => handleModalSelect('OTHER')}
+                                    className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700 font-medium"
+                                >
+                                    Other (Please Specify)
+                                </button>
+                            </div>
+
+                        ) : modalType === 'tobacco-commodity' ? (
+                            /* ── Tobacco companies ── */
+                            <div className="space-y-2 max-h-[55vh] overflow-y-auto">
+                                {TOBACCO_COMPANIES.map((company) => (
+                                    <button
+                                        key={company}
+                                        onClick={() => handleModalSelect(company)}
+                                        className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700"
+                                    >
+                                        {company}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => handleModalSelect('OTHER')}
+                                    className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700 font-medium"
+                                >
+                                    Other (Please Specify)
+                                </button>
+                            </div>
+
+                        ) : modalType === 'sugar-commodity' ? (
+                            /* ── Sugar companies ── */
+                            <div className="space-y-2 max-h-[55vh] overflow-y-auto">
+                                {SUGAR_COMPANIES.map((company) => (
+                                    <button
+                                        key={company}
+                                        onClick={() => handleModalSelect(company)}
+                                        className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700"
+                                    >
+                                        {company}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => handleModalSelect('OTHER')}
+                                    className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700 font-medium"
+                                >
+                                    Other (Please Specify)
+                                </button>
+                            </div>
+
+                        ) : modalType === 'other-private' ? (
+                            /* ── Large Corporations ── */
+                            <div className="space-y-2 max-h-[55vh] overflow-y-auto">
+                                {LARGE_CORPORATIONS.map((company) => (
+                                    <button
+                                        key={company}
+                                        onClick={() => handleModalSelect(company)}
+                                        className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700"
+                                    >
+                                        {company}
                                     </button>
                                 ))}
                                 <button
@@ -459,6 +718,66 @@ const EmployerSelection: React.FC<EmployerSelectionProps> = ({ data, onNext, onB
                                         className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700"
                                     >
                                         {fund}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => handleModalSelect('OTHER')}
+                                    className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700 font-medium"
+                                >
+                                    Other (Please Specify)
+                                </button>
+                            </div>
+
+                        ) : modalType === 'private-healthcare' ? (
+                            /* ── Private Healthcare ── */
+                            <div className="space-y-2 max-h-[55vh] overflow-y-auto">
+                                {PRIVATE_HEALTHCARE.map((org) => (
+                                    <button
+                                        key={org}
+                                        onClick={() => handleModalSelect(org)}
+                                        className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700"
+                                    >
+                                        {org}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => handleModalSelect('OTHER')}
+                                    className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700 font-medium"
+                                >
+                                    Other (Please Specify)
+                                </button>
+                            </div>
+
+                        ) : modalType === 'funeral-services' ? (
+                            /* ── Funeral Services ── */
+                            <div className="space-y-2 max-h-[55vh] overflow-y-auto">
+                                {FUNERAL_SERVICES.map((org) => (
+                                    <button
+                                        key={org}
+                                        onClick={() => handleModalSelect(org)}
+                                        className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700"
+                                    >
+                                        {org}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => handleModalSelect('OTHER')}
+                                    className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700 font-medium"
+                                >
+                                    Other (Please Specify)
+                                </button>
+                            </div>
+
+                        ) : modalType === 'harare-commercial' ? (
+                            /* ── City of Harare Commercial Companies ── */
+                            <div className="space-y-2 max-h-[55vh] overflow-y-auto">
+                                {HARARE_COMMERCIAL.map((company) => (
+                                    <button
+                                        key={company}
+                                        onClick={() => handleModalSelect(company)}
+                                        className="w-full p-3 text-left rounded-lg hover:bg-emerald-50 hover:text-emerald-700 transition-colors border border-gray-100 dark:border-gray-700"
+                                    >
+                                        {company}
                                     </button>
                                 ))}
                                 <button

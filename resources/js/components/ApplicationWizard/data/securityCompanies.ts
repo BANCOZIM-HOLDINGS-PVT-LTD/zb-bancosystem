@@ -1,8 +1,10 @@
 export const securityCompanies = [
-    'GP SECURITY',
+    'JP SECURITY',
     'SECURICO',
     'SAFEGUARD',
     'TRUST ME SECURITY',
     'Real Star security',
+    'Fawcett security',
+    'Peace Security',
     'guardian security'
 ];
