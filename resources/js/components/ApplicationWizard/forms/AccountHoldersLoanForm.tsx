@@ -197,27 +197,8 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             ? formatZimbabweId(value)
             : value;
 
-        // Validate account number for ZB Bank
-        if (field === 'accountNumber' && formData.bankName === 'ZB Bank') {
-            // Clear previous error
-            setAccountNumberError('');
-
-            // Only validate if there's a value
-            if (value) {
-                if (!/^\d{15}$/.test(value)) {
-                    setAccountNumberError('ZB Bank account number must be exactly 15 digits');
-                } else if (value[0] !== '4') {
-                    setAccountNumberError('ZB Bank account number must start with 4');
-                } else if (isZiG ? value[12] !== '2' : value[12] !== '4') {
-                    setAccountNumberError(isZiG
-                        ? 'Please enter your ZiG ZB Bank account number'
-                        : 'Please enter your USD ZB Bank account number');
-                }
-            }
-        }
-
-        // Clear account number error when bank changes away from ZB Bank
-        if (field === 'bankName' && value !== 'ZB Bank') {
+        // Account number is accepted exactly as entered — no ZB format validation.
+        if (field === 'accountNumber') {
             setAccountNumberError('');
         }
 
@@ -303,24 +284,6 @@ const AccountHoldersLoanForm: React.FC<AccountHoldersLoanFormProps> = ({ data, o
             setConsentError('Please give consent to proceed.');
             // Scroll to bottom to see error if needed, or just relying on the red text being near button
             return;
-        }
-
-        // Validate account number for ZB Bank before submission
-        if (formData.bankName === 'ZB Bank' && formData.accountNumber) {
-            if (!/^\d{15}$/.test(formData.accountNumber)) {
-                setAccountNumberError('ZB Bank account number must be exactly 15 digits');
-                return;
-            }
-            if (formData.accountNumber[0] !== '4') {
-                setAccountNumberError('ZB Bank account number must start with 4');
-                return;
-            }
-            if (isZiG ? formData.accountNumber[12] !== '2' : formData.accountNumber[12] !== '4') {
-                setAccountNumberError(isZiG
-                    ? 'Please enter your ZiG ZB Bank account number'
-                    : 'Please enter your USD ZB Bank account number');
-                return;
-            }
         }
 
         // Validate the single next of kin entry

@@ -192,23 +192,12 @@ export const validationRules = {
     return /^[A-Z0-9]{1,15}\/[0-9]{4}$|^[0-9]{1,10}\/[0-9]{4}$|^[A-Z0-9\/-]{5,20}$/.test(value);
   },
 
-  // Validate account numbers (general format)
-  accountNumber: (value: string): boolean => {
-    if (!value) return true; // Skip if empty
-    // Most bank account numbers are 8-17 digits
-    return /^[0-9]{8,17}$/.test(value);
-  },
+  // Account numbers are accepted exactly as entered — no format/length restriction.
+  accountNumber: (_value: string): boolean => true,
 
-  // Validate ZB Bank account numbers
-  // Must be exactly 15 digits, start with '4', and have currency-specific digit at index 12 (3rd from last):
-  // USD: index 12 must be '4' (e.g. 414023582812405)
-  // ZiG: index 12 must be '2' (e.g. 414023582812200)
-  zbAccountNumber: (value: string, currency: string = 'USD'): boolean => {
-    if (!value) return true;
-    if (!/^\d{15}$/.test(value)) return false;
-    if (value[0] !== '4') return false;
-    return currency === 'ZiG' ? value[12] === '2' : value[12] === '4';
-  },
+  // ZB Bank account number formats change frequently, so no regex is enforced —
+  // whatever the user enters is accepted.
+  zbAccountNumber: (_value: string, _currency: string = 'USD'): boolean => true,
 
   // Validate postal codes (Zimbabwe format)
   postalCode: (value: string): boolean => {
@@ -1353,7 +1342,7 @@ export const getDefaultErrorMessage = (field: string, rule: string, params?: any
     case 'accountNumber':
       return `Please enter a valid account number`;
     case 'zbAccountNumber':
-      return `Please enter a valid ZB Bank account number (15 digits, starting with 4, 3rd-from-last digit: 4 for USD, 2 for ZiG)`;
+      return `Please enter a valid account number`;
     case 'postalCode':
       return `Please enter a valid postal code`;
     case 'alpha':
