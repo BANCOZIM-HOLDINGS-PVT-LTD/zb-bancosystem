@@ -115,6 +115,22 @@ const MINING_COMPANIES = [
     'RioZim Limited (RIOZ)',
     'Unki Platinum Mine',
     'Mimosa Mine',
+    'Shamva Mine',
+    'Freda Rebecca Mine',
+    'Valley Mine',
+    'Zimplats',
+    'Mimosa Mine',        
+    'Karo Platinum',
+    'Cam & Motor Mine',
+    'Jena Mine',
+    'Sandawana Mine',
+    'Zimbabwe Alloys',
+    'Great Dyke Investments',
+    'Eureka Mine',
+    'Sabi Gold Mine',
+    'How Mine',
+    
+
 ];
 
 const AGRO_INDUSTRY_COMPANIES = [
