@@ -14,6 +14,7 @@ class MicrobizSubcategory extends Model
         'name',
         'description',
         'image_url',
+        'gender_category',
     ];
 
     /**
@@ -46,6 +47,26 @@ class MicrobizSubcategory extends Model
     public function packages(): HasMany
     {
         return $this->hasMany(MicrobizPackage::class);
+    }
+
+    /**
+     * Human-readable label for the audience tag.
+     */
+    public function getGenderCategoryLabelAttribute(): string
+    {
+        return match ($this->gender_category) {
+            'fcc' => 'Female Centric (FCC)',
+            'mcc' => 'Male Centric (MCC)',
+            default => 'General',
+        };
+    }
+
+    /**
+     * Scope: filter by audience tag (fcc / mcc).
+     */
+    public function scopeGender($query, ?string $value)
+    {
+        return $query->where('gender_category', $value);
     }
 
     /**

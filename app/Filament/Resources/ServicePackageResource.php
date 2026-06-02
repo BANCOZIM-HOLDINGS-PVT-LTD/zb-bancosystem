@@ -89,6 +89,23 @@ class ServicePackageResource extends BaseResource
                                     ->maxLength(500)
                                     ->placeholder('Brief description of this service package'),
                             ]),
+                        Forms\Components\ToggleButtons::make('gender_category')
+                            ->label('Course Audience')
+                            ->options([
+                                'fcc' => 'Female Centric (FCC)',
+                                'mcc' => 'Male Centric (MCC)',
+                            ])
+                            ->colors([
+                                'fcc' => 'danger',
+                                'mcc' => 'info',
+                            ])
+                            ->icons([
+                                'fcc' => 'heroicon-o-user',
+                                'mcc' => 'heroicon-o-user',
+                            ])
+                            ->inline()
+                            ->nullable()
+                            ->helperText('Set for Vocational Short Courses only — leave blank for general services. Drives whether the course shows under the client\'s FCC or MCC selection.'),
                         Forms\Components\FileUpload::make('image_url')
                             ->label('Service Image')
                             ->image()
@@ -164,6 +181,18 @@ class ServicePackageResource extends BaseResource
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
+                Tables\Columns\BadgeColumn::make('gender_category')
+                    ->label('Audience')
+                    ->colors([
+                        'danger' => 'fcc',
+                        'info' => 'mcc',
+                    ])
+                    ->formatStateUsing(fn ($state) => match ($state) {
+                        'fcc' => 'Female Centric (FCC)',
+                        'mcc' => 'Male Centric (MCC)',
+                        default => 'General',
+                    })
+                    ->toggleable(),
                 Tables\Columns\ImageColumn::make('image_url')
                     ->label('Image')
                     ->circular()
@@ -201,6 +230,12 @@ class ServicePackageResource extends BaseResource
                     ->relationship('supplier', 'name')
                     ->searchable()
                     ->preload(),
+                Tables\Filters\SelectFilter::make('gender_category')
+                    ->label('Course Audience')
+                    ->options([
+                        'fcc' => 'Female Centric (FCC)',
+                        'mcc' => 'Male Centric (MCC)',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

@@ -84,6 +84,8 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
     const [loanSettings, setLoanSettings] = useState<{ interestRate: number; adminFeePercentage: number }>({ interestRate: 0.84, adminFeePercentage: 0.06 });
     const [warrantySettings, setWarrantySettings] = useState<{ warrantyEnabled: boolean; warrantyText: string }>({ warrantyEnabled: true, warrantyText: '12 month warranty' });
     const [selectedTermMonths, setSelectedTermMonths] = useState<number | null>(null);
+    // Personal Development audience filter: Female Centric (fcc) vs Male Centric (mcc) courses.
+    const [selectedAudience, setSelectedAudience] = useState<'fcc' | 'mcc'>('fcc');
     const [validationError, setValidationError] = useState<string>('');
     const [showZBBankingNotification, setShowZBBankingNotification] = useState<boolean>(false);
     const [selectedDestination, setSelectedDestination] = useState<ZimparksDestination | null>(null);
@@ -317,11 +319,24 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
         loadProducts();
     }, [data.intent, selectedCurrency, filterProducts]); // Re-run if intent or currency changes
 
+    // A course's audience tag lives on its (single) business entry.
+    const subcategoryAudience = (subcategory: Subcategory): 'fcc' | 'mcc' | null =>
+        subcategory.businesses[0]?.gender_category ?? null;
+
+    // True when a category contains audience-tagged courses (e.g. Personal Development → FCC/MCC).
+    const categoryHasAudiences = (category: Category | null): boolean =>
+        !!category?.subcategories.some(sub => subcategoryAudience(sub) !== null);
+
     const handleCategorySelect = (category: Category) => {
         // Check if Construction category is clicked - show unavailable modal
         if (category.name === 'Construction') {
             setShowConstructionUnavailableModal(true);
             return;
+        }
+        // Default the audience toggle to whichever group actually has courses.
+        if (categoryHasAudiences(category)) {
+            const hasFcc = category.subcategories.some(sub => subcategoryAudience(sub) === 'fcc');
+            setSelectedAudience(hasFcc ? 'fcc' : 'mcc');
         }
         setSelectedCategory(category);
         setCurrentView('subcategories');
@@ -1020,10 +1035,42 @@ const ProductSelection: React.FC<ProductSelectionProps> = ({ data, onNext, onBac
                     </div>
                 )}
 
+                {currentView === 'subcategories' && selectedCategory && categoryHasAudiences(selectedCategory) && (
+                    <div className="mb-6 flex flex-col items-center gap-2">
+                        <p className="text-sm text-gray-500">Who is this course for?</p>
+                        <div className="inline-flex rounded-xl border border-gray-200 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-800">
+                            {([
+                                { id: 'fcc', label: 'Female Centric' },
+                                { id: 'mcc', label: 'Male Centric' },
+                            ] as const).map(opt => (
+                                <button
+                                    key={opt.id}
+                                    type="button"
+                                    onClick={() => setSelectedAudience(opt.id)}
+                                    className={`px-5 py-2 text-sm font-medium rounded-lg transition-all ${
+                                        selectedAudience === opt.id
+                                            ? 'bg-emerald-600 text-white shadow'
+                                            : 'text-gray-600 dark:text-gray-300 hover:text-emerald-600'
+                                    }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {currentView === 'subcategories' && selectedCategory && (
                     <div className="grid gap-4 sm:grid-cols-2">
                         {selectedCategory.subcategories
                             .filter(subcategory => subcategory.businesses.length > 0 || (subcategory.series && subcategory.series.length > 0))
+                            // When the category has audience-tagged courses, show only the selected
+                            // audience plus any audience-neutral (untagged) courses.
+                            .filter(subcategory => {
+                                if (!categoryHasAudiences(selectedCategory)) return true;
+                                const audience = subcategoryAudience(subcategory);
+                                return audience === null || audience === selectedAudience;
+                            })
                             .map((subcategory, index) => (
                                 <Card
                                     key={index}

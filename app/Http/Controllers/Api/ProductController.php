@@ -722,6 +722,7 @@ class ProductController extends Controller
                             'image_url' => $subcategory->image_url,
                             'description' => $subcategory->description,
                             'specification' => null,
+                            'gender_category' => $subcategory->gender_category,
                             'scales' => $scales,
                             'tenure' => 24,
                         ]],

@@ -11,6 +11,7 @@ export interface BusinessType {
   image_url?: string;
   description?: string;
   is_coming_soon?: boolean; // Added coming soon flag
+  gender_category?: 'fcc' | 'mcc' | null; // Personal Development audience tag (Female/Male Centric Courses)
   scales: {
     id?: number;
     name: string;
