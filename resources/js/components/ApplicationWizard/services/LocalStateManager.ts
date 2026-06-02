@@ -36,7 +36,7 @@ export class LocalStateManager {
     /**
      * Retrieve the saved state from localStorage
      */
-    getLocalState(): { sessionId: string; currentStep: string; formData: any } | null {
+    getLocalState(): { sessionId: string; currentStep: string; formData: any; timestamp?: string } | null {
         try {
             // Check expiry
             const expiry = localStorage.getItem(this.EXPIRY_KEY);

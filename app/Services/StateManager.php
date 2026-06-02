@@ -136,6 +136,15 @@ class StateManager
                     }
                 }
 
+                // Link the state to the authenticated client so it can be resumed
+                // across devices. Only set when logged in (null in WhatsApp/queue
+                // contexts) and never clobber an already-linked owner.
+                $authUserId = \Illuminate\Support\Facades\Auth::id();
+                if ($authUserId && $state->user_id !== $authUserId) {
+                    $state->user_id = $authUserId;
+                    $state->save();
+                }
+
                 return $state;
 
             } catch (\Exception $e) {

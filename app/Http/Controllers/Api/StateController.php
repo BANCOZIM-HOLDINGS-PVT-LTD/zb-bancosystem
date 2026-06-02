@@ -402,6 +402,71 @@ class StateController extends Controller
     }
 
     /**
+     * Get the authenticated client's latest incomplete application state.
+     * Powers the proactive "Continue where you left off" resume prompt so a
+     * registered user can pick up their application on any device/browser.
+     */
+    public function currentUserState(Request $request): JsonResponse
+    {
+        $userId = \Illuminate\Support\Facades\Auth::id();
+
+        if (!$userId) {
+            return response()->json(['has_state' => false], 200);
+        }
+
+        // Steps that mean the application is already submitted/closed.
+        $terminalSteps = ['completed', 'approved', 'rejected', 'pending_review'];
+
+        $state = ApplicationState::query()
+            ->where('user_id', $userId)
+            ->where('is_archived', false)
+            ->whereNotIn('current_step', $terminalSteps)
+            ->where('expires_at', '>', now())
+            ->latest('updated_at')
+            ->first();
+
+        if (!$state) {
+            return response()->json(['has_state' => false], 200);
+        }
+
+        return response()->json([
+            'has_state' => true,
+            'session_id' => $state->session_id,
+            'current_step' => $state->current_step,
+            'form_data' => $state->form_data,
+            'reference_code' => $state->reference_code,
+            'updated_at' => $state->updated_at?->toISOString(),
+            'resume_url' => "/application?session={$state->session_id}&resume=true",
+        ]);
+    }
+
+    /**
+     * Link an in-progress application state to the authenticated client.
+     * Called from the wizard so a logged-in user's draft becomes resumable on
+     * any device. Idempotent and safe to call repeatedly.
+     */
+    public function linkUserToState(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'session_id' => 'required|string',
+        ]);
+
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (!$userId) {
+            return response()->json(['linked' => false], 200);
+        }
+
+        $state = ApplicationState::where('session_id', $validated['session_id'])->first();
+
+        if ($state && $state->user_id !== $userId) {
+            $state->user_id = $userId;
+            $state->save();
+        }
+
+        return response()->json(['linked' => (bool) $state]);
+    }
+
+    /**
      * Check for existing incomplete session by phone number
      */
     public function checkExistingSession(Request $request): JsonResponse

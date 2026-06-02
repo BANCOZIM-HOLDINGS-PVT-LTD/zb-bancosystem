@@ -656,6 +656,9 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
     const [loading, setLoading] = useState(false);
     const [sessionId, setSessionId] = useState(initializedState.sessionId);
     const [isStateRestored, setIsStateRestored] = useState(false);
+    // Cross-device resume prompt: a newer incomplete application found on the server.
+    const [serverResume, setServerResume] = useState<{ url: string } | null>(null);
+    const [serverResumeDismissed, setServerResumeDismissed] = useState(false);
 
     // Get authenticated user for auth checks
     const { props } = usePage<any>();
@@ -783,6 +786,49 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
     useEffect(() => {
         setIsStateRestored(true);
     }, []);
+
+    // Link this in-progress application to the authenticated client so it can be
+    // resumed on any device. Idempotent server-side; re-runs on step changes so it
+    // links once the server-side state row has been created by autosave.
+    useEffect(() => {
+        if (!authenticatedUser || !sessionId || !isStateRestored) return;
+        fetch('/application/link-user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ session_id: sessionId }),
+        }).catch(() => { /* non-blocking */ });
+    }, [authenticatedUser, sessionId, currentStep, isStateRestored]);
+
+    // Reconcile local vs server: if a logged-in client has a newer incomplete
+    // application on the server (e.g. started on another device), offer to resume
+    // it instead of silently starting fresh from local storage.
+    useEffect(() => {
+        if (!authenticatedUser || !isStateRestored) return;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('resume') === 'true') return; // already resuming a specific session
+        let cancelled = false;
+        fetch('/application/resume-state', {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin',
+        })
+            .then(res => (res.ok ? res.json() : null))
+            .then(data => {
+                if (cancelled || !data?.has_state || !data?.resume_url) return;
+                if (data.session_id && data.session_id === sessionId) return; // same session we're on
+                const local = localStateManager.getLocalState();
+                const localTs = local?.timestamp ? Date.parse(local.timestamp) : 0;
+                const serverTs = data.updated_at ? Date.parse(data.updated_at) : 0;
+                if (serverTs >= localTs) {
+                    setServerResume({ url: data.resume_url });
+                }
+            })
+            .catch(() => { /* non-blocking */ });
+        return () => { cancelled = true; };
+    }, [authenticatedUser, isStateRestored, sessionId]);
 
     // Effect to auto-skip registration step if user is already authenticated
     useEffect(() => {
@@ -1357,6 +1403,34 @@ const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
     return (
         <div className="min-h-screen bg-[#FDFDFC] dark:bg-[#0a0a0a] pb-24">
             <div className="mx-auto max-w-4xl px-4 py-8">
+                {/* Cross-device resume prompt: a newer in-progress application exists on the server */}
+                {serverResume && !serverResumeDismissed && (
+                    <div className="mb-6 p-4 border border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 rounded-lg">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <div>
+                                <h3 className="text-amber-800 dark:text-amber-300 font-medium">Resume your previous application?</h3>
+                                <p className="text-amber-700 dark:text-amber-300/90 text-sm">
+                                    We found a more recent application linked to your account. Continue it instead of starting over?
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2 sm:ml-auto">
+                                <button
+                                    onClick={() => { window.location.href = serverResume.url; }}
+                                    className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
+                                >
+                                    Resume
+                                </button>
+                                <button
+                                    onClick={() => setServerResumeDismissed(true)}
+                                    className="rounded-lg px-3 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900/30"
+                                >
+                                    Not now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* State restoration notification */}
                 {wasStateRestored && !loading && (
                     <div className="mb-6 p-4 border border-blue-300 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800 rounded-lg">

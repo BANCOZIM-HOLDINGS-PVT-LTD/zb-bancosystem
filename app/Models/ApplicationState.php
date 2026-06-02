@@ -16,6 +16,7 @@ class ApplicationState extends Model
         'session_id',
         'channel',
         'user_identifier',
+        'user_id',
         'current_step',
         'form_data',
         'metadata',
@@ -81,6 +82,14 @@ class ApplicationState extends Model
     public function transitions(): HasMany
     {
         return $this->hasMany(StateTransition::class, 'state_id');
+    }
+
+    /**
+     * Get the registered client who owns this in-progress application (if any).
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /**

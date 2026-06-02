@@ -29,6 +29,11 @@ Route::get('/admin/portal', function () {
 })->name('admin.portal');
 
 
+// Application resume helpers — registered under the web group so the session is
+// available and Auth::id() resolves for the logged-in client (the api group is stateless).
+Route::get('/application/resume-state', [\App\Http\Controllers\Api\StateController::class, 'currentUserState'])->name('application.current_state');
+Route::post('/application/link-user', [\App\Http\Controllers\Api\StateController::class, 'linkUserToState'])->name('application.link_user');
+
 // Application Wizard Routes
 Route::get('/application', [ApplicationWizardController::class, 'show'])->name('application.wizard');
 Route::get('/apply', [ApplicationWizardController::class, 'showWithReferral'])->name('application.apply'); // Agent referral entry point

@@ -1,6 +1,6 @@
 import { type SharedData } from '@/types';
 import { Head, Link, usePage, router } from '@inertiajs/react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Globe, CreditCard, Briefcase, FileText, Package, ChevronRight, User, DollarSign, ShoppingBag, Hammer, GraduationCap, Laptop, Home, RotateCcw, LoaderCircle, School } from 'lucide-react';
 import Footer from '@/components/Footer';
 
@@ -71,6 +71,28 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
     const [resumePhone, setResumePhone] = useState('+263');
     const [resumeLoading, setResumeLoading] = useState(false);
     const [resumeMessage, setResumeMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+
+    // Proactive resume for logged-in clients: detect their latest incomplete
+    // application on the server (works across devices) and offer to continue it.
+    const [serverResume, setServerResume] = useState<{ resume_url: string; updated_at?: string } | null>(null);
+    const [serverResumeDismissed, setServerResumeDismissed] = useState(false);
+
+    useEffect(() => {
+        if (!auth?.user) return;
+        let cancelled = false;
+        fetch('/application/resume-state', {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin',
+        })
+            .then(res => (res.ok ? res.json() : null))
+            .then(data => {
+                if (!cancelled && data?.has_state && data?.resume_url) {
+                    setServerResume({ resume_url: data.resume_url, updated_at: data.updated_at });
+                }
+            })
+            .catch(() => { /* non-blocking */ });
+        return () => { cancelled = true; };
+    }, [auth?.user]);
 
     const languages = [
         { code: 'en', name: 'English', greeting: 'Welcome to Microbiz' },
@@ -212,6 +234,35 @@ export default function Welcome({ hasApplications, hasCompletedApplications, ref
                             <p className="text-sm text-emerald-800 dark:text-emerald-300">
                                 <span className="font-semibold">Referred by:</span> {agentName}
                             </p>
+                        </div>
+                    </div>
+                )}
+
+                {serverResume && !serverResumeDismissed && (
+                    <div className="mb-6 w-full max-w-4xl">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-950/20 dark:border-blue-800">
+                            <div className="flex items-start gap-3">
+                                <RotateCcw className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">You have an application in progress</p>
+                                    <p className="text-sm text-blue-800 dark:text-blue-300">Continue right where you left off.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => { window.location.href = serverResume.resume_url; }}
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                                >
+                                    Continue
+                                    <ChevronRight className="h-4 w-4" />
+                                </button>
+                                <button
+                                    onClick={() => setServerResumeDismissed(true)}
+                                    className="rounded-lg px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-900/30"
+                                >
+                                    Dismiss
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
