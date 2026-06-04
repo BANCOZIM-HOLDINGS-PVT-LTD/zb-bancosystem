@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\ApplicationState;
 use App\Models\PaymentReminder;
-use App\Services\DandemutandeMailService;
+use App\Services\GmailMailService;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
@@ -29,7 +29,7 @@ class SendPaymentReminderJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(NotificationService $notificationService, DandemutandeMailService $mailService): void
+    public function handle(NotificationService $notificationService, GmailMailService $mailService): void
     {
         Log::info('Starting SendPaymentReminderJob');
 
@@ -65,7 +65,7 @@ class SendPaymentReminderJob implements ShouldQueue
         ApplicationState $app,
         string $stage,
         NotificationService $notificationService,
-        DandemutandeMailService $mailService
+        GmailMailService $mailService
     ): void
     {
         $formData = $app->form_data ?? [];

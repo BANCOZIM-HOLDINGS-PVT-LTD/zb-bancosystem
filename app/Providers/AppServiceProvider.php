@@ -25,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
         
         // Bind SMS Provider (Switch here to change providers)
         $this->app->bind(\App\Contracts\SmsProviderInterface::class, \App\Services\CodelSmsService::class);
-        $this->app->bind(\App\Contracts\MailProviderInterface::class, \App\Services\DandemutandeMailService::class);
+        $this->app->bind(\App\Contracts\MailProviderInterface::class, \App\Services\GmailMailService::class);
     }
 
     /**

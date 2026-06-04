@@ -6,7 +6,7 @@ use Tests\TestCase;
 use App\Models\ApplicationState;
 use App\Models\PaymentReminder;
 use App\Jobs\SendAbandonmentReminderJob;
-use App\Services\DandemutandeMailService;
+use App\Services\GmailMailService;
 use App\Services\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -25,7 +25,7 @@ class AbandonmentReminderTest extends TestCase
         $notificationService->shouldReceive('sendSMS')
             ->twice() // We expect 2 reminders to be sent (app1 and app3)
             ->andReturn(true);
-        $mailService = Mockery::mock(DandemutandeMailService::class);
+        $mailService = Mockery::mock(GmailMailService::class);
         $mailService->shouldReceive('sendPaymentReminderEmail')
             ->once()
             ->andReturn(true);

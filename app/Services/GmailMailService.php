@@ -14,7 +14,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 
-class DandemutandeMailService implements MailProviderInterface
+class GmailMailService implements MailProviderInterface
 {
     /**
      * Send email when an application is received

@@ -332,7 +332,7 @@ class DepositPaymentController extends Controller
 
                 // Send Confirmation Email Receipt
                 try {
-                    $mailService = app(\App\Services\DandemutandeMailService::class);
+                    $mailService = app(\App\Services\GmailMailService::class);
                     $paymentData = [
                         'transaction_id' => $paynowReference,
                         'amount' => $application->deposit_amount,

@@ -38,11 +38,12 @@
 - [x] **Tiers:** Added specialized styling, icons, and "Best Value" badges for Lite, Standard, Full House, and Gold tiers.
 - [x] **Readability:** Implemented automated bulleted feature lists for package descriptions.
 
-### ✅ 6. Dandemutande Email Integration (Sprint 4)
-- [x] **SMTP:** Configured Dandemutande SMTP in `.env` (using standard SMTP driver).
-- [x] **Service:** Created `DandemutandeMailService.php` for centralized email management.
-- [x] **Templates:** Built high-fidelity HTML templates for Application Received, Status Updated, and Payment Receipt.
-- [x] **Automation:** Integrated email triggers into `NotificationService` and `DepositPaymentController` callback logic.
+### ✅ 6. Gmail OAuth2 Email Integration (Sprint 4)
+- [x] **Transport:** Registered a custom `gmail` mailer (`MailServiceProvider`) that builds a Symfony `EsmtpTransport` against `smtp.gmail.com:465` using `XOAuth2Authenticator`.
+- [x] **Token management:** `GmailOAuthTokenManager` refreshes Google access tokens via `https://oauth2.googleapis.com/token` and caches them for 55 minutes (Laravel cache).
+- [x] **Service:** Renamed `DandemutandeMailService` → `GmailMailService`; retains the `MailProviderInterface` contract and `EmailDeliveryLog` audit trail.
+- [x] **Templates:** High-fidelity HTML templates for Application Received, Status Updated, Payment Receipt, Payment Reminder, and Welcome.
+- [x] **Automation:** Email triggers in `NotificationService` and `DepositPaymentController` callback logic are unchanged — they now route through Gmail OAuth2.
 
 ### ✅ 7. Accounting & Stores Sync (Sprint 5)
 - [x] **Financial Logging:** Created `AccountingService` to automatically record `Sale` transactions upon application approval/payment.

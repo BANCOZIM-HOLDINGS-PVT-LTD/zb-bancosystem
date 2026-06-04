@@ -71,7 +71,9 @@
       "PowerShell(Get-Content *)",
       "Bash(npx tsc *)",
       "Bash(fly version *)",
-      "Bash(fly auth *)"
+      "Bash(fly auth *)",
+      "Bash(/opt/lampp/bin/php --version)",
+      "Read(//opt/lampp/bin/**)"
     ],
     "deny": []
   }

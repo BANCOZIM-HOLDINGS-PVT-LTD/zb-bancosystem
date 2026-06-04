@@ -9,7 +9,7 @@ class NotificationService
 {
     protected $mailService;
 
-    public function __construct(DandemutandeMailService $mailService)
+    public function __construct(GmailMailService $mailService)
     {
         $this->mailService = $mailService;
     }

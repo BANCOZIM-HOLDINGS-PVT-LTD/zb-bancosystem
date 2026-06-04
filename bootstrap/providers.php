@@ -10,4 +10,5 @@ return [
     App\Providers\Filament\HrPanelProvider::class,
     App\Providers\Filament\PartnerPanelProvider::class,
     App\Providers\PDFErrorHandlingServiceProvider::class,
+    App\Providers\MailServiceProvider::class,
 ];
