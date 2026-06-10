@@ -121,3 +121,11 @@ Schedule::job(new \App\Jobs\SendAbandonmentReminderJob())
     ->timezone('Africa/Harare')
     ->name('send-abandonment-reminders')
     ->description('Send SMS reminders to clients who abandoned the application wizard');
+
+// ZimPost delivery sync - polls ZimPost Courier API for live status updates on
+// active deliveries that have been linked to a local DeliveryTracking row.
+Schedule::job(new \App\Jobs\SyncZimPostDeliveriesJob())
+    ->everyFifteenMinutes()
+    ->timezone('Africa/Harare')
+    ->name('sync-zimpost-deliveries')
+    ->description('Refresh ZimPost courier statuses for linked active deliveries');

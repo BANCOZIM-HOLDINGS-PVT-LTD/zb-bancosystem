@@ -73,7 +73,13 @@
       "Bash(fly version *)",
       "Bash(fly auth *)",
       "Bash(/opt/lampp/bin/php --version)",
-      "Read(//opt/lampp/bin/**)"
+      "Read(//opt/lampp/bin/**)",
+      "Bash(/opt/lampp/bin/php artisan *)",
+      "Bash(cd *)",
+      "Bash(/opt/lampp/bin/php -l app/Http/Controllers/DeliveryTrackingController.php)",
+      "Bash(/opt/lampp/bin/php -l app/Filament/Pages/ZimPostDeliveries.php app/Filament/Pages/ZimPostDeliveryDetail.php)",
+      "Bash(/opt/lampp/bin/php -l app/Http/Controllers/AgentPortalController.php)",
+      "Bash(/opt/lampp/bin/php -l app/Jobs/SyncZimPostDeliveriesJob.php)"
     ],
     "deny": []
   }

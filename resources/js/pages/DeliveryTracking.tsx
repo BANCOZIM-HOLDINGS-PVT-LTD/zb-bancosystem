@@ -15,10 +15,37 @@ import {
     Truck,
     User,
     Calendar,
-    ShoppingBag
+    ShoppingBag,
+    Radio,
+    AlertTriangle
 } from 'lucide-react';
 import { Link } from '@inertiajs/react';
 import Footer from '@/components/Footer';
+
+interface ZimPostEvent {
+    status: string | null;
+    at: string | null;
+    note: string | null;
+    location: { lat?: number; lng?: number; address?: string } | null;
+}
+
+interface ZimPostLive {
+    status: string | null;
+    trackingNumber?: string | null;
+    amountUsd?: number | null;
+    distanceKm?: number | null;
+    durationMinutes?: number | null;
+    vehicleType?: string | null;
+    createdAt?: string | null;
+    driver?: {
+        name: string | null;
+        phone: string | null;
+        vehicleRegistration: string | null;
+    } | null;
+    events?: ZimPostEvent[];
+    fromCache?: boolean;
+    reason?: string;
+}
 
 interface DeliveryDetails {
     sessionId: string;
@@ -37,6 +64,8 @@ interface DeliveryDetails {
     bookingNames?: string;
     datesBooked?: string;
     packageDetails?: string;
+    // ZimPost live tracking (null when not a ZimPost shipment)
+    live?: ZimPostLive | null;
 }
 
 export default function DeliveryTracking() {
@@ -345,6 +374,121 @@ export default function DeliveryTracking() {
                                     </div>
                                 )}
                             </Card>
+
+                            {/* ZimPost Live Tracking */}
+                            {deliveryDetails.live && (
+                                <Card className="p-6">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="p-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg">
+                                            <Radio className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-semibold">Live Courier Tracking</h2>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                Real-time updates from ZimPost Courier
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {deliveryDetails.live.status === 'unavailable' ? (
+                                        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 rounded-lg flex items-start gap-3">
+                                            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                                            <div>
+                                                <p className="font-medium text-amber-900 dark:text-amber-100">
+                                                    Live tracking temporarily unavailable
+                                                </p>
+                                                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                                                    We could not reach ZimPost right now. The status above reflects the most recent information we have.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="grid gap-3 md:grid-cols-2 mb-6">
+                                                <div className="p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg">
+                                                    <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Live status</p>
+                                                    <p className="text-lg font-semibold capitalize">{(deliveryDetails.live.status ?? '').replace(/_/g, ' ') || '—'}</p>
+                                                </div>
+                                                {deliveryDetails.live.vehicleType && (
+                                                    <div className="p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg">
+                                                        <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Vehicle</p>
+                                                        <p className="text-lg font-semibold">{deliveryDetails.live.vehicleType}</p>
+                                                    </div>
+                                                )}
+                                                {typeof deliveryDetails.live.distanceKm === 'number' && (
+                                                    <div className="p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg">
+                                                        <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Distance</p>
+                                                        <p className="text-lg font-semibold">{deliveryDetails.live.distanceKm} km</p>
+                                                    </div>
+                                                )}
+                                                {typeof deliveryDetails.live.durationMinutes === 'number' && (
+                                                    <div className="p-3 bg-gray-50 dark:bg-gray-900/20 rounded-lg">
+                                                        <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Estimated duration</p>
+                                                        <p className="text-lg font-semibold">{Math.round(deliveryDetails.live.durationMinutes)} min</p>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {deliveryDetails.live.driver && (deliveryDetails.live.driver.name || deliveryDetails.live.driver.phone) && (
+                                                <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                                                    <p className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300 mb-2">Driver</p>
+                                                    <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                                                        {deliveryDetails.live.driver.name ?? 'Assigned driver'}
+                                                    </p>
+                                                    {deliveryDetails.live.driver.phone && (
+                                                        <a
+                                                            href={`tel:${deliveryDetails.live.driver.phone}`}
+                                                            className="text-sm text-emerald-700 dark:text-emerald-300 hover:underline"
+                                                        >
+                                                            {deliveryDetails.live.driver.phone}
+                                                        </a>
+                                                    )}
+                                                    {deliveryDetails.live.driver.vehicleRegistration && (
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                                            Vehicle reg: <span className="font-mono">{deliveryDetails.live.driver.vehicleRegistration}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {Array.isArray(deliveryDetails.live.events) && deliveryDetails.live.events.length > 0 && (
+                                                <div>
+                                                    <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">Tracking events</p>
+                                                    <ol className="relative border-l border-gray-200 dark:border-gray-700 ml-3 space-y-4">
+                                                        {deliveryDetails.live.events.map((evt, idx) => (
+                                                            <li key={idx} className="ml-4">
+                                                                <span className="absolute -left-1.5 flex h-3 w-3 rounded-full bg-emerald-500" />
+                                                                <p className="text-sm font-semibold capitalize text-gray-900 dark:text-gray-100">
+                                                                    {(evt.status ?? '').replace(/_/g, ' ') || 'Update'}
+                                                                </p>
+                                                                {evt.at && (
+                                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                                        {new Date(evt.at).toLocaleString()}
+                                                                    </p>
+                                                                )}
+                                                                {evt.note && (
+                                                                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{evt.note}</p>
+                                                                )}
+                                                                {evt.location?.address && (
+                                                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                                                        <MapPin className="inline h-3 w-3 mr-1" />{evt.location.address}
+                                                                    </p>
+                                                                )}
+                                                            </li>
+                                                        ))}
+                                                    </ol>
+                                                </div>
+                                            )}
+
+                                            {deliveryDetails.live.fromCache && (
+                                                <p className="mt-4 text-xs text-gray-400 italic">
+                                                    Showing the most recently cached update — refresh in a moment for live data.
+                                                </p>
+                                            )}
+                                        </>
+                                    )}
+                                </Card>
+                            )}
 
                             {/* Customer Support */}
                             <Card className="p-6 bg-gradient-to-br from-emerald-50 to-blue-50 dark:from-emerald-900/20 dark:to-blue-900/20">

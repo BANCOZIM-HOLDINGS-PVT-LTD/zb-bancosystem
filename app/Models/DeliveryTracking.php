@@ -35,6 +35,11 @@ class DeliveryTracking extends Model
         // Post Office fields
         'post_office_tracking_number',
         'post_office_vehicle_registration',
+        // ZimPost Courier Partner API fields
+        'zimpost_delivery_id',
+        'zimpost_tracking_number',
+        'zimpost_last_synced_at',
+        'zimpost_snapshot',
         // Gain Outlet fields
         'gain_voucher_number',
         'gain_depot_location',
@@ -56,6 +61,8 @@ class DeliveryTracking extends Model
         'dispatched_at' => 'datetime',
         'estimated_delivery_date' => 'datetime',
         'delivered_at' => 'datetime',
+        'zimpost_last_synced_at' => 'datetime',
+        'zimpost_snapshot' => 'array',
     ];
 
     /**

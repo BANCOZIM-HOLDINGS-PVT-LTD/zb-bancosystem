@@ -129,6 +129,7 @@ Route::prefix('agent')->name('agent.')->group(function () {
     Route::get('/login', [\App\Http\Controllers\AgentPortalController::class, 'showLogin'])->name('login');
     Route::post('/login', [\App\Http\Controllers\AgentPortalController::class, 'login'])->name('login.submit');
     Route::get('/dashboard', [\App\Http\Controllers\AgentPortalController::class, 'dashboard'])->name('dashboard');
+    Route::get('/deliveries/zimpost', [\App\Http\Controllers\AgentPortalController::class, 'zimpostDeliveries'])->name('zimpost.deliveries');
     Route::get('/logout', [\App\Http\Controllers\AgentPortalController::class, 'logout'])->name('logout');
     Route::post('/generate-product-link', [\App\Http\Controllers\AgentPortalController::class, 'generateProductLink'])->name('generate.product.link');
     Route::post('/log-activity', [\App\Http\Controllers\AgentPortalController::class, 'logActivity'])->name('log.activity');

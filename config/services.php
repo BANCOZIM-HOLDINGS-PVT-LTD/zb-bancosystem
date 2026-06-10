@@ -100,6 +100,15 @@ return [
         'api_secret' => env('FCB_API_SECRET'),
     ],
 
+    'zimpost' => [
+        'api_key' => env('ZIMPOST_API_KEY'),
+        'base_url' => env('ZIMPOST_BASE_URL', 'https://courier-api.zimpost.co.zw/api/v1/partner'),
+        'timeout' => env('ZIMPOST_TIMEOUT', 10),
+        'cache_ttl_list' => env('ZIMPOST_CACHE_TTL_LIST', 30),
+        'cache_ttl_detail' => env('ZIMPOST_CACHE_TTL_DETAIL', 15),
+        'cache_ttl_profile' => env('ZIMPOST_CACHE_TTL_PROFILE', 300),
+    ],
+
     'ssb' => [
         'api_url' => env('SSB_API_URL', 'http://147.93.87.208:5555'),
         'client_id' => env('SSB_CLIENT_ID', 'UNIPAY_App'),

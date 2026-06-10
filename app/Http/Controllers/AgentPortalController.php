@@ -9,6 +9,8 @@ use App\Models\ApplicationState;
 use App\Models\ProductCategory;
 use App\Models\AgentActivityLog;
 use App\Models\AgentReward;
+use App\Services\ZimPost\Exceptions\ZimPostApiException;
+use App\Services\ZimPost\ZimPostService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
@@ -428,6 +430,74 @@ class AgentPortalController extends Controller
         return redirect()->route('agent.login')->with('error', 'Session expired. Please login again.');
     }
     
+    /**
+     * Show ZimPost deliveries scoped to the agent's referred clients.
+     */
+    public function zimpostDeliveries(Request $request, ZimPostService $zimpost)
+    {
+        if (!Session::has('agent_code')) {
+            return redirect()->route('agent.login');
+        }
+
+        $agentCode = Session::get('agent_code');
+        $agentId = Session::get('agent_id');
+
+        $referenceCodes = ApplicationState::query()
+            ->where(function ($q) use ($agentCode, $agentId) {
+                $q->whereJsonContains('form_data->referralCode', $agentCode)
+                  ->orWhereJsonContains('form_data->agentCode', $agentCode);
+                if ($agentId) {
+                    $q->orWhere('agent_id', $agentId);
+                }
+            })
+            ->whereNotNull('reference_code')
+            ->pluck('reference_code')
+            ->map(fn ($r) => trim($r))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $normalisedClientRefs = array_flip(array_map(fn ($r) => $zimpost->normaliseReference($r), $referenceCodes));
+
+        $deliveries = [];
+        $apiError = null;
+
+        if (!empty($referenceCodes)) {
+            try {
+                $resp = $zimpost->listDeliveries([], 100, 0);
+                foreach (ZimPostService::items($resp) as $d) {
+                    $refKey = $zimpost->normaliseReference($d['reference'] ?? '');
+                    if ($refKey === '' || !isset($normalisedClientRefs[$refKey])) {
+                        continue;
+                    }
+                    $deliveries[] = [
+                        'id' => $d['id'] ?? null,
+                        'tracking_number' => $d['tracking_number'] ?? null,
+                        'reference' => $d['reference'] ?? null,
+                        'status' => $d['status'] ?? null,
+                        'amount_usd' => $d['amount_usd'] ?? null,
+                        'distance_km' => $d['distance_km'] ?? null,
+                        'vehicle_type' => $d['vehicle_type'] ?? null,
+                        'created_at' => $d['created_at'] ?? null,
+                    ];
+                }
+            } catch (ZimPostApiException $e) {
+                $apiError = [
+                    'message' => $e->getMessage(),
+                    'code' => $e->errorCode,
+                ];
+            }
+        }
+
+        return Inertia::render('agent/ZimPostDeliveries', [
+            'agentCode' => $agentCode,
+            'deliveries' => $deliveries,
+            'referenceCount' => count($referenceCodes),
+            'apiError' => $apiError,
+        ]);
+    }
+
     /**
      * Logout agent
      */
