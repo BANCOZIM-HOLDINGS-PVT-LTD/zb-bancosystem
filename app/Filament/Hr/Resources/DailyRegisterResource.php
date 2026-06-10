@@ -198,8 +198,12 @@ class DailyRegisterResource extends Resource
         ];
     }
 
-    public static function getNavigationBadge(): ?string
+    public static function getNavigationBadge(): ?string // guarded-badge
     {
-        return static::getModel()::today()->count() ?: null;
+        try {
+            return static::getModel()::today()->count() ?: null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

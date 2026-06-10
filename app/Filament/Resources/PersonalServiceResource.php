@@ -133,8 +133,12 @@ class PersonalServiceResource extends Resource
         ];
     }
 
-    public static function getNavigationBadge(): ?string
+    public static function getNavigationBadge(): ?string // guarded-badge
     {
-        return static::getModel()::where('status', 'approved')->count();
+        try {
+            return static::getModel()::where('status', 'approved')->count();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

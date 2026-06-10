@@ -88,6 +88,10 @@ class BoosterCategoryResource extends BaseResource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) static::getModel()::count() ?: null;
+        try {
+            return (string) static::getModel()::count() ?: null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

@@ -165,8 +165,12 @@ class SupplierResource extends BaseResource
         ];
     }
 
-    public static function getNavigationBadge(): ?string
+    public static function getNavigationBadge(): ?string // guarded-badge
     {
-        return static::getModel()::where('status', 'active')->count();
+        try {
+            return static::getModel()::where('status', 'active')->count();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

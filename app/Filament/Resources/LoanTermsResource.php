@@ -316,8 +316,12 @@ class LoanTermsResource extends BaseResource
         ];
     }
 
-    public static function getNavigationBadge(): ?string
+    public static function getNavigationBadge(): ?string // guarded-badge
     {
-        return static::getModel()::active()->count();
+        try {
+            return static::getModel()::active()->count();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

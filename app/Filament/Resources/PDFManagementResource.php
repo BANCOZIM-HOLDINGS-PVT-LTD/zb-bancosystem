@@ -336,9 +336,13 @@ class PDFManagementResource extends BaseResource
             ->whereNotNull('form_data');
     }
     
-    public static function getNavigationBadge(): ?string
+    public static function getNavigationBadge(): ?string // guarded-badge
     {
-        return static::getModel()::whereNotNull('form_data')->count();
+        try {
+            return static::getModel()::whereNotNull('form_data')->count();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
     
     public static function getNavigationBadgeColor(): ?string

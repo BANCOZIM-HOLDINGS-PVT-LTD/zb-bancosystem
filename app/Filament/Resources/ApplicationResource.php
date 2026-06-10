@@ -1486,10 +1486,14 @@ class ApplicationResource extends BaseResource
             });
     }
     
-    public static function getNavigationBadge(): ?string
+    public static function getNavigationBadge(): ?string // guarded-badge
     {
-        return static::getModel()::whereDate('created_at', today())
-            ->count();
+        try {
+            return static::getModel()::whereDate('created_at', today())
+                        ->count();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
     
     public static function getWidgets(): array

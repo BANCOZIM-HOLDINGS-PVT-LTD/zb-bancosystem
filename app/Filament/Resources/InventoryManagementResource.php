@@ -384,9 +384,13 @@ class InventoryManagementResource extends BaseResource
         ];
     }
 
-    public static function getNavigationBadge(): ?string
+    public static function getNavigationBadge(): ?string // guarded-badge
     {
-        return static::getModel()::count();
+        try {
+            return static::getModel()::count();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     public static function getNavigationBadgeColor(): ?string

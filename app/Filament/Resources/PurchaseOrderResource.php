@@ -354,9 +354,13 @@ class PurchaseOrderResource extends BaseResource
         ];
     }
     
-    public static function getNavigationBadge(): ?string
+    public static function getNavigationBadge(): ?string // guarded-badge
     {
-        return static::getModel()::where('status', 'pending')->count() ?: null;
+        try {
+            return static::getModel()::where('status', 'pending')->count() ?: null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
     
     public static function getNavigationBadgeColor(): ?string

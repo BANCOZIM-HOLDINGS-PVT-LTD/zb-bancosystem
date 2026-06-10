@@ -139,8 +139,12 @@ class MicrobizCategoryResource extends BaseResource
         ];
     }
 
-    public static function getNavigationBadge(): ?string
+    public static function getNavigationBadge(): ?string // guarded-badge
     {
-        return static::getEloquentQuery()->count() ?: null;
+        try {
+            return static::getEloquentQuery()->count() ?: null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

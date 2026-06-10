@@ -390,8 +390,12 @@ class CommissionResource extends BaseResource
         ];
     }
 
-    public static function getNavigationBadge(): ?string
+    public static function getNavigationBadge(): ?string // guarded-badge
     {
-        return static::getModel()::pending()->count();
+        try {
+            return static::getModel()::pending()->count();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

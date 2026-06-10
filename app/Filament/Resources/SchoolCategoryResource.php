@@ -51,8 +51,12 @@ class SchoolCategoryResource extends BaseResource
         ];
     }
 
-    public static function getNavigationBadge(): ?string
+    public static function getNavigationBadge(): ?string // guarded-badge
     {
-        return (string) static::getModel()::count() ?: null;
+        try {
+            return (string) static::getModel()::count() ?: null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }
